@@ -1,24 +1,47 @@
-# Ignorar todas as pastas node_modules em qualquer nível
-node_modules/
 **/node_modules/
-
-# Ignorar as sessões do WhatsApp em qualquer nível
-sessao_whatsapp/
 **/sessao_whatsapp/
 
-# Ignorar as pastas de build do Next.js
-.next/
+**/.env
+**/.env.local
+**/.env.production
+
 **/.next/
-out/
-build/
+**/out/
+**/build/
 
-# Ignorar variáveis de ambiente
-.env
-.env.local
-.env.production
-**/.env*
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# Logs e ficheiros de sistema
-*.log
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# misc
 .DS_Store
-Thumbs.db
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
