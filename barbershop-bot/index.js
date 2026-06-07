@@ -1,12 +1,14 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = require('@whiskeysockets/baileys');
-const { createClient } = require('@supabase/supabase-js'); // Import Supabase
-const qrcode = require('qrcode-terminal');
+const { createClient } = require('@supabase/supabase-js');
+const QRCode = require('qrcode');
 const pino = require('pino');
 const express = require('express');
+const cors = require('cors');
 
 require('dotenv').config();
 
 const app = express();
+app.use(cors()); 
 app.use(express.json());
 
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
@@ -14,6 +16,9 @@ const SUPABASE_KEY = process.env.SUPABASE_KEY || '';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let sock;
+let qrCodeData = null;
+let qrCodeRaw = null;
+let connectionStatus = 'offline';
 
 async function iniciarBot() {
     const { state, saveCreds } = await useMultiFileAuthState('sessao_whatsapp');
@@ -31,18 +36,34 @@ async function iniciarBot() {
         const { connection, lastDisconnect, qr } = update;
 
         if (qr) {
-            qrcode.generate(qr, { small: true });
+            try {
+                qrCodeRaw = qr;
+                qrCodeData = await QRCode.toDataURL(qr);
+                connectionStatus = 'pairing';
+                console.log('\n⏳ Novo QR Code gerado. Aceda a http://localhost:3001/api/qr ou http://localhost:3001/api/qr.png');
+            } catch (err) {
+                console.error('❌ Erro a gerar o QR Code:', err);
+            }
         }
 
-            if (connection === 'open') {
-                console.log('\nBot connected successfully!');
-            }
+        if (connection === 'open') {
+            console.log('\n✅ Bot connected successfully!');
+            connectionStatus = 'connected';
+            qrCodeData = null; 
+            qrCodeRaw = null;
+        }
 
         if (connection === 'close') {
+            connectionStatus = 'offline';
             const codigoErro = lastDisconnect?.error?.output?.statusCode;
             const deveriaReiniciar = codigoErro !== DisconnectReason.loggedOut;
+            
+            console.log(`\n⚠️ Bot desconectado. Código de erro: ${codigoErro}`);
+            
             if (deveriaReiniciar) {
                 iniciarBot();
+            } else {
+                console.log('\n🛑 Sessão terminada. Um novo QR code será necessário.');
             }
         }
     });
@@ -50,15 +71,45 @@ async function iniciarBot() {
     sock.ev.on('creds.update', saveCreds);
 }
 
+app.get('/api/qr', (req, res) => {
+    if (connectionStatus === 'connected') {
+        return res.status(200).json({ status: 'connected', message: 'Bot already connected!' });
+    }
+    
+    if (qrCodeData && connectionStatus === 'pairing') {
+        return res.status(200).json({ status: 'pairing', qr: qrCodeData });
+    }
+
+    return res.status(200).json({ status: 'loading', message: 'Generating QR code or bot offline...' });
+});
+
+app.get('/api/qr.png', async (req, res) => {
+    if (connectionStatus === 'connected') {
+        return res.status(404).send('Bot já conectado. Não é necessário QR Code.');
+    }
+    
+    if (qrCodeRaw && connectionStatus === 'pairing') {
+        try {
+            const buffer = await QRCode.toBuffer(qrCodeRaw);
+            res.type('png');
+            return res.send(buffer);
+        } catch (err) {
+            return res.status(500).send('Erro a gerar imagem do QR Code.');
+        }
+    }
+
+    return res.status(404).send('QR code ainda não está disponível. Aguarde uns segundos.');
+});
+
 app.post('/api/webhook-agendamento', async (req, res) => {
     const { barbearia_id, cliente_id, servico_id, data_hora, numero_cliente, nome_cliente, nome_servico } = req.body;
 
     if (!numero_cliente || !data_hora || !barbearia_id || !servico_id) {
-        return res.status(400).json({ error: 'Missing required fields (numero_cliente, data_hora, barbearia_id, servico_id).' });
+        return res.status(400).json({ error: 'Missing required fields.' });
     }
 
-    if (!sock) {
-        return res.status(503).json({ error: 'Bot is not ready yet.' });
+    if (!sock || connectionStatus !== 'connected') {
+        return res.status(503).json({ error: 'Bot is not ready or offline.' });
     }
 
     try {
@@ -66,18 +117,15 @@ app.post('/api/webhook-agendamento', async (req, res) => {
 
         const { data: novoAgendamento, error: erroSupabase } = await supabase
             .from('agendamentos')
-            .insert([
-                {
-                    barbearia_id: barbearia_id,
-                    cliente_id: cliente_id || null,
-                    servico_id: servico_id,
-                    data_hora: data_hora,
-                    aviso_confirmacao_enviado: true,
-                    status: 'agendado'
-                }
-            ])
+            .insert([{
+                barbearia_id,
+                cliente_id: cliente_id || null,
+                servico_id,
+                data_hora,
+                aviso_confirmacao_enviado: true,
+                status: 'agendado'
+            }])
             .select();
-
 
         if (erroSupabase) {
             console.error('❌ SUPABASE ERROR:', erroSupabase);
@@ -99,7 +147,7 @@ app.post('/api/webhook-agendamento', async (req, res) => {
 
         return res.status(200).json({ 
             success: true, 
-            message: 'Appointment saved to Supabase and WhatsApp sent!',
+            message: 'Appointment saved and WhatsApp sent!',
             agendamento: novoAgendamento[0]
         });
 
@@ -109,8 +157,8 @@ app.post('/api/webhook-agendamento', async (req, res) => {
     }
 });
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-    console.log(`Server started! http://localhost:${PORT}`);
+    console.log(`🚀 Server started! http://localhost:${PORT}`);
     iniciarBot();
 });
