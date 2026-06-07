@@ -4,11 +4,13 @@ const qrcode = require('qrcode-terminal');
 const pino = require('pino');
 const express = require('express');
 
+require('dotenv').config();
+
 const app = express();
 app.use(express.json());
 
-const SUPABASE_URL = 'https://yzrdpwsfqsazxvwsjobf.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6cmRwd3NmcXNhenh2d3Nqb2JmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDE0Njc2MSwiZXhwIjoyMDk1NzIyNzYxfQ.t_NcCLfrSmjWXeMnY5FUGbLSu59Qos7Snn5SI5avr5E'; 
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.SUPABASE_KEY || '';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let sock;
