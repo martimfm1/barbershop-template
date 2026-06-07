@@ -1,5 +1,5 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = require('@whiskeysockets/baileys');
-const { createClient } = require('@supabase/supabase-js'); // Importar Supabase
+const { createClient } = require('@supabase/supabase-js'); // Import Supabase
 const qrcode = require('qrcode-terminal');
 const pino = require('pino');
 const express = require('express');
@@ -34,9 +34,9 @@ async function iniciarBot() {
             qrcode.generate(qr, { small: true });
         }
 
-        if (connection === 'open') {
-            console.log('\nbot conectado com sucesso!');
-        }
+            if (connection === 'open') {
+                console.log('\nBot connected successfully!');
+            }
 
         if (connection === 'close') {
             const codigoErro = lastDisconnect?.error?.output?.statusCode;
@@ -54,15 +54,15 @@ app.post('/api/webhook-agendamento', async (req, res) => {
     const { barbearia_id, cliente_id, servico_id, data_hora, numero_cliente, nome_cliente, nome_servico } = req.body;
 
     if (!numero_cliente || !data_hora || !barbearia_id || !servico_id) {
-        return res.status(400).json({ error: 'Faltam dados obrigatórios (numero_cliente, data_hora, barbearia_id, servico_id).' });
+        return res.status(400).json({ error: 'Missing required fields (numero_cliente, data_hora, barbearia_id, servico_id).' });
     }
 
     if (!sock) {
-        return res.status(503).json({ error: 'O bot ainda não está pronto.' });
+        return res.status(503).json({ error: 'Bot is not ready yet.' });
     }
 
     try {
-        console.log(`\n📬 Novo agendamento recebido para o número ${numero_cliente}...`);
+        console.log(`\n📬 New appointment received for number ${numero_cliente}...`);
 
         const { data: novoAgendamento, error: erroSupabase } = await supabase
             .from('agendamentos')
@@ -78,38 +78,39 @@ app.post('/api/webhook-agendamento', async (req, res) => {
             ])
             .select();
 
+
         if (erroSupabase) {
-            console.error('❌ ERRO DO SUPABASE:', erroSupabase);
+            console.error('❌ SUPABASE ERROR:', erroSupabase);
             return res.status(500).json({ error: erroSupabase.message });
         }
 
-        console.log(`Guardado no Supabase! ID do Agendamento: ${novoAgendamento[0].id}`);
+        console.log(`Saved to Supabase! Appointment ID: ${novoAgendamento[0].id}`);
 
         const dataObj = new Date(data_hora);
-        const dataFormatada = dataObj.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
-        const horaFormatada = dataObj.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+        const dataFormatada = dataObj.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+        const horaFormatada = dataObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
         const jid = `${numero_cliente}@s.whatsapp.net`;
         const mensagem = {
-            text: `💈 *Agendamento Confirmado!* 💈\n\nOlá ${nome_cliente || 'Cliente'},\n\nO teu corte foi marcado com sucesso!\n\n💇‍♂️ *Serviço:* ${nome_servico || 'Cabelo/Barba'}\n📅 *Data:* ${dataFormatada}\n⏰ *Hora:* ${horaFormatada}\n\nObrigado pela preferência! 🔥`
+            text: `💈 *Appointment Confirmed!* 💈\n\nHello ${nome_cliente || 'Customer'},\n\nYour haircut has been scheduled successfully!\n\n💇‍♂️ *Service:* ${nome_servico || 'Hair/Beard'}\n📅 *Date:* ${dataFormatada}\n⏰ *Time:* ${horaFormatada}\n\nThanks for choosing us! 🔥`
         };
 
         await sock.sendMessage(jid, mensagem);
 
         return res.status(200).json({ 
             success: true, 
-            message: 'Agendamento guardado no Supabase e WhatsApp enviado!',
+            message: 'Appointment saved to Supabase and WhatsApp sent!',
             agendamento: novoAgendamento[0]
         });
 
     } catch (error) {
-        console.error('❌ Erro geral no servidor:', error);
-        return res.status(500).json({ error: 'Erro interno no servidor.' });
+        console.error('❌ Server error:', error);
+        return res.status(500).json({ error: 'Internal server error.' });
     }
 });
 
 const PORT = 3001;
 app.listen(PORT, () => {
-    console.log(`O servidor ligou! http://localhost:${PORT}`);
+    console.log(`Server started! http://localhost:${PORT}`);
     iniciarBot();
 });
