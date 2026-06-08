@@ -1,6 +1,9 @@
 allowBuilds:
   '@tsparticles/engine': true
+  '@whiskeysockets/baileys': true
   msw: true
+  protobufjs: true
+  puppeteer: true
   sharp: true
   unrs-resolver: true
 ignoredBuiltDependencies:

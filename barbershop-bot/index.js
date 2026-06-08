@@ -11,8 +11,8 @@ const app = express();
 app.use(cors()); 
 app.use(express.json());
 
-const SUPABASE_URL = process.env.SUPABASE_URL || '';
-const SUPABASE_KEY = process.env.SUPABASE_KEY || '';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://yzrdpwsfqsazxvwsjobf.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6cmRwd3NmcXNhenh2d3Nqb2JmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDE0Njc2MSwiZXhwIjoyMDk1NzIyNzYxfQ.t_NcCLfrSmjWXeMnY5FUGbLSu59Qos7Snn5SI5avr5E';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let sock;
@@ -155,6 +155,21 @@ app.post('/api/webhook-agendamento', async (req, res) => {
         console.error('❌ Server error:', error);
         return res.status(500).json({ error: 'Internal server error.' });
     }
+});
+
+app.post("/api/restart", async (req, res) => {
+  console.log("🔄 A reiniciar o bot a pedido do dashboard...");
+  botStatus = "loading";
+  currentQrUrl = null;auth_info_baileys
+  res.json({ success: true, message: "A reiniciar..." });
+  
+  try {
+    await client.destroy();
+    client.initialize();
+  } catch (error) {
+    console.error("Erro ao reiniciar:", error);
+    botStatus = "offline";
+  }
 });
 
 const PORT = process.env.PORT || 3001;

@@ -1,5 +1,6 @@
 **/node_modules/
 **/sessao_whatsapp/
+**/barbershop-bot/
 
 **/.env
 **/.env.local
