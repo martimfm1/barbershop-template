@@ -1,9 +1,12 @@
 "use client"
 
+import { Toaster } from "@/components/ui/sonner"
+
 export function ClientShell({ children }: { children: React.ReactNode }) {
 return (
-<main className="min-h-screen bg-zinc-950 pt-20 text-zinc-50">
+<main className="min-h-screen text-zinc-50">
     {children}
+    <Toaster />
 </main>
 )
 }

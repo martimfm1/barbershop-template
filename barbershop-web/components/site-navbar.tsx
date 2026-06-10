@@ -19,7 +19,7 @@ export function SiteNavbar() {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-500 border-b border-white/10 bg-zinc-950/75 backdrop-blur-xl">
+      <header className="fixed inset-x-0 top-0 z-500">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
 
           <Link href="/" className="flex items-center gap-3">

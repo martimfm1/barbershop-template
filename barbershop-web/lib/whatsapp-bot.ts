@@ -175,6 +175,34 @@ export async function iniciarBot() {
   }
 }
 
+export async function enviarMensagem(
+  telemovel: string,
+  mensagem: string,
+) {
+  const sock = getSock();
+
+  if (!sock) {
+    throw new Error("WhatsApp não está conectado");
+  }
+
+  let numeroLimpo = telemovel
+    .replace(/\s+/g, "")
+    .replace("+", "");
+
+  if (
+    numeroLimpo.length === 9 &&
+    (numeroLimpo.startsWith("9") || numeroLimpo.startsWith("2"))
+  ) {
+    numeroLimpo = "351" + numeroLimpo;
+  }
+
+  const jid = `${numeroLimpo}@s.whatsapp.net`;
+
+  await sock.sendMessage(jid, {
+    text: mensagem,
+  });
+}
+
 export const getSock = () => estado.sock;
 export const getStatus = () => estado.connectionStatus;
 export const getQrRaw = () => estado.qrCodeRaw;

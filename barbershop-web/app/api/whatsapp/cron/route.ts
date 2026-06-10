@@ -10,13 +10,11 @@ export async function GET() {
   try {
     const agora = new Date();
 
-    // Define a janela ideal para apanhar os cortes daqui a 1 hora (entre 50 min e 70 min à frente)
     const inicioJanela = new Date(
       agora.getTime() + 50 * 60 * 1000,
     ).toISOString();
     const fimJanela = new Date(agora.getTime() + 70 * 60 * 1000).toISOString();
 
-    // 1. Procura no Supabase agendamentos ativos na janela certa que ainda não foram avisados
     const { data: agendamentos, error } = await supabase
       .from("agendamentos")
       .select(
@@ -44,13 +42,20 @@ export async function GET() {
 
     let mensagensEnviadas = 0;
 
-    // 2. Loop para disparar as mensagens
     for (const app of agendamentos) {
-      const telemovel =
-        app.clientes_perfis?.num_telemovel || app.telemovel_manual;
-      const nome =
-        app.clientes_perfis?.nome_completo || app.nome_manual || "Cliente";
-      const servicoNome = app.servicos?.nome || "Corte";
+      const cliente = Array.isArray(app.clientes_perfis)
+        ? app.clientes_perfis[0]
+        : app.clientes_perfis;
+
+      const telemovel = cliente?.num_telemovel || app.telemovel_manual;
+
+      const nome = cliente?.nome_completo || app.nome_manual || "Cliente";
+      const servico = Array.isArray(app.servicos)
+        ? app.servicos[0]
+        : app.servicos;
+
+      const servicoNome = servico?.nome || "Corte";
+
       const horaCorte = new Date(app.data_hora).toLocaleTimeString("pt-PT", {
         hour: "2-digit",
         minute: "2-digit",
@@ -62,7 +67,6 @@ export async function GET() {
         await enviarMensagem(telemovel, textoLembrete);
         mensagensEnviadas++;
 
-        // 3. Atualiza no Supabase para marcar como enviado
         await supabase
           .from("agendamentos")
           .update({ notificacao_1h_enviada: true })
