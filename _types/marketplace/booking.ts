@@ -1,0 +1,50 @@
+import type { MarketplaceService, MarketplaceShop } from "./shops";
+
+/** A selectable day in the booking flow. */
+export interface BookingDayOption {
+  dateStr: string;
+  weekdayShort: string;
+  dayNumeric: number;
+  fullDateFormatted: string;
+  isToday: boolean;
+}
+
+export interface MarketplaceProfessional {
+  id: string;
+  name: string;
+  role?: string;
+}
+
+export interface BookingDrawerProps {
+  shop: MarketplaceShop | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess?: (data: BookingSuccessData) => void;
+}
+
+export interface BookingSuccessData {
+  shopName: string;
+  serviceName: string;
+  date: string;
+  time: string;
+  customerEmail: string;
+}
+
+export interface MarketplaceBookingResponse {
+  services: MarketplaceService[];
+  availableSlots: string[];
+  isClosed: boolean;
+  professionals?: MarketplaceProfessional[];
+}
+
+export interface UseBookingSlotsReturn {
+  nextDays: BookingDayOption[];
+  selectedDayIndex: number;
+  setSelectedDayIndex: (index: number) => void;
+  currentDay: BookingDayOption;
+  slots: string[];
+  isClosed: boolean;
+  isLoading: boolean;
+  selectedSlot: string | null;
+  setSelectedSlot: (slot: string | null) => void;
+}

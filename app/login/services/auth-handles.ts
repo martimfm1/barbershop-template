@@ -87,6 +87,7 @@ interface RegisterParams {
   setIsSubmitting: (loading: boolean) => void;
   setErrorMsg: (msg: string | null) => void;
   acceptedTerms: boolean;
+  termsErrorMessage?: string;
 }
 
 export async function handleRegister({
@@ -94,11 +95,12 @@ export async function handleRegister({
   setIsSubmitting,
   setErrorMsg,
   acceptedTerms,
+  termsErrorMessage = "Deves aceitar os termos e condições.",
 }: RegisterParams) {
   event.preventDefault();
 
   if (!acceptedTerms) {
-    toast.error("Deves aceitar os termos e condições.");
+    toast.error(termsErrorMessage);
     return;
   }
 

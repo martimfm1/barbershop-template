@@ -21,10 +21,10 @@ import {
 import { appointmentService } from "@/app/dashboard/_services/appointments.service";
 import { servicesService } from "@/app/dashboard/_services/services.service";
 import { professionalService } from "@/app/dashboard/_services/professionals.service";
-import { useAppointments } from "@/app/state/_hooks/useAppointments";
-import { useServices } from "@/app/state/_hooks/useServices";
-import { useProfessionals } from "@/app/state/_hooks/useProfessionals";
-import { useClients } from "@/app/state/_hooks/useClients";
+import { useAppointments } from "@/app/state/_hooks/dashboard/useAppointments";
+import { useServices } from "@/app/state/_hooks/dashboard/useServices";
+import { useProfessionals } from "@/app/state/_hooks/dashboard/useProfessionals";
+import { useClients } from "@/app/state/_hooks/dashboard/useClients";
 import { BookingForm } from "@/app/dashboard/_components/cards/BookingFormCard";
 import { BlockScheduleForm } from "@/app/dashboard/_components/cards/BlockFormCard";
 import { ClientsListCard } from "@/app/dashboard/_components/cards/ClientsListCard";
@@ -399,12 +399,12 @@ export default function DashboardPage() {
 
   return (
     <TooltipProvider>
-      <main className="relative min-h-screen overflow-hidden bg-background text-foreground pb-16 pt-16">
+      <main className="relative min-h-screen overflow-hidden bg-background text-foreground pb-5 pt-22">
         <SiteNavbar />
         <BackgroundBeams className="opacity-35" />
         <Spotlight className="opacity-70" />
 
-        <div className="relative px-3 pb-8 pt-8 text-foreground sm:px-5 md:px-8 md:pb-12">
+        <div className="relative px-3 pb-5 pt-8 text-foreground sm:px-5 md:px-8 md:pb-12">
           <>
             <section className="pb-5 grid gap-3 md:gap-4 grid-cols-2 md:grid-cols-7">
               {[

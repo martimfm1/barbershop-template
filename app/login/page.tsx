@@ -23,14 +23,6 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
-import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -48,9 +40,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { SiteNavbar } from "@/components/site-navbar";
+import { TermsDrawer } from "@/components/legal/terms-drawer";
+import { useLanguage } from "@/context/LanguageContext";
 import { handleLogin, handleRegister } from "./services/auth-handles";
 
 export default function LoginPage() {
+  const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
@@ -330,7 +325,18 @@ export default function LoginPage() {
                           exit={{ opacity: 0, x: 16, filter: "blur(4px)" }}
                           transition={{ duration: 0.2, ease: "easeInOut" }}
                           className="grid gap-3"
-                          onSubmit={(e) => handleRegister({ event: e, setIsSubmitting, setErrorMsg, acceptedTerms })}
+                          onSubmit={(e) =>
+                            handleRegister({
+                              event: e,
+                              setIsSubmitting,
+                              setErrorMsg,
+                              acceptedTerms,
+                              termsErrorMessage: t("legal.acceptRequired", {
+                                defaultValue:
+                                  "You must accept the terms and conditions.",
+                              }),
+                            })
+                          }
                         >
                           <Field>
                             <FieldGroup className="grid gap-1">
@@ -480,38 +486,21 @@ export default function LoginPage() {
                               htmlFor="terms"
                               className="text-xs text-zinc-400 leading-snug cursor-pointer select-none"
                             >
-                              I agree to the{" "}
-                              <Drawer>
-                                <DrawerTrigger asChild>
+                              {t("legal.agreePrefix", {
+                                defaultValue: "I agree to the",
+                              })}{" "}
+                              <TermsDrawer
+                                trigger={
                                   <button
                                     type="button"
-                                    className="font-semibold text-zinc-100 underline underline-offset-4 hover:text-white transition-colors focus:outline-none"
+                                    className="font-semibold text-zinc-100 underline underline-offset-4 transition-colors hover:text-white focus:outline-none"
                                   >
-                                    Terms & Conditions
+                                    {t("legal.termsLink", {
+                                      defaultValue: "Terms & Conditions",
+                                    })}
                                   </button>
-                                </DrawerTrigger>
-                                <DrawerContent className="border-white/10 bg-zinc-950 text-zinc-50 max-w-md mx-auto rounded-t-2xl">
-                                  <DrawerHeader>
-                                    <DrawerTitle className="font-heading text-lg">
-                                      Terms & Conditions
-                                    </DrawerTitle>
-                                    <DrawerDescription className="text-zinc-400 text-xs">
-                                      Graham Barber platform — last updated June 2025
-                                    </DrawerDescription>
-                                  </DrawerHeader>
-                                  <div className="px-5 pb-5 space-y-3.5 text-xs text-zinc-400 max-h-60 overflow-y-auto leading-relaxed scrollbar-thin">
-                                    <p>
-                                      By creating an account, you agree to use the platform solely for managing barbershop operations. Your data is stored securely and never shared with third parties.
-                                    </p>
-                                    <p>
-                                      WhatsApp notifications are sent via our automated system. Standard message rates from your provider may apply. You may opt out at any time from your account settings.
-                                    </p>
-                                    <p>
-                                      Account access is restricted to authorised barbershop staff. Sharing credentials is prohibited. Graham Barber reserves the right to terminate access for policy violations.
-                                    </p>
-                                  </div>
-                                </DrawerContent>
-                              </Drawer>
+                                }
+                              />
                             </label>
                           </div>
 

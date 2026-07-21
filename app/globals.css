@@ -328,3 +328,20 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     translate: 0 5rem;
   }
 }
+
+.leaflet-popup-content-wrapper {
+  background: rgba(24, 24, 27, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 1rem !important;
+  color: #f4f4f5 !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5) !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(24, 24, 27, 0.95) !important;
+}
+
+.leaflet-container {
+  background: #09090b !important;
+}

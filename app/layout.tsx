@@ -9,6 +9,8 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ClientShell } from "@/components/client-shell";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { createClient } from "@/lib/supabase/server";
+import { metadataForAuth } from "@/lib/site-metadata";
 
 const jetbrainsMonoHeading = JetBrains_Mono({
   subsets: ["latin"],
@@ -29,10 +31,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Silentra Barber",
-  description: "Premium SaaS for barbershop management and scheduling.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return metadataForAuth(Boolean(user));
+  } catch {
+    return metadataForAuth(false);
+  }
+}
 
 export const viewport = {
   width: "device-width",
