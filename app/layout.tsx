@@ -11,6 +11,8 @@ import { ClientShell } from "@/components/client-shell";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { createClient } from "@/lib/supabase/server";
 import { metadataForAuth } from "@/lib/site-metadata";
+import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const jetbrainsMonoHeading = JetBrains_Mono({
   subsets: ["latin"],
@@ -67,6 +69,8 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-black text-foreground">
         <LanguageProvider>
+          <SpeedInsights/>
+          <Analytics/>
           <ClientShell>{children}</ClientShell>
         </LanguageProvider>
       </body>

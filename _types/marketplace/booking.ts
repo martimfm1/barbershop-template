@@ -20,6 +20,7 @@ export interface BookingDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (data: BookingSuccessData) => void;
+  selectedServiceId?: string | null;
 }
 
 export interface BookingSuccessData {

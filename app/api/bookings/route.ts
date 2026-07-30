@@ -79,7 +79,7 @@ export async function POST(request: Request) {
       .select("id")
       .eq("barbershop_id", barbershopId)
       .eq("date_hour", dateHourIso)
-      .in("status", ["pending", "scheduled", "confirmed"])
+      .in("status", ["pending", "scheduled"])
       .maybeSingle();
 
     if (conflictError) {

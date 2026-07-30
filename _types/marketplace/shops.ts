@@ -40,7 +40,12 @@ export interface MarketplaceShopResponse {
 /** Marketplace card and map model. */
 export interface MarketplaceShop {
   id: string;
+  barbershop_id: string;
+  reviewsCount: number;
+  closing_time: string;
+  opening_time: string;
   name: string;
+  slug: string | null;
   address?: string;
   city: string;
   distanceKm: number;

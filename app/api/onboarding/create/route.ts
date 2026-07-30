@@ -1,18 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isRecord, normalizeText } from "@/lib/validation";
-
-function slugify(text: string): string {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/[^\w\-]+/g, "")
-    .replace(/\-\-+/g, "-");
-}
+import { slugify } from "@/lib/utils/slugify";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -77,7 +66,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Os dados de preço ou localização são inválidos." }, { status: 400 });
     }
 
-    // STEP 1: Criar Barbearia
+    // STEP 1: Criar Barbearia (Sem a coluna slug)
     const { data: barbershop, error: barbershopError } = await supabase
       .from("barbershops")
       .insert({
@@ -85,7 +74,6 @@ export async function POST(request: Request) {
         address: normalizedAddress,
         opening_time: openTime,
         closing_time: closeTime,
-        slug: generatedSlug,
         allow_online_bookings: true,
         auto_reminders: false,
       })
@@ -99,11 +87,12 @@ export async function POST(request: Request) {
 
     const barbershopId = barbershop.id;
 
-    // STEP 2: Criar Listing do Marketplace
+    // STEP 2: Criar Listing do Marketplace (Slug enviado exclusivamente aqui)
     const { error: shopError } = await supabase
       .from("shops")
       .insert({
         barbershop_id: barbershopId,
+        slug: generatedSlug,
         city: normalizedCity,
         price: numericPrice,
         tags: Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === "string").slice(0, 12) : [],

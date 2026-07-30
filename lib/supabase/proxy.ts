@@ -34,7 +34,7 @@ export async function proxySupabase(request: NextRequest) {
   if (user) {
     const profile = await getUserBarbershopId(supabase, user.id);
 
-    console.log("Profile loaded in Proxy:", profile);
+    // console.log("Profile loaded in Proxy:", profile);
     const hasBarbershop = !!profile?.barbershop_id;
 
     // Gerir o cookie da barbearia

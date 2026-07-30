@@ -2,10 +2,10 @@ import type { Dispatch, SetStateAction } from "react";
 import type { MarketplaceDateFilter, MarketplaceSortFilter, UserCoordinates } from "./filters";
 import type { MarketplaceShop } from "./shops";
 
-/** Props shared by marketplace presentation components. */
 export interface ShopCardProps {
   shop: MarketplaceShop;
-  onSelect: (shop: MarketplaceShop) => void;
+  onNavigate: (shop: MarketplaceShop) => void;
+  onOpenBooking: (shop: MarketplaceShop) => void;
 }
 
 export interface MapPreviewProps {

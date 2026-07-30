@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import { useBarbershop } from "@/context/BarbershopContext";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -10,16 +10,10 @@ import Link from "next/link";
 import { appointmentService } from "@/app/dashboard/_services/appointments.service";
 
 // UI COMPONENTS
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-// import { Spinner } from "@/components/ui/spinner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-// RECHARTS (GRÁFICOS MIGRADOS)
+// RECHARTS
 import {
   ResponsiveContainer,
   PieChart,
@@ -44,11 +38,9 @@ import {
 } from "lucide-react";
 import { Appointment } from "@/_types";
 
-// Palete de cores premium para produção (Zinc/Slate harmonizado)
 const STATS_COLORS = ["#10b981", "#3b82f6", "#a855f7", "#f59e0b", "#ef4444"];
 
 export default function StatsPage() {
-  // const router = useRouter();
   const { barbershopId } = useBarbershop();
 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -80,22 +72,35 @@ export default function StatsPage() {
     const completedApps = appointments.filter((a) => a.status === "completed");
 
     let totalRevenue = 0;
-    const serviceCounts: Record<string, { count: number; total: number }> = {};
+    // Mapeamento por ID do serviço para identificar id, nome, contagem e total
+    const serviceCounts: Record<
+      string,
+      { id: string | null; name: string; count: number; total: number }
+    > = {};
     const paymentGroups: Record<string, number> = {};
     const professionalGroups: Record<string, number> = {};
 
     completedApps.forEach((app) => {
       const price = Number(app.services?.price || 0);
       const serviceName = app.services?.name || "Outros";
+      const serviceId = app.service_id || null;
       const paymentMethod = app.payment_method || "Não Especificado";
       const barberName = app.professionals?.name || "Casa / Geral";
 
       totalRevenue += price;
 
-      if (!serviceCounts[serviceName])
-        serviceCounts[serviceName] = { count: 0, total: 0 };
-      serviceCounts[serviceName].count += 1;
-      serviceCounts[serviceName].total += price;
+      const key = serviceId || serviceName;
+
+      if (!serviceCounts[key]) {
+        serviceCounts[key] = {
+          id: serviceId,
+          name: serviceName,
+          count: 0,
+          total: 0,
+        };
+      }
+      serviceCounts[key].count += 1;
+      serviceCounts[key].total += price;
 
       paymentGroups[paymentMethod] =
         (paymentGroups[paymentMethod] || 0) + price;
@@ -108,11 +113,15 @@ export default function StatsPage() {
       completedApps.length > 0 ? totalRevenue / completedApps.length : 0;
 
     let mostPopularService = "Nenhum";
+    let mostPopularServiceId: string | null = null;
     let maxCount = 0;
-    Object.entries(serviceCounts).forEach(([name, data]) => {
+
+    // Identifica o serviço com maior número de requisições e guarda também o ID
+    Object.values(serviceCounts).forEach((data) => {
       if (data.count > maxCount) {
         maxCount = data.count;
-        mostPopularService = name;
+        mostPopularService = data.name;
+        mostPopularServiceId = data.id;
       }
     });
 
@@ -130,17 +139,16 @@ export default function StatsPage() {
       }),
     );
 
-    const serviceStatsData = Object.entries(serviceCounts).map(
-      ([name, data]) => ({
-        name,
-        value: data.total,
-      }),
-    );
+    const serviceStatsData = Object.values(serviceCounts).map((data) => ({
+      name: data.name,
+      value: data.total,
+    }));
 
     return {
       insights: {
         avgTicket,
         mostPopular: mostPopularService,
+        mostPopularId: mostPopularServiceId,
         completedCount: completedApps.length,
       },
       paymentStats: paymentStatsData,
@@ -148,17 +156,6 @@ export default function StatsPage() {
       serviceStats: serviceStatsData,
     };
   }, [appointments]);
-
-  // if (loading) {
-  //   return (
-  //     <div className="flex h-screen w-full flex-col items-center justify-center bg-zinc-950 text-white">
-  //       <div className="h-6 w-6 animate-spin rounded-full border-2 border-t-transparent border-emerald-500 mb-2" />
-  //       <p className="text-xs text-zinc-400 font-medium animate-pulse">
-  //         A processar relatórios de faturação em tempo real...
-  //       </p>
-  //     </div>
-  //   );
-  // }
 
   return (
     <main className="min-h-screen bg-zinc-950 text-white p-4 md:p-8 space-y-6 relative z-10">

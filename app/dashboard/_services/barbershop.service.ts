@@ -2,13 +2,16 @@ import { createClient } from "@/lib/supabase/client";
 
 export interface BarbershopConfigPayload {
   name: string;
-  phone: string;
-  address: string;
-  opening_time: string;
-  closing_time: string;
-  closed_days: string;
-  allow_online_bookings: boolean;
-  auto_reminders: boolean;
+  phone?: string;
+  address?: string;
+  opening_time?: string;
+  closing_time?: string;
+  closed_days?: string;
+  allow_online_bookings?: boolean;
+  auto_reminders?: boolean;
+  popular_service_id?: string | null;
+  lunch_start?: string | null;
+  lunch_end?: string | null;
 }
 
 export type ServiceResponse<T> = {
@@ -16,43 +19,44 @@ export type ServiceResponse<T> = {
   error: Error | null;
 };
 
-const TABLE_NAME = "barbershops";
-
 export async function getBarbershopConfig(
   barbershopId: string,
 ): Promise<ServiceResponse<BarbershopConfigPayload>> {
   const supabase = createClient();
 
   try {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
+    // 1. Configurações gerais na tabela 'barbershops'
+    const { data: barberData, error: barberError } = await supabase
+      .from("barbershops")
       .select(
-        "name, phone, address, opening_time, closing_time, closed_days, allow_online_bookings, auto_reminders",
+        "name, phone, address, opening_time, closing_time, lunch_start, lunch_end, closed_days, allow_online_bookings, auto_reminders",
       )
       .eq("id", barbershopId)
       .single();
 
-    if (error) {
-      throw new Error(
-        `[Database Error]: ${error.message} (Code: ${error.code})`,
-      );
+    if (barberError || !barberData) {
+      throw new Error(barberError?.message || "Configurações não encontradas.");
     }
 
-    if (!data) {
-      throw new Error(
-        `Configurações não encontradas para o ID: ${barbershopId}`,
-      );
-    }
+    const { data: shopData } = await supabase
+      .from("shops")
+      .select("popular_service_id")
+      .eq("barbershop_id", barbershopId)
+      .maybeSingle();
 
-    return { data: data as BarbershopConfigPayload, error: null };
-  } catch (error: typeof Error | unknown) {
+    const popularServiceId = shopData?.popular_service_id || null;
+
+    const formattedData: BarbershopConfigPayload = {
+      ...barberData,
+      popular_service_id: popularServiceId,
+    };
+
+    return { data: formattedData, error: null };
+  } catch (error: unknown) {
     console.error(`❌ [Service Exception - getBarbershopConfig]:`, error);
     return {
       data: null,
-      error:
-        error instanceof Error
-          ? error
-          : new Error("Unknown error in infrastructure."),
+      error: error instanceof Error ? error : new Error("Erro desconhecido."),
     };
   }
 }
@@ -65,44 +69,65 @@ export async function updateBarbershopConfig(
 
   try {
     if (Object.keys(payload).length === 0) {
-      throw new Error("Payload cannot be empty.");
+      throw new Error("Payload vazio.");
     }
 
-    const normalizedPayload = {
-      ...payload,
-      opening_time: payload.opening_time?.trim() || "09:00",
-      closing_time: payload.closing_time?.trim() || "19:00",
+    const popularServiceId = payload.popular_service_id;
+
+    const barbershopPayload: Record<string, any> = { ...payload };
+    delete barbershopPayload.popular_service_id;
+
+    let updatedBarberData = null;
+
+    // 1. Atualização da tabela 'barbershops'
+    if (Object.keys(barbershopPayload).length > 0) {
+      const { data, error: barberError } = await supabase
+        .from("barbershops")
+        .update(barbershopPayload)
+        .eq("id", barbershopId)
+        .select()
+        .single();
+
+      if (barberError) throw barberError;
+      updatedBarberData = data;
+    }
+
+    // 2. Atualização da tabela 'shops'
+    const shopUpdatePayload: Record<string, any> = {};
+    if (popularServiceId !== undefined)
+      shopUpdatePayload.popular_service_id = popularServiceId;
+
+    let finalPopularServiceId = popularServiceId;
+
+    if (Object.keys(shopUpdatePayload).length > 0) {
+      const { data: updatedShop, error: shopError } = await supabase
+        .from("shops")
+        .update(shopUpdatePayload)
+        .eq("barbershop_id", barbershopId)
+        .select("popular_service_id")
+        .maybeSingle();
+
+      if (shopError) throw shopError;
+
+      if (updatedShop) {
+        finalPopularServiceId = updatedShop.popular_service_id;
+      }
+    }
+
+    const result: BarbershopConfigPayload = {
+      ...(updatedBarberData || {}),
+      popular_service_id: finalPopularServiceId,
     };
 
-    console.log("[Barbershop Update Payload]", normalizedPayload);
-
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .update(normalizedPayload)
-      .eq("id", barbershopId)
-      .select();
-
-    if (error) {
-      throw new Error(
-        `[Database Error]: ${error.message} (Code: ${error.code})`,
-      );
-    }
-
-    if (!data || data.length === 0) {
-      throw new Error(
-        "As alterações foram rejeitadas pela Base de Dados. Motivo provável: Políticas de RLS (Row-Level Security) ativas ou o ID da barbearia está incorreto."
-      );
-    }
-
-    return { data: data[0], error: null };
-  } catch (error) {
+    return { data: result, error: null };
+  } catch (error: unknown) {
     console.error(`❌ [Service Exception - updateBarbershopConfig]:`, error);
     return {
       data: null,
       error:
         error instanceof Error
           ? error
-          : new Error("Error persisting updates to database."),
+          : new Error("Erro ao guardar atualizações."),
     };
   }
 }
