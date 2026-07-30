@@ -1,6 +1,6 @@
 {
   "name": "Silentra — Gestão e Agendamento Online para Barbearias",
-  "short_name": "Silentra",
+  "short_name": "Silentra for barbers",
   "description": "A plataforma de gestão para barbearias. Os teus clientes agendam em segundos pelo browser — sem app, sem conta, sem fricção.",
   "start_url": "/",
   "display": "standalone",
@@ -8,13 +8,13 @@
   "theme_color": "#09090b",
   "icons": [
     {
-      "src": "/favicon-16x16.png",
-      "sizes": "16x16",
+      "src": "/favicon.ico",
+      "sizes": "500x500",
       "type": "image/png"
     },
     {
-      "src": "/favicon-32x32.png",
-      "sizes": "32x32",
+      "src": "/icon-2.png",
+      "sizes": "500x500",
       "type": "image/png"
     },
     {

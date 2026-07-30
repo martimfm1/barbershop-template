@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 const SITE_URL = "https://barbers.silentra.me";
 const SITE_NAME = "Silentra";
-const OG_IMAGE = `${SITE_URL}/og-image.png`;
+const OG_IMAGE = `/og-image.png`;
 
 // ── Shared base ──────────────────────────────────────────────────────────────
 
@@ -88,8 +88,7 @@ export const guestMetadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.ico" },
-      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon-2.png", sizes: "500x500", type: "image/png" },
     ],
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
     other: [{ rel: "mask-icon", url: "/safari-pinned-tab.svg", color: "#09090b" }],
@@ -107,7 +106,7 @@ export const authenticatedMetadata: Metadata = {
   metadataBase: new URL(SITE_URL),
 
   title: {
-    default: "Painel — Silentra",
+    default: "Dashboard — Silentra",
     template: "%s | Silentra",
   },
 
@@ -120,7 +119,7 @@ export const authenticatedMetadata: Metadata = {
   },
 
   openGraph: {
-    title: "Silentra — Painel de Gestão",
+    title: "Silentra — Dashboard de Gestão para Barbearias",
     description: "Acede ao teu painel para gerir marcações, equipa e receita da barbearia.",
     url: `${SITE_URL}/dashboard`,
     siteName: base.siteName,
@@ -132,7 +131,7 @@ export const authenticatedMetadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     site: "@silentra",
-    title: "Silentra — Painel de Gestão",
+    title: "Silentra — Dashboard de Gestão",
     description: "Gere agendamentos, clientes e serviços da tua barbearia.",
     images: [OG_IMAGE],
   },
