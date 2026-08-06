@@ -52,8 +52,6 @@ export function StarfieldBackground({
     let animationId: number
     let tick = 0
 
-    const _centerX = width / 2
-    const _centerY = height / 2
     const maxDepth = 1500
 
     // Create stars
@@ -69,6 +67,7 @@ export function StarfieldBackground({
 
     // Resize handler
     const handleResize = () => {
+      if (!container) return
       const rect = container.getBoundingClientRect()
       width = rect.width
       height = rect.height
@@ -158,29 +157,36 @@ export function StarfieldBackground({
   }, [count, speed, starColor, twinkle])
 
   return (
-    <div ref={containerRef} className={cn("fixed inset-0 overflow-hidden bg-[#0a0a0f]", className)}>
-      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
+    <div className={cn("relative min-h-dvh w-full bg-[#0a0a0f]", className)}>
+      {/* Camada fixa de fundo com as estrelas (não bloqueia cliques nem scroll) */}
+      <div ref={containerRef} className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
 
-      {/* Subtle blue nebula glow */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-30"
-        style={{
-          background:
-            "radial-gradient(ellipse at 30% 40%, rgba(56, 100, 180, 0.15) 0%, transparent 50%), radial-gradient(ellipse at 70% 60%, rgba(100, 60, 150, 0.1) 0%, transparent 50%)",
-        }}
-      />
+        {/* Subtle blue nebula glow */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-30"
+          style={{
+            background:
+              "radial-gradient(ellipse at 30% 40%, rgba(56, 100, 180, 0.15) 0%, transparent 50%), radial-gradient(ellipse at 70% 60%, rgba(100, 60, 150, 0.1) 0%, transparent 50%)",
+          }}
+        />
 
-      {/* Vignette */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(5,5,10,0.9) 100%)",
-        }}
-      />
+        {/* Vignette */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(5,5,10,0.9) 100%)",
+          }}
+        />
+      </div>
 
-      {/* Content layer */}
-      {children && <div className="relative z-10 h-full w-full">{children}</div>}
+      {/* Camada de conteúdo scrollável */}
+      {children && (
+        <div className="relative z-10 min-h-dvh w-full overflow-y-auto touch-pan-y">
+          {children}
+        </div>
+      )}
     </div>
   )
 }

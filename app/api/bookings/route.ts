@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { sendBookingConfirmationEmail } from "@/lib/brevo/brevo";
 import {
   isRecord,
   isSafePublicBookingDate,
@@ -48,9 +49,18 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
+    
+    // 1. Obter barbershop_id, NOME e ENDEREÇO da barbearia
     const { data: shop, error: shopError } = await supabase
       .from("shops")
-      .select("barbershop_id, is_active")
+      .select(`
+        barbershop_id, 
+        is_active,
+        barbershops (
+          name,
+          address
+        )
+      `)
       .eq("id", shopId)
       .maybeSingle();
 
@@ -59,9 +69,14 @@ export async function POST(request: Request) {
     }
 
     const barbershopId = shop.barbershop_id;
+    const shopRelation = Array.isArray(shop.barbershops) ? shop.barbershops[0] : shop.barbershops;
+    const barbershopName = shopRelation?.name || "Barbearia";
+    const barbershopAddress = shopRelation?.address || "Endereço sob consulta";
+
+    // 2. Verificar e obter o NOME do serviço
     const { data: selectedService, error: serviceError } = await supabase
       .from("services")
-      .select("id")
+      .select("id, name")
       .eq("id", service)
       .eq("barbershop_id", barbershopId)
       .maybeSingle();
@@ -73,6 +88,9 @@ export async function POST(request: Request) {
       );
     }
 
+    const serviceName = selectedService.name || "Serviço";
+
+    // 3. Verificar conflitos de horário
     const dateHourIso = `${bookingDate}T${bookingTime}:00`;
     const { data: existingAppointment, error: conflictError } = await supabase
       .from("appointments")
@@ -97,6 +115,7 @@ export async function POST(request: Request) {
       );
     }
 
+    // 4. Inserir o agendamento
     const { data: appointment, error: insertError } = await supabase
       .from("appointments")
       .insert({
@@ -118,6 +137,19 @@ export async function POST(request: Request) {
         { status: 500 },
       );
     }
+
+    // 5. Enviar e-mail via Brevo (Non-blocking / Em segundo plano)
+    sendBookingConfirmationEmail({
+      to: email,
+      clientName: name,
+      serviceName,
+      date: bookingDate,
+      time: bookingTime,
+      barbershopName,
+      barbershopAddress,
+    }).catch((err) => {
+      console.error("[BACKGROUND_EMAIL_ERROR] Falha ao enviar e-mail de confirmação:", err);
+    });
 
     console.info(`[API_BOOKING_SUCCESS] ID: ${appointment.id} | Shop: ${shopId}`);
     return NextResponse.json(
