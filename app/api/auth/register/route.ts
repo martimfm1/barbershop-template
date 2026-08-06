@@ -34,7 +34,7 @@ export async function POST(request: Request) {
 
     // Define o URL de redirecionamento para a confirmação de e-mail
     const origin = request.headers.get("origin") || "";
-    const emailRedirectTo = origin ? `${origin}/auth/callback` : undefined;
+    const emailRedirectTo = origin ? `${origin}/api/auth/callback` : undefined;
 
     const { error } = await createAdminClient().auth.signUp({
       email,
