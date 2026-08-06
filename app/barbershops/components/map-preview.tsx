@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { motion } from "motion/react";
 import { Navigation, Loader2 } from "lucide-react";
-import type { MapPreviewProps } from "@/_types/marketplace/components";
+import type { MapPreviewProps } from "@/types/marketplace/components";
 
 const MapInner = dynamic(() => import("./map-inner"), {
   ssr: false,

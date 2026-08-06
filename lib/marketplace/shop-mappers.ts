@@ -2,7 +2,7 @@ import type {
   MarketplaceShop,
   MarketplaceShopRecord,
   MarketplaceShopResponse,
-} from "@/_types/marketplace/shops";
+} from "@/types/marketplace/shops";
 
 export function mapRecordToMarketplaceShopResponse(
   record: MarketplaceShopRecord,
@@ -21,11 +21,13 @@ export function mapRecordToMarketplaceShopResponse(
     tags: record.tags || [],
     lat: record.lat,
     lng: record.lng,
-    distanceKm: 2.5,
+    distanceKm: 0,
     openTime: relation?.opening_time?.substring(0, 5) || "09:00",
     closeTime: relation?.closing_time?.substring(0, 5) || "19:00",
     slug: relation?.slug || null,
     nextSlot: "15:00",
+    rating: Number(record.rating ?? 0),
+    reviewsCount: Number(record.reviews_count ?? 0),
   };
 }
 
@@ -44,9 +46,9 @@ export function mapMarketplaceShopResponseToMarketplaceShop(
     hours: `${shop.openTime} - ${shop.closeTime}`,
     distanceKm: shop.distanceKm,
     price: `€${shop.price.toFixed(2)}`,
-    rating: 0,
-    reviewsCount: 0,
-    reviews: "0",
+    rating: shop.rating,
+    reviewsCount: shop.reviewsCount,
+    reviews: String(shop.reviewsCount),
     nextSlot: shop.nextSlot ? `${shop.nextSlot} Hoje` : "Sem vagas",
     tags: shop.tags,
     lat: shop.lat,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { generateNextDays } from "@/app/barbershops/utils/booking-slots";
-import type { UseBookingSlotsReturn } from "@/_types/marketplace/booking";
+import type { UseBookingSlotsReturn } from "@/types/marketplace/booking";
 
 export function useBookingSlots(shopId: string | null, isOpen: boolean): UseBookingSlotsReturn {
   const nextDays = useMemo(() => generateNextDays(5), []);

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { professionalService } from "@/app/dashboard/_services/professionals.service";
 import { getErrorMessage } from "@/app/dashboard/_lib/error-utils";
-import { Professional } from "@/_types";
+import { Professional } from "@/types";
 
 export function useProfessionals(
   barbershopId: string | null,

@@ -11,7 +11,7 @@ import {
 } from "./services/public-barbershop.service";
 import { BookingDrawer } from "../components/booking-drawer";
 import { formatClosedDays } from "@/lib/utils/format-closed-days";
-import type { MarketplaceShop } from "@/_types/marketplace/shops";
+import type { MarketplaceShop } from "@/types/marketplace/shops";
 import { createClient } from "@/lib/supabase/client";
 import {
   Star,

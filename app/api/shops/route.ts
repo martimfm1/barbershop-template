@@ -1,55 +1,89 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import type { MarketplaceShopRecord } from "@/_types/marketplace/shops";
+import type { MarketplaceBarbershopRelation, MarketplaceShopRecord } from "@/types/marketplace/shops";
 import { mapRecordToMarketplaceShopResponse } from "@/lib/marketplace/shop-mappers";
+
+type ShopRelation = MarketplaceBarbershopRelation & { lunch_start?: string | null; lunch_end?: string | null };
+type ShopRecord = Omit<MarketplaceShopRecord, "barbershops"> & {
+  rating?: number | null;
+  reviews_count?: number | null;
+  barbershops: ShopRelation | ShopRelation[] | null;
+};
+
+function lisbonDate(offsetDays: number) {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Lisbon", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+  const value = new Date(`${parts.find((part) => part.type === "year")?.value}-${parts.find((part) => part.type === "month")?.value}-${parts.find((part) => part.type === "day")?.value}T12:00:00`);
+  value.setDate(value.getDate() + offsetDays);
+  return value.toISOString().slice(0, 10);
+}
+
+function minutes(time: string | null | undefined, fallback: number) {
+  if (!time) return fallback;
+  const [hours, mins] = time.split(":").map(Number);
+  return Number.isFinite(hours) && Number.isFinite(mins) ? hours * 60 + mins : fallback;
+}
+
+function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number) {
+  const rad = (value: number) => (value * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const latDiff = rad(bLat - aLat); const lngDiff = rad(bLng - aLng);
+  const distance = Math.sin(latDiff / 2) ** 2 + Math.cos(rad(aLat)) * Math.cos(rad(bLat)) * Math.sin(lngDiff / 2) ** 2;
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(distance), Math.sqrt(1 - distance));
+}
+
+function hasAvailableSlot(record: ShopRecord, booked: Set<string>, date: string) {
+  const relation = Array.isArray(record.barbershops) ? record.barbershops[0] : record.barbershops;
+  const start = minutes(relation?.opening_time, 9 * 60);
+  const end = minutes(relation?.closing_time, 19 * 60);
+  const lunchStart = relation?.lunch_start ? minutes(relation.lunch_start, 0) : null;
+  const lunchEnd = relation?.lunch_end ? minutes(relation.lunch_end, 0) : null;
+  const today = lisbonDate(0);
+  const now = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Lisbon", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date());
+  const nowMinutes = Number(now.find((part) => part.type === "hour")?.value ?? 0) * 60 + Number(now.find((part) => part.type === "minute")?.value ?? 0);
+
+  for (let slot = start; slot < end; slot += 30) {
+    if (date === today && slot <= nowMinutes) continue;
+    if (lunchStart !== null && lunchEnd !== null && slot >= lunchStart && slot < lunchEnd) continue;
+    const key = `${String(Math.floor(slot / 60)).padStart(2, "0")}:${String(slot % 60).padStart(2, "0")}`;
+    if (!booked.has(key)) return true;
+  }
+  return false;
+}
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const query = searchParams.get("query") || "";
-
+    const query = searchParams.get("query")?.trim().toLocaleLowerCase() ?? "";
+    const filter = searchParams.get("filter") ?? "All";
+    const requestedDate = searchParams.get("date");
+    const isIsoDate = Boolean(requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) && !Number.isNaN(new Date(`${requestedDate}T12:00:00`).getTime()));
+    const date = requestedDate === "Tomorrow" ? lisbonDate(1) : isIsoDate ? requestedDate! : lisbonDate(0);
+    const latitude = Number(searchParams.get("lat")); const longitude = Number(searchParams.get("lng"));
+    const canMeasureDistance = Number.isFinite(latitude) && Number.isFinite(longitude);
     const supabase = await createClient();
-
-    let dbQuery = supabase
-      .from("shops")
-      .select(`
-        id,
-        barbershop_id,
-        city,
-        price,
-        tags,
-        lat,
-        lng,
-        is_active,
-        barbershops (
-          name,
-          address,
-          opening_time,
-          closing_time,
-          slug
-        )
-      `)
-      .eq("is_active", true);
-
-    if (query) {
-      dbQuery = dbQuery.ilike("city", `%${query}%`);
+    const { data, error } = await supabase.from("shops").select(`id, barbershop_id, city, price, tags, lat, lng, is_active, rating, reviews_count, barbershops ( name, address, opening_time, closing_time, lunch_start, lunch_end, slug )`).eq("is_active", true);
+    if (error) { console.error("[SHOPS_GET_ERROR]", error); return NextResponse.json({ error: "Failed to fetch shops" }, { status: 500 }); }
+    const records = ((data as unknown as ShopRecord[]) ?? []).filter((record) => {
+      if (!query) return true;
+      const relation = Array.isArray(record.barbershops) ? record.barbershops[0] : record.barbershops;
+      return [relation?.name, relation?.address, record.city, ...(record.tags ?? [])].some((value) => value?.toLocaleLowerCase().includes(query));
+    });
+    const barbershopIds = records.map((record) => record.barbershop_id).filter(Boolean);
+    const { data: appointments } = barbershopIds.length ? await supabase.from("appointments").select("barbershop_id, date_hour").in("barbershop_id", barbershopIds).gte("date_hour", `${date}T00:00:00`).lte("date_hour", `${date}T23:59:59`) : { data: [] as { barbershop_id: string; date_hour: string }[] };
+    const bookedByShop = new Map<string, Set<string>>();
+    for (const appointment of appointments ?? []) {
+      const time = appointment.date_hour?.split("T")[1]?.slice(0, 5) ?? "";
+      if (!bookedByShop.has(appointment.barbershop_id)) bookedByShop.set(appointment.barbershop_id, new Set());
+      bookedByShop.get(appointment.barbershop_id)?.add(time);
     }
-
-    const { data, error } = await dbQuery;
-
-    if (error) {
-      console.error("[SHOPS_GET_ERROR]", error);
-      return NextResponse.json({ error: "Failed to fetch shops" }, { status: 500 });
-    }
-
-    const records = (data as unknown as MarketplaceShopRecord[]) || [];
-    const shops = records.map((record) =>
-      mapRecordToMarketplaceShopResponse(record)
-    );
-
+    const available = records.filter((record) => hasAvailableSlot(record, bookedByShop.get(record.barbershop_id) ?? new Set(), date));
+    const shops = available.map((record) => {
+      const shop = mapRecordToMarketplaceShopResponse(record);
+      const distanceKm = canMeasureDistance && Number.isFinite(record.lat) && Number.isFinite(record.lng) ? haversineKm(latitude, longitude, record.lat, record.lng) : null;
+      return { ...shop, distanceKm: distanceKm === null ? 0 : Number(distanceKm.toFixed(1)) };
+    });
+    if (filter === "Near Me" && canMeasureDistance) shops.sort((a, b) => a.distanceKm - b.distanceKm);
+    if (filter === "Top Rated") shops.sort((a, b) => b.rating - a.rating || b.reviewsCount - a.reviewsCount);
     return NextResponse.json({ data: shops });
-  } catch (err) {
-    console.error("[SHOPS_INTERNAL_ERROR]", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
+  } catch (error) { console.error("[SHOPS_INTERNAL_ERROR]", error); return NextResponse.json({ error: "Internal server error" }, { status: 500 }); }
 }

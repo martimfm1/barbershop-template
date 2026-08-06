@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { servicesService } from "@/app/dashboard/_services/services.service";
 import { getErrorMessage } from "@/app/dashboard/_lib/error-utils";
-import { Service } from "@/_types";
+import { Service } from "@/types";
 
 export function useServices(
   barbershopId: string | null,

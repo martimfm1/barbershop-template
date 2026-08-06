@@ -1,7 +1,7 @@
 "use client";
 
 // utils
-import { ServicesListCardProps } from "@/_types";
+import { ServicesListCardProps } from "@/types";
 
 // UI
 import { Scissors, Plus, Clock, DollarSign, Pencil, Trash2 } from "lucide-react";

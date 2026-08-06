@@ -1,0 +1,65 @@
+import type { Metadata } from "next";
+import { Database, LockKeyhole, ShieldCheck } from "lucide-react";
+import { LegalDocumentPage } from "@/components/legal/legal-document-page";
+import { privacyPolicy } from "@/lib/legal/privacy-policy";
+
+export const metadata: Metadata = {
+  title: "Privacidade | Silentra for Barbers",
+  description:
+    "Política de privacidade da Silentra for Barbers, com dados recolhidos, finalidades, partilha, retenção e direitos.",
+};
+
+export default function PrivacyPage() {
+  return (
+    <LegalDocumentPage
+      pageLabel={{ pt: "Privacidade", en: "Privacy" }}
+      title={{
+        pt: "Política de Privacidade",
+        en: "Privacy Policy",
+      }}
+      subtitle={{
+        pt: "Explicamos que dados recolhemos, porquê, durante quanto tempo os guardamos e como podes exercer os teus direitos.",
+        en: "We explain what data we collect, why we collect it, how long we keep it, and how you can exercise your rights.",
+      }}
+      documentByLocale={privacyPolicy}
+      highlights={[
+        {
+          label: {
+            pt: "Modelo de tratamento",
+            en: "Processing model",
+          },
+          value: {
+            pt: "A Silentra atua como responsável pela conta e como parceira tecnológica quando a reserva é feita para uma barbearia.",
+            en: "Silentra acts as controller for account data and as a technology partner when a booking is made for a barbershop.",
+          },
+          icon: <ShieldCheck className="size-5 text-emerald-400" />,
+        },
+        {
+          label: {
+            pt: "Segurança",
+            en: "Security",
+          },
+          value: {
+            pt: "Usamos controlos de acesso, monitorização e medidas de proteção adequadas ao nível do serviço.",
+            en: "We use access controls, monitoring, and protective measures appropriate for the service.",
+          },
+          icon: <LockKeyhole className="size-5 text-emerald-400" />,
+        },
+        {
+          label: {
+            pt: "Infraestrutura",
+            en: "Infrastructure",
+          },
+          value: {
+            pt: "Dados alojados em serviços cloud com processamento mínimo necessário para operar e melhorar a plataforma.",
+            en: "Data is hosted on cloud services with the minimum processing needed to run and improve the platform.",
+          },
+          icon: <Database className="size-5 text-emerald-400" />,
+        },
+      ]}
+      supportLabel={{ pt: "Pedidos de privacidade", en: "Privacy requests" }}
+      supportValue="contact@silentra.me"
+      backLabel={{ pt: "Voltar à home", en: "Back home" }}
+    />
+  );
+}

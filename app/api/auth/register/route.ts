@@ -25,16 +25,24 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = createAdminClient();
-    const { error } = await supabase.auth.signUp({
+    const { error } = await createAdminClient().auth.signUp({
       email,
       password,
       options: { data: { name_complete: name, num_phone: phone } },
     });
 
     if (error) {
-      console.warn("[REGISTER_REJECTED]", error.message);
-      return NextResponse.json({ error: "Não foi possível concluir o registo." }, { status: 400 });
+      const message = error.message.toLowerCase();
+      const isExistingAccount = message.includes("already") || message.includes("registered");
+      console.warn("[REGISTER_REJECTED]", { code: error.code, status: error.status });
+      return NextResponse.json(
+        {
+          error: isExistingAccount
+            ? "Já existe uma conta com este email. Inicia sessão em vez de criares uma nova conta."
+            : "Não foi possível concluir o registo. Confirma os dados e tenta novamente.",
+        },
+        { status: 400 },
+      );
     }
 
     return NextResponse.json(
@@ -42,7 +50,7 @@ export async function POST(request: Request) {
       { status: 201, headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
-    console.error("[REGISTER_ERROR]", error);
+    console.error("[REGISTER_ERROR]", error instanceof Error ? error.name : "unknown");
     return NextResponse.json({ error: "Ocorreu um erro interno no servidor." }, { status: 500 });
   }
 }

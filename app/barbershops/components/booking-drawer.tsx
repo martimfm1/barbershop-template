@@ -34,8 +34,8 @@ import type {
   BookingDrawerProps,
   MarketplaceBookingResponse,
   MarketplaceProfessional,
-} from "@/_types/marketplace/booking";
-import type { MarketplaceService } from "@/_types/marketplace/shops";
+} from "@/types/marketplace/booking";
+import type { MarketplaceService } from "@/types/marketplace/shops";
 
 const DAY_NAME_TO_INDEX: Record<string, number> = {
   sunday: 0,
@@ -178,57 +178,60 @@ export function BookingDrawer({
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen || !shop) return;
+  if (!isOpen || !shop) return;
 
-    let isMounted = true;
-    const shopId = shop.id;
+  let isMounted = true;
+  const shopId = shop.id;
+  const serviceId = selectedService?.id;
 
-    async function fetchBookingData() {
-      setIsLoading(true);
-      setSelectedSlot(null);
+  async function fetchBookingData() {
+    setIsLoading(true);
+    setSelectedSlot(null);
 
-      try {
-        const response = await fetch(
-          `/api/shops/${shopId}/booking-data?date=${currentDay.dateStr}`,
-        );
+    try {
+      const serviceParam = serviceId ? `&serviceId=${serviceId}` : "";
+      const response = await fetch(
+        `/api/shops/${shopId}/booking-data?date=${currentDay.dateStr}${serviceParam}`,
+      );
 
-        if (!response.ok) {
-          throw new Error("Falha ao carregar informações de disponibilidade.");
-        }
-
-        const data: MarketplaceBookingResponse = await response.json();
-
-        if (!isMounted) return;
-
-        const fetchedServices = data.services || [];
-        setServices(fetchedServices);
-
-        if (fetchedServices.length > 0 && !selectedService) {
-          setSelectedService(fetchedServices[0]);
-        }
-
-        // Combina a regra da tabela shops (closed_days) com a resposta dinâmica da API
-        const apiIsClosed = data.isClosed ?? false;
-        setIsClosed(isShopClosedOnCurrentDay || apiIsClosed);
-
-        setAvailableSlots(data.availableSlots || []);
-        if (data.professionals) {
-          setProfessionals(data.professionals);
-        }
-      } catch (err) {
-        console.error("Erro ao carregar dados de marcação:", err);
-        toast.error("Erro ao carregar horários disponíveis.");
-      } finally {
-        if (isMounted) setIsLoading(false);
+      if (!response.ok) {
+        throw new Error("Falha ao carregar informações de disponibilidade.");
       }
+
+      const data: MarketplaceBookingResponse = await response.json();
+
+      if (!isMounted) return;
+
+      const fetchedServices = data.services || [];
+      setServices(fetchedServices);
+
+      // Define o primeiro serviço por omissão se nenhum estiver selecionado
+      if (fetchedServices.length > 0 && !selectedService) {
+        setSelectedService(fetchedServices[0]);
+      }
+
+      const apiIsClosed = data.isClosed ?? false;
+      setIsClosed(isShopClosedOnCurrentDay || apiIsClosed);
+      setAvailableSlots(data.availableSlots || []);
+
+      // Procura 'professionals' ou 'barbers' no objeto de resposta
+      const rawPros = data.professionals ?? (data as Record<string, any>).barbers ?? [];
+      setProfessionals(Array.isArray(rawPros) ? rawPros : []);
+    } catch (err) {
+      console.error("Erro ao carregar dados de marcação:", err);
+      toast.error("Erro ao carregar horários disponíveis.");
+      if (isMounted) setProfessionals([]);
+    } finally {
+      if (isMounted) setIsLoading(false);
     }
+  }
 
-    fetchBookingData();
+  fetchBookingData();
 
-    return () => {
-      isMounted = false;
-    };
-  }, [shop?.id, isOpen, currentDay.dateStr, isShopClosedOnCurrentDay]);
+  return () => {
+    isMounted = false;
+  };
+}, [shop?.id, isOpen, currentDay.dateStr, selectedService?.id, isShopClosedOnCurrentDay]);
 
   const handleConfirm = async () => {
     if (!shop || !selectedService || !selectedSlot) return;
@@ -547,91 +550,103 @@ export function BookingDrawer({
                 </div>
               )}
 
-              {/* PASSO 2 */}
-              {step === 2 && (
-                <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-200">
-                  <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-zinc-300">
-                    <UserCheck className="h-4 w-4 text-zinc-400" />
-                    <span>Escolhe o profissional pretendido</span>
+{/* PASSO 2 */}
+{step === 2 && (
+  <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-200">
+    <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-zinc-300">
+      <UserCheck className="h-4 w-4 text-zinc-400" />
+      <span>Escolhe o profissional pretendido</span>
+    </div>
+
+    {isLoading ? (
+      <div className="flex h-32 items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
+      </div>
+    ) : (
+      <div className="space-y-2.5">
+        <button
+          type="button"
+          onClick={() => setSelectedProfessional("any")}
+          className={`flex w-full items-center justify-between rounded-2xl border p-4 transition-all duration-200 active:scale-[0.98] backdrop-blur-md ${
+            selectedProfessional === "any"
+              ? "border-white/50 bg-white text-zinc-950 font-semibold shadow-xl shadow-black/20 ring-1 ring-white/50"
+              : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/20 hover:bg-white/[0.06]"
+          }`}
+        >
+          <div className="flex items-center gap-3.5">
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+                selectedProfessional === "any"
+                  ? "bg-zinc-950 text-white"
+                  : "bg-white/10 text-zinc-300"
+              }`}
+            >
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div className="text-left">
+              <p className="text-xs font-bold">Sem preferência</p>
+              <p
+                className={`text-[11px] ${selectedProfessional === "any" ? "text-zinc-700" : "text-zinc-400"}`}
+              >
+                Atribuição ao primeiro disponível
+              </p>
+            </div>
+          </div>
+          {selectedProfessional === "any" && (
+            <Check className="h-4 w-4 stroke-[3]" />
+          )}
+        </button>
+
+        {professionals.length === 0 ? (
+          <div className="py-4 text-center text-xs text-zinc-500">
+            Nenhum barbeiro específico encontrado para este dia.
+          </div>
+        ) : (
+          professionals.map((pro) => {
+            const isSelected =
+              selectedProfessional !== "any" &&
+              selectedProfessional.id === pro.id;
+            return (
+              <button
+                key={pro.id}
+                type="button"
+                onClick={() => setSelectedProfessional(pro)}
+                className={`flex w-full items-center justify-between rounded-2xl border p-4 transition-all duration-200 active:scale-[0.98] backdrop-blur-md ${
+                  isSelected
+                    ? "border-white/50 bg-white text-zinc-950 font-semibold shadow-xl shadow-black/20 ring-1 ring-white/50"
+                    : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/20 hover:bg-white/[0.06]"
+                }`}
+              >
+                <div className="flex items-center gap-3.5">
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full text-xs font-bold uppercase transition-colors ${
+                      isSelected
+                        ? "bg-zinc-950 text-white"
+                        : "bg-white/10 text-zinc-200"
+                    }`}
+                  >
+                    {pro.name.charAt(0)}
                   </div>
-
-                  <div className="space-y-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedProfessional("any")}
-                      className={`flex w-full items-center justify-between rounded-2xl border p-4 transition-all duration-200 active:scale-[0.98] backdrop-blur-md ${
-                        selectedProfessional === "any"
-                          ? "border-white/50 bg-white text-zinc-950 font-semibold shadow-xl shadow-black/20 ring-1 ring-white/50"
-                          : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/20 hover:bg-white/[0.06]"
-                      }`}
+                  <div className="text-left">
+                    <p className="text-xs font-bold">{pro.name}</p>
+                    <p
+                      className={`text-[11px] ${isSelected ? "text-zinc-700" : "text-zinc-400"}`}
                     >
-                      <div className="flex items-center gap-3.5">
-                        <div
-                          className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
-                            selectedProfessional === "any"
-                              ? "bg-zinc-950 text-white"
-                              : "bg-white/10 text-zinc-300"
-                          }`}
-                        >
-                          <Sparkles className="h-4 w-4" />
-                        </div>
-                        <div className="text-left">
-                          <p className="text-xs font-bold">Sem preferência</p>
-                          <p
-                            className={`text-[11px] ${selectedProfessional === "any" ? "text-zinc-700" : "text-zinc-400"}`}
-                          >
-                            Atribuição ao primeiro disponível
-                          </p>
-                        </div>
-                      </div>
-                      {selectedProfessional === "any" && (
-                        <Check className="h-4 w-4 stroke-[3]" />
-                      )}
-                    </button>
-
-                    {professionals.map((pro) => {
-                      const isSelected =
-                        selectedProfessional !== "any" &&
-                        selectedProfessional.id === pro.id;
-                      return (
-                        <button
-                          key={pro.id}
-                          type="button"
-                          onClick={() => setSelectedProfessional(pro)}
-                          className={`flex w-full items-center justify-between rounded-2xl border p-4 transition-all duration-200 active:scale-[0.98] backdrop-blur-md ${
-                            isSelected
-                              ? "border-white/50 bg-white text-zinc-950 font-semibold shadow-xl shadow-black/20 ring-1 ring-white/50"
-                              : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/20 hover:bg-white/[0.06]"
-                          }`}
-                        >
-                          <div className="flex items-center gap-3.5">
-                            <div
-                              className={`flex h-10 w-10 items-center justify-center rounded-full text-xs font-bold uppercase transition-colors ${
-                                isSelected
-                                  ? "bg-zinc-950 text-white"
-                                  : "bg-white/10 text-zinc-200"
-                              }`}
-                            >
-                              {pro.name.charAt(0)}
-                            </div>
-                            <div className="text-left">
-                              <p className="text-xs font-bold">{pro.name}</p>
-                              <p
-                                className={`text-[11px] ${isSelected ? "text-zinc-700" : "text-zinc-400"}`}
-                              >
-                                {pro.role || "Barbeiro Profissional"}
-                              </p>
-                            </div>
-                          </div>
-                          {isSelected && (
-                            <Check className="h-4 w-4 stroke-[3]" />
-                          )}
-                        </button>
-                      );
-                    })}
+                      {pro.role || "Barbeiro Profissional"}
+                    </p>
                   </div>
                 </div>
-              )}
+                {isSelected && (
+                  <Check className="h-4 w-4 stroke-[3]" />
+                )}
+              </button>
+            );
+          })
+        )}
+      </div>
+    )}
+  </div>
+)}
 
               {/* PASSO 3 */}
               {step === 3 && (

@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Search, Map, LayoutGrid, X, MapPin, Star, Loader2 } from "lucide-react";
-import type { MarketplaceDateFilter, MarketplaceSortFilter } from "@/_types/marketplace/filters";
-import type { SearchFilterBarProps } from "@/_types/marketplace/components";
+import type { MarketplaceDateFilter, MarketplaceSortFilter } from "@/types/marketplace/filters";
+import type { SearchFilterBarProps } from "@/types/marketplace/components";
 
 const DATE_PILLS: MarketplaceDateFilter[] = ["Today", "Tomorrow"];
 const FILTER_PILLS: MarketplaceSortFilter[] = ["All", "Near Me", "Top Rated"];
@@ -139,6 +139,16 @@ export function SearchFilterBar({
               );
             })}
           </div>
+
+          <label className="sr-only" htmlFor="marketplace-date">Escolher data</label>
+          <input
+            id="marketplace-date"
+            type="date"
+            min={new Date().toISOString().slice(0, 10)}
+            value={/^\d{4}-\d{2}-\d{2}$/.test(activeDate) ? activeDate : ""}
+            onChange={(event) => setActiveDate(event.target.value ? event.target.value as `${number}-${number}-${number}` : "Today")}
+            className="h-9 shrink-0 rounded-lg border border-white/10 bg-zinc-950 px-2 text-xs text-zinc-200 outline-none focus:border-emerald-400"
+          />
 
           <div className="h-4 w-[1px] bg-white/10 shrink-0" />
 

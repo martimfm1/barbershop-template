@@ -8,6 +8,12 @@ interface LoginParams {
   setErrorMsg: (msg: string | null) => void;
 }
 
+interface LoginResponse {
+  error?: string;
+  session?: { access_token: string; refresh_token: string };
+  user?: { barbershopId?: string | null };
+}
+
 export async function handleLogin({
   event,
   setIsSubmitting,
@@ -17,7 +23,7 @@ export async function handleLogin({
   setIsSubmitting(true);
   setErrorMsg(null);
 
-  const supabase = createClient(); // Instancia o cliente do browser
+  const supabase = createClient();
   const formData = new FormData(event.currentTarget);
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
@@ -30,7 +36,7 @@ export async function handleLogin({
     });
 
     const contentType = res.headers.get("content-type");
-    let result: any = {};
+    let result: LoginResponse = {};
 
     if (contentType && contentType.includes("application/json")) {
       result = await res.json();
@@ -69,7 +75,7 @@ export async function handleLogin({
     } else {
       window.location.href = "/dashboard";
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     const targetError =
       error instanceof Error
         ? error.message
@@ -107,7 +113,6 @@ export async function handleRegister({
   setIsSubmitting(true);
   setErrorMsg(null);
 
-  const supabase = createClient(); // Instancia o cliente do browser
   const formData = new FormData(event.currentTarget);
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
@@ -129,7 +134,7 @@ export async function handleRegister({
     });
 
     const contentType = res.headers.get("content-type");
-    let data: any = {};
+    let data: { error?: string } = {};
 
     if (contentType && contentType.includes("application/json")) {
       data = await res.json();
@@ -145,16 +150,7 @@ export async function handleRegister({
     }
 
     // Faz login automático no browser após o registo bem-sucedido
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError) {
-      throw new Error(signInError.message);
-    }
-
-    window.location.href = "/onboarding";
+    window.location.assign(`/login?email=${encodeURIComponent(email)}`);
   } catch (error) {
     const targetError =
       error instanceof Error

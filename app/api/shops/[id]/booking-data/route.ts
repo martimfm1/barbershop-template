@@ -52,8 +52,8 @@ export async function GET(
 
     const openTime = relation?.opening_time || "09:00:00";
     const closeTime = relation?.closing_time || "19:00:00";
-    const lunchStart = relation?.lunch_start || null; // Ex: "13:00:00"
-    const lunchEnd = relation?.lunch_end || null;     // Ex: "14:00:00"
+    const lunchStart = relation?.lunch_start || null;
+    const lunchEnd = relation?.lunch_end || null;
 
     // 2. Procurar Serviços da Barbearia
     let servicesData: any[] | null = null;
@@ -82,6 +82,31 @@ export async function GET(
       durationMinutes: Number(s.duration || s.duration_minutes || 30),
     }));
 
+    // 2.5. Procurar Profissionais (Barbeiros) na tabela 'professionals'
+    let professionalsData: any[] | null = null;
+
+    if (barbershopId) {
+      const resProA = await supabase
+        .from("professionals")
+        .select("*")
+        .eq("barbershop_id", barbershopId);
+      if (resProA.data && resProA.data.length > 0) professionalsData = resProA.data;
+    }
+
+    if (!professionalsData || professionalsData.length === 0) {
+      const resProB = await supabase
+        .from("professionals")
+        .select("*")
+        .eq("shop_id", shopId);
+      if (resProB.data && resProB.data.length > 0) professionalsData = resProB.data;
+    }
+
+    const professionals = (professionalsData || []).map((p: any) => ({
+      id: p.id,
+      name: p.name || p.full_name || "Barbeiro",
+      role: p.role || "Barbeiro Profissional",
+    }));
+
     // 3. Obter agendamentos já marcados para esse dia
     const dayStart = `${date}T00:00:00`;
     const dayEnd = `${date}T23:59:59`;
@@ -102,18 +127,18 @@ export async function GET(
       })
     );
 
-    // 4. Determinar a data e hora atual em Portugal (Fuso Horário: Europe/Lisbon)
+    // 4. Determinar a data e hora atual em Portugal
     const now = new Date();
     const todayPortugal = now.toLocaleDateString("en-CA", {
       timeZone: "Europe/Lisbon",
-    }); // Retorna YYYY-MM-DD
+    });
     
     const timePortugal = now.toLocaleTimeString("pt-PT", {
       timeZone: "Europe/Lisbon",
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
-    }); // Retorna HH:MM
+    });
 
     const isToday = date === todayPortugal;
     const currentMinutesNow = timeToMinutes(timePortugal);
@@ -121,7 +146,7 @@ export async function GET(
     const lunchStartMinutes = lunchStart ? timeToMinutes(lunchStart) : null;
     const lunchEndMinutes = lunchEnd ? timeToMinutes(lunchEnd) : null;
 
-    // 5. Gerar os Slots de 30 em 30 min aplicando os Filtros de Proteção
+    // 5. Gerar os Slots de 30 em 30 min
     const availableSlots: string[] = [];
     let [currentHour, currentMinute] = openTime.split(":").map(Number);
     const [endHour, endMinute] = closeTime.split(":").map(Number);
@@ -134,7 +159,6 @@ export async function GET(
         currentMinute
       ).padStart(2, "0")}`;
 
-      // --- FILTRO 1: Proteger Horários Passados (se a data for hoje) ---
       if (isToday && slotTotalMinutes <= currentMinutesNow) {
         currentMinute += 30;
         if (currentMinute >= 60) {
@@ -144,7 +168,6 @@ export async function GET(
         continue;
       }
 
-      // --- FILTRO 2: Proteger Horário de Almoço/Pausa ---
       if (
         lunchStartMinutes !== null &&
         lunchEndMinutes !== null &&
@@ -159,7 +182,6 @@ export async function GET(
         continue;
       }
 
-      // --- FILTRO 3: Verificar se o slot já está reservado ---
       if (!bookedSlots.has(formattedSlot)) {
         availableSlots.push(formattedSlot);
       }
@@ -173,6 +195,7 @@ export async function GET(
 
     return NextResponse.json({
       services,
+      professionals, // <-- Retornado para o frontend
       availableSlots,
       isClosed: availableSlots.length === 0 && bookedSlots.size === 0,
     });

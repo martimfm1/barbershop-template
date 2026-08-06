@@ -1,17 +1,22 @@
-import type { FetchMarketplaceShopsParams } from "@/_types/marketplace/filters";
-import type { MarketplaceShop, MarketplaceShopResponse } from "@/_types/marketplace/shops";
+import type { FetchMarketplaceShopsParams } from "@/types/marketplace/filters";
+import type { MarketplaceShop, MarketplaceShopResponse } from "@/types/marketplace/shops";
 import { mapMarketplaceShopResponseToMarketplaceShop } from "@/lib/marketplace/shop-mappers";
 
 export async function fetchShops({
   query = "",
   date,
   filter,
+  userLocation,
 }: FetchMarketplaceShopsParams): Promise<MarketplaceShop[]> {
   const params = new URLSearchParams();
 
   if (query) params.set("query", query);
   if (date) params.set("date", date);
   if (filter && filter !== "All") params.set("filter", filter);
+  if (userLocation) {
+    params.set("lat", String(userLocation.latitude));
+    params.set("lng", String(userLocation.longitude));
+  }
 
   const response = await fetch(`/api/shops?${params.toString()}`);
 

@@ -3,7 +3,7 @@
 //utils
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { type BlockScheduleFormProps } from "@/_types";
+import { type BlockScheduleFormProps } from "@/types";
 
 //UI
 import { Button } from "@/components/ui/button";

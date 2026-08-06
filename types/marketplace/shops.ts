@@ -15,6 +15,8 @@ export interface MarketplaceShopRecord {
   tags: string[];
   lat: number;
   lng: number;
+  rating?: number | null;
+  reviews_count?: number | null;
   is_active: boolean;
   barbershops: MarketplaceBarbershopRelation | MarketplaceBarbershopRelation[] | null;
 }
@@ -35,6 +37,8 @@ export interface MarketplaceShopResponse {
   closeTime: string;
   slug: string | null;
   nextSlot: string;
+  rating: number;
+  reviewsCount: number;
 }
 
 /** Marketplace card and map model. */

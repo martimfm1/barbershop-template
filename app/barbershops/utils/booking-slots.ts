@@ -1,4 +1,4 @@
-import type { BookingDayOption } from "@/_types/marketplace/booking";
+import type { BookingDayOption } from "@/types/marketplace/booking";
 
 /**
   Gera uma lista com os próximos N dias a partir de hoje

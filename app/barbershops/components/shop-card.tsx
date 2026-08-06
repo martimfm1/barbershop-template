@@ -1,11 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { MapPin, Clock, Star, Scissors, ArrowRight, Eye } from "lucide-react";
-import type { ShopCardProps } from "@/_types/marketplace/components";
+import type { ShopCardProps } from "@/types/marketplace/components";
 import type { BarbershopPublicDetails } from "@/app/barbershops/[slug]/services/public-barbershop.service";
-import { createClient } from "@/lib/supabase/client";
 
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(
   /\/$/,
@@ -82,68 +81,9 @@ export const ShopCard: React.FC<ShopCardProps> = ({
   const [avatarError, setAvatarError] = useState(false);
   const [bannerError, setBannerError] = useState(false);
 
-  // ID exclusivo do storage/barbershop_id
-  const [barbershopId, setBarbershopId] = useState<string | null>(
-    shop?.barbershop_id || null,
-  );
-
-  // Estados locais vindos diretamente da tabela shops
-  const [ratingValue, setRatingValue] = useState<number>(
-    typeof shop?.rating === "number" ? shop.rating : 0,
-  );
-  const [totalReviews, setTotalReviews] = useState<number>(
-    typeof shop?.reviewsCount === "number"
-      ? shop.reviewsCount
-      : Number(shop?.reviews || 0),
-  );
-
-  // --------------------------------------------------------------------
-  // BUSCA DE DADOS EXCLUSIVOS DA TABELA 'SHOPS' (barbershop_id, rating & reviews_count)
-  // --------------------------------------------------------------------
-  useEffect(() => {
-    if (typeof shop?.rating === "number") {
-      setRatingValue(shop.rating);
-    }
-    if (shop?.barbershop_id) {
-      setBarbershopId(shop.barbershop_id);
-    }
-
-    if (!shop?.id) return;
-
-    let isMounted = true;
-    const fetchShopData = async () => {
-      try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from("shops")
-          .select("barbershop_id, rating, reviews_count")
-          .eq("id", shop.id)
-          .single();
-
-        if (!error && data && isMounted) {
-          if (data.barbershop_id) setBarbershopId(data.barbershop_id);
-          if (typeof data.rating === "number")
-            setRatingValue(Number(data.rating));
-          if (typeof data.reviews_count === "number")
-            setTotalReviews(data.reviews_count);
-        }
-      } catch (err) {
-        console.error("Erro ao procurar dados na tabela shops:", err);
-      }
-    };
-
-    fetchShopData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [
-    shop?.id,
-    shop?.barbershop_id,
-    shop?.rating,
-    shop?.reviewsCount,
-    shop?.reviews,
-  ]);
+  const barbershopId = shop?.barbershop_id || null;
+  const ratingValue = typeof shop?.rating === "number" ? shop.rating : 0;
+  const totalReviews = typeof shop?.reviewsCount === "number" ? shop.reviewsCount : Number(shop?.reviews || 0);
 
   // Resolução calculada do Avatar
   const avatarUrl = useMemo(() => {
@@ -159,11 +99,6 @@ export const ShopCard: React.FC<ShopCardProps> = ({
       shop.cover_url || shop.cover_path || shop.banner_path || shop.banner_url;
     return getStorageUrl("banner", raw, barbershopId);
   }, [shop, barbershopId]);
-
-  useEffect(() => {
-    setAvatarError(false);
-    setBannerError(false);
-  }, [barbershopId]);
 
   if (!shop) {
     return (
@@ -250,6 +185,13 @@ export const ShopCard: React.FC<ShopCardProps> = ({
                       ? `${shop.address}${shop.city ? `, ${shop.city}` : ""}`
                       : shop.city}
                   </span>
+                </div>
+              )}
+
+              {shopAsMarket.distanceKm > 0 && (
+                <div className="flex items-center gap-1.5 text-emerald-300">
+                  <MapPin className="w-3.5 h-3.5 shrink-0" />
+                  <span>{shopAsMarket.distanceKm.toFixed(1)} km de distância</span>
                 </div>
               )}
 

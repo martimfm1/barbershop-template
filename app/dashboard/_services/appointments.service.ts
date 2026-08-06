@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { deleteRecord, insertRecord, listRecords, updateRecord } from "@/lib/db";
-import type { Appointment, Client } from "@/_types";
+import type { Appointment, Client } from "@/types";
 
 export interface FinalizeBookingPayload {
   payment_method: string;

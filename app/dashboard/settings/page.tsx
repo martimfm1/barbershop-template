@@ -41,6 +41,8 @@ import {
   UtensilsCrossed,
   Camera,
   Upload,
+  CreditCard,
+  ArrowUpRight,
 } from "lucide-react";
 
 interface BarbershopConfig {
@@ -339,6 +341,23 @@ export default function SettingsPage() {
       </div>
 
       {/* FORMULÁRIO DE ATUALIZAÇÃO */}
+      <Card className="border-emerald-500/20 bg-emerald-500/[0.04] backdrop-blur-md">
+        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+              <CreditCard className="size-5" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-zinc-100">Plano e faturacao</h2>
+              <p className="mt-1 text-xs leading-5 text-zinc-400">Consulta o teu plano, compara funcionalidades, altera a subscricao e acede a faturas em seguranca.</p>
+            </div>
+          </div>
+          <Button asChild className="shrink-0 bg-emerald-500 text-zinc-950 hover:bg-emerald-400">
+            <Link href="/dashboard/billing">Gerir plano <ArrowUpRight className="ml-2 size-4" /></Link>
+          </Button>
+        </CardContent>
+      </Card>
+
       <form onSubmit={handleSaveSettings} className="grid gap-6 md:grid-cols-2">
         {/* DETALHES PÚBLICOS */}
         <Card className="bg-black/40 border-white/10 backdrop-blur-md">

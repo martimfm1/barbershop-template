@@ -62,6 +62,10 @@ export function SiteNavbar() {
         label: t("nav.stats", { defaultValue: "Stats" }),
         href: "/dashboard/stats",
       },
+      {
+        label: t("nav.plans", { defaultValue: "Plans" }),
+        href: "/plans",
+      },
     ],
     [t],
   );
@@ -251,6 +255,14 @@ export function SiteNavbar() {
                           className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/5 hover:text-white"
                         >
                           {t("nav.settings", { defaultValue: "Settings" })}
+                        </Link>
+
+                        <Link
+                          href="/plans"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/5 hover:text-white"
+                        >
+                          {t("nav.plans", { defaultValue: "Plans" })}
                         </Link>
 
                         <button

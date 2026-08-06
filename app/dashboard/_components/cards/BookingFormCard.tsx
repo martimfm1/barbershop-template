@@ -2,7 +2,7 @@
 //utils
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { type BookingFormProps} from "@/_types";
+import { type BookingFormProps} from "@/types";
 
 //UI
 import { Button } from "@/components/ui/button";

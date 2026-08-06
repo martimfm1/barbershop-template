@@ -1,7 +1,7 @@
 "use client";
 
 // utils
-import { type ProfessionalsListCardProps } from "@/_types";
+import { type ProfessionalsListCardProps } from "@/types";
 
 // UI
 import { Briefcase, Plus, Pencil, Trash2 } from "lucide-react";

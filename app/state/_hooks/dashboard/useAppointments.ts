@@ -4,6 +4,7 @@ import { appointmentService } from "@/app/dashboard/_services/appointments.servi
 import { createScheduleBlock, deleteScheduleBlock } from "@/app/dashboard/_services/schedule-blocks.service";
 import { combineDatetime } from "@/app/dashboard/_lib/date-utils";
 import { getErrorMessage } from "@/app/dashboard/_lib/error-utils";
+import type { BlockFormData } from "@/types";
 
 export function useAppointments(
   barbershopId: string | null,
@@ -24,11 +25,11 @@ export function useAppointments(
     manualPhone: "",
   });
 
-  const [blockFormData, setBlockFormData] = useState({
-    professionalId: "",
-    date: "",
-    startTime: "",
-    endTime: "",
+  const [blockFormData, setBlockFormData] = useState<BlockFormData>({
+    professional_id: "",
+    start_date: "",
+    start_time: "",
+    end_time: "",
     reason: "",
   });
 
@@ -133,8 +134,8 @@ export function useAppointments(
     if (!barbershopId) return;
 
     // 1. Validação preventiva no Frontend
-    const { professionalId, date, startTime, endTime, reason } = blockFormData;
-    if (!date || date.trim() === "") {
+    const { professional_id, start_date, start_time, end_time, reason } = blockFormData;
+    if (!professional_id || !start_date || !start_time || !end_time) {
       toast.error("Por favor, seleciona uma data válida para o bloqueio.");
       return;
     }
@@ -143,11 +144,11 @@ export function useAppointments(
     try {
       // 2. Transforma strings vazias ("") em null para evitar o erro 22007 do Postgres
       const payload = {
-        professional_id: professionalId || null,
+        professional_id,
         barbershop_id: barbershopId,
-        date: date || null, // Se ainda assim passar vazio, vai como null
-        start_time: startTime || null,
-        end_time: endTime || null,
+        date: start_date,
+        start_time,
+        end_time,
         reason: reason || "Bloqueio de Agenda",
       };
 
@@ -158,7 +159,7 @@ export function useAppointments(
       if (error) throw error;
 
       toast.success("Schedule block created successfully.");
-      setBlockFormData({ professionalId: "", date: "", startTime: "", endTime: "", reason: "" });
+      setBlockFormData({ professional_id: "", start_date: "", start_time: "", end_time: "", reason: "" });
       await onRefreshData();
     } catch (error) {
       console.error("❌ [Create Block Hook Error]:", error);

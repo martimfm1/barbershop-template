@@ -1,7 +1,7 @@
 "use client";
 
 // utils
-import { ManualMessageFormProps } from "@/_types";
+import { ManualMessageFormProps } from "@/types";
 
 // UI
 import { MessageCircle } from "lucide-react";

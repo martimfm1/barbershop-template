@@ -1,7 +1,7 @@
 "use client";
 
 // utils
-import { ClientsListCardProps } from "@/_types";
+import { ClientsListCardProps } from "@/types";
 
 // UI
 import { Users, UserPlus, Search, Phone, Mail, MessageCircle, Pencil, Trash2 } from "lucide-react";

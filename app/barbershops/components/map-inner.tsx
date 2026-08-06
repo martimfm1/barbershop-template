@@ -4,8 +4,8 @@ import { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import type { MapInnerProps } from "@/_types/marketplace/components";
-import type { MarketplaceShop } from "@/_types/marketplace/shops";
+import type { MapInnerProps } from "@/types/marketplace/components";
+import type { MarketplaceShop } from "@/types/marketplace/shops";
 import { Star } from "lucide-react";
 
 const customIcon = L.divIcon({

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Appointment } from "@/_types";
+import { Appointment } from "@/types";
 
 export function useDashboardStats(appointments: Appointment[]) {
   const todayCuts = useMemo(() => {

@@ -59,6 +59,7 @@ export const pt = {
     howItWorks: "Como funciona",
     forBarbers: "Para barbeiros",
     dashboard: "Painel",
+    plans: "Planos",
     settings: "Definições",
     stats: "Estatísticas",
     signIn: "Entrar",

@@ -60,6 +60,7 @@ export const en = {
     forBarbers: "For barbers",
     dashboard: "Dashboard",
     settings: "Settings",
+    plans: "Plans",
     stats: "Stats",
     signIn: "Sign In",
     logout: "Logout",

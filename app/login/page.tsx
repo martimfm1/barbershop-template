@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   LockKeyhole,
@@ -50,8 +50,21 @@ export default function LoginPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [loginEmail, setLoginEmail] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedTab = params.get("tab");
+    const requestedEmail = params.get("email");
+
+    // Defer state updates so the first client render matches the server HTML.
+    queueMicrotask(() => {
+      if (requestedTab === "register") setActiveTab("register");
+      if (requestedEmail) setLoginEmail(requestedEmail);
+    });
+  }, []);
 
   return (
     <TooltipProvider>
@@ -222,6 +235,8 @@ export default function LoginPage() {
                                         name="email"
                                         type="email"
                                         required
+                                        value={loginEmail}
+                                        onChange={(event) => setLoginEmail(event.target.value)}
                                         placeholder="admin@barbershop.pt"
                                         className="h-11 text-xs border-white/10 bg-white/5 pl-10 pr-10 text-zinc-50 placeholder:text-zinc-600 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all rounded-xl"
                                       />
@@ -451,12 +466,13 @@ export default function LoginPage() {
                                         name="password"
                                         type={showRegisterPassword ? "text" : "password"}
                                         required
+                                        minLength={12}
                                         placeholder="••••••••"
                                         className="h-11 text-xs border-white/10 bg-white/5 pl-10 pr-12 text-zinc-50 placeholder:text-zinc-600 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all rounded-xl"
                                       />
                                     </TooltipTrigger>
                                     <TooltipContent side="top">
-                                      Combine numbers, symbols and capital letters.
+                                      Usa pelo menos 12 caracteres, incluindo letras, números e símbolos.
                                     </TooltipContent>
                                   </Tooltip>
                                   <button

@@ -1,7 +1,7 @@
 # Type catalogue
 
 Shared application types live here and are grouped by feature. Import from the
-specific file when possible; `@/_types` remains the dashboard convenience barrel.
+specific file when possible; `@/types` remains the dashboard convenience barrel.
 
 - `dashboard/entities.ts`: dashboard records returned by the data layer.
 - `dashboard/forms.ts`: dashboard form and card contracts.

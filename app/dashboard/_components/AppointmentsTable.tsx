@@ -1,7 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/app/state/_components/shared/StatusBadge";
-import { Appointment } from "@/_types";
+import { Appointment } from "@/types";
 import { Trash2, Check } from "lucide-react";
 
 interface AppointmentsTableProps {

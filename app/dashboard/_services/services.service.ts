@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import { Service } from "@/_types";
+import { Service } from "@/types";
 
 const supabase = createClient();
 

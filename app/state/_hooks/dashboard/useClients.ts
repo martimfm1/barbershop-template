@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { clientsService, CreateClientPayload } from "@/app/dashboard/_services/clients.service";
 import { getErrorMessage } from "@/app/dashboard/_lib/error-utils";
-import { Client } from "@/_types";
+import { Client } from "@/types";
 
 export function useClients(
   barbershopId: string | null,
