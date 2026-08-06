@@ -6,6 +6,7 @@ interface LoginParams {
   event: FormEvent<HTMLFormElement>;
   setIsSubmitting: (loading: boolean) => void;
   setErrorMsg: (msg: string | null) => void;
+  router?: { push: (path: string) => void };
 }
 
 interface LoginResponse {

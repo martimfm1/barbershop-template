@@ -285,7 +285,7 @@ export default function LoginPage() {
                             onSubmit={(e) =>
                               handleLogin({
                                 event: e,
-                                router, // Login normal encaminha diretamente para a área reservada
+                                router,
                                 setIsSubmitting,
                                 setErrorMsg: (msg) => {
                                   setErrorMsg(msg);
