@@ -54,7 +54,6 @@ export async function handleLogin({
       return;
     }
 
-    // Sincroniza a sessão no browser se a API retornar os tokens
     if (result.session) {
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: result.session.access_token,
@@ -69,7 +68,6 @@ export async function handleLogin({
       }
     }
 
-    // O teu backend já valida se o utilizador tem barbearia e envia no JSON
     if (!result.user?.barbershopId) {
       window.location.href = "/onboarding";
     } else {
@@ -94,6 +92,7 @@ interface RegisterParams {
   setErrorMsg: (msg: string | null) => void;
   acceptedTerms: boolean;
   termsErrorMessage?: string;
+  onSuccess?: () => void;
 }
 
 export async function handleRegister({
@@ -102,6 +101,7 @@ export async function handleRegister({
   setErrorMsg,
   acceptedTerms,
   termsErrorMessage = "Deves aceitar os termos e condições.",
+  onSuccess,
 }: RegisterParams) {
   event.preventDefault();
 
@@ -149,8 +149,13 @@ export async function handleRegister({
       throw new Error(data.error || "Falha ao criar conta.");
     }
 
-    // Faz login automático no browser após o registo bem-sucedido
-    window.location.assign(`/login?email=${encodeURIComponent(email)}`);
+    toast.success("Conta criada! Confirma o teu e-mail para continuar.");
+
+    if (onSuccess) {
+      onSuccess();
+    } else {
+      window.location.href = `/confirm-email?email=${encodeURIComponent(email)}`;
+    }
   } catch (error) {
     const targetError =
       error instanceof Error

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useId } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation"; // 1. Import do useRouter
 import {
   ArrowRight,
   LockKeyhole,
@@ -10,6 +12,8 @@ import {
   Info,
   Eye,
   EyeOff,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StarfieldBackground } from "@/components/ui/starfield";
@@ -46,10 +50,14 @@ import { handleLogin, handleRegister } from "./services/auth-handles";
 
 export default function LoginPage() {
   const { t } = useLanguage();
+  const router = useRouter(); // 2. Instância do Router
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [isUnconfirmed, setIsUnconfirmed] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
@@ -64,12 +72,33 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     const requestedTab = params.get("tab");
     const requestedEmail = params.get("email");
+    const status = params.get("status");
+    const errorParam = params.get("error");
 
     queueMicrotask(() => {
       if (requestedTab === "register") setActiveTab("register");
       if (requestedEmail) setLoginEmail(requestedEmail);
+
+      if (status === "registered") {
+        setSuccessMsg(
+          "Conta criada! Enviámos um link de verificação para o teu e-mail."
+        );
+      } else if (status === "confirmed") {
+        setSuccessMsg("E-mail confirmado com sucesso! Já podes iniciar sessão.");
+      } else if (errorParam === "unconfirmed_email") {
+        setIsUnconfirmed(true);
+        setErrorMsg(
+          "O teu e-mail ainda não foi verificado. Por favor, confirma a tua caixa de entrada."
+        );
+      }
     });
   }, []);
+
+  const clearMessages = () => {
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    setIsUnconfirmed(false);
+  };
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -80,7 +109,6 @@ export default function LoginPage() {
 
             <section className="flex-1 w-full flex flex-col justify-center items-center px-4 pt-10 pb-12 sm:px-8 lg:grid lg:grid-cols-[0.9fr_1.1fr] lg:gap-16 lg:max-w-6xl lg:mx-auto lg:py-16">
               
-              {/* Lado Esquerdo (Desktop) */}
               <div className="hidden lg:flex flex-col items-start text-left space-y-5">
                 <Badge className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-zinc-300 select-none shadow-inner">
                   Barbershop reserved area
@@ -94,7 +122,6 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              {/* Cabeçalho Mobile */}
               <div className="mb-6 text-center lg:hidden max-w-sm mx-auto">
                 <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-1.5 bg-white/5 px-3 py-0.5 rounded-full border border-white/10 inline-block">
                   Reserved Area
@@ -104,13 +131,12 @@ export default function LoginPage() {
                 </h1>
               </div>
 
-              {/* Card sem scroll interno (altura natural) */}
               <div className="w-full max-w-[440px] lg:max-w-[460px] mx-auto border border-white/10 bg-zinc-950/85 shadow-2xl shadow-black/80 backdrop-blur-xl rounded-2xl focus-within:border-white/20 transition-colors flex flex-col">
                 <Tabs
                   value={activeTab}
                   onValueChange={(v) => {
                     setActiveTab(v as "login" | "register");
-                    setErrorMsg(null);
+                    clearMessages();
                   }}
                   className="w-full flex flex-col"
                 >
@@ -130,7 +156,7 @@ export default function LoginPage() {
                           type="button"
                           onClick={() => {
                             setActiveTab(tab);
-                            setErrorMsg(null);
+                            clearMessages();
                           }}
                           className="cursor-pointer relative min-h-[32px] h-full w-full rounded-full text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 transition-colors"
                         >
@@ -198,6 +224,21 @@ export default function LoginPage() {
 
                   <CardContent className="px-4 sm:px-6 pb-6 pt-1">
                     <AnimatePresence mode="wait">
+                      {successMsg && (
+                        <motion.div
+                          role="status"
+                          initial={{ opacity: 0, y: -6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          className="p-3 text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-xl font-medium mb-3 flex items-start gap-2.5"
+                        >
+                          <CheckCircle2 className="size-4 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>{successMsg}</span>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <AnimatePresence mode="wait">
                       {errorMsg && (
                         <motion.div
                           role="alert"
@@ -205,9 +246,21 @@ export default function LoginPage() {
                           initial={{ opacity: 0, y: -6 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -6 }}
-                          className="p-2.5 text-xs bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl font-medium mb-3 text-center"
+                          className="p-3 text-xs bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl font-medium mb-3 flex flex-col gap-2"
                         >
-                          {errorMsg}
+                          <div className="flex items-start gap-2.5">
+                            <AlertTriangle className="size-4 text-red-400 shrink-0 mt-0.5" />
+                            <span>{errorMsg}</span>
+                          </div>
+
+                          {isUnconfirmed && (
+                            <Link
+                              href={`/confirm-email${loginEmail ? `?email=${encodeURIComponent(loginEmail)}` : ""}`}
+                              className="mt-1 text-center font-semibold text-zinc-100 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 rounded-lg py-1.5 px-3 transition-colors"
+                            >
+                              Reenviar e-mail de confirmação
+                            </Link>
+                          )}
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -230,7 +283,17 @@ export default function LoginPage() {
                             transition={{ duration: 0.15 }}
                             className="grid gap-3.5"
                             onSubmit={(e) =>
-                              handleLogin({ event: e, setIsSubmitting, setErrorMsg })
+                              handleLogin({
+                                event: e,
+                                router, // Login normal encaminha diretamente para a área reservada
+                                setIsSubmitting,
+                                setErrorMsg: (msg) => {
+                                  setErrorMsg(msg);
+                                  if (msg?.toLowerCase().includes("email not confirmed") || msg?.toLowerCase().includes("não confirmado")) {
+                                    setIsUnconfirmed(true);
+                                  }
+                                },
+                              })
                             }
                           >
                             <Field>
@@ -343,12 +406,12 @@ export default function LoginPage() {
                                 <span className="text-xs">Remember me</span>
                               </label>
 
-                              <a
+                              <Link
                                 href="/forgot-password"
                                 className="text-xs text-zinc-400 hover:text-zinc-100 transition-colors font-medium px-1 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded-md hover:underline"
                               >
                                 Forgot password?
-                              </a>
+                              </Link>
                             </div>
 
                             <Button
@@ -382,8 +445,12 @@ export default function LoginPage() {
                             exit={{ opacity: 0, x: 10 }}
                             transition={{ duration: 0.15 }}
                             className="grid gap-3"
-                            onSubmit={(e) =>
-                              handleRegister({
+                            onSubmit={async (e) => {
+                              e.preventDefault();
+                              const formData = new FormData(e.currentTarget);
+                              const email = (formData.get("email") as string) || "";
+
+                              await handleRegister({
                                 event: e,
                                 setIsSubmitting,
                                 setErrorMsg,
@@ -392,8 +459,14 @@ export default function LoginPage() {
                                   defaultValue:
                                     "You must accept the terms and conditions.",
                                 }),
-                              })
-                            }
+                                onSuccess: () => {
+                                  // 3. Redireciona APENAS no registo com o parâmetro de e-mail
+                                  router.push(
+                                    `/confirm-email${email ? `?email=${encodeURIComponent(email)}` : ""}`
+                                  );
+                                },
+                              });
+                            }}
                           >
                             <Field>
                               <FieldGroup className="grid gap-1">
