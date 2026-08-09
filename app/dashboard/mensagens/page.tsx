@@ -1,114 +1,178 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
-import { useBarbershop } from "@/context/BarbershopContext";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import Link from "next/link";
-import { Client } from "@/types";
-import { appointmentService } from "@/app/dashboard/_services/appointments.service";
-import { ManualMessageForm } from "@/app/dashboard/_components/cards/ManualMessageFormCard";
+import { Mail, Phone, Send, Smartphone } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MessageCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+
+interface Client {
+  id: string;
+  name_complete?: string | null;
+  name?: string | null;
+  email?: string | null;
+  num_phone?: string | null;
+}
+
+const templates = {
+  reminder: {
+    label: "Lembrete de marcação",
+    subject: "Lembrete da sua marcação",
+    body: "Olá {{nome}},\n\nEstamos a enviar-lhe um lembrete da sua próxima marcação na {{barbearia}}.\n\nSe precisar de alterar a marcação, entre em contacto connosco.\n\nObrigado,\n{{barbearia}}",
+  },
+  thanks: {
+    label: "Obrigado pela visita",
+    subject: "Obrigado pela sua visita",
+    body: "Olá {{nome}},\n\nObrigado por visitar a {{barbearia}}. Esperamos voltar a recebê-lo em breve.\n\nAté à próxima!\n{{barbearia}}",
+  },
+  custom: {
+    label: "Mensagem personalizada",
+    subject: "",
+    body: "Olá {{nome}},\n\n",
+  },
+} as const;
+
+type TemplateKey = keyof typeof templates;
 
 export default function MensagensPage() {
-  const { barbershopId, loading: isLoadingBarbershop } = useBarbershop();
   const [clients, setClients] = useState<Client[]>([]);
-  const [reminderClientId, setReminderClientId] = useState("manual");
-  const [selectedTemplate, setSelectedTemplate] = useState("custom");
-  const [manualMessage, setManualMessage] = useState({ phone: "", text: "" });
-  const [sendingMessage, setSendingMessage] = useState(false);
-
-  const fetchClients = useCallback(async () => {
-    if (!barbershopId) return;
-    try {
-      const res = await appointmentService.getClients(barbershopId);
-      if (res.error) throw res.error;
-      setClients(res.data ?? []);
-    } catch (error) {
-      console.error("❌ [Mensagens Sync Error]:", error);
-      toast.error("Erro ao carregar os clientes.");
-    }
-  }, [barbershopId]);
+  const [clientId, setClientId] = useState("");
+  const [template, setTemplate] = useState<TemplateKey>("reminder");
+  const [subject, setSubject] = useState(templates.reminder.subject);
+  const [body, setBody] = useState(templates.reminder.body);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    if (isLoadingBarbershop) return;
-    if (barbershopId) {
-      queueMicrotask(() => void fetchClients());
-    }
-  }, [barbershopId, fetchClients, isLoadingBarbershop]);
-
-  const applyMessageTemplate = useCallback(
-    (clientId: string, template: string) => {
-      const client = clients.find((item) => item.id === clientId);
-      const phone = client?.num_phone ?? "";
-      const templates: Record<string, string> = {
-        custom: "",
-        reminder_tomorrow: `Olá ${client?.name_complete ?? "cliente"}! Este é um lembrete de que o seu agendamento está marcado para amanhã. Obrigado!`,
-        miss_you: `Olá ${client?.name_complete ?? "cliente"}! Esperamos voltar a vê-lo em breve.`,
-      };
-      setManualMessage((prev) => ({
-        phone: clientId === "manual" ? prev.phone : phone,
-        text: templates[template] ?? "",
-      }));
-    },
-    [clients],
-  );
-
-  const handleSendManualMessage = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSendingMessage(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      toast.success("Mensagem enviada com sucesso.");
-      setManualMessage({ phone: "", text: "" });
-      setReminderClientId("manual");
-      setSelectedTemplate("custom");
-    } catch (error) {
-      console.error("Erro ao enviar mensagem", error);
-      toast.error("Não foi possível enviar a mensagem.");
-    } finally {
-      setSendingMessage(false);
-    }
+    const loadClients = async () => {
+      try {
+        const response = await fetch("/api/crm/clients?limit=100", { cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Não foi possível carregar os clientes.");
+        setClients(data.clients ?? []);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Erro ao carregar clientes.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    void loadClients();
   }, []);
 
-  return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2 text-emerald-400">
-              <MessageCircle className="size-5" aria-hidden="true" />
-            </div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-white">
-              Mensagens
-            </h1>
-          </div>
-          <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Envia mensagens rápidas aos teus clientes.
-          </p>
-        </div>
-        <Link href="/dashboard" className="flex-1 sm:flex-none">
-          <Button
-            variant="ghost"
-            className="w-full sm:w-auto min-h-[44px] bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-white/10 text-xs sm:text-sm gap-2"
-          >
-            <ArrowLeft className="size-4" aria-hidden="true" /> Voltar
-          </Button>
-        </Link>
-      </header>
+  const selectedClient = useMemo(() => clients.find((client) => client.id === clientId), [clients, clientId]);
 
-      <ManualMessageForm
-        clients={clients}
-        reminderClientId={reminderClientId}
-        setReminderClientId={setReminderClientId}
-        selectedTemplate={selectedTemplate}
-        setSelectedTemplate={setSelectedTemplate}
-        manualMessage={manualMessage}
-        setManualMessage={setManualMessage}
-        applyMessageTemplate={applyMessageTemplate}
-        onSubmit={handleSendManualMessage}
-        sendingMessage={sendingMessage}
-      />
+  const applyTemplate = (next: TemplateKey) => {
+    setTemplate(next);
+    setSubject(templates[next].subject);
+    setBody(templates[next].body);
+  };
+
+  const preview = body
+    .replaceAll("{{nome}}", selectedClient?.name_complete || selectedClient?.name || "Nome do cliente")
+    .replaceAll("{{barbearia}}", "a sua barbearia");
+
+  const sendEmail = async () => {
+    if (!clientId) return toast.error("Selecione um cliente.");
+    if (!subject.trim() || !body.trim()) return toast.error("Preencha o assunto e a mensagem.");
+
+    setSending(true);
+    try {
+      const response = await fetch("/api/messages/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId, template, subject, body }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Não foi possível enviar o email.");
+      toast.success("Email enviado com sucesso.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao enviar email.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-background px-4 pb-24 pt-24 text-foreground sm:px-6 lg:px-8 lg:pt-10">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <header>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">Comunicação</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-50">Mensagens</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">Envie mensagens manuais aos seus clientes através de email, usando templates prontos ou uma mensagem personalizada.</p>
+        </header>
+
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <Card className="border-white/10 bg-white/[0.03]">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-zinc-100"><Mail className="size-5 text-emerald-400" aria-hidden="true" /> Email</CardTitle>
+              <CardDescription>O nome da sua barbearia será usado automaticamente como remetente.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="client">Destinatário</Label>
+                <Select value={clientId} onValueChange={setClientId} disabled={loading}>
+                  <SelectTrigger id="client" className="min-h-11 bg-black/20"><SelectValue placeholder={loading ? "A carregar clientes…" : "Selecionar cliente"} /></SelectTrigger>
+                  <SelectContent>
+                    {clients.filter((client) => client.email).map((client) => (
+                      <SelectItem key={client.id} value={client.id}>{client.name_complete || client.name || "Cliente"} — {client.email}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="template">Template</Label>
+                <Select value={template} onValueChange={(value) => applyTemplate(value as TemplateKey)}>
+                  <SelectTrigger id="template" className="min-h-11 bg-black/20"><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(templates).map(([key, item]) => <SelectItem key={key} value={key}>{item.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="subject">Assunto</Label>
+                <Input id="subject" value={subject} onChange={(event) => setSubject(event.target.value)} maxLength={180} className="min-h-11 bg-black/20" />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3"><Label htmlFor="body">Mensagem</Label><span className="text-xs text-zinc-500">Use {{nome}} e {{barbearia}}</span></div>
+                <Textarea id="body" value={body} onChange={(event) => setBody(event.target.value)} maxLength={8000} className="min-h-52 resize-y bg-black/20 leading-6" />
+              </div>
+
+              <Button type="button" onClick={sendEmail} disabled={sending || !clientId || !selectedClient?.email} className="min-h-11 w-full sm:w-auto">
+                <Send className="mr-2 size-4" aria-hidden="true" />{sending ? "A enviar…" : "Enviar email"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-5">
+            <Card className="border-white/10 bg-white/[0.03]">
+              <CardHeader><CardTitle className="text-base">Pré-visualização</CardTitle><CardDescription>Assim verá o cliente o conteúdo principal.</CardDescription></CardHeader>
+              <CardContent>
+                <div className="rounded-xl border border-white/10 bg-zinc-950 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">{subject || "Sem assunto"}</p>
+                  <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-zinc-200">{preview}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-white/10 bg-white/[0.03]">
+              <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Smartphone className="size-4" aria-hidden="true" /> Telemóvel</CardTitle><CardDescription>Mensagens SMS estão temporariamente indisponíveis.</CardDescription></CardHeader>
+              <CardContent>
+                <div className="rounded-xl border border-dashed border-white/10 bg-zinc-950/60 p-4">
+                  <Badge variant="secondary" className="mb-3">Desativado</Badge>
+                  <p className="text-sm leading-6 text-zinc-400">O envio por SMS permanece desligado enquanto o fornecedor de SMS não estiver ativo.</p>
+                  <Button type="button" disabled className="mt-4 w-full"><Phone className="mr-2 size-4" aria-hidden="true" /> Enviar SMS</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }
