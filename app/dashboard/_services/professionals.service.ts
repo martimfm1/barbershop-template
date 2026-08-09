@@ -28,20 +28,25 @@ export const professionalService = {
   },
 
   async create(payload: CreateProfessionalPayload) {
-    const { data, error } = await supabase
-      .from("professionals")
-      .insert([
-        {
-          name: payload.name,
-          commission_percentage: payload.commission_percentage ?? 50,
-          active: payload.active ?? true,
-          barbershop_id: payload.barbershop_id,
-        },
-      ])
-      .select()
-      .single();
+    // Creation is routed through a server-side API so the plan quota is
+    // enforced (the browser can no longer bypass the limit by writing to
+    // `professionals` directly).
+    const res = await fetch(`/api/barbershops/${payload.barbershop_id}/professionals`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: payload.name,
+        commission_percentage: payload.commission_percentage,
+        active: payload.active,
+      }),
+    });
 
-    return { data: data as Professional | null, error };
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const error = new Error(body.error || "Não foi possível criar o barbeiro.");
+      return { data: null as Professional | null, error };
+    }
+    return { data: body.data as Professional | null, error: null };
   },
 
   async update(id: string, updates: UpdateProfessionalPayload) {

@@ -19,7 +19,14 @@ export function PricingSection() {
           Escolhe entre faturação mensal ou anual no portal de subscrição.
         </p>
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-3">
+        <PricingCard
+          tier="free"
+          title="Barbers Free"
+          price="0 €"
+          description={PLAN_DESCRIPTIONS.free}
+          features={PLAN_FEATURES.free}
+        />
         <PricingCard
           tier="pro"
           title="Barbers Pro"

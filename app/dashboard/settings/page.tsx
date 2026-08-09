@@ -671,7 +671,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* FUNCIONALIDADES ONLINE & WHATSAPP */}
+        {/* Online Platform & Automation */}
         <Card className="bg-black/40 border-white/10 md:col-span-2 backdrop-blur-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg text-zinc-100">
@@ -702,24 +702,6 @@ export default function SettingsPage() {
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-white/[0.01] border border-white/5 rounded-xl opacity-60">
-              <div>
-                <p className="font-semibold text-zinc-400 text-sm flex items-center gap-2">
-                  <Bell className="size-3.5 text-zinc-500" /> WhatsApp Reminders
-                  <span className="text-[10px] bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full font-medium border border-red-500/20">
-                    Pausado
-                  </span>
-                </p>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  Esta funcionalidade encontra-se temporariamente desativada.
-                </p>
-              </div>
-              <Switch
-                className="cursor-not-allowed"
-                checked={false}
-                disabled={true}
-              />
-            </div>
 
             <div className="pt-4 border-t border-white/10 flex justify-end">
               <Button

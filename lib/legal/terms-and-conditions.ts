@@ -50,11 +50,11 @@ export const termsAndConditions: Record<"pt" | "en", TermsDocument> = {
         ],
       },
       {
-        title: "5. Comunicações e WhatsApp",
+        title: "5. Comunicações",
         paragraphs: [
-          "A Plataforma pode enviar notificações automatizadas (incluindo via WhatsApp) relacionadas com agendamentos, lembretes e mensagens operacionais configuradas pela barbearia.",
+          "A Plataforma pode enviar notificações automatizadas por SMS, email ou push relacionadas com agendamentos, lembretes e mensagens operacionais configuradas pela barbearia.",
           "Ao ativar integrações de mensagens, confirmas que possuis base legal para contactar os teus clientes e que cumpres as políticas dos fornecedores de mensagens aplicáveis.",
-          "Custos de dados ou mensagens cobrados pelo operador móvel ou pelo WhatsApp são da responsabilidade do destinatário ou da barbearia, consoante o caso. Podes desativar funcionalidades de mensagens nas definições da conta, quando disponível.",
+          "Custos de dados ou mensagens cobrados pelo operador móvel são da responsabilidade do destinatário ou da barbearia, consoante o caso. Podes desativar funcionalidades de mensagens nas definições da conta, quando disponível.",
         ],
       },
       {
@@ -158,11 +158,11 @@ export const termsAndConditions: Record<"pt" | "en", TermsDocument> = {
         ],
       },
       {
-        title: "5. Communications and WhatsApp",
+        title: "5. Communications",
         paragraphs: [
-          "The Platform may send automated notifications (including via WhatsApp) related to appointments, reminders, and operational messages configured by the barbershop.",
+          "The Platform may send automated notifications via SMS, email, or push related to appointments, reminders, and operational messages configured by the barbershop.",
           "By enabling messaging integrations, you confirm that you have a lawful basis to contact your customers and that you comply with applicable messaging provider policies.",
-          "Data or messaging costs charged by mobile carriers or WhatsApp are the responsibility of the recipient or the barbershop, as applicable. You may disable messaging features in account settings when available.",
+          "Data or messaging costs charged by mobile carriers are the responsibility of the recipient or the barbershop, as applicable. You may disable messaging features in account settings when available.",
         ],
       },
       {

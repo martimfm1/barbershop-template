@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { hasActivePaidSubscription } from "@/lib/billing/plan-access";
 
 export interface SubscriptionData {
   id: string;
@@ -14,17 +15,22 @@ export interface SubscriptionData {
 
 interface SubscriptionQueryResult {
   subscription: SubscriptionData | null;
+  plan: "free" | "pro" | "enterprise";
   isAuthenticated: boolean;
 }
 
 async function fetchSubscription(): Promise<SubscriptionQueryResult> {
   const res = await fetch("/api/stripe/subscription");
   if (!res.ok) {
-    if (res.status === 401) return { subscription: null, isAuthenticated: false };
+    if (res.status === 401) return { subscription: null, plan: "free", isAuthenticated: false };
     throw new Error("Failed to fetch subscription data.");
   }
   const json = await res.json();
-  return { subscription: json.subscription ?? null, isAuthenticated: true };
+  return {
+    subscription: json.subscription ?? null,
+    plan: json.plan ?? "free",
+    isAuthenticated: true,
+  };
 }
 
 export function useSubscription() {
@@ -38,6 +44,7 @@ export function useSubscription() {
   });
   const subscription = data?.subscription ?? null;
   const isAuthenticated = data?.isAuthenticated ?? false;
+  const plan = data?.plan ?? "free";
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
@@ -96,9 +103,8 @@ export function useSubscription() {
     },
   });
 
-  const plan = subscription?.stripe_price_id ?? "free";
-  const isPro = subscription?.plan === "pro" && subscription?.status === "active";
-  const isBusiness = subscription?.plan === "enterprise" && subscription?.status === "active";
+  const isPro = plan === "pro" && hasActivePaidSubscription(subscription);
+  const isBusiness = plan === "enterprise" && hasActivePaidSubscription(subscription);
   const isTrial = subscription?.status === "trialing";
 
   const loading =

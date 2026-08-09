@@ -9,7 +9,11 @@ export async function GET() {
   try {
     const { data: { user }, error } = await (await createClient()).auth.getUser();
     if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    return NextResponse.json({ subscription: await SubscriptionService.getForUser(user.id) });
+    const [subscription, plan] = await Promise.all([
+      SubscriptionService.getForUser(user.id),
+      SubscriptionService.getAccessPlan(user.id),
+    ]);
+    return NextResponse.json({ subscription, plan });
   } catch (error) {
     return billingErrorResponse(error);
   }

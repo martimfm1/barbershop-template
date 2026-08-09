@@ -97,7 +97,7 @@ export const en = {
     liveSignalCopy:
       "This is the customer-facing motion the owner sees: fast decisions, clean confirmation, and no onboarding wall.",
     noApp: "No app",
-    smsWhatsApp: "SMS / WhatsApp",
+    smsWhatsApp: "SMS",
     oldWayTitle: "The old way",
     silentraWayTitle: "The Silentra way",
     dashboardKicker: "The command center",
@@ -181,16 +181,5 @@ export const en = {
     language: "Language",
     notifications: "Notifications",
     bookingRules: "Booking rules",
-  },
-  whatsapp: {
-    title: "WhatsApp",
-    subtitle: "Automate confirmations, reminders, and quick replies.",
-    connectBot: "Connect bot",
-    disconnectBot: "Disconnect bot",
-    webhook: "Webhook",
-    instance: "Instance",
-    sendMessage: "Send message",
-    replyText: "Reply text",
-    automatedMessages: "Automated messages",
   },
 } as const;

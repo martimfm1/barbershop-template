@@ -264,7 +264,7 @@ export function HeroSection({ services, slots }: HeroSectionProps) {
                 </div>
                 <div className="rounded-3xl border border-white/10 bg-white/3 p-5 backdrop-blur-xl">
                   <p className="text-xs uppercase tracking-[0.34em] text-zinc-500">
-                    SMS / WhatsApp
+                    SMS
                   </p>
                   <div className="mt-4 text-2xl font-semibold tracking-[-0.04em] text-zinc-50">
                     Instant confirmation

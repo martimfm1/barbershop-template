@@ -118,7 +118,7 @@ export default function LoginPage() {
                 </h1>
                 <p className="max-w-md text-sm leading-relaxed text-zinc-400 font-normal">
                   Sign in to your account or create barbershop access to start
-                  receiving automated WhatsApp bookings seamlessly.
+                  receiving automated SMS notifications seamlessly.
                 </p>
               </div>
 

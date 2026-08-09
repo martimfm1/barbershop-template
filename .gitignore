@@ -2,6 +2,7 @@ node_modules/
 test/
 whatsapp_session/
 components.txt
+# .clinerules
 
 
 **/.env

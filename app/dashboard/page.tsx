@@ -25,7 +25,7 @@ import { ClientsListCard } from "@/app/dashboard/_components/cards/ClientsListCa
 import { ServicesListCard } from "@/app/dashboard/_components/cards/ServicesListCard";
 import { ProfessionalsListCard } from "@/app/dashboard/_components/cards/ProfessionalsListCard";
 import { ManualMessageForm } from "@/app/dashboard/_components/cards/ManualMessageFormCard";
-import { WhatsAppBotCard } from "@/app/dashboard/_components/cards/WhatsAppBotCard";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -86,10 +86,14 @@ import {
   Settings,
   CalendarOff,
   MessageCircle,
+  TrendingUp,
 } from "lucide-react";
 
 export default function DashboardPage() {
   const { barbershopId, loading: isLoadingBarbershop } = useBarbershop();
+  const { hasFeature } = useFeatureAccess();
+  const canUseProfessionals = hasFeature("professionals");
+  const canUseAnalytics = hasFeature("analytics");
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
@@ -414,6 +418,7 @@ export default function DashboardPage() {
                   icon: Briefcase,
                   label: "Professionals",
                   color: "purple" as ColorKey,
+                  locked: !canUseProfessionals,
                 },
                 {
                   state: showClientsList,
@@ -444,12 +449,22 @@ export default function DashboardPage() {
                   color: "zinc" as ColorKey,
                   href: "/dashboard/settings",
                 },
+                {
+                  state: false,
+                  setter: null,
+                  icon: TrendingUp,
+                  label: "Stats",
+                  color: "blue" as ColorKey,
+                  href: "/dashboard/stats",
+                  locked: !canUseAnalytics,
+                },
               ].map((item, idx) => {
                 const cardClasses = cn(
                   "group text-left rounded-2xl border p-3 md:p-4 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 block w-full cursor-pointer",
                   item.state
                     ? colorVariants[item.color].active
                     : "border-white/10 bg-white/[0.04] hover:bg-white/10 hover:border-white/20",
+                  item.locked && "opacity-60",
                 );
 
                 const innerContent = (
@@ -477,7 +492,11 @@ export default function DashboardPage() {
 
                 if (item.href) {
                   return (
-                    <Link key={idx} href={item.href} className={cardClasses}>
+                    <Link
+                      key={idx}
+                      href={item.locked ? "/dashboard/billing" : item.href}
+                      className={cardClasses}
+                    >
                       {innerContent}
                     </Link>
                   );
@@ -489,6 +508,10 @@ export default function DashboardPage() {
                     type="button"
                     onClick={() => {
                       closeAllMenus();
+                      if (item.locked) {
+                        window.location.assign("/dashboard/billing");
+                        return;
+                      }
                       if (item.setter) item.setter(!item.state);
                     }}
                     className={cardClasses}
@@ -738,14 +761,6 @@ export default function DashboardPage() {
                   </ChartContainer>
                 </CardContent>
               </Card>
-
-              <div className="space-y-3">
-                <WhatsAppBotCard
-                  barbershopId={barbershopId}
-                  botStatus={null}
-                  loadingWhatsapp={false}
-                />
-              </div>
             </section>
 
 <section className="pt-5 grid gap-3 md:gap-4 lg:grid-cols-1" aria-label="Gestão de Agendamentos Diários">

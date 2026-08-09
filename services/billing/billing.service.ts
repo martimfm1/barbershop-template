@@ -2,7 +2,8 @@ import type Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripeClient } from "@/lib/stripe/server";
 import { planForPrice, PLANS, PRICE_ID_TO_PLAN, TRIAL_PERIOD_DAYS } from "@/lib/stripe/constants";
-import { BillingError } from "@/types/stripe";
+import { PLAN_ACCESS_STATUSES } from "@/lib/billing/plan-access";
+import { BillingError, type SubscriptionRecord } from "@/types/stripe";
 import { SubscriptionService } from "./subscription.service";
 
 export interface CreateCheckoutInput {
@@ -239,7 +240,7 @@ export class BillingService {
     const subscription = await SubscriptionService.getActiveForUser(userId);
     if (!subscription?.stripe_subscription_id || subscription.plan === PLANS.FREE) throw new BillingError("No active subscription was found.", "SUBSCRIPTION_NOT_FOUND", { userId });
     const current = await getStripeClient().subscriptions.retrieve(subscription.stripe_subscription_id);
-    if (!["active", "trialing", "past_due"].includes(current.status)) {
+    if (!(PLAN_ACCESS_STATUSES as readonly string[]).includes(current.status) && current.status !== "past_due") {
       throw new BillingError("No active subscription was found.", "SUBSCRIPTION_NOT_FOUND", { userId, status: current.status });
     }
     const item = current.items.data[0];
@@ -253,6 +254,17 @@ export class BillingService {
 
   static async processWebhookEvent(event: Stripe.Event): Promise<void> {
     const stripe = getStripeClient();
+
+    if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
+      const subscription = event.data.object as Stripe.Subscription;
+      const userId = await SubscriptionService.findUserIdByCustomerId(customerId(subscription.customer));
+      if (!userId) throw new BillingError("Webhook customer mapping was not found.", "WEBHOOK_PROCESSING_FAILED", { eventId: event.id });
+      // SyncFromStripe already resolves plan to Free when the subscription
+      // is not in an access-granting state (incomplete, past_due, unpaid, etc.).
+      await SubscriptionService.syncFromStripe(userId, subscription);
+      return;
+    }
+
     if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription;
       const userId = await SubscriptionService.findUserIdByCustomerId(customerId(subscription.customer));
@@ -260,11 +272,22 @@ export class BillingService {
       return;
     }
 
-    if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
-      const subscription = event.data.object as Stripe.Subscription;
-      const userId = await SubscriptionService.findUserIdByCustomerId(customerId(subscription.customer));
-      if (!userId) throw new BillingError("Webhook customer mapping was not found.", "WEBHOOK_PROCESSING_FAILED", { eventId: event.id });
-      await SubscriptionService.syncFromStripe(userId, subscription);
+    if (event.type === "invoice.payment_failed") {
+      const invoice = event.data.object as Stripe.Invoice;
+      const customerIdValue = invoice.customer;
+      if (typeof customerIdValue !== "string") return;
+      const userId = await SubscriptionService.findUserIdByCustomerId(customerIdValue);
+      if (!userId) return;
+      // A failed payment means the subscription is no longer paid.
+      // The user falls back to Free until Stripe reports an active status.
+      const subscriptionRef = invoice.lines.data.find((line) => line.subscription)?.subscription;
+      const subscriptionId = typeof subscriptionRef === "string" ? subscriptionRef : undefined;
+      if (subscriptionId) {
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        await SubscriptionService.syncFromStripe(userId, subscription);
+      } else {
+        await SubscriptionService.revokePaidAccess(userId, "past_due" as SubscriptionRecord["status"]);
+      }
       return;
     }
 
@@ -275,6 +298,7 @@ export class BillingService {
       if (!userId || !subscriptionId) return;
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       await SubscriptionService.syncFromStripe(userId, subscription);
+      return;
     }
   }
 }

@@ -11,7 +11,7 @@ const agendaItems = [
 ] as const;
 
 const recentBookings = [
-  { name: "Sofia", service: "Corte de Cabelo", badge: "Sem Registo", channel: "Confirmado via WhatsApp" },
+  { name: "Sofia", service: "Corte de Cabelo", badge: "Sem Registo", channel: "Confirmado via SMS" },
   { name: "David", service: "Degradê + Barba", badge: "Sem Conta", channel: "Confirmado via SMS" },
   { name: "Ana", service: "Acabamento / Pezinho", badge: "Sem Registo", channel: "Confirmado via SMS" },
 ] as const;

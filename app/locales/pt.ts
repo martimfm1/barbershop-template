@@ -97,7 +97,7 @@ export const pt = {
     liveSignalCopy:
       "É este o movimento que o proprietário vê: decisões rápidas, confirmação limpa e sem barreiras de onboarding.",
     noApp: "Sem app",
-    smsWhatsApp: "SMS / WhatsApp",
+    smsWhatsApp: "SMS",
     oldWayTitle: "O método antigo",
     silentraWayTitle: "O método Silentra",
     dashboardKicker: "O centro de comando",
@@ -181,16 +181,5 @@ export const pt = {
     language: "Idioma",
     notifications: "Notificações",
     bookingRules: "Regras de reserva",
-  },
-  whatsapp: {
-    title: "WhatsApp",
-    subtitle: "Automatiza confirmações, lembretes e respostas rápidas.",
-    connectBot: "Ligar bot",
-    disconnectBot: "Desligar bot",
-    webhook: "Webhook",
-    instance: "Instância",
-    sendMessage: "Enviar mensagem",
-    replyText: "Texto de resposta",
-    automatedMessages: "Mensagens automáticas",
   },
 };
