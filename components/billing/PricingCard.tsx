@@ -5,7 +5,7 @@ import { Check, Sparkles, Loader2, ArrowRight, Shield } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 
-export type PlanTier = "free" | "pro" | "business";
+export type PlanTier = "free" | "pro" | "enterprise";
 
 export interface PricingCardProps {
   tier: PlanTier;
@@ -24,7 +24,6 @@ export function PricingCard({
   tier,
   title,
   price,
-  priceId,
   description,
   features,
   popular = false,
@@ -40,42 +39,27 @@ export function PricingCard({
   const {
     subscription,
     isAuthenticated,
-    plan: currentPriceId,
+    plan: currentPlan,
     loading,
     checkout,
     upgrade,
   } = useSubscription();
 
-  // Determine current active plan state
   const isCurrentPlan = useMemo(() => {
-    if (tier === "free" && (!subscription || subscription.status === "canceled")) {
-      return true;
-    }
-    if (tier === "pro" && priceId && currentPriceId === priceId) {
-      return true;
-    }
-    if (tier === "business" && priceId && currentPriceId === priceId) {
-      return true;
-    }
-    return false;
-  }, [tier, subscription, currentPriceId, priceId]);
+    if (!isAuthenticated) return false;
+    return currentPlan === tier;
+  }, [currentPlan, isAuthenticated, tier]);
 
-  // Handle CTA button click
   const handleAction = async () => {
     try {
       if (!isMounted) return;
-
-      if (tier === "free" && !isAuthenticated) {
-        window.location.assign("/registo");
-        return;
-      }
-
-      if (isCurrentPlan) return;
 
       if (!isAuthenticated) {
         window.location.assign("/registo");
         return;
       }
+
+      if (isCurrentPlan) return;
 
       if (subscription?.status === "active") {
         if (onManagePortal) {
@@ -86,31 +70,32 @@ export function PricingCard({
         return;
       }
 
+      if (tier === "free") {
+        window.location.assign("/dashboard/billing");
+        return;
+      }
+
+      const priceId = undefined;
       if (!priceId) {
         window.location.assign("/dashboard/billing");
         return;
       }
 
-      if (priceId) {
-        if (onCheckout) {
-          onCheckout(priceId);
-        } else {
-          await checkout({ priceId });
-        }
+      if (onCheckout) {
+        onCheckout(priceId);
+      } else {
+        await checkout({ priceId });
       }
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel atualizar o plano.",
+          : "Não foi possível atualizar o plano.",
       );
     }
   };
 
-  // Determine CTA label & disabled state
   const buttonConfig = useMemo(() => {
-    // Keep SSR and the browser's first render identical. Auth/query state is only
-    // allowed to change the CTA after hydration has completed.
     if (!isMounted) {
       return {
         label: "A carregar…",
@@ -119,11 +104,11 @@ export function PricingCard({
       };
     }
 
-    if (tier === "free" && !isAuthenticated) {
+    if (!isAuthenticated) {
       return {
-        label: "Começar gratuitamente",
+        label: tier === "free" ? "Começar gratuitamente" : "Criar conta para começar",
         disabled: false,
-        variant: "outline" as const,
+        variant: popular ? ("primary" as const) : ("outline" as const),
       };
     }
 
@@ -135,14 +120,6 @@ export function PricingCard({
       };
     }
 
-    if (!isAuthenticated) {
-      return {
-        label: "Criar conta para começar",
-        disabled: false,
-        variant: popular ? ("primary" as const) : ("outline" as const),
-      };
-    }
-
     if (subscription?.status === "active") {
       return {
         label: tier === "free" ? "Gerir Subscrição" : "Alterar Plano",
@@ -151,28 +128,12 @@ export function PricingCard({
       };
     }
 
-    if (!priceId) {
-      return {
-        label: "Ver modalidades",
-        disabled: false,
-        variant: popular ? ("primary" as const) : ("outline" as const),
-      };
-    }
-
-    if (trialDays && trialDays > 0) {
-      return {
-        label: priceId ? `Iniciar Teste Grátis (${trialDays} dias)` : "Plano indisponível",
-        disabled: !priceId,
-        variant: "primary" as const,
-      };
-    }
-
     return {
-      label: tier === "free" ? "Plano Base" : priceId ? "Subscrever Plano" : "Plano indisponível",
-      disabled: tier === "free" || !priceId,
+      label: tier === "free" ? "Usar Plano Gratuito" : "Ver modalidades",
+      disabled: false,
       variant: popular ? ("primary" as const) : ("outline" as const),
     };
-  }, [isMounted, isCurrentPlan, isAuthenticated, priceId, subscription, trialDays, popular, tier]);
+  }, [isMounted, isCurrentPlan, isAuthenticated, subscription, popular, tier]);
 
   return (
     <div
