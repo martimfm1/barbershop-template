@@ -1,5 +1,18 @@
 # Changelog
 
+## v3.0.4 — 2026-08-09
+
+### Added
+- Added a reusable `FeatureGate` UI component for plan-aware dashboard features.
+- Added `useFeatureGate` for centralized client-side entitlement checks.
+- Added upgrade toasts for unavailable Pro and Enterprise functionality.
+- Upgrade toasts navigate directly to `/dashboard/billing`.
+- Added optional locked/disabled presentation with a visual lock indicator.
+
+### Security
+- UI gating is explicitly presentation-only; server-side feature guards remain the enforcement boundary.
+- The current plan is resolved through the existing subscription access hook rather than client-provided plan values.
+
 ## v3.0.3 — 2026-08-09
 
 ### Fixed
