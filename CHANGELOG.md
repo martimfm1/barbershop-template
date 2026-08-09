@@ -17,6 +17,8 @@
 - Added an Advanced CRM dashboard at `/dashboard/crm` with client search, segmentation tags and plan gating.
 - Added a 360º client profile at `/dashboard/crm/[clientId]` with appointment history and private notes.
 - Added secure CRM customer segmentation by inactivity, visit frequency, customer value and recency.
+- Added marketing campaign domain primitives for Pro email/SMS campaigns.
+- Added centralized campaign channel/status validation and initial monthly recipient/campaign quotas.
 
 ### Security
 - Hardened tenant isolation with a server-resolved current barbershop helper.
@@ -37,3 +39,14 @@
 - Client 360 queries only return clients, appointments, notes and tags belonging to the authenticated barbershop.
 - CRM segmentation resolves all data through the authenticated tenant and never accepts a client-supplied `barbershop_id`.
 
+## [0.3.1] - 2026-08-06
+
+### Added
+- Email notification for bookings
+- Forgot password page and systems
+
+### Changed
+- Subscription prices
+
+### Fixed
+- Mobile acessebility in login page
