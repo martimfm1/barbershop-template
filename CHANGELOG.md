@@ -1,5 +1,22 @@
 # Changelog
 
+## v3.0.21 — 2026-08-10
+
+### Changed
+- Redesigned the dashboard navigation for mobile-first use with a persistent bottom navigation for the most common sections.
+- Added an accessible full-screen mobile navigation drawer for all dashboard sections.
+- Improved dashboard navigation spacing, focus states, active states and touch targets.
+- Added safe-area support for mobile devices with gesture/navigation areas.
+- Added explicit locked-feature states with an upgrade action instead of navigating to unavailable modules.
+- Added accessible labels and semantic navigation landmarks throughout the dashboard navigation.
+- Reserved mobile viewport space for the fixed dashboard navigation to prevent content from being obscured.
+
+### Accessibility
+- Increased primary mobile navigation targets to at least 44px high.
+- Added visible keyboard focus indicators.
+- Added `aria-current`, `aria-expanded`, `aria-modal` and descriptive labels where applicable.
+- Locked features now expose their unavailable state to assistive technologies.
+
 ## v3.0.20 — 2026-08-10
 
 ### Changed
