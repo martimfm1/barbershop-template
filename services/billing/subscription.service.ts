@@ -25,9 +25,10 @@ export class SubscriptionService {
     return data as SubscriptionRecord | null;
   }
 
+  /** Returns only subscriptions whose Stripe status currently grants paid access. */
   static async getActiveForUser(userId: string): Promise<SubscriptionRecord | null> {
     const subscription = await this.getForUser(userId);
-    return subscription && ["active", "trialing", "past_due"].includes(subscription.status)
+    return subscription && (PLAN_ACCESS_STATUSES as readonly string[]).includes(subscription.status)
       ? subscription
       : null;
   }
@@ -64,8 +65,6 @@ export class SubscriptionService {
       });
     }
 
-    // Only access-granting statuses carry a paid plan. Any other status
-    // (incomplete, past_due, canceled, unpaid, paused) resolves to Free.
     const plan =
       (PLAN_ACCESS_STATUSES as readonly string[]).includes(subscription.status)
         ? planForPrice(priceId) ?? PLANS.FREE
