@@ -22,9 +22,11 @@ export async function GET(request: Request) {
 
     const access = await requireModuleFeature(feature);
     if (!access.ok) {
+      const error = access.status === 403 && "error" in access ? access.error : "UNAUTHORIZED";
+      const plan = "plan" in access && access.plan ? access.plan : undefined;
       return NextResponse.json(
-        { error: access.error ?? "UNAUTHORIZED", feature, plan: "plan" in access ? access.plan : undefined },
-        { status: access.status ?? 401 },
+        { error, feature, plan },
+        { status: access.status },
       );
     }
 
