@@ -18,7 +18,8 @@ export function DashboardTopBar() {
 
   useEffect(() => {
     let mounted = true;
-    void supabase.auth.getUser().then(({ data }) => {
+    async function loadUser() {
+      const { data } = await supabase.auth.getUser();
       if (!mounted) return;
       const user = data.user;
       const fullName = user?.user_metadata?.name || user?.user_metadata?.full_name;
@@ -26,7 +27,8 @@ export function DashboardTopBar() {
         ? fullName.trim().split(/\s+/)[0]
         : user?.email?.split("@")[0] || "Utilizador";
       setName(firstName.charAt(0).toUpperCase() + firstName.slice(1));
-    });
+    }
+    void loadUser();
 
     const interval = window.setInterval(() => setNow(new Date()), 1000);
     return () => {
