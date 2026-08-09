@@ -90,7 +90,7 @@ test("Enterprise inherits all Pro features plus its own", () => {
   assert.equal(ent.includes("commissions"), true);
   assert.equal(ent.includes("multi_location"), true);
   assert.equal(ent.includes("pos"), true);
-  assert.equal(ent.includes("api_access"), true);
+  assert.equal(ent.includes("enterprise_reports"), true);
 });
 
 test("Legacy keys still resolve on their original plans", () => {

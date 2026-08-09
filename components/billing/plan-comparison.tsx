@@ -49,7 +49,6 @@ const FEATURE_GROUPS: ReadonlyArray<{
       "advanced_crm",
       "customer_segments",
       "loyalty",
-      "ai_assistant",
     ],
   },
   {
@@ -70,8 +69,6 @@ const FEATURE_GROUPS: ReadonlyArray<{
       "commissions",
       "inventory",
       "pos",
-      "api_access",
-      "advanced_ai",
     ],
   },
 ];

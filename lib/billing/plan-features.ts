@@ -23,6 +23,7 @@ export type ProFeatureKey =
   | "customer_segments"
   | "loyalty"
   | "advanced_reports"
+  | "ai_assistant"
   | "team_management"
   | "advanced_notifications";
 
@@ -33,6 +34,8 @@ export type EnterpriseFeatureKey =
   | "commissions"
   | "inventory"
   | "pos"
+  | "api_access"
+  | "advanced_ai"
   | "enterprise_reports";
 
 /** Legacy keys retained until existing callers are migrated. */
@@ -68,6 +71,7 @@ const PRO_FEATURES: readonly FeatureKey[] = [
   "customer_segments",
   "loyalty",
   "advanced_reports",
+  "ai_assistant",
   "team_management",
   "advanced_notifications",
   "professionals",
@@ -82,6 +86,8 @@ const ENTERPRISE_FEATURES: readonly FeatureKey[] = [
   "commissions",
   "inventory",
   "pos",
+  "api_access",
+  "advanced_ai",
   "enterprise_reports",
 ];
 
@@ -154,6 +160,7 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   customer_segments: "Segmentos de clientes",
   loyalty: "Programa de fidelização",
   advanced_reports: "Relatórios avançados",
+  ai_assistant: "Assistente de IA",
   team_management: "Gestão de equipa",
   advanced_notifications: "Notificações avançadas",
   multi_location: "Multi-localização",
@@ -162,6 +169,8 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   commissions: "Comissões",
   inventory: "Gestão de stock",
   pos: "Ponto de venda (POS)",
+  api_access: "Acesso à API",
+  advanced_ai: "IA avançada",
   enterprise_reports: "Relatórios empresariais",
   professionals: "Até 5 profissionais",
   analytics: "Análises essenciais do negócio",
