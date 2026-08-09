@@ -1,12 +1,16 @@
 import { Check, Minus } from "lucide-react";
 import {
   FEATURE_LABELS,
-  PLAN_FEATURES,
+  hasPlanFeature,
   PLAN_NAMES,
   PLAN_LIMITS,
-  type FeatureKey,
+  type EnterpriseFeatureKey,
+  type FreeFeatureKey,
+  type ProFeatureKey,
 } from "@/lib/billing/plan-features";
 import { PLANS, type BillingPlan } from "@/lib/stripe/constants";
+
+type ComparisonFeatureKey = FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey;
 
 const PLAN_ORDER: readonly BillingPlan[] = [
   PLANS.FREE,
@@ -16,7 +20,7 @@ const PLAN_ORDER: readonly BillingPlan[] = [
 
 const FEATURE_GROUPS: ReadonlyArray<{
   title: string;
-  features: readonly FeatureKey[];
+  features: readonly ComparisonFeatureKey[];
 }> = [
   {
     title: "Gestão da barbearia",
@@ -73,8 +77,8 @@ const FEATURE_GROUPS: ReadonlyArray<{
   },
 ];
 
-function hasFeature(plan: BillingPlan, feature: FeatureKey) {
-  return PLAN_FEATURES[plan].includes(feature);
+function hasFeature(plan: BillingPlan, feature: ComparisonFeatureKey) {
+  return hasPlanFeature(plan, feature);
 }
 
 function formatLimit(value: number, singular: string, plural: string) {
