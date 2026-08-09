@@ -1,10 +1,7 @@
 "use client";
 
 import { PricingCard } from "@/components/billing/PricingCard";
-import {
-  FEATURE_LABELS,
-  PLAN_DESCRIPTIONS,
-} from "@/lib/billing/plan-features";
+import { PLAN_DESCRIPTIONS } from "@/lib/billing/plan-features";
 
 const HERO_FEATURES = {
   free: [
