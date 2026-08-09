@@ -131,7 +131,7 @@ export async function GET(request: Request) {
       .lte("date_hour", previousTo.toISOString());
     if (previousError) throw previousError;
 
-    const previousRevenue = money(((previousAppointments ?? []) as Array<{ status: string; value_products: number | string | null; service: { price: number | string } | null }>)
+    const previousRevenue = money(((previousAppointments ?? []) as unknown as Array<{ status: string; value_products: number | string | null; service: { price: number | string } | null }>)
       .filter((row) => row.status === "completed")
       .reduce((sum, row) => sum + Number(row.service?.price ?? 0) + Number(row.value_products ?? 0), 0));
 
