@@ -14,6 +14,8 @@
 - Added tenant-safe CRM client search with pagination.
 - Added a client 360 API returning profile, appointment history, notes and tags.
 - Added APIs for private client notes and client tag management.
+- Added an Advanced CRM dashboard at `/dashboard/crm` with client search, segmentation tags and plan gating.
+- Added a 360º client profile at `/dashboard/crm/[clientId]` with appointment history and private notes.
 
 ### Security
 - Hardened tenant isolation with a server-resolved current barbershop helper.
