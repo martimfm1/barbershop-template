@@ -25,19 +25,17 @@ export class SubscriptionService {
     return data as SubscriptionRecord | null;
   }
 
-  /** Returns only subscriptions whose Stripe status currently grants paid access. */
+  /** Returns only a paid Stripe subscription that currently grants paid access. Free is implicit. */
   static async getActiveForUser(userId: string): Promise<SubscriptionRecord | null> {
     const subscription = await this.getForUser(userId);
-    return subscription && (PLAN_ACCESS_STATUSES as readonly string[]).includes(subscription.status)
+    if (!subscription) return null;
+    if (subscription.plan === PLANS.FREE) return null;
+    return (PLAN_ACCESS_STATUSES as readonly string[]).includes(subscription.status)
       ? subscription
       : null;
   }
 
-  /**
-   * Resolves the plan that actually grants access to the user.
-   * A subscription that is incomplete, past_due, canceled, or unpaid
-   * does not grant Pro/Enterprise access — the user falls back to Free.
-   */
+  /** Resolves the plan that actually grants access to the user. */
   static async getAccessPlan(userId: string): Promise<BillingPlan> {
     const subscription = await this.getForUser(userId);
     return resolvePlan(subscription);
@@ -89,7 +87,6 @@ export class SubscriptionService {
     if (error) throw new BillingError("Could not persist subscription state.", "DB_WRITE_FAILED", { userId, subscriptionId: subscription.id });
   }
 
-  /** Marks the subscription canceled and revokes paid access (falls back to Free). */
   static async markCanceled(userId: string): Promise<void> {
     const { error } = await createAdminClient()
       .from("subscriptions")
@@ -99,7 +96,6 @@ export class SubscriptionService {
     if (error) throw new BillingError("Could not mark subscription as canceled.", "DB_WRITE_FAILED", { userId });
   }
 
-  /** Revokes paid access and returns the user to the Free plan. */
   static async revokePaidAccess(userId: string, status: SubscriptionRecord["status"]): Promise<void> {
     const { error } = await createAdminClient()
       .from("subscriptions")
