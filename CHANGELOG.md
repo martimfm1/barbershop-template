@@ -7,6 +7,9 @@
 - Added centralized helpers for paid-plan checks and professional/location limits.
 - Added atomic professional creation with plan-aware quota enforcement and audit logging.
 - Added strict server-side validation for professional creation requests.
+- Added the `locations` tenant entity with an initial location backfill for existing barbershops.
+- Added authenticated location management API with create, list, update and delete operations.
+- Added atomic location quota enforcement: Free 1, Pro 1, Enterprise unlimited.
 
 ### Security
 - Hardened tenant isolation with a server-resolved current barbershop helper.
@@ -19,6 +22,9 @@
 - Added indexes for tenant-scoped users and appointment queries.
 - Professional quota checks are serialized per barbershop to prevent concurrent-request bypasses.
 - Professional creation now resolves the effective plan from server-side subscription state instead of trusting browser input.
+- Location mutations require an authenticated owner/admin and always scope the target location to the caller's barbershop.
+- Location quota checks are serialized per barbershop to prevent concurrent-request bypasses.
+- Client-side direct writes to the locations table are disabled; mutations must use the server API.
 
 ## [0.3.1] - 2026-08-06
 
