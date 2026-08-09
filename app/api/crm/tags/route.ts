@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       .insert({
         barbershop_id: barbershopId,
         name,
-        color: typeof body.color === "string" ? body.color.slice(0, 32) : null,
+        color: typeof body?.color === "string" ? body.color.slice(0, 32) : null,
       })
       .select("id,name,color,created_at")
       .single();
