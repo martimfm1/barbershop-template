@@ -43,8 +43,8 @@ export default function MensagensPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [clientId, setClientId] = useState("");
   const [template, setTemplate] = useState<TemplateKey>("reminder");
-  const [subject, setSubject] = useState(templates.reminder.subject);
-  const [body, setBody] = useState(templates.reminder.body);
+  const [subject, setSubject] = useState<string>(templates.reminder.subject);
+  const [body, setBody] = useState<string>(templates.reminder.body);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
