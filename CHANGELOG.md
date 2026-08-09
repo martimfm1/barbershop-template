@@ -1,5 +1,20 @@
 # Changelog
 
+## v3.0.7 — 2026-08-09
+
+### Fixed
+- Resolved the duplicate migration timestamp for the Pro/Enterprise module foundation.
+- Renamed `20260809000000_pro_enterprise_modules.sql` to `20260809000100_pro_enterprise_modules.sql` so it no longer conflicts with the existing `20260809000000_loyalty.sql` migration.
+
+### Database
+- Preserved the Pro/Enterprise migration SQL without changing its schema or RLS definitions.
+- Kept `20260809210000_locations_and_quota_enforcement.sql` as the unique migration for that timestamp.
+- Migration identifiers are now unique in the repository and can be reconciled with the remote Supabase migration history.
+
+### API / Compatibility
+- Reviewed the existing module authorization boundary and API guard architecture for timestamp-related conflicts; migration filenames do not overlap with API routes or service paths.
+- No API endpoint names or request contracts were changed by this migration fix.
+
 ## v3.0.6 — 2026-08-09
 
 ### Added
