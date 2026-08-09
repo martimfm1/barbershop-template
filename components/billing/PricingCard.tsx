@@ -130,12 +130,16 @@ export function PricingCard({
     };
   }, [isMounted, isCurrentPlan, isAuthenticated, subscription, popular, tier]);
 
+  const isActivePaidPlan = isCurrentPlan && (tier === "pro" || tier === "enterprise");
+
   return (
     <div
       className={`relative flex flex-col justify-between rounded-3xl border p-6 transition-all duration-300 backdrop-blur-xl sm:p-8 ${
-        popular
-          ? "border-emerald-500/30 bg-zinc-900/90 shadow-[0_20px_80px_rgba(16,185,129,0.12)]"
-          : "border-white/10 bg-zinc-900/60 shadow-[0_20px_80px_rgba(0,0,0,0.35)] hover:border-white/20"
+        isActivePaidPlan
+          ? "border-emerald-500/60 bg-zinc-900/90 shadow-[0_20px_80px_rgba(16,185,129,0.2)] ring-1 ring-emerald-500/40"
+          : popular
+            ? "border-emerald-500/30 bg-zinc-900/90 shadow-[0_20px_80px_rgba(16,185,129,0.12)]"
+            : "border-white/10 bg-zinc-900/60 shadow-[0_20px_80px_rgba(0,0,0,0.35)] hover:border-white/20"
       }`}
     >
       {popular && (
