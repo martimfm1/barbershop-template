@@ -1,5 +1,27 @@
 # Changelog
 
+## v3.0.5 — 2026-08-09
+
+### Added
+- Added the database foundation for Pro CRM segmentation and customer tags.
+- Added automation rules and execution history tables.
+- Added Enterprise locations and location membership models.
+- Added Enterprise staff permission storage.
+- Added Enterprise inventory products and stock movement history.
+- Added Enterprise commission records with database-calculated commission amounts.
+- Added Enterprise POS transactions and transaction items.
+- Added advanced report configuration storage.
+
+### Security
+- Added tenant-scoped indexes and foreign keys across the new modules.
+- Added RLS to every new module table.
+- Added a follow-up RLS hardening migration that removes browser write access from the new Pro/Enterprise module tables.
+- New mutations are intended to pass through server APIs where plan entitlements and staff permissions are enforced.
+
+### Database
+- Added `supabase/migrations/20260809000000_pro_enterprise_modules.sql`.
+- Added `supabase/migrations/20260809000001_harden_pro_enterprise_rls.sql`.
+
 ## v3.0.4 — 2026-08-09
 
 ### Added
