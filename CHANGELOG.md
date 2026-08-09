@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+- Added server-side billing entitlement primitives for feature checks and plan quotas.
+- Added centralized helpers for paid-plan checks and professional/location limits.
+
 ### Security
 - Hardened tenant isolation with a server-resolved current barbershop helper.
 - Prevented client-side changes to user `barbershop_id`, `role`, and account identity.
