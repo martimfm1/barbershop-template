@@ -23,6 +23,8 @@
 - Added reusable Brevo transactional/marketing email provider integration.
 - Added reusable Twilio SMS provider integration with pay-as-you-go delivery.
 - Added authenticated marketing campaign creation/list API with audience validation.
+- Added per-barbershop email sender names while keeping the verified Silentra sender email on Brevo.
+- Added Twilio alphanumeric sender-name normalization for barbershop-branded SMS.
 
 ### Security
 - Hardened tenant isolation with a server-resolved current barbershop helper.
@@ -45,6 +47,7 @@
 - Marketing campaign records are tenant-scoped and recipient delivery rows are server-managed.
 - Provider credentials are read only from server-side environment variables and are never accepted from request bodies.
 - SMS recipients and message lengths are validated before requests reach Twilio.
+- Sender names are sanitized server-side and are never accepted as arbitrary provider credentials.
 
 ## [0.3.1] - 2026-08-06
 
