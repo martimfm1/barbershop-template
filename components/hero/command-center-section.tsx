@@ -89,53 +89,6 @@ export function CommandCenterSection() {
             </svg>
           </div>
         </motion.article>
-
-        <motion.article variants={reveal} transition={{ duration: 0.55 }} className="rounded-3xl border border-white/10 bg-zinc-900/80 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl">
-          <p className="text-xs uppercase tracking-[0.34em] text-zinc-500">Fila sem complicações</p>
-          <h3 className="mt-3 text-xl font-semibold text-zinc-50">Marcações Recentes</h3>
-          <div className="mt-5 space-y-3">
-            {recentBookings.map((booking) => (
-              <div key={booking.name} className="rounded-full border border-white/8 bg-white/3 p-4 backdrop-blur-xl">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-zinc-50">{booking.name}</span>
-                      <span className="rounded-full border border-white/10 bg-white/4 px-2 py-0.5 text-[11px] uppercase tracking-[0.22em] text-zinc-400 backdrop-blur-xl">{booking.badge}</span>
-                    </div>
-                    <div className="mt-1 text-sm text-zinc-400">{booking.service}</div>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-emerald-200">
-                    <span className="size-2 rounded-full bg-emerald-300 shadow-[0_0_0_4px_rgba(52,211,153,0.12)]" />
-                    {booking.channel}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.article>
-
-        <motion.article variants={reveal} transition={{ duration: 0.55 }} className="rounded-3xl border border-white/10 bg-zinc-900/80 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl">
-          <p className="text-xs uppercase tracking-[0.34em] text-zinc-500">Notificações automáticas</p>
-          <h3 className="mt-3 text-xl font-semibold text-zinc-50">Notificações</h3>
-          <div className="mt-5 space-y-3">
-            {outreach.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.title} className="rounded-full border border-white/8 bg-white/3 p-4 backdrop-blur-xl">
-                  <div className="flex items-start gap-3">
-                    <div className="flex size-9 items-center justify-center rounded-full border border-white/8 bg-white/4 text-zinc-300 backdrop-blur-xl">
-                      <Icon className="size-4" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-zinc-50">{item.title}</div>
-                      <div className="mt-1 text-sm text-zinc-400">{item.detail}</div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </motion.article>
       </div>
     </section>
   );

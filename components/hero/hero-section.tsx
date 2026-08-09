@@ -274,27 +274,6 @@ export function HeroSection({ services, slots }: HeroSectionProps) {
                   </p>
                 </div>
               </div>
-
-              <div className="rounded-3xl border border-emerald-500/15 bg-emerald-500/4 p-6 backdrop-blur-xl sm:p-8">
-                <div className="flex items-center gap-3 text-sm uppercase tracking-[0.3em] text-emerald-200/70">
-                  <span className="size-2 rounded-full bg-emerald-300/80" />
-                  The Silentra way
-                </div>
-                <div className="mt-6 grid gap-3">
-                  {silentraWay.map((item) => {
-                    const Icon = item.icon as LucideIcon;
-                    return (
-                      <div
-                        key={item.label}
-                        className={`flex items-center gap-3 rounded-full border border-white/8 px-4 py-3 backdrop-blur-xl ${item.bg}`}
-                      >
-                        <Icon className={`size-4 ${item.tone}`} />
-                        <span className="text-sm text-zinc-100">{item.label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
             </div>
           </div>
         </motion.div>
