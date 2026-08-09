@@ -81,7 +81,9 @@ function hasFeature(plan: BillingPlan, feature: FeatureKey) {
 }
 
 function formatLimit(value: number, singular: string, plural: string) {
-  return Number.isFinite(value) ? `${value} ${value === 1 ? singular : plural}` : "Ilimitado";
+  return Number.isFinite(value)
+    ? `${value} ${value === 1 ? singular : plural}`
+    : "Ilimitado";
 }
 
 export function PlanComparison() {
@@ -98,7 +100,9 @@ export function PlanComparison() {
           Compara todas as funcionalidades.
         </h2>
         <p className="mt-3 text-sm leading-6 text-zinc-400 sm:text-base">
-          O Free já inclui tudo o que precisas para começar. Os planos pagos acrescentam ferramentas para crescer, automatizar e gerir operações maiores.
+          O Free já inclui tudo o que precisas para começar. Os planos pagos
+          acrescentam ferramentas para crescer, automatizar e gerir operações
+          maiores.
         </p>
       </div>
 
@@ -107,7 +111,10 @@ export function PlanComparison() {
           <table className="w-full min-w-[760px] border-collapse text-left">
             <thead>
               <tr className="border-b border-white/10 bg-white/[0.03]">
-                <th scope="col" className="w-[44%] px-5 py-5 text-sm font-medium text-zinc-400 sm:px-7">
+                <th
+                  scope="col"
+                  className="w-[44%] px-5 py-5 text-sm font-medium text-zinc-400 sm:px-7"
+                >
                   Funcionalidade
                 </th>
                 {PLAN_ORDER.map((plan) => (
@@ -128,73 +135,107 @@ export function PlanComparison() {
                 ))}
               </tr>
             </thead>
+
             <tbody>
               <tr className="border-b border-white/10 bg-white/[0.02]">
-                <th scope="row" className="px-5 py-4 text-sm font-semibold text-zinc-200 sm:px-7">
+                <th
+                  scope="row"
+                  className="px-5 py-4 text-sm font-semibold text-zinc-200 sm:px-7"
+                >
                   Limite de profissionais
                 </th>
-                <td className="px-4 py-4 text-center text-sm text-zinc-300 sm:px-6">
-                  {formatLimit(PLAN_LIMITS[PLANS.FREE].barbers, "barbeiro", "barbeiros")}
-                </td>
-                <td className="px-4 py-4 text-center text-sm font-medium text-emerald-300 sm:px-6">
-                  {formatLimit(PLAN_LIMITS[PLANS.PRO].barbers, "barbeiro", "barbeiros")}
-                </td>
-                <td className="px-4 py-4 text-center text-sm font-medium text-zinc-100 sm:px-6">
-                  {formatLimit(PLAN_LIMITS[PLANS.ENTERPRISE].barbers, "barbeiro", "barbeiros")}
-                </td>
-              </tr>
-              <tr className="border-b border-white/10 bg-white/[0.02]">
-                <th scope="row" className="px-5 py-4 text-sm font-semibold text-zinc-200 sm:px-7">
-                  Localizações
-                </th>
                 {PLAN_ORDER.map((plan) => (
-                  <td key={plan} className="px-4 py-4 text-center text-sm text-zinc-300 sm:px-6">
-                    {formatLimit(PLAN_LIMITS[plan].locations, "localização", "localizações")}
+                  <td
+                    key={plan}
+                    className="px-4 py-4 text-center text-sm text-zinc-300 sm:px-6"
+                  >
+                    {formatLimit(
+                      PLAN_LIMITS[plan].barbers,
+                      "barbeiro",
+                      "barbeiros",
+                    )}
                   </td>
                 ))}
               </tr>
-
-              {FEATURE_GROUPS.map((group) => (
-                <tbody key={group.title}>
-                  <tr>
-                    <th
-                      scope="colgroup"
-                      colSpan={4}
-                      className="border-y border-white/10 bg-zinc-950/60 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500 sm:px-7"
-                    >
-                      {group.title}
-                    </th>
-                  </tr>
-                  {group.features.map((feature) => (
-                    <tr key={feature} className="border-b border-white/5 last:border-b-0">
-                      <th scope="row" className="px-5 py-4 text-sm font-normal text-zinc-300 sm:px-7">
-                        {FEATURE_LABELS[feature]}
-                      </th>
-                      {PLAN_ORDER.map((plan) => {
-                        const included = hasFeature(plan, feature);
-                        return (
-                          <td key={plan} className="px-4 py-4 text-center sm:px-6">
-                            {included ? (
-                              <span className="inline-flex size-6 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400" aria-label={`${FEATURE_LABELS[feature]} incluído`}>
-                                <Check className="size-3.5" aria-hidden="true" />
-                              </span>
-                            ) : (
-                              <span className="inline-flex size-6 items-center justify-center text-zinc-700" aria-label={`${FEATURE_LABELS[feature]} não incluído`}>
-                                <Minus className="size-4" aria-hidden="true" />
-                              </span>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              ))}
+              <tr className="border-b border-white/10 bg-white/[0.02]">
+                <th
+                  scope="row"
+                  className="px-5 py-4 text-sm font-semibold text-zinc-200 sm:px-7"
+                >
+                  Localizações
+                </th>
+                {PLAN_ORDER.map((plan) => (
+                  <td
+                    key={plan}
+                    className="px-4 py-4 text-center text-sm text-zinc-300 sm:px-6"
+                  >
+                    {formatLimit(
+                      PLAN_LIMITS[plan].locations,
+                      "localização",
+                      "localizações",
+                    )}
+                  </td>
+                ))}
+              </tr>
             </tbody>
+
+            {FEATURE_GROUPS.map((group) => (
+              <tbody key={group.title}>
+                <tr>
+                  <th
+                    scope="colgroup"
+                    colSpan={4}
+                    className="border-y border-white/10 bg-zinc-950/60 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500 sm:px-7"
+                  >
+                    {group.title}
+                  </th>
+                </tr>
+                {group.features.map((feature) => (
+                  <tr
+                    key={feature}
+                    className="border-b border-white/5 last:border-b-0"
+                  >
+                    <th
+                      scope="row"
+                      className="px-5 py-4 text-sm font-normal text-zinc-300 sm:px-7"
+                    >
+                      {FEATURE_LABELS[feature]}
+                    </th>
+                    {PLAN_ORDER.map((plan) => {
+                      const included = hasFeature(plan, feature);
+                      return (
+                        <td
+                          key={plan}
+                          className="px-4 py-4 text-center sm:px-6"
+                        >
+                          {included ? (
+                            <span
+                              className="inline-flex size-6 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                              aria-label={`${FEATURE_LABELS[feature]} incluído`}
+                            >
+                              <Check className="size-3.5" aria-hidden="true" />
+                            </span>
+                          ) : (
+                            <span
+                              className="inline-flex size-6 items-center justify-center text-zinc-700"
+                              aria-label={`${FEATURE_LABELS[feature]} não incluído`}
+                            >
+                              <Minus className="size-4" aria-hidden="true" />
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            ))}
           </table>
         </div>
         <p className="border-t border-white/10 px-5 py-4 text-xs leading-5 text-zinc-500 sm:px-7">
-          Todas as funcionalidades de um plano inferior ficam incluídas nos planos superiores. Os limites são aplicados no servidor e podem variar apenas quando o plano da conta for alterado.
+          Todas as funcionalidades de um plano inferior ficam incluídas nos
+          planos superiores. Os limites são aplicados no servidor e podem
+          variar apenas quando o plano da conta for alterado.
         </p>
       </div>
     </section>
