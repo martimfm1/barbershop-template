@@ -1,5 +1,22 @@
 # Changelog
 
+## v3.0.16 — 2026-08-09
+
+### Fixed
+- Removed duplicated legacy `professionals` and `analytics` entries from the actual plan feature lists.
+- Added a single compatibility resolver mapping legacy UI checks to canonical entitlements.
+- `professionals` now resolves to the canonical `team_management` entitlement.
+- `analytics` now resolves to the canonical `advanced_analytics` entitlement.
+- Updated `useFeatureAccess` to use the canonical resolver instead of directly checking the raw feature array.
+- Prevented legacy feature names from becoming independently configurable plan entitlements.
+
+### Pricing consistency
+- Free, Pro and Enterprise limits remain centralized in `PLAN_LIMITS`.
+- Feature presentation remains centralized in `PLAN_FEATURES` and `FEATURE_LABELS`.
+- Pro remains 5 barbers / 1 location.
+- Enterprise remains unlimited barbers / unlimited locations.
+- AI assistant and API access remain excluded from all advertised plan features.
+
 ## v3.0.15 — 2026-08-09
 
 ### Fixed
