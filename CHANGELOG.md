@@ -1,5 +1,27 @@
 # Changelog
 
+## v3.0.9 — 2026-08-09
+
+### Fixed
+- Made Enterprise POS sales atomic at the database level.
+- POS transaction creation, transaction items, inventory decrement and stock movement now succeed or roll back as one PostgreSQL transaction.
+- Removed the previous application-level create-then-delete rollback pattern, which could leave inconsistent state after partial failures.
+
+### Security
+- Product stock is locked with `FOR UPDATE` before a sale is accepted, preventing concurrent sales from overselling inventory.
+- POS prices are revalidated against the authoritative database product/service price inside the transaction.
+- Location, client and appointment ownership is validated inside the database transaction.
+- The atomic POS RPC is executable only by the Supabase `service_role`; clients cannot call it directly.
+- Inventory sale movements are created together with the stock decrement and POS transaction.
+
+### API
+- `POST /api/enterprise/pos` now delegates transaction creation to the atomic database RPC.
+- Added explicit `409` responses for insufficient stock and stale prices.
+- POS item creation remains protected by the existing Enterprise module authorization boundary.
+
+### Database
+- Added `supabase/migrations/20260903000000_pos_atomic_transactions.sql`.
+
 ## v3.0.8 — 2026-08-09
 
 ### Added
