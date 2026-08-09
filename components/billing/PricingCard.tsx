@@ -24,6 +24,7 @@ export function PricingCard({
   tier,
   title,
   price,
+  priceId,
   description,
   features,
   popular = false,
@@ -70,13 +71,7 @@ export function PricingCard({
         return;
       }
 
-      if (tier === "free") {
-        window.location.assign("/dashboard/billing");
-        return;
-      }
-
-      const priceId = undefined;
-      if (!priceId) {
+      if (tier === "free" || !priceId) {
         window.location.assign("/dashboard/billing");
         return;
       }
