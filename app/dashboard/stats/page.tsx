@@ -11,6 +11,7 @@ import { appointmentService } from "@/app/dashboard/_services/appointments.servi
 // UI COMPONENTS
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // RECHARTS
 import {
@@ -24,6 +25,7 @@ import {
   YAxis,
   Tooltip as RechartsTooltip,
   CartesianGrid,
+  Legend,
 } from "recharts";
 
 // ICONS
@@ -34,8 +36,9 @@ import {
   Scissors,
   CheckCircle,
   Wallet,
-  Loader2,
   Receipt,
+  Store,
+  RefreshCw,
 } from "lucide-react";
 import { Appointment } from "@/types";
 
@@ -47,15 +50,31 @@ const CHART_PALETTE = [
   "#ec4899", // Pink
 ];
 
-function CustomChartTooltip({ active, payload, label }: any) {
+interface TooltipEntry {
+  name?: string;
+  value?: number | string;
+  color?: string;
+  payload?: { name?: string };
+}
+
+interface ChartTooltipProps {
+  active?: boolean;
+  payload?: TooltipEntry[];
+  label?: string | number;
+}
+
+function CustomChartTooltip({ active, payload, label }: ChartTooltipProps) {
   if (active && payload && payload.length) {
     const item = payload[0];
+    const displayLabel = typeof label === "string" && label.length > 0
+      ? label
+      : item.name ?? item.payload?.name ?? "";
     return (
       <div
         role="tooltip"
         className="rounded-xl border border-white/10 bg-zinc-900/95 p-3 shadow-2xl backdrop-blur-md"
       >
-        <p className="text-xs font-medium text-zinc-400">{label || item.name}</p>
+        <p className="text-xs font-medium text-zinc-400">{displayLabel}</p>
         <p className="mt-0.5 text-sm font-bold text-zinc-100">
           {typeof item.value === "number" ? `${item.value.toFixed(2)}€` : item.value}
         </p>
@@ -88,7 +107,7 @@ export default function StatsPage() {
 
   useEffect(() => {
     if (barbershopId) {
-      void fetchStatsData();
+      queueMicrotask(() => void fetchStatsData());
     }
   }, [barbershopId, fetchStatsData]);
 
@@ -165,12 +184,17 @@ export default function StatsPage() {
           value,
         }),
       ),
-      serviceStats: Object.values(serviceCounts).map((data) => ({
-        name: data.name,
-        value: data.total,
-      })),
+      serviceStats: Object.values(serviceCounts)
+        .map((data) => ({
+          name: data.name,
+          value: data.total,
+        }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 8),
     };
   }, [appointments]);
+
+  const hasCompleted = analytics.insights.completedCount > 0;
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
@@ -190,31 +214,62 @@ export default function StatsPage() {
           </p>
         </div>
 
-        <Link href="/dashboard" className="w-full sm:w-auto">
+        <div className="flex gap-2 w-full sm:w-auto">
           <Button
             variant="ghost"
-            className="w-full sm:w-auto min-h-[44px] bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 text-zinc-200 border border-white/10 text-xs sm:text-sm gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
+            onClick={() => void fetchStatsData()}
+            disabled={loading}
+            aria-label="Atualizar métricas"
+            className="min-h-[44px] bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 text-zinc-200 border border-white/10 text-xs sm:text-sm px-3 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
           >
-            <ArrowLeft className="size-4" aria-hidden="true" /> Voltar ao Painel
+            <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" />
+            <span className="sr-only sm:not-sr-only sm:ml-2">Atualizar</span>
           </Button>
-        </Link>
+          <Link href="/dashboard" className="flex-1 sm:flex-none">
+            <Button
+              variant="ghost"
+              className="w-full sm:w-auto min-h-[44px] bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 text-zinc-200 border border-white/10 text-xs sm:text-sm gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
+            >
+              <ArrowLeft className="size-4" aria-hidden="true" /> Voltar ao Painel
+            </Button>
+          </Link>
+        </div>
       </header>
 
       {loading ? (
-        <div
-          role="status"
-          aria-live="polite"
-          className="flex h-64 w-full items-center justify-center text-zinc-400"
-        >
-          <Loader2 className="size-6 animate-spin mr-2 text-emerald-400" aria-hidden="true" />
-          <span className="text-sm font-medium">A carregar métricas...</span>
+        <div role="status" aria-live="polite" className="space-y-6">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i} className="border border-white/10 bg-zinc-900/60">
+                <CardHeader className="pb-2 p-4">
+                  <Skeleton className="h-4 w-28 bg-white/10" />
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                  <Skeleton className="h-8 w-20 bg-white/10" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="border border-white/10 bg-zinc-900/60">
+                <CardHeader className="p-4 border-b border-white/5">
+                  <Skeleton className="h-4 w-36 bg-white/10" />
+                </CardHeader>
+                <CardContent className="h-[220px] sm:h-[260px] p-4">
+                  <Skeleton className="h-full w-full bg-white/5" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <span className="sr-only">A carregar métricas...</span>
         </div>
       ) : (
         <>
-          {/* ⚡ GRID DE KPIS (Semântico com dl/dt/dd) */}
+          {/* ⚡ GRID DE KPIS */}
           <section aria-label="Resumo de Métricas">
             <dl className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-              <Card className="border border-white/10 bg-zinc-900/60 backdrop-blur-xl shadow-lg">
+              <Card className="border border-white/10 bg-zinc-900/60 shadow-lg">
                 <CardHeader className="pb-1 p-4">
                   <dt className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     <span>Faturação Total</span>
@@ -228,7 +283,7 @@ export default function StatsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border border-white/10 bg-zinc-900/60 backdrop-blur-xl shadow-lg">
+              <Card className="border border-white/10 bg-zinc-900/60 shadow-lg">
                 <CardHeader className="pb-1 p-4">
                   <dt className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     <span>Ticket Médio</span>
@@ -242,7 +297,7 @@ export default function StatsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border border-white/10 bg-zinc-900/60 backdrop-blur-xl shadow-lg">
+              <Card className="border border-white/10 bg-zinc-900/60 shadow-lg">
                 <CardHeader className="pb-1 p-4">
                   <dt className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     <span>Mais Solicitado</span>
@@ -250,13 +305,13 @@ export default function StatsPage() {
                   </dt>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <dd className="text-lg font-semibold text-zinc-100 truncate">
+                  <dd className="text-lg font-semibold text-zinc-100 truncate" title={analytics.insights.mostPopular}>
                     {analytics.insights.mostPopular}
                   </dd>
                 </CardContent>
               </Card>
 
-              <Card className="border border-white/10 bg-zinc-900/60 backdrop-blur-xl shadow-lg">
+              <Card className="border border-white/10 bg-zinc-900/60 shadow-lg">
                 <CardHeader className="pb-1 p-4">
                   <dt className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     <span>Serviços Concluídos</span>
@@ -273,167 +328,214 @@ export default function StatsPage() {
             </dl>
           </section>
 
-          {/* 📊 ÁREA DE GRÁFICOS */}
-          <section
-            aria-label="Gráficos de Desempenho"
-            className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-          >
-            {/* GRÁFICO 1: MÉTODOS DE PAGAMENTO */}
-            <Card className="border border-white/10 bg-zinc-900/60 backdrop-blur-xl shadow-lg flex flex-col justify-between">
-              <CardHeader className="p-4 border-b border-white/5">
-                <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                  <Wallet className="size-4 text-amber-400" aria-hidden="true" /> Fluxo por Método (€)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-[220px] sm:h-[260px] p-2 pt-4">
-                {analytics.paymentStats.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-xs text-zinc-500">
-                    Sem histórico disponível
-                  </div>
-                ) : (
-                  <>
-                    <div className="sr-only">
-                      Tabela de métodos de pagamento:{" "}
-                      {analytics.paymentStats
-                        .map((s) => `${s.name}: ${s.value.toFixed(2)}€`)
-                        .join(", ")}
+          {!hasCompleted ? (
+            <section
+              aria-label="Sem dados suficientes"
+              className="rounded-2xl border border-dashed border-white/10 bg-zinc-900/40 p-10 text-center"
+            >
+              <div className="mx-auto flex size-12 items-center justify-center rounded-full border border-white/10 bg-white/5 text-zinc-400">
+                <Store className="size-6" aria-hidden="true" />
+              </div>
+              <h2 className="mt-4 text-sm font-semibold text-zinc-200">
+                Sem marcações concluídas
+              </h2>
+              <p className="mt-1 text-sm text-zinc-500">
+                Conclui marcações para veres gráficos de faturação, métodos de
+                pagamento e desempenho por barbeiro.
+              </p>
+              <Link
+                href="/dashboard"
+                className="mt-5 inline-flex min-h-[44px] items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-5 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/20 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
+              >
+                Ir para a agenda
+              </Link>
+            </section>
+          ) : (
+            <section
+              aria-label="Gráficos de Desempenho"
+              className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+            >
+              {/* GRÁFICO 1: MÉTODOS DE PAGAMENTO */}
+              <Card className="border border-white/10 bg-zinc-900/60 shadow-lg flex flex-col justify-between">
+                <CardHeader className="p-4 border-b border-white/5">
+                  <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                    <Wallet className="size-4 text-amber-400" aria-hidden="true" /> Fluxo por Método (€)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-[220px] sm:h-[260px] p-2 pt-4">
+                  {analytics.paymentStats.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-xs text-zinc-500">
+                      Sem histórico disponível
                     </div>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={analytics.paymentStats}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={45}
-                          outerRadius={70}
-                          paddingAngle={5}
-                          cornerRadius={4}
-                          dataKey="value"
+                  ) : (
+                    <>
+                      <div className="sr-only">
+                        Tabela de métodos de pagamento:{" "}
+                        {analytics.paymentStats
+                          .map((s) => `${s.name}: ${s.value.toFixed(2)}€`)
+                          .join(", ")}
+                      </div>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={analytics.paymentStats}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={45}
+                            outerRadius={70}
+                            paddingAngle={5}
+                            cornerRadius={4}
+                            dataKey="value"
+                          >
+                            {analytics.paymentStats.map((_, index) => (
+                              <Cell
+                                key={index}
+                                fill={CHART_PALETTE[index % CHART_PALETTE.length]}
+                                stroke="transparent"
+                              />
+                            ))}
+                          </Pie>
+                          <RechartsTooltip content={<CustomChartTooltip />} />
+                          <Legend
+                            verticalAlign="bottom"
+                            height={28}
+                            iconType="circle"
+                            iconSize={8}
+                            formatter={(value: string) => (
+                              <span className="text-xs text-zinc-400">{value}</span>
+                            )}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* GRÁFICO 2: FATURAÇÃO POR BARBEIRO */}
+              <Card className="border border-white/10 bg-zinc-900/60 shadow-lg flex flex-col justify-between">
+                <CardHeader className="p-4 border-b border-white/5">
+                  <CardTitle className="text-sm font-semibold text-zinc-200">
+                    Faturação por Barbeiro (€)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-[220px] sm:h-[260px] p-2 pt-4">
+                  {analytics.professionalStats.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-xs text-zinc-500">
+                      Sem dados operacionais
+                    </div>
+                  ) : (
+                    <>
+                      <div className="sr-only">
+                        Faturação por barbeiro:{" "}
+                        {analytics.professionalStats
+                          .map((s) => `${s.name}: ${s.value.toFixed(2)}€`)
+                          .join(", ")}
+                      </div>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={analytics.professionalStats}
+                          margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
                         >
-                          {analytics.paymentStats.map((_, index) => (
-                            <Cell
-                              key={index}
-                              fill={CHART_PALETTE[index % CHART_PALETTE.length]}
-                              stroke="transparent"
-                            />
-                          ))}
-                        </Pie>
-                        <RechartsTooltip content={<CustomChartTooltip />} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+                          <CartesianGrid
+                            vertical={false}
+                            strokeDasharray="3 3"
+                            stroke="rgba(255,255,255,0.06)"
+                          />
+                          <XAxis
+                            dataKey="name"
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fill: "#a1a1aa", fontSize: 11 }}
+                            dy={6}
+                            interval={0}
+                            tickFormatter={(value: string) =>
+                              value.length > 12 ? `${value.slice(0, 12)}…` : value
+                            }
+                          />
+                          <YAxis
+                            tickLine={false}
+                            axisLine={false}
+                            tick={{ fill: "#a1a1aa", fontSize: 11 }}
+                            tickFormatter={(value: number) => `${value}€`}
+                          />
+                          <RechartsTooltip content={<CustomChartTooltip />} />
+                          <Bar
+                            dataKey="value"
+                            name="Faturação"
+                            fill="#38bdf8"
+                            radius={[6, 6, 0, 0]}
+                            maxBarSize={48}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
 
-            {/* GRÁFICO 2: FATURAÇÃO POR BARBEIRO */}
-            <Card className="border border-white/10 bg-zinc-900/60 backdrop-blur-xl shadow-lg flex flex-col justify-between">
-              <CardHeader className="p-4 border-b border-white/5">
-                <CardTitle className="text-sm font-semibold text-zinc-200">
-                  Faturação por Barbeiro (€)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-[220px] sm:h-[260px] p-2 pt-4">
-                {analytics.professionalStats.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-xs text-zinc-500">
-                    Sem dados operacionais
-                  </div>
-                ) : (
-                  <>
-                    <div className="sr-only">
-                      Faturação por barbeiro:{" "}
-                      {analytics.professionalStats
-                        .map((s) => `${s.name}: ${s.value.toFixed(2)}€`)
-                        .join(", ")}
+              {/* GRÁFICO 3: TOP SERVIÇOS EM FATURAÇÃO */}
+              <Card className="border border-white/10 bg-zinc-900/60 shadow-lg flex flex-col justify-between md:col-span-2 lg:col-span-1">
+                <CardHeader className="p-4 border-b border-white/5">
+                  <CardTitle className="text-sm font-semibold text-zinc-200">
+                    Top Serviços Ganhos (€)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-[220px] sm:h-[260px] p-2 pt-4">
+                  {analytics.serviceStats.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-xs text-zinc-500">
+                      Sem registos
                     </div>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={analytics.professionalStats}
-                        margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
-                      >
-                        <CartesianGrid
-                          vertical={false}
-                          strokeDasharray="3 3"
-                          stroke="rgba(255,255,255,0.06)"
-                        />
-                        <XAxis
-                          dataKey="name"
-                          tickLine={false}
-                          axisLine={false}
-                          tick={{ fill: "#a1a1aa", fontSize: 11 }}
-                          dy={6}
-                        />
-                        <YAxis
-                          tickLine={false}
-                          axisLine={false}
-                          tick={{ fill: "#a1a1aa", fontSize: 11 }}
-                        />
-                        <RechartsTooltip content={<CustomChartTooltip />} />
-                        <Bar
-                          dataKey="value"
-                          fill="#38bdf8"
-                          radius={[6, 6, 0, 0]}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* GRÁFICO 3: TOP SERVIÇOS EM FATURAÇÃO */}
-            <Card className="border border-white/10 bg-zinc-900/60 backdrop-blur-xl shadow-lg flex flex-col justify-between md:col-span-2 lg:col-span-1">
-              <CardHeader className="p-4 border-b border-white/5">
-                <CardTitle className="text-sm font-semibold text-zinc-200">
-                  Top Serviços Ganhos (€)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-[220px] sm:h-[260px] p-2 pt-4">
-                {analytics.serviceStats.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-xs text-zinc-500">
-                    Sem registos
-                  </div>
-                ) : (
-                  <>
-                    <div className="sr-only">
-                      Serviços mais rentáveis:{" "}
-                      {analytics.serviceStats
-                        .map((s) => `${s.name}: ${s.value.toFixed(2)}€`)
-                        .join(", ")}
-                    </div>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={analytics.serviceStats}
-                        layout="vertical"
-                        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                      >
-                        <CartesianGrid
-                          horizontal={false}
-                          strokeDasharray="3 3"
-                          stroke="rgba(255,255,255,0.06)"
-                        />
-                        <XAxis type="number" hide />
-                        <YAxis
-                          dataKey="name"
-                          type="category"
-                          tickLine={false}
-                          axisLine={false}
-                          width={75}
-                          tick={{ fill: "#a1a1aa", fontSize: 10 }}
-                        />
-                        <RechartsTooltip content={<CustomChartTooltip />} />
-                        <Bar
-                          dataKey="value"
-                          fill="#10b981"
-                          radius={[0, 6, 6, 0]}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </section>
+                  ) : (
+                    <>
+                      <div className="sr-only">
+                        Serviços mais rentáveis:{" "}
+                        {analytics.serviceStats
+                          .map((s) => `${s.name}: ${s.value.toFixed(2)}€`)
+                          .join(", ")}
+                      </div>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={analytics.serviceStats}
+                          layout="vertical"
+                          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                        >
+                          <CartesianGrid
+                            horizontal={false}
+                            strokeDasharray="3 3"
+                            stroke="rgba(255,255,255,0.06)"
+                          />
+                          <XAxis type="number" hide />
+                          <YAxis
+                            dataKey="name"
+                            type="category"
+                            tickLine={false}
+                            axisLine={false}
+                            width={85}
+                            tick={{ fill: "#a1a1aa", fontSize: 10 }}
+                            tickFormatter={(value: string) =>
+                              value.length > 14 ? `${value.slice(0, 14)}…` : value
+                            }
+                          />
+                          <RechartsTooltip
+                            content={<CustomChartTooltip />}
+                            cursor={{ fill: "rgba(255,255,255,0.04)" }}
+                          />
+                          <Bar
+                            dataKey="value"
+                            name="Faturação"
+                            fill="#10b981"
+                            radius={[0, 6, 6, 0]}
+                            maxBarSize={22}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+          )}
         </>
       )}
     </main>

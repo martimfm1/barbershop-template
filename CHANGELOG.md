@@ -1,5 +1,17 @@
 # Changelog
 
+## v3.0.19 — 2026-08-09
+
+### Changed
+- Improved `/dashboard` UI.
+- Redesigned `/dashboard/stats`.
+- Improved responsive behaviour.
+- Improved loading and empty states.
+- Replaced legacy feature checks with canonical entitlements where applicable.
+
+### Fixed
+- Removed legacy `professionals` / `analytics` feature checks in `/dashboard` in favour of `team_management` / `advanced_analytics`.
+
 ## v3.0.18 — 2026-08-09
 
 ### Added

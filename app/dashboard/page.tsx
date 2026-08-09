@@ -87,13 +87,22 @@ import {
   CalendarOff,
   MessageCircle,
   TrendingUp,
+  Clock,
+  Sparkles,
+  ChevronRight,
+  Crown,
 } from "lucide-react";
+import { PLAN_NAMES } from "@/lib/billing/plan-features";
 
 export default function DashboardPage() {
   const { barbershopId, loading: isLoadingBarbershop } = useBarbershop();
-  const { hasFeature } = useFeatureAccess();
-  const canUseProfessionals = hasFeature("professionals");
-  const canUseAnalytics = hasFeature("analytics");
+  const { hasFeature, plan } = useFeatureAccess();
+  const canUseTeam = hasFeature("team_management");
+  const canUseAnalytics = hasFeature("advanced_analytics");
+  const canUseCrm = hasFeature("advanced_crm");
+  const canUseMarketing = hasFeature("marketing_campaigns");
+  const canUseAutomations = hasFeature("automated_reminders");
+  const canUseLoyalty = hasFeature("loyalty");
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
@@ -163,7 +172,6 @@ export default function DashboardPage() {
     setValueProducts,
     descriptionProducts,
     setDescriptionProducts,
-    bookingFormData,
     setBookingFormData,
     blockFormData,
     setBlockFormData,
@@ -171,7 +179,6 @@ export default function DashboardPage() {
     confirmBooking,
     finalizeBooking,
     handleCreateBlock,
-    handleDeleteBlock,
     handleDeleteBooking,
   } = useAppointments(barbershopId, fetchInitialData);
 
@@ -188,8 +195,6 @@ export default function DashboardPage() {
 
   const {
     loadingClients,
-    searchQuery,
-    setSearchQuery,
     newClientData,
     setNewClientData,
     editingClient,
@@ -197,7 +202,6 @@ export default function DashboardPage() {
     handleCreateClient,
     handleUpdateClient,
     handleDeleteClient,
-    getFilteredClients,
   } = useClients(barbershopId, fetchInitialData);
 
   const {
@@ -396,6 +400,46 @@ export default function DashboardPage() {
 
         <div className="relative px-3 pb-5 pt-8 text-foreground sm:px-5 md:px-8 md:pb-12">
           <>
+            <section
+              className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"
+              aria-labelledby="dashboard-greeting"
+            >
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-400">
+                  Dashboard
+                </p>
+                <h1
+                  id="dashboard-greeting"
+                  className="mt-1 font-heading text-2xl font-bold tracking-tight text-zinc-50 sm:text-3xl"
+                >
+                  {new Date().getHours() < 12
+                    ? "Bom dia"
+                    : new Date().getHours() < 20
+                      ? "Boa tarde"
+                      : "Boa noite"}{" "}
+                  👋
+                </h1>
+                <p className="mt-1 text-sm text-zinc-400">
+                  {new Date().toLocaleDateString("pt-PT", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })}
+                </p>
+              </div>
+              <Link
+                href="/dashboard/billing"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/10 hover:border-white/20 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
+              >
+                <Crown className="size-4 text-emerald-400" aria-hidden="true" />
+                Plano atual: {PLAN_NAMES[plan]}
+                <ChevronRight
+                  className="size-4 text-zinc-500"
+                  aria-hidden="true"
+                />
+              </Link>
+            </section>
+
             <section className="pb-5 grid gap-3 md:gap-4 grid-cols-2 md:grid-cols-7">
               {[
                 {
@@ -418,7 +462,7 @@ export default function DashboardPage() {
                   icon: Briefcase,
                   label: "Professionals",
                   color: "purple" as ColorKey,
-                  locked: !canUseProfessionals,
+                  locked: !canUseTeam,
                 },
                 {
                   state: showClientsList,
@@ -457,6 +501,42 @@ export default function DashboardPage() {
                   color: "blue" as ColorKey,
                   href: "/dashboard/stats",
                   locked: !canUseAnalytics,
+                },
+                {
+                  state: false,
+                  setter: null,
+                  icon: Sparkles,
+                  label: "Marketing",
+                  color: "purple" as ColorKey,
+                  href: "/dashboard/marketing",
+                  locked: !canUseMarketing,
+                },
+                {
+                  state: false,
+                  setter: null,
+                  icon: Clock,
+                  label: "Automações",
+                  color: "amber" as ColorKey,
+                  href: "/dashboard/automations",
+                  locked: !canUseAutomations,
+                },
+                {
+                  state: false,
+                  setter: null,
+                  icon: Users,
+                  label: "CRM",
+                  color: "blue" as ColorKey,
+                  href: "/dashboard/crm",
+                  locked: !canUseCrm,
+                },
+                {
+                  state: false,
+                  setter: null,
+                  icon: Sparkles,
+                  label: "Fidelização",
+                  color: "emerald" as ColorKey,
+                  href: "/dashboard/loyalty",
+                  locked: !canUseLoyalty,
                 },
               ].map((item, idx) => {
                 const cardClasses = cn(
@@ -627,45 +707,77 @@ export default function DashboardPage() {
               />
             )}
 
-            <section className="pt-5 grid gap-3 md:gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {metrics.map((metric) => (
-                <Link
-                  key={metric.key}
-                  href="/dashboard/stats"
-                  className="block no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-xl"
+            <section className="pt-5" aria-labelledby="business-overview">
+              <div className="mb-3 flex items-center justify-between">
+                <h2
+                  id="business-overview"
+                  className="font-heading text-sm font-semibold uppercase tracking-[0.18em] text-zinc-400"
                 >
-                  <Card
-                    className={cn(
-                      "border border-white/10 bg-white/[0.04]",
-                      "cursor-pointer transition-all duration-200",
-                      cardHoverVariants[metric.variant],
-                    )}
-                  >
-                    <CardHeader className="flex flex-row items-center justify-between p-4 space-y-0">
-                      <div className="space-y-1 min-w-0">
-                        <CardDescription className="text-zinc-400 text-xs font-medium truncate">
-                          {metric.label}
-                        </CardDescription>
-                        <CardTitle className="text-2xl text-zinc-50 font-bold tracking-tight truncate">
-                          {metric.value}
-                        </CardTitle>
-                      </div>
+                  Resumo do negócio
+                </h2>
+                {loadingInitial ? null : (
+                  <span className="text-xs text-zinc-500">
+                    {services.length} serviços · {professionals.length}{" "}
+                    profissionais
+                  </span>
+                )}
+              </div>
 
-                      <span
-                        className={cn(
-                          "flex size-10 items-center justify-center rounded-full transition-colors shrink-0",
-                          iconVariants[metric.variant],
-                        )}
+              <div className="grid gap-3 md:gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {loadingInitial
+                  ? [...Array(4)].map((_, i) => (
+                      <Card
+                        key={i}
+                        className="border border-white/10 bg-white/[0.04]"
                       >
-                        <metric.icon className="size-5" />
-                      </span>
-                    </CardHeader>
-                  </Card>
-                </Link>
-              ))}
+                        <CardHeader className="flex flex-row items-center justify-between p-4 space-y-0">
+                          <div className="space-y-2">
+                            <Skeleton className="h-3 w-24 bg-white/10" />
+                            <Skeleton className="h-7 w-16 bg-white/10" />
+                          </div>
+                          <Skeleton className="size-10 rounded-full bg-white/10" />
+                        </CardHeader>
+                      </Card>
+                    ))
+                  : metrics.map((metric) => (
+                      <Link
+                        key={metric.key}
+                        href="/dashboard/stats"
+                        className="block no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-xl"
+                      >
+                        <Card
+                          className={cn(
+                            "border border-white/10 bg-white/[0.04]",
+                            "cursor-pointer transition-all duration-200",
+                            cardHoverVariants[metric.variant],
+                          )}
+                        >
+                          <CardHeader className="flex flex-row items-center justify-between p-4 space-y-0">
+                            <div className="space-y-1 min-w-0">
+                              <CardDescription className="text-zinc-400 text-xs font-medium truncate">
+                                {metric.label}
+                              </CardDescription>
+                              <CardTitle className="text-2xl text-zinc-50 font-bold tracking-tight truncate">
+                                {metric.value}
+                              </CardTitle>
+                            </div>
+
+                            <span
+                              className={cn(
+                                "flex size-10 items-center justify-center rounded-full transition-colors shrink-0",
+                                iconVariants[metric.variant],
+                              )}
+                            >
+                              <metric.icon className="size-5" />
+                            </span>
+                          </CardHeader>
+                        </Card>
+                      </Link>
+                    ))}
+              </div>
             </section>
 
-            <section className="pt-5 grid gap-3 md:gap-4 lg:grid-cols-[1fr_360px]">
+            <section className="pt-5">
               <Card className="border border-white/10 bg-zinc-900/60 backdrop-blur-xl shadow-xl">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg font-medium text-zinc-100">
@@ -763,469 +875,656 @@ export default function DashboardPage() {
               </Card>
             </section>
 
-<section className="pt-5 grid gap-3 md:gap-4 lg:grid-cols-1" aria-label="Gestão de Agendamentos Diários">
-  <Card className="border border-white/10 bg-zinc-900/60 backdrop-blur-xl shadow-xl">
-    <CardHeader className="px-4 py-4 sm:px-6">
-      <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-100">
-        Gestão de Agendamentos Diários
-      </CardTitle>
-    </CardHeader>
+            <section
+              className="pt-5 grid gap-3 md:gap-4 lg:grid-cols-1"
+              aria-label="Gestão de Agendamentos Diários"
+            >
+              <Card className="border border-white/10 bg-zinc-900/60 backdrop-blur-xl shadow-xl">
+                <CardHeader className="px-4 py-4 sm:px-6">
+                  <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-100">
+                    Gestão de Agendamentos Diários
+                  </CardTitle>
+                </CardHeader>
 
-    <CardContent className="p-0 sm:p-6 sm:pt-0">
-      {/* ------------------------------------------------------------- */}
-      {/* 1. ESTADO DE CARREGAMENTO (SKELETONS)                          */}
-      {/* ------------------------------------------------------------- */}
-      {loadingInitial ? (
-        <div className="p-4 sm:p-0 space-y-3" role="status" aria-label="A carregar agendamentos">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="p-4 rounded-xl border border-white/5 bg-white/[0.02] space-y-3 md:hidden">
-              <div className="flex justify-between items-center">
-                <Skeleton className="h-5 w-32 bg-white/10" />
-                <Skeleton className="h-6 w-20 bg-white/10 rounded-full" />
-              </div>
-              <Skeleton className="h-4 w-48 bg-white/10" />
-              <Skeleton className="h-9 w-full bg-white/10 rounded-lg" />
-            </div>
-          ))}
-          <div className="hidden md:block border border-white/5 rounded-lg overflow-hidden">
-            <Table>
-              <TableBody>
-                {[...Array(4)].map((_, i) => (
-                  <TableRow key={i} className="border-white/5">
-                    <TableCell><Skeleton className="h-4 w-32 bg-white/10" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-28 bg-white/10" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24 bg-white/10" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-16 bg-white/10 rounded-full" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto bg-white/10 rounded-md" /></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      ) : appointments.length === 0 ? (
-        /* ------------------------------------------------------------- */
-        /* 2. ESTADO VAZIO                                                */
-        /* ------------------------------------------------------------- */
-        <div className="p-8 text-center text-zinc-400 text-sm">
-          Sem agendamentos registados para este dia.
-        </div>
-      ) : (
-        <>
-          {/* ------------------------------------------------------------- */}
-          {/* 3. VISTA MOBILE (CARDS ACCESSÍVEIS SEM SCROLL)               */}
-          {/* ------------------------------------------------------------- */}
-          <div className="block md:hidden divide-y divide-white/5 px-4 pb-4">
-            {appointments.map((appointment) => {
-              const dataObj = new Date(appointment.date_hour);
-              const phoneStr = appointment.users?.num_phone || appointment.manual_phone;
-              const nameStr = appointment.users?.name_complete || appointment.manual_name || "Cliente Manual";
-
-              return (
-                <article
-                  key={appointment.id}
-                  className="py-4 first:pt-0 last:pb-0 space-y-3"
-                  aria-labelledby={`booking-client-${appointment.id}`}
-                >
-                  {/* Cabeçalho do Card: Cliente & Status */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex flex-col">
-                      <h3 id={`booking-client-${appointment.id}`} className="font-semibold text-zinc-100 text-base">
-                        {nameStr}
-                      </h3>
-                      {phoneStr ? (
-                        <a
-                          href={`tel:${phoneStr}`}
-                          className="text-xs text-zinc-400 hover:text-emerald-400 focus-visible:underline transition-colors mt-0.5"
-                          aria-label={`Ligar para ${nameStr}: ${phoneStr}`}
+                <CardContent className="p-0 sm:p-6 sm:pt-0">
+                  {/* ------------------------------------------------------------- */}
+                  {/* 1. ESTADO DE CARREGAMENTO (SKELETONS)                          */}
+                  {/* ------------------------------------------------------------- */}
+                  {loadingInitial ? (
+                    <div
+                      className="p-4 sm:p-0 space-y-3"
+                      role="status"
+                      aria-label="A carregar agendamentos"
+                    >
+                      {[...Array(4)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="p-4 rounded-xl border border-white/5 bg-white/[0.02] space-y-3 md:hidden"
                         >
-                          {phoneStr}
-                        </a>
-                      ) : (
-                        <span className="text-xs text-zinc-500">Sem telefone</span>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <StatusBadge status={appointment.status} />
-                      {appointment.payment_method && (
-                        <span className="text-[10px] text-emerald-400 font-mono tracking-wide">
-                          💳 {appointment.payment_method.toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Detalhes: Serviço, Profissional, Data/Hora */}
-                  <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg bg-white/[0.02] border border-white/5 text-xs">
-                    <div>
-                      <span className="text-zinc-500 block text-[10px] uppercase">Serviço</span>
-                      <span className="font-medium text-zinc-200">{appointment.services?.name}</span>
-                      <span className="text-zinc-400 flex items-center gap-1 mt-0.5 text-[11px]">
-                        <User className="size-3" aria-hidden="true" />
-                        {appointment.professionals?.name || "Sem barbeiro"}
-                      </span>
-                    </div>
-
-                    <div>
-                      <span className="text-zinc-500 block text-[10px] uppercase">Data & Hora</span>
-                      <span className="font-medium text-zinc-200">{dataObj.toLocaleDateString("pt-PT")}</span>
-                      <span className="text-zinc-400 block mt-0.5 text-[11px]">
-                        {dataObj.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    </div>
-                  </div>
-
-                  {Number(appointment.value_products) > 0 && (
-                    <div className="text-xs text-zinc-400 flex justify-between items-center bg-emerald-500/5 px-2.5 py-1 rounded border border-emerald-500/10">
-                      <span>Produtos Extra:</span>
-                      <span className="font-semibold text-emerald-400">+{appointment.value_products}€</span>
-                    </div>
-                  )}
-
-                  {/* Ações (Alvo Touch Min. 44px) */}
-                  <div className="flex items-center gap-2 pt-1">
-                    {appointment.status === "pending" && (
-                      <Button
-                        variant="ghost"
-                        onClick={() => confirmBooking(appointment.id)}
-                        className="flex-1 min-h-[44px] bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 text-xs font-medium focus-visible:ring-2 focus-visible:ring-blue-500"
-                      >
-                        <Check className="size-4 mr-1.5" aria-hidden="true" />
-                        Confirmar
-                      </Button>
-                    )}
-
-                    {appointment.status === "scheduled" && (
-                      <Dialog
-                        open={finishingBookingId === appointment.id}
-                        onOpenChange={(open) => !open && setFinishingBookingId(null)}
-                      >
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            onClick={() => setFinishingBookingId(appointment.id)}
-                            className="flex-1 min-h-[44px] bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 text-xs font-medium focus-visible:ring-2 focus-visible:ring-emerald-500"
-                          >
-                            <Check className="size-4 mr-1.5" aria-hidden="true" />
-                            Concluir
-                          </Button>
-                        </DialogTrigger>
-
-                        <DialogContent className="bg-zinc-950 border-white/10 w-[92vw] max-w-[400px] rounded-xl text-left text-white p-5">
-                          <DialogHeader>
-                            <DialogTitle className="text-zinc-100 text-lg font-semibold">
-                              Concluir Atendimento
-                            </DialogTitle>
-                            <DialogDescription className="text-zinc-400 text-xs">
-                              Finalize o agendamento de <strong className="text-zinc-200">{nameStr}</strong>.
-                            </DialogDescription>
-                          </DialogHeader>
-
-                          <div className="grid gap-4 py-3">
-                            <div className="flex flex-col gap-1.5">
-                              <label htmlFor={`prod-desc-${appointment.id}`} className="text-xs font-medium text-zinc-300">
-                                Venda de Produto Extra (Opcional)
-                              </label>
-                              <div className="flex gap-2">
-                                <input
-                                  id={`prod-desc-${appointment.id}`}
-                                  type="text"
-                                  placeholder="Produto..."
-                                  className="flex-1 min-h-[44px] bg-white/5 border border-white/10 rounded-lg px-3 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                  value={descriptionProducts}
-                                  onChange={(e) => setDescriptionProducts(e.target.value)}
-                                />
-                                <input
-                                  id={`prod-val-${appointment.id}`}
-                                  type="number"
-                                  placeholder="€ Val"
-                                  aria-label="Valor do produto em euros"
-                                  className="w-24 min-h-[44px] bg-white/5 border border-white/10 rounded-lg px-3 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                  value={valueProducts}
-                                  onChange={(e) => setValueProducts(e.target.value === "0" ? "" : e.target.value)}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col gap-1.5">
-                              <span className="text-xs font-medium text-zinc-300">
-                                Método de Pagamento
-                              </span>
-                              <div className="grid grid-cols-3 gap-2">
-                                <Button
-                                  variant="ghost"
-                                  onClick={() => finalizeBooking(appointment.id, "cash")}
-                                  className="min-h-[44px] bg-emerald-600 hover:bg-emerald-500 text-xs text-white font-medium"
-                                >
-                                  💵 Cash
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  onClick={() => finalizeBooking(appointment.id, "mbway")}
-                                  className="min-h-[44px] bg-blue-600 hover:bg-blue-500 text-xs text-white font-medium"
-                                >
-                                  📱 MBWay
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  onClick={() => finalizeBooking(appointment.id, "card")}
-                                  className="min-h-[44px] bg-zinc-700 hover:bg-zinc-600 text-xs text-white font-medium"
-                                >
-                                  💳 Cartão
-                                </Button>
-                              </div>
-                            </div>
+                          <div className="flex justify-between items-center">
+                            <Skeleton className="h-5 w-32 bg-white/10" />
+                            <Skeleton className="h-6 w-20 bg-white/10 rounded-full" />
                           </div>
-                        </DialogContent>
-                      </Dialog>
-                    )}
-
-                    {(appointment.status === "scheduled" || appointment.status === "pending") && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`Eliminar agendamento de ${nameStr}`}
-                            className="min-h-[44px] min-w-[44px] text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg"
-                          >
-                            <Trash2 className="size-4" aria-hidden="true" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-zinc-950 border-white/10 w-[92vw] max-w-[400px] rounded-xl">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Eliminar agendamento?</AlertDialogTitle>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter className="flex-row gap-2 justify-end">
-                            <AlertDialogCancel className="flex-1 min-h-[44px] bg-transparent text-white border-white/10 m-0">
-                              Cancelar
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteBooking(appointment.id)}
-                              className="flex-1 min-h-[44px] bg-red-600 hover:bg-red-500 text-white m-0"
-                            >
-                              Eliminar
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-
-          {/* ------------------------------------------------------------- */}
-          {/* 4. VISTA DESKTOP (TABELA SEMÂNTICA PADRÃO)                    */}
-          {/* ------------------------------------------------------------- */}
-          <div className="hidden md:block">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-white/10 hover:bg-transparent">
-                  <TableHead className="text-zinc-400">Cliente</TableHead>
-                  <TableHead className="text-zinc-400">Serviço / Profissional</TableHead>
-                  <TableHead className="text-zinc-400">Data & Hora</TableHead>
-                  <TableHead className="text-zinc-400">Estado</TableHead>
-                  <TableHead className="text-right text-zinc-400">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {appointments.map((appointment) => {
-                  const dataObj = new Date(appointment.date_hour);
-                  const phoneStr = appointment.users?.num_phone || appointment.manual_phone;
-                  const nameStr = appointment.users?.name_complete || appointment.manual_name || "Cliente Manual";
-
-                  return (
-                    <TableRow key={appointment.id} className="border-white/5 hover:bg-white/[0.02]">
-                      <TableCell className="font-semibold text-zinc-100">
-                        <div className="flex flex-col">
-                          <span>{nameStr}</span>
-                          <span className="text-[11px] text-zinc-500 font-normal">
-                            {phoneStr || "N/A"}
-                          </span>
+                          <Skeleton className="h-4 w-48 bg-white/10" />
+                          <Skeleton className="h-9 w-full bg-white/10 rounded-lg" />
                         </div>
-                      </TableCell>
+                      ))}
+                      <div className="hidden md:block border border-white/5 rounded-lg overflow-hidden">
+                        <Table>
+                          <TableBody>
+                            {[...Array(4)].map((_, i) => (
+                              <TableRow key={i} className="border-white/5">
+                                <TableCell>
+                                  <Skeleton className="h-4 w-32 bg-white/10" />
+                                </TableCell>
+                                <TableCell>
+                                  <Skeleton className="h-4 w-28 bg-white/10" />
+                                </TableCell>
+                                <TableCell>
+                                  <Skeleton className="h-4 w-24 bg-white/10" />
+                                </TableCell>
+                                <TableCell>
+                                  <Skeleton className="h-6 w-16 bg-white/10 rounded-full" />
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Skeleton className="h-8 w-24 ml-auto bg-white/10 rounded-md" />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  ) : appointments.length === 0 ? (
+                    /* ------------------------------------------------------------- */
+                    /* 2. ESTADO VAZIO                                                */
+                    /* ------------------------------------------------------------- */
+                    <div className="p-8 text-center text-zinc-400 text-sm">
+                      Sem agendamentos registados para este dia.
+                    </div>
+                  ) : (
+                    <>
+                      {/* ------------------------------------------------------------- */}
+                      {/* 3. VISTA MOBILE (CARDS ACCESSÍVEIS SEM SCROLL)               */}
+                      {/* ------------------------------------------------------------- */}
+                      <div className="block md:hidden divide-y divide-white/5 px-4 pb-4">
+                        {appointments.map((appointment) => {
+                          const dataObj = new Date(appointment.date_hour);
+                          const phoneStr =
+                            appointment.users?.num_phone ||
+                            appointment.manual_phone;
+                          const nameStr =
+                            appointment.users?.name_complete ||
+                            appointment.manual_name ||
+                            "Cliente Manual";
 
-                      <TableCell className="text-zinc-300">
-                        <div className="flex flex-col">
-                          <span>{appointment.services?.name}</span>
-                          <span className="text-[11px] text-zinc-500 flex items-center gap-1">
-                            <User className="size-3" aria-hidden="true" />
-                            {appointment.professionals?.name || "Sem barbeiro"}
-                          </span>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="text-zinc-300">
-                        {dataObj.toLocaleDateString("pt-PT")}
-                        <span className="text-zinc-500 ml-1.5">
-                          {dataObj.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                      </TableCell>
-
-                      <TableCell>
-                        <div className="flex flex-col items-start gap-1">
-                          <StatusBadge status={appointment.status} />
-                          {appointment.payment_method && (
-                            <span className="text-[10px] text-emerald-400 font-mono tracking-wide">
-                              💳 {appointment.payment_method.toUpperCase()}
-                            </span>
-                          )}
-                          {Number(appointment.value_products) > 0 && (
-                            <span className="text-[10px] text-zinc-500">
-                              +{appointment.value_products}€ (Prod)
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1.5">
-                          {appointment.status === "pending" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => confirmBooking(appointment.id)}
-                              className="h-8 px-3 text-blue-400 hover:bg-blue-500/10 border border-blue-500/20 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-blue-500"
+                          return (
+                            <article
+                              key={appointment.id}
+                              className="py-4 first:pt-0 last:pb-0 space-y-3"
+                              aria-labelledby={`booking-client-${appointment.id}`}
                             >
-                              <Check className="size-4 mr-1.5" aria-hidden="true" />
-                              Confirmar
-                            </Button>
-                          )}
-
-                          {appointment.status === "scheduled" && (
-                            <Dialog
-                              open={finishingBookingId === appointment.id}
-                              onOpenChange={(open) => !open && setFinishingBookingId(null)}
-                            >
-                              <DialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setFinishingBookingId(appointment.id)}
-                                  className="h-8 px-3 text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/20 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-emerald-500"
-                                >
-                                  <Check className="size-4 mr-1.5" aria-hidden="true" />
-                                  Concluir
-                                </Button>
-                              </DialogTrigger>
-
-                              <DialogContent className="bg-zinc-950 border-white/10 sm:max-w-[400px] text-left text-white">
-                                <DialogHeader>
-                                  <DialogTitle className="text-zinc-100 text-lg font-semibold">
-                                    Concluir Atendimento
-                                  </DialogTitle>
-                                  <DialogDescription className="text-zinc-400 text-xs">
-                                    Finalize o agendamento de {nameStr}.
-                                  </DialogDescription>
-                                </DialogHeader>
-
-                                <div className="grid gap-4 py-3">
-                                  <div className="flex flex-col gap-2">
-                                    <label htmlFor={`dt-prod-${appointment.id}`} className="text-xs font-medium text-zinc-300">
-                                      Venda de Produto Extra (Opcional)
-                                    </label>
-                                    <div className="flex gap-2">
-                                      <input
-                                        id={`dt-prod-${appointment.id}`}
-                                        type="text"
-                                        placeholder="Produto..."
-                                        className="flex-1 bg-white/5 border border-white/10 rounded p-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                        value={descriptionProducts}
-                                        onChange={(e) => setDescriptionProducts(e.target.value)}
-                                      />
-                                      <input
-                                        id={`dt-val-${appointment.id}`}
-                                        type="number"
-                                        placeholder="€ Val"
-                                        aria-label="Valor do produto em euros"
-                                        className="w-24 bg-white/5 border border-white/10 rounded p-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                        value={valueProducts}
-                                        onChange={(e) => setValueProducts(e.target.value === "0" ? "" : e.target.value)}
-                                      />
-                                    </div>
-                                  </div>
-
-                                  <div className="flex flex-col gap-2 mt-2">
-                                    <span className="text-xs font-medium text-zinc-300">
-                                      Selecione o Método de Pagamento
-                                    </span>
-                                    <div className="flex gap-2">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => finalizeBooking(appointment.id, "cash")}
-                                        className="flex-1 bg-emerald-600 hover:bg-emerald-500 h-9 text-xs text-white font-medium"
-                                      >
-                                        💵 Cash
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => finalizeBooking(appointment.id, "mbway")}
-                                        className="flex-1 bg-blue-600 hover:bg-blue-500 h-9 text-xs text-white font-medium"
-                                      >
-                                        📱 MBWay
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => finalizeBooking(appointment.id, "card")}
-                                        className="flex-1 bg-zinc-700 hover:bg-zinc-600 h-9 text-xs text-white font-medium"
-                                      >
-                                        💳 Cartão
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
-                          )}
-
-                          {(appointment.status === "scheduled" || appointment.status === "pending") && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  aria-label={`Eliminar agendamento de ${nameStr}`}
-                                  className="h-8 w-8 text-red-400 hover:bg-red-500/10 focus-visible:ring-2 focus-visible:ring-red-500"
-                                >
-                                  <Trash2 className="size-4" aria-hidden="true" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent className="bg-zinc-950 border-white/10">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Eliminar agendamento?</AlertDialogTitle>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel className="bg-transparent text-white border-white/10">
-                                    Voltar
-                                  </AlertDialogCancel>
-                                  <AlertDialogAction
-                                    className="bg-red-600 hover:bg-red-500 text-white"
-                                    onClick={() => handleDeleteBooking(appointment.id)}
+                              {/* Cabeçalho do Card: Cliente & Status */}
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex flex-col">
+                                  <h3
+                                    id={`booking-client-${appointment.id}`}
+                                    className="font-semibold text-zinc-100 text-base"
                                   >
-                                    Eliminar
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        </>
-      )}
-    </CardContent>
-  </Card>
-</section>
+                                    {nameStr}
+                                  </h3>
+                                  {phoneStr ? (
+                                    <a
+                                      href={`tel:${phoneStr}`}
+                                      className="text-xs text-zinc-400 hover:text-emerald-400 focus-visible:underline transition-colors mt-0.5"
+                                      aria-label={`Ligar para ${nameStr}: ${phoneStr}`}
+                                    >
+                                      {phoneStr}
+                                    </a>
+                                  ) : (
+                                    <span className="text-xs text-zinc-500">
+                                      Sem telefone
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex flex-col items-end gap-1">
+                                  <StatusBadge status={appointment.status} />
+                                  {appointment.payment_method && (
+                                    <span className="text-[10px] text-emerald-400 font-mono tracking-wide">
+                                      💳{" "}
+                                      {appointment.payment_method.toUpperCase()}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Detalhes: Serviço, Profissional, Data/Hora */}
+                              <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg bg-white/[0.02] border border-white/5 text-xs">
+                                <div>
+                                  <span className="text-zinc-500 block text-[10px] uppercase">
+                                    Serviço
+                                  </span>
+                                  <span className="font-medium text-zinc-200">
+                                    {appointment.services?.name}
+                                  </span>
+                                  <span className="text-zinc-400 flex items-center gap-1 mt-0.5 text-[11px]">
+                                    <User
+                                      className="size-3"
+                                      aria-hidden="true"
+                                    />
+                                    {appointment.professionals?.name ||
+                                      "Sem barbeiro"}
+                                  </span>
+                                </div>
+
+                                <div>
+                                  <span className="text-zinc-500 block text-[10px] uppercase">
+                                    Data & Hora
+                                  </span>
+                                  <span className="font-medium text-zinc-200">
+                                    {dataObj.toLocaleDateString("pt-PT")}
+                                  </span>
+                                  <span className="text-zinc-400 block mt-0.5 text-[11px]">
+                                    {dataObj.toLocaleTimeString("pt-PT", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {Number(appointment.value_products) > 0 && (
+                                <div className="text-xs text-zinc-400 flex justify-between items-center bg-emerald-500/5 px-2.5 py-1 rounded border border-emerald-500/10">
+                                  <span>Produtos Extra:</span>
+                                  <span className="font-semibold text-emerald-400">
+                                    +{appointment.value_products}€
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Ações (Alvo Touch Min. 44px) */}
+                              <div className="flex items-center gap-2 pt-1">
+                                {appointment.status === "pending" && (
+                                  <Button
+                                    variant="ghost"
+                                    onClick={() =>
+                                      confirmBooking(appointment.id)
+                                    }
+                                    className="flex-1 min-h-[44px] bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 text-xs font-medium focus-visible:ring-2 focus-visible:ring-blue-500"
+                                  >
+                                    <Check
+                                      className="size-4 mr-1.5"
+                                      aria-hidden="true"
+                                    />
+                                    Confirmar
+                                  </Button>
+                                )}
+
+                                {appointment.status === "scheduled" && (
+                                  <Dialog
+                                    open={finishingBookingId === appointment.id}
+                                    onOpenChange={(open) =>
+                                      !open && setFinishingBookingId(null)
+                                    }
+                                  >
+                                    <DialogTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        onClick={() =>
+                                          setFinishingBookingId(appointment.id)
+                                        }
+                                        className="flex-1 min-h-[44px] bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 text-xs font-medium focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                      >
+                                        <Check
+                                          className="size-4 mr-1.5"
+                                          aria-hidden="true"
+                                        />
+                                        Concluir
+                                      </Button>
+                                    </DialogTrigger>
+
+                                    <DialogContent className="bg-zinc-950 border-white/10 w-[92vw] max-w-[400px] rounded-xl text-left text-white p-5">
+                                      <DialogHeader>
+                                        <DialogTitle className="text-zinc-100 text-lg font-semibold">
+                                          Concluir Atendimento
+                                        </DialogTitle>
+                                        <DialogDescription className="text-zinc-400 text-xs">
+                                          Finalize o agendamento de{" "}
+                                          <strong className="text-zinc-200">
+                                            {nameStr}
+                                          </strong>
+                                          .
+                                        </DialogDescription>
+                                      </DialogHeader>
+
+                                      <div className="grid gap-4 py-3">
+                                        <div className="flex flex-col gap-1.5">
+                                          <label
+                                            htmlFor={`prod-desc-${appointment.id}`}
+                                            className="text-xs font-medium text-zinc-300"
+                                          >
+                                            Venda de Produto Extra (Opcional)
+                                          </label>
+                                          <div className="flex gap-2">
+                                            <input
+                                              id={`prod-desc-${appointment.id}`}
+                                              type="text"
+                                              placeholder="Produto..."
+                                              className="flex-1 min-h-[44px] bg-white/5 border border-white/10 rounded-lg px-3 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                              value={descriptionProducts}
+                                              onChange={(e) =>
+                                                setDescriptionProducts(
+                                                  e.target.value,
+                                                )
+                                              }
+                                            />
+                                            <input
+                                              id={`prod-val-${appointment.id}`}
+                                              type="number"
+                                              placeholder="€ Val"
+                                              aria-label="Valor do produto em euros"
+                                              className="w-24 min-h-[44px] bg-white/5 border border-white/10 rounded-lg px-3 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                              value={valueProducts}
+                                              onChange={(e) =>
+                                                setValueProducts(
+                                                  e.target.value === "0"
+                                                    ? ""
+                                                    : e.target.value,
+                                                )
+                                              }
+                                            />
+                                          </div>
+                                        </div>
+
+                                        <div className="flex flex-col gap-1.5">
+                                          <span className="text-xs font-medium text-zinc-300">
+                                            Método de Pagamento
+                                          </span>
+                                          <div className="grid grid-cols-3 gap-2">
+                                            <Button
+                                              variant="ghost"
+                                              onClick={() =>
+                                                finalizeBooking(
+                                                  appointment.id,
+                                                  "cash",
+                                                )
+                                              }
+                                              className="min-h-[44px] bg-emerald-600 hover:bg-emerald-500 text-xs text-white font-medium"
+                                            >
+                                              💵 Cash
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              onClick={() =>
+                                                finalizeBooking(
+                                                  appointment.id,
+                                                  "mbway",
+                                                )
+                                              }
+                                              className="min-h-[44px] bg-blue-600 hover:bg-blue-500 text-xs text-white font-medium"
+                                            >
+                                              📱 MBWay
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              onClick={() =>
+                                                finalizeBooking(
+                                                  appointment.id,
+                                                  "card",
+                                                )
+                                              }
+                                              className="min-h-[44px] bg-zinc-700 hover:bg-zinc-600 text-xs text-white font-medium"
+                                            >
+                                              💳 Cartão
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </DialogContent>
+                                  </Dialog>
+                                )}
+
+                                {(appointment.status === "scheduled" ||
+                                  appointment.status === "pending") && (
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        aria-label={`Eliminar agendamento de ${nameStr}`}
+                                        className="min-h-[44px] min-w-[44px] text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg"
+                                      >
+                                        <Trash2
+                                          className="size-4"
+                                          aria-hidden="true"
+                                        />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent className="bg-zinc-950 border-white/10 w-[92vw] max-w-[400px] rounded-xl">
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>
+                                          Eliminar agendamento?
+                                        </AlertDialogTitle>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter className="flex-row gap-2 justify-end">
+                                        <AlertDialogCancel className="flex-1 min-h-[44px] bg-transparent text-white border-white/10 m-0">
+                                          Cancelar
+                                        </AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() =>
+                                            handleDeleteBooking(appointment.id)
+                                          }
+                                          className="flex-1 min-h-[44px] bg-red-600 hover:bg-red-500 text-white m-0"
+                                        >
+                                          Eliminar
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                )}
+                              </div>
+                            </article>
+                          );
+                        })}
+                      </div>
+
+                      {/* ------------------------------------------------------------- */}
+                      {/* 4. VISTA DESKTOP (TABELA SEMÂNTICA PADRÃO)                    */}
+                      {/* ------------------------------------------------------------- */}
+                      <div className="hidden md:block">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="border-white/10 hover:bg-transparent">
+                              <TableHead className="text-zinc-400">
+                                Cliente
+                              </TableHead>
+                              <TableHead className="text-zinc-400">
+                                Serviço / Profissional
+                              </TableHead>
+                              <TableHead className="text-zinc-400">
+                                Data & Hora
+                              </TableHead>
+                              <TableHead className="text-zinc-400">
+                                Estado
+                              </TableHead>
+                              <TableHead className="text-right text-zinc-400">
+                                Ações
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {appointments.map((appointment) => {
+                              const dataObj = new Date(appointment.date_hour);
+                              const phoneStr =
+                                appointment.users?.num_phone ||
+                                appointment.manual_phone;
+                              const nameStr =
+                                appointment.users?.name_complete ||
+                                appointment.manual_name ||
+                                "Cliente Manual";
+
+                              return (
+                                <TableRow
+                                  key={appointment.id}
+                                  className="border-white/5 hover:bg-white/[0.02]"
+                                >
+                                  <TableCell className="font-semibold text-zinc-100">
+                                    <div className="flex flex-col">
+                                      <span>{nameStr}</span>
+                                      <span className="text-[11px] text-zinc-500 font-normal">
+                                        {phoneStr || "N/A"}
+                                      </span>
+                                    </div>
+                                  </TableCell>
+
+                                  <TableCell className="text-zinc-300">
+                                    <div className="flex flex-col">
+                                      <span>{appointment.services?.name}</span>
+                                      <span className="text-[11px] text-zinc-500 flex items-center gap-1">
+                                        <User
+                                          className="size-3"
+                                          aria-hidden="true"
+                                        />
+                                        {appointment.professionals?.name ||
+                                          "Sem barbeiro"}
+                                      </span>
+                                    </div>
+                                  </TableCell>
+
+                                  <TableCell className="text-zinc-300">
+                                    {dataObj.toLocaleDateString("pt-PT")}
+                                    <span className="text-zinc-500 ml-1.5">
+                                      {dataObj.toLocaleTimeString("pt-PT", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </span>
+                                  </TableCell>
+
+                                  <TableCell>
+                                    <div className="flex flex-col items-start gap-1">
+                                      <StatusBadge
+                                        status={appointment.status}
+                                      />
+                                      {appointment.payment_method && (
+                                        <span className="text-[10px] text-emerald-400 font-mono tracking-wide">
+                                          💳{" "}
+                                          {appointment.payment_method.toUpperCase()}
+                                        </span>
+                                      )}
+                                      {Number(appointment.value_products) >
+                                        0 && (
+                                        <span className="text-[10px] text-zinc-500">
+                                          +{appointment.value_products}€ (Prod)
+                                        </span>
+                                      )}
+                                    </div>
+                                  </TableCell>
+
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end gap-1.5">
+                                      {appointment.status === "pending" && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() =>
+                                            confirmBooking(appointment.id)
+                                          }
+                                          className="h-8 px-3 text-blue-400 hover:bg-blue-500/10 border border-blue-500/20 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-blue-500"
+                                        >
+                                          <Check
+                                            className="size-4 mr-1.5"
+                                            aria-hidden="true"
+                                          />
+                                          Confirmar
+                                        </Button>
+                                      )}
+
+                                      {appointment.status === "scheduled" && (
+                                        <Dialog
+                                          open={
+                                            finishingBookingId ===
+                                            appointment.id
+                                          }
+                                          onOpenChange={(open) =>
+                                            !open && setFinishingBookingId(null)
+                                          }
+                                        >
+                                          <DialogTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() =>
+                                                setFinishingBookingId(
+                                                  appointment.id,
+                                                )
+                                              }
+                                              className="h-8 px-3 text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/20 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                            >
+                                              <Check
+                                                className="size-4 mr-1.5"
+                                                aria-hidden="true"
+                                              />
+                                              Concluir
+                                            </Button>
+                                          </DialogTrigger>
+
+                                          <DialogContent className="bg-zinc-950 border-white/10 sm:max-w-[400px] text-left text-white">
+                                            <DialogHeader>
+                                              <DialogTitle className="text-zinc-100 text-lg font-semibold">
+                                                Concluir Atendimento
+                                              </DialogTitle>
+                                              <DialogDescription className="text-zinc-400 text-xs">
+                                                Finalize o agendamento de{" "}
+                                                {nameStr}.
+                                              </DialogDescription>
+                                            </DialogHeader>
+
+                                            <div className="grid gap-4 py-3">
+                                              <div className="flex flex-col gap-2">
+                                                <label
+                                                  htmlFor={`dt-prod-${appointment.id}`}
+                                                  className="text-xs font-medium text-zinc-300"
+                                                >
+                                                  Venda de Produto Extra
+                                                  (Opcional)
+                                                </label>
+                                                <div className="flex gap-2">
+                                                  <input
+                                                    id={`dt-prod-${appointment.id}`}
+                                                    type="text"
+                                                    placeholder="Produto..."
+                                                    className="flex-1 bg-white/5 border border-white/10 rounded p-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                    value={descriptionProducts}
+                                                    onChange={(e) =>
+                                                      setDescriptionProducts(
+                                                        e.target.value,
+                                                      )
+                                                    }
+                                                  />
+                                                  <input
+                                                    id={`dt-val-${appointment.id}`}
+                                                    type="number"
+                                                    placeholder="€ Val"
+                                                    aria-label="Valor do produto em euros"
+                                                    className="w-24 bg-white/5 border border-white/10 rounded p-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                    value={valueProducts}
+                                                    onChange={(e) =>
+                                                      setValueProducts(
+                                                        e.target.value === "0"
+                                                          ? ""
+                                                          : e.target.value,
+                                                      )
+                                                    }
+                                                  />
+                                                </div>
+                                              </div>
+
+                                              <div className="flex flex-col gap-2 mt-2">
+                                                <span className="text-xs font-medium text-zinc-300">
+                                                  Selecione o Método de
+                                                  Pagamento
+                                                </span>
+                                                <div className="flex gap-2">
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                      finalizeBooking(
+                                                        appointment.id,
+                                                        "cash",
+                                                      )
+                                                    }
+                                                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 h-9 text-xs text-white font-medium"
+                                                  >
+                                                    💵 Cash
+                                                  </Button>
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                      finalizeBooking(
+                                                        appointment.id,
+                                                        "mbway",
+                                                      )
+                                                    }
+                                                    className="flex-1 bg-blue-600 hover:bg-blue-500 h-9 text-xs text-white font-medium"
+                                                  >
+                                                    📱 MBWay
+                                                  </Button>
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                      finalizeBooking(
+                                                        appointment.id,
+                                                        "card",
+                                                      )
+                                                    }
+                                                    className="flex-1 bg-zinc-700 hover:bg-zinc-600 h-9 text-xs text-white font-medium"
+                                                  >
+                                                    💳 Cartão
+                                                  </Button>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </DialogContent>
+                                        </Dialog>
+                                      )}
+
+                                      {(appointment.status === "scheduled" ||
+                                        appointment.status === "pending") && (
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              aria-label={`Eliminar agendamento de ${nameStr}`}
+                                              className="h-8 w-8 text-red-400 hover:bg-red-500/10 focus-visible:ring-2 focus-visible:ring-red-500"
+                                            >
+                                              <Trash2
+                                                className="size-4"
+                                                aria-hidden="true"
+                                              />
+                                            </Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent className="bg-zinc-950 border-white/10">
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>
+                                                Eliminar agendamento?
+                                              </AlertDialogTitle>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel className="bg-transparent text-white border-white/10">
+                                                Voltar
+                                              </AlertDialogCancel>
+                                              <AlertDialogAction
+                                                className="bg-red-600 hover:bg-red-500 text-white"
+                                                onClick={() =>
+                                                  handleDeleteBooking(
+                                                    appointment.id,
+                                                  )
+                                                }
+                                              >
+                                                Eliminar
+                                              </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
           </>
         </div>
       </main>
