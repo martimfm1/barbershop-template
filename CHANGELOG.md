@@ -1,5 +1,27 @@
 # Changelog
 
+## v3.0.11 — 2026-08-09
+
+### Added
+- Added the Enterprise POS dashboard at `/dashboard/pos`.
+- Added transaction history with payment method, totals, items and transaction status.
+- Added POS refund and void actions with confirmation before irreversible operations.
+- Added automatic stock restoration feedback after successful refunds/voids.
+- Added Enterprise plan-aware access state and upgrade CTA for the POS dashboard.
+- Added refresh and loading states for POS transaction history.
+
+### Security
+- POS UI access is derived from the existing server-side entitlement API through `useFeatureAccess`; the UI is not an authorization boundary.
+- Refund and void operations continue to use the authenticated server-side tenant context and atomic PostgreSQL reversal function.
+- Completed transactions are the only transactions exposed as reversible actions in the UI; the API remains authoritative.
+- Transaction identifiers are sent only to the existing authenticated reversal endpoint.
+
+### UX
+- Added responsive transaction table with clear status and payment information.
+- Added explicit distinction between refund and void actions.
+- Added disabled states while a reversal is being processed to prevent duplicate requests.
+- Added success and error toasts for POS operations.
+
 ## v3.0.10 — 2026-08-09
 
 ### Added
