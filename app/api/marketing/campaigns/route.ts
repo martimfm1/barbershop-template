@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { MARKETING_CHANNELS, isMarketingChannel } from "@/lib/marketing/campaigns";
 
 const MAX_RECIPIENTS = 5000;
 
 async function getStaffContext() {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { supabase, user: null, barbershopId: null };
 

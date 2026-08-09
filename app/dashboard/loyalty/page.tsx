@@ -1,18 +1,23 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/auth";
 import { getAccessPlanForRequest } from "@/services/billing/plan-access.guard";
 import { canUseFeature } from "@/lib/billing/entitlements";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function LoyaltyPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  const plan = await getAccessPlanForRequest(user.id);
-  if (!canUseFeature(plan, "loyalty")) redirect("/plans?feature=loyalty");
+  const access = await getAccessPlanForRequest();
+  if (!access.ok) redirect("/login");
+  if (!canUseFeature(access.plan, "loyalty")) redirect("/plans?feature=loyalty");
 
   const supabase = await createClient();
-  const { data: rewards } = await supabase.from("loyalty_rewards").select("id,name,description,points_cost,reward_type,reward_value,active").eq("barbershop_id", user.barbershop_id).order("points_cost");
+  const { data: profile } = await supabase
+    .from("users")
+    .select("barbershop_id")
+    .eq("id", access.userId)
+    .maybeSingle();
+  if (!profile?.barbershop_id) redirect("/login");
+
+  const { data: rewards } = await supabase.from("loyalty_rewards").select("id,name,description,points_cost,reward_type,reward_value,active").eq("barbershop_id", profile.barbershop_id).order("points_cost");
 
   return (
     <main className="mx-auto w-full max-w-6xl space-y-8 p-6 md:p-8">
