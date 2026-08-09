@@ -1,7 +1,11 @@
 "use client";
 
 import { PricingCard } from "@/components/billing/PricingCard";
-import { PLAN_DESCRIPTIONS, PLAN_FEATURES } from "@/lib/billing/plan-features";
+import {
+  FEATURE_LABELS,
+  PLAN_DESCRIPTIONS,
+  PLAN_FEATURES,
+} from "@/lib/billing/plan-features";
 
 export function PricingSection() {
   return (
@@ -16,7 +20,7 @@ export function PricingSection() {
           </h2>
         </div>
         <p className="max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base lg:text-right">
-          Escolhe entre faturação mensal ou anual no portal de subscrição.
+          Começa gratuitamente e faz upgrade quando o teu negócio crescer.
         </p>
       </div>
       <div className="grid gap-4 lg:grid-cols-3">
@@ -25,22 +29,22 @@ export function PricingSection() {
           title="Barbers Free"
           price="0 €"
           description={PLAN_DESCRIPTIONS.free}
-          features={PLAN_FEATURES.free}
+          features={PLAN_FEATURES.free.map((feature) => FEATURE_LABELS[feature])}
         />
         <PricingCard
           tier="pro"
           title="Barbers Pro"
           price="9,90 €"
           description={PLAN_DESCRIPTIONS.pro}
-          features={PLAN_FEATURES.pro}
+          features={PLAN_FEATURES.pro.map((feature) => FEATURE_LABELS[feature])}
           popular
         />
         <PricingCard
-          tier="business"
+          tier="enterprise"
           title="Barbers Enterprise"
-          price="24,90 €"
+          price="A partir de 29,90 €"
           description={PLAN_DESCRIPTIONS.enterprise}
-          features={PLAN_FEATURES.enterprise}
+          features={PLAN_FEATURES.enterprise.map((feature) => FEATURE_LABELS[feature])}
         />
       </div>
     </section>
