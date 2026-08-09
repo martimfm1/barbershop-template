@@ -14,9 +14,7 @@ export type EnterpriseFeatureKey =
   | "multi_location" | "global_dashboard" | "advanced_permissions"
   | "commissions" | "inventory" | "pos" | "enterprise_reports";
 
-export type LegacyFeatureKey = "professionals" | "analytics";
-
-export type FeatureKey = FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey | LegacyFeatureKey;
+export type FeatureKey = FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey;
 
 const FREE_FEATURES: readonly FeatureKey[] = [
   "agenda", "appointments", "clients", "services", "online_booking", "booking_page",
@@ -26,7 +24,7 @@ const FREE_FEATURES: readonly FeatureKey[] = [
 const PRO_FEATURES: readonly FeatureKey[] = [
   ...FREE_FEATURES, "advanced_crm", "advanced_analytics", "automated_reminders",
   "automated_followups", "marketing_campaigns", "customer_segments", "loyalty",
-  "advanced_reports", "team_management", "advanced_notifications", "professionals", "analytics",
+  "advanced_reports", "team_management", "advanced_notifications",
 ];
 
 const ENTERPRISE_FEATURES: readonly FeatureKey[] = [
@@ -84,5 +82,4 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   multi_location: "Multi-localização", global_dashboard: "Dashboard global",
   advanced_permissions: "Permissões avançadas", commissions: "Comissões", inventory: "Gestão de stock",
   pos: "Ponto de venda (POS)", enterprise_reports: "Relatórios empresariais",
-  professionals: "Até 5 profissionais", analytics: "Análises essenciais do negócio",
 };
