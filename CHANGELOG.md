@@ -1,5 +1,22 @@
 # Changelog
 
+## v3.0.17 — 2026-08-09
+
+### Added
+- Added `/dashboard/marketing` for Pro marketing campaign management.
+- Added campaign list with channel, status and creation date.
+- Added email campaign creation with subject and message validation.
+- Added SMS campaign creation UI while keeping SMS provider activation controlled by the existing backend/provider configuration.
+- Added responsive campaign creation form and empty/loading/error states.
+- Added refresh control and upgrade CTA for plans without `marketing_campaigns`.
+- Campaign creation continues to use the authenticated `/api/marketing/campaigns` endpoint; tenant identity and recipient limits remain server-side concerns.
+
+### Security / Access
+- Marketing UI is gated by the canonical `marketing_campaigns` entitlement.
+- Client-side feature gating is not treated as authorization; the API remains authoritative.
+- The UI does not accept or display arbitrary recipient lists.
+- Campaign payloads are sent only to the existing validated server endpoint.
+
 ## v3.0.16 — 2026-08-09
 
 ### Fixed
