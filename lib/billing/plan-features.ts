@@ -14,28 +14,35 @@ export type EnterpriseFeatureKey =
   | "multi_location" | "global_dashboard" | "advanced_permissions"
   | "commissions" | "inventory" | "pos" | "enterprise_reports";
 
-export type FeatureKey = FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey;
+/** @deprecated Use the canonical feature keys below. Kept only for old UI call-sites during migration. */
+export type LegacyFeatureKey = "professionals" | "analytics";
+export type FeatureKey = FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey | LegacyFeatureKey;
 
-const FREE_FEATURES: readonly FeatureKey[] = [
+const FREE_FEATURES: readonly (FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey)[] = [
   "agenda", "appointments", "clients", "services", "online_booking", "booking_page",
   "qr_booking", "basic_dashboard", "basic_revenue", "basic_client_history", "basic_notifications",
 ];
 
-const PRO_FEATURES: readonly FeatureKey[] = [
+const PRO_FEATURES: readonly (FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey)[] = [
   ...FREE_FEATURES, "advanced_crm", "advanced_analytics", "automated_reminders",
   "automated_followups", "marketing_campaigns", "customer_segments", "loyalty",
   "advanced_reports", "team_management", "advanced_notifications",
 ];
 
-const ENTERPRISE_FEATURES: readonly FeatureKey[] = [
+const ENTERPRISE_FEATURES: readonly (FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey)[] = [
   ...PRO_FEATURES, "multi_location", "global_dashboard", "advanced_permissions",
   "commissions", "inventory", "pos", "enterprise_reports",
 ];
 
-export const PLAN_FEATURES: Record<BillingPlan, readonly FeatureKey[]> = {
+export const PLAN_FEATURES: Record<BillingPlan, readonly (FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey)[]> = {
   [PLANS.FREE]: FREE_FEATURES,
   [PLANS.PRO]: PRO_FEATURES,
   [PLANS.ENTERPRISE]: ENTERPRISE_FEATURES,
+};
+
+const LEGACY_FEATURE_ALIASES: Record<LegacyFeatureKey, ProFeatureKey> = {
+  professionals: "team_management",
+  analytics: "advanced_analytics",
 };
 
 export const UNLIMITED = Infinity;
@@ -54,9 +61,13 @@ export function getPlanLimit(plan: BillingPlan, limit: PlanLimitKey): number {
 }
 
 export function isUnlimited(value: number): boolean { return value === UNLIMITED; }
-export function getPlanFeatures(plan: BillingPlan): readonly FeatureKey[] { return PLAN_FEATURES[plan]; }
+export function getPlanFeatures(plan: BillingPlan) { return PLAN_FEATURES[plan]; }
+
 export function hasPlanFeature(plan: BillingPlan, feature: FeatureKey): boolean {
-  return PLAN_FEATURES[plan].includes(feature);
+  const canonicalFeature = feature in LEGACY_FEATURE_ALIASES
+    ? LEGACY_FEATURE_ALIASES[feature as LegacyFeatureKey]
+    : feature as FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey;
+  return PLAN_FEATURES[plan].includes(canonicalFeature);
 }
 
 export const PLAN_DESCRIPTIONS: Record<BillingPlan, string> = {
@@ -69,7 +80,7 @@ export const PLAN_NAMES: Record<BillingPlan, string> = {
   free: "Barbers Free", pro: "Barbers Pro", enterprise: "Barbers Enterprise",
 };
 
-export const FEATURE_LABELS: Record<FeatureKey, string> = {
+export const FEATURE_LABELS: Record<FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey, string> = {
   agenda: "Agenda completa", appointments: "Marcações ilimitadas", clients: "Clientes ilimitados",
   services: "Serviços ilimitados", online_booking: "Reservas online", booking_page: "Página de reservas",
   qr_booking: "Reservas por QR code", basic_dashboard: "Dashboard básico", basic_revenue: "Receita básica",
