@@ -1,5 +1,21 @@
 # Changelog
 
+## v3.0.6 — 2026-08-09
+
+### Added
+- Added a centralized server-side module authorization boundary for Pro and Enterprise modules.
+- Added a single mapping between dashboard modules and billing `FeatureKey` entitlements.
+- Added `GET /api/modules/access` to resolve authenticated module access from the server-side subscription state.
+- Added support for checking an individual module or all registered modules.
+
+### Security
+- Module access never trusts a plan supplied by the client.
+- Paid access continues to require the existing server-side subscription entitlement checks.
+- New module mutations should use the same authorization boundary before touching tenant data.
+
+### Database
+- No new database migration is required for this step. The existing Pro/Enterprise migrations remain the source of truth for the module tables.
+
 ## v3.0.5 — 2026-08-09
 
 ### Added
