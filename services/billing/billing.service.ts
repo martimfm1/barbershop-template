@@ -128,15 +128,15 @@ export class BillingService {
       const priceId = typeof price === "string" ? price : price?.id;
       const plan = priceId ? planForPrice(priceId) : undefined;
       return {
-      id: invoice.id,
-      amount: invoice.amount_paid || invoice.amount_due,
-      currency: invoice.currency.toUpperCase(),
-      status: invoice.status,
-      plan: plan === PLANS.ENTERPRISE ? "Barbers Enterprise" : plan === PLANS.PRO ? "Barbers Pro" : "Subscrição",
-      date: new Date(invoice.created * 1000).toLocaleDateString("pt-PT", {
-        day: "2-digit", month: "short", year: "numeric",
-      }),
-      invoice_pdf: invoice.invoice_pdf,
+        id: invoice.id,
+        amount: invoice.amount_paid || invoice.amount_due,
+        currency: invoice.currency.toUpperCase(),
+        status: invoice.status,
+        plan: plan === PLANS.ENTERPRISE ? "Barbers Enterprise" : plan === PLANS.PRO ? "Barbers Pro" : "Subscrição",
+        date: new Date(invoice.created * 1000).toLocaleDateString("pt-PT", {
+          day: "2-digit", month: "short", year: "numeric",
+        }),
+        invoice_pdf: invoice.invoice_pdf,
       };
     });
   }
@@ -155,11 +155,11 @@ export class BillingService {
   static async createSubscription(userId: string, email: string, priceId: string): Promise<{ subscriptionId: string; clientSecret: string }> {
     if (!planForPrice(priceId)) throw new BillingError("The requested price is not available.", "INVALID_PRICE", { priceId });
     const activeSubscription = await SubscriptionService.getActiveForUser(userId);
-    if (activeSubscription && activeSubscription.plan !== PLANS.FREE) {
+    if (activeSubscription) {
       throw new BillingError("An active subscription already exists.", "SUBSCRIPTION_NOT_ACTIVE", { userId });
     }
     const existing = await SubscriptionService.getForUser(userId);
-    if (existing?.status === "incomplete" && existing.stripe_subscription_id) {
+    if (existing?.stripe_subscription_id && existing.status === "incomplete") {
       await getStripeClient().subscriptions.cancel(existing.stripe_subscription_id);
       await SubscriptionService.markCanceled(userId);
     }
@@ -240,7 +240,7 @@ export class BillingService {
     const subscription = await SubscriptionService.getActiveForUser(userId);
     if (!subscription?.stripe_subscription_id || subscription.plan === PLANS.FREE) throw new BillingError("No active subscription was found.", "SUBSCRIPTION_NOT_FOUND", { userId });
     const current = await getStripeClient().subscriptions.retrieve(subscription.stripe_subscription_id);
-    if (!(PLAN_ACCESS_STATUSES as readonly string[]).includes(current.status) && current.status !== "past_due") {
+    if (!(PLAN_ACCESS_STATUSES as readonly string[]).includes(current.status)) {
       throw new BillingError("No active subscription was found.", "SUBSCRIPTION_NOT_FOUND", { userId, status: current.status });
     }
     const item = current.items.data[0];
@@ -259,8 +259,6 @@ export class BillingService {
       const subscription = event.data.object as Stripe.Subscription;
       const userId = await SubscriptionService.findUserIdByCustomerId(customerId(subscription.customer));
       if (!userId) throw new BillingError("Webhook customer mapping was not found.", "WEBHOOK_PROCESSING_FAILED", { eventId: event.id });
-      // SyncFromStripe already resolves plan to Free when the subscription
-      // is not in an access-granting state (incomplete, past_due, unpaid, etc.).
       await SubscriptionService.syncFromStripe(userId, subscription);
       return;
     }
@@ -278,8 +276,6 @@ export class BillingService {
       if (typeof customerIdValue !== "string") return;
       const userId = await SubscriptionService.findUserIdByCustomerId(customerIdValue);
       if (!userId) return;
-      // A failed payment means the subscription is no longer paid.
-      // The user falls back to Free until Stripe reports an active status.
       const subscriptionRef = invoice.lines.data.find((line) => line.subscription)?.subscription;
       const subscriptionId = typeof subscriptionRef === "string" ? subscriptionRef : undefined;
       if (subscriptionId) {
@@ -298,7 +294,6 @@ export class BillingService {
       if (!userId || !subscriptionId) return;
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       await SubscriptionService.syncFromStripe(userId, subscription);
-      return;
     }
   }
 }
