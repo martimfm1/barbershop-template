@@ -128,9 +128,6 @@ importers:
       stripe:
         specifier: ^22.4.0
         version: 22.4.0(@types/node@20.19.41)
-      supabase:
-        specifier: ^2.106.0
-        version: 2.106.0
       tailwind-merge:
         specifier: ^3.6.0
         version: 3.6.0
@@ -165,6 +162,9 @@ importers:
       eslint-config-next:
         specifier: 16.2.6
         version: 16.2.6(@typescript-eslint/parser@8.60.0(eslint@9.39.4(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)(typescript@5.9.3))(eslint@9.39.4(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)(typescript@5.9.3)
+      supabase:
+        specifier: ^2.106.0
+        version: 2.106.0
       tailwindcss:
         specifier: ^4
         version: 4.3.0
