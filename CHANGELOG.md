@@ -25,6 +25,10 @@
 - Added authenticated marketing campaign creation/list API with audience validation.
 - Added per-barbershop email sender names while keeping the verified Silentra sender email on Brevo.
 - Added Twilio alphanumeric sender-name normalization for barbershop-branded SMS.
+- Added provider-neutral notification types and a single notification provider facade.
+- Added feature flags for email, SMS and push notification channels.
+- Added a Twilio SMS provider that is disabled by default through `SMS_ENABLED=false`.
+- Added a Brevo email adapter behind the common notification interface.
 
 ### Security
 - Hardened tenant isolation with a server-resolved current barbershop helper.
@@ -48,6 +52,7 @@
 - Provider credentials are read only from server-side environment variables and are never accepted from request bodies.
 - SMS recipients and message lengths are validated before requests reach Twilio.
 - Sender names are sanitized server-side and are never accepted as arbitrary provider credentials.
+- SMS credentials are never accessed when `SMS_ENABLED=false`, so development does not make Twilio requests accidentally.
 
 ## [0.3.1] - 2026-08-06
 
