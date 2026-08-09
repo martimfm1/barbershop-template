@@ -1,32 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { ArrowLeft, Lock, RefreshCcw, RotateCcw, Undo2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Lock, Minus, Plus, Receipt, RefreshCcw, Search, ShoppingCart, Trash2, Undo2, RotateCcw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
-type PosItem = {
-  id: string;
-  description: string;
-  quantity: number;
-  unit_price: number;
-  total: number;
-};
-
-type Transaction = {
-  id: string;
-  status: string;
-  payment_method: string;
-  subtotal: number;
-  discount: number;
-  total: number;
-  created_at: string;
-  pos_transaction_items?: PosItem[];
-};
+type Product = { id: string; name: string; unit_price: number; stock_quantity: number; active: boolean };
+type Service = { id: string; name: string; price: number; duration: number };
+type Client = { id: string; name_complete: string; email: string | null; num_phone: string | null };
+type CartItem = { key: string; productId: string | null; serviceId: string | null; description: string; quantity: number; unitPrice: number; maxStock?: number };
+type PosItem = { id: string; description: string; quantity: number; unit_price: number; total: number };
+type Transaction = { id: string; status: string; payment_method: string; subtotal: number; discount: number; total: number; created_at: string; pos_transaction_items?: PosItem[] };
 
 async function authHeaders() {
   const supabase = createClient();
@@ -35,147 +24,141 @@ async function authHeaders() {
   return { Authorization: `Bearer ${session.access_token}` };
 }
 
-const money = (value: number) =>
-  new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Number(value) || 0);
+const money = (value: number) => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }).format(Number(value) || 0);
 
 export default function POSPage() {
   const { hasFeature, loading: billingLoading } = useFeatureAccess();
   const allowed = hasFeature("pos");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [search, setSearch] = useState("");
+  const [clientId, setClientId] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [discount, setDiscount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [reversing, setReversing] = useState<string | null>(null);
 
-  async function loadTransactions() {
+  async function loadData() {
     setLoading(true);
     try {
-      const response = await fetch("/api/enterprise/pos", {
-        headers: await authHeaders(),
-        cache: "no-store",
-      });
+      const supabase = createClient();
+      const [{ data: productRows, error: productsError }, { data: serviceRows, error: servicesError }, { data: clientRows, error: clientsError }] = await Promise.all([
+        supabase.from("inventory_products").select("id,name,unit_price,stock_quantity,active").eq("active", true).order("name"),
+        supabase.from("services").select("id,name,price,duration").order("name"),
+        supabase.from("users").select("id,name_complete,email,num_phone").order("name_complete").limit(500),
+      ]);
+      if (productsError || servicesError || clientsError) throw new Error("Não foi possível carregar o catálogo do POS.");
+      setProducts(productRows ?? []);
+      setServices(serviceRows ?? []);
+      setClients(clientRows ?? []);
+
+      const response = await fetch("/api/enterprise/pos", { headers: await authHeaders(), cache: "no-store" });
       const json = await response.json();
-      if (!response.ok) throw new Error(json.error ?? "Não foi possível carregar o POS.");
+      if (!response.ok) throw new Error(json.error ?? "Não foi possível carregar o histórico.");
       setTransactions(json.transactions ?? []);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao carregar o POS.");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
   useEffect(() => {
-    if (!billingLoading && allowed) void loadTransactions();
+    if (!billingLoading && allowed) void loadData();
   }, [billingLoading, allowed]);
+
+  const filteredProducts = useMemo(() => products.filter((p) => p.name.toLowerCase().includes(search.toLowerCase())), [products, search]);
+  const filteredServices = useMemo(() => services.filter((s) => s.name.toLowerCase().includes(search.toLowerCase())), [services, search]);
+  const subtotal = useMemo(() => cart.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0), [cart]);
+  const appliedDiscount = Math.min(Math.max(0, Number.isFinite(discount) ? discount : 0), subtotal);
+  const total = Math.max(0, subtotal - appliedDiscount);
+
+  function addProduct(product: Product) {
+    const stock = Number(product.stock_quantity);
+    if (stock <= 0) return toast.error("Produto sem stock.");
+    setCart((current) => {
+      const existing = current.find((item) => item.productId === product.id);
+      if (existing) {
+        if (existing.quantity >= stock) { toast.error("Stock insuficiente."); return current; }
+        return current.map((item) => item.key === existing.key ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      return [...current, { key: `product-${product.id}`, productId: product.id, serviceId: null, description: product.name, quantity: 1, unitPrice: Number(product.unit_price), maxStock: stock }];
+    });
+  }
+
+  function addService(service: Service) {
+    setCart((current) => {
+      const existing = current.find((item) => item.serviceId === service.id);
+      if (existing) return current.map((item) => item.key === existing.key ? { ...item, quantity: item.quantity + 1 } : item);
+      return [...current, { key: `service-${service.id}`, productId: null, serviceId: service.id, description: service.name, quantity: 1, unitPrice: Number(service.price) }];
+    });
+  }
+
+  function changeQuantity(key: string, delta: number) {
+    setCart((current) => current.flatMap((item) => {
+      if (item.key !== key) return [item];
+      const next = item.quantity + delta;
+      if (next <= 0) return [];
+      if (item.maxStock !== undefined && next > item.maxStock) { toast.error("Stock insuficiente."); return [item]; }
+      return [{ ...item, quantity: next }];
+    }));
+  }
+
+  async function checkout() {
+    if (!cart.length || submitting) return;
+    setSubmitting(true);
+    try {
+      const response = await fetch("/api/enterprise/pos", {
+        method: "POST",
+        headers: { ...(await authHeaders()), "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentMethod,
+          discount: appliedDiscount,
+          clientId: clientId || null,
+          items: cart.map(({ key: _key, maxStock: _maxStock, ...item }) => item),
+        }),
+      });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error ?? "Não foi possível concluir a venda.");
+      toast.success(`Venda concluída · ${money(json.transaction.total)}`);
+      setCart([]); setDiscount(0); setClientId("");
+      await loadData();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao concluir a venda.");
+    } finally { setSubmitting(false); }
+  }
 
   async function reverseTransaction(transaction: Transaction, mode: "refund" | "void") {
     const label = mode === "refund" ? "reembolsar" : "anular";
-    const confirmed = window.confirm(
-      `Confirma ${label} a transação de ${money(transaction.total)}? O stock dos produtos será reposto automaticamente.`,
-    );
-    if (!confirmed) return;
-
+    if (!window.confirm(`Confirma ${label} a transação de ${money(transaction.total)}? O stock dos produtos será reposto automaticamente.`)) return;
     setReversing(transaction.id);
     try {
-      const response = await fetch(`/api/enterprise/pos/${transaction.id}/reversal`, {
-        method: "POST",
-        headers: { ...(await authHeaders()), "Content-Type": "application/json" },
-        body: JSON.stringify({ mode }),
-      });
+      const response = await fetch(`/api/enterprise/pos/${transaction.id}/reversal`, { method: "POST", headers: { ...(await authHeaders()), "Content-Type": "application/json" }, body: JSON.stringify({ mode }) });
       const json = await response.json();
       if (!response.ok) throw new Error(json.error ?? "Não foi possível reverter a transação.");
-      setTransactions((current) =>
-        current.map((item) => item.id === transaction.id ? { ...item, status: json.transaction.status } : item),
-      );
+      setTransactions((current) => current.map((item) => item.id === transaction.id ? { ...item, status: json.transaction.status } : item));
       toast.success(mode === "refund" ? "Transação reembolsada." : "Transação anulada.");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao reverter a transação.");
-    } finally {
-      setReversing(null);
-    }
+      await loadData();
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Erro ao reverter a transação."); }
+    finally { setReversing(null); }
   }
 
   if (billingLoading) return <main className="min-h-screen bg-background" />;
+  if (!allowed) return <main className="min-h-screen bg-background px-4 py-24"><div className="mx-auto max-w-xl"><Card><CardContent className="flex flex-col items-center gap-5 py-16 text-center"><Lock className="h-8 w-8 text-primary" /><h1 className="text-2xl font-semibold">POS Enterprise</h1><p className="text-muted-foreground">Vendas, pagamentos, stock e reembolsos num único fluxo.</p><Button asChild><Link href="/dashboard/billing">Fazer upgrade</Link></Button></CardContent></Card></div></main>;
 
-  if (!allowed) {
-    return (
-      <main className="min-h-screen bg-background px-4 py-24 text-foreground">
-        <div className="mx-auto max-w-2xl">
-          <Card className="border-white/10 bg-white/[0.03]">
-            <CardContent className="flex flex-col items-center gap-5 py-16 text-center">
-              <div className="rounded-2xl bg-primary/10 p-4 text-primary"><Lock className="h-7 w-7" /></div>
-              <div>
-                <h1 className="text-2xl font-semibold">POS</h1>
-                <p className="mt-2 text-muted-foreground">Vendas, pagamentos, stock e reembolsos num único fluxo Enterprise.</p>
-              </div>
-              <Button asChild><Link href="/dashboard/billing">Fazer upgrade</Link></Button>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    );
-  }
+  return <main className="min-h-screen bg-background px-4 py-12 text-foreground sm:px-8"><div className="mx-auto max-w-7xl space-y-8"><header className="flex flex-col justify-between gap-4 md:flex-row md:items-end"><div><p className="text-sm font-medium text-primary">ENTERPRISE · POS</p><h1 className="mt-1 text-3xl font-semibold tracking-tight">Ponto de venda</h1><p className="mt-2 text-muted-foreground">Cria vendas, associa clientes e gere reversões com stock sincronizado.</p></div><div className="flex gap-2"><Button variant="outline" onClick={() => void loadData()} disabled={loading}><RefreshCcw className="mr-2 h-4 w-4" /> Atualizar</Button><Button variant="outline" asChild><Link href="/dashboard"><ArrowLeft className="mr-2 h-4 w-4" /> Dashboard</Link></Button></div></header>
 
-  return (
-    <main className="min-h-screen bg-background px-4 py-20 text-foreground sm:px-8">
-      <div className="mx-auto max-w-7xl space-y-8">
-        <header className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div>
-            <p className="text-sm font-medium text-primary">ENTERPRISE · POS</p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight">Ponto de venda</h1>
-            <p className="mt-2 text-muted-foreground">Consulta vendas e gere reversões com reposição automática de stock.</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => void loadTransactions()} disabled={loading}>
-              <RefreshCcw className="mr-2 h-4 w-4" /> Atualizar
-            </Button>
-            <Button variant="outline" asChild><Link href="/dashboard"><ArrowLeft className="mr-2 h-4 w-4" /> Dashboard</Link></Button>
-          </div>
-        </header>
+    <div className="grid gap-6 xl:grid-cols-[1fr_390px]">
+      <Card><CardHeader><CardTitle className="flex items-center gap-2"><Search className="h-5 w-5" />Catálogo</CardTitle><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Pesquisar produto ou serviço..." /></CardHeader><CardContent>{loading ? <p className="py-10 text-center text-muted-foreground">A carregar catálogo...</p> : <div className="grid gap-3 sm:grid-cols-2">{filteredProducts.map((p) => <button key={p.id} onClick={() => addProduct(p)} className="rounded-xl border border-white/10 p-4 text-left transition hover:bg-white/[0.04]"><p className="font-medium">{p.name}</p><p className="mt-1 text-sm text-muted-foreground">Produto · {p.stock_quantity} em stock</p><p className="mt-2 font-semibold">{money(p.unit_price)}</p></button>)}{filteredServices.map((s) => <button key={s.id} onClick={() => addService(s)} className="rounded-xl border border-white/10 p-4 text-left transition hover:bg-white/[0.04]"><p className="font-medium">{s.name}</p><p className="mt-1 text-sm text-muted-foreground">Serviço · {s.duration} min</p><p className="mt-2 font-semibold">{money(s.price)}</p></button>)}{!filteredProducts.length && !filteredServices.length && <p className="col-span-full py-10 text-center text-muted-foreground">Nenhum resultado.</p>}</div>}</CardContent></Card>
 
-        <Card className="border-white/10 bg-white/[0.03]">
-          <CardHeader><CardTitle>Histórico de transações</CardTitle></CardHeader>
-          <CardContent>
-            {loading ? (
-              <p className="py-12 text-center text-muted-foreground">A carregar transações...</p>
-            ) : transactions.length === 0 ? (
-              <p className="py-12 text-center text-muted-foreground">Ainda não existem transações.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-sm">
-                  <thead className="border-b border-white/10 text-left text-muted-foreground">
-                    <tr><th className="px-3 py-3">Data</th><th className="px-3 py-3">Itens</th><th className="px-3 py-3">Pagamento</th><th className="px-3 py-3">Total</th><th className="px-3 py-3">Estado</th><th className="px-3 py-3 text-right">Ações</th></tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/10">
-                    {transactions.map((transaction) => {
-                      const reversible = transaction.status === "completed";
-                      return (
-                        <tr key={transaction.id}>
-                          <td className="px-3 py-4 text-muted-foreground">{new Date(transaction.created_at).toLocaleString("pt-PT")}</td>
-                          <td className="max-w-[260px] px-3 py-4">{(transaction.pos_transaction_items ?? []).map((item) => `${item.description} × ${item.quantity}`).join(", ") || "—"}</td>
-                          <td className="px-3 py-4 capitalize">{transaction.payment_method}</td>
-                          <td className="px-3 py-4 font-medium">{money(transaction.total)}</td>
-                          <td className="px-3 py-4"><span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs capitalize">{transaction.status}</span></td>
-                          <td className="px-3 py-4">
-                            {reversible ? (
-                              <div className="flex justify-end gap-2">
-                                <Button size="sm" variant="outline" disabled={reversing === transaction.id} onClick={() => void reverseTransaction(transaction, "refund")}>
-                                  <Undo2 className="mr-1.5 h-3.5 w-3.5" /> Reembolsar
-                                </Button>
-                                <Button size="sm" variant="ghost" disabled={reversing === transaction.id} onClick={() => void reverseTransaction(transaction, "void")}>
-                                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Anular
-                                </Button>
-                              </div>
-                            ) : <span className="block text-right text-xs text-muted-foreground">Sem ações</span>}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </main>
-  );
+      <Card className="h-fit xl:sticky xl:top-6"><CardHeader><CardTitle className="flex items-center gap-2"><ShoppingCart className="h-5 w-5" />Nova venda</CardTitle></CardHeader><CardContent className="space-y-4">{cart.length === 0 ? <p className="py-6 text-center text-muted-foreground">Adiciona produtos ou serviços.</p> : <div className="space-y-3">{cart.map((item) => <div key={item.key} className="rounded-xl border border-white/10 p-3"><div className="flex items-start justify-between gap-3"><div><p className="font-medium">{item.description}</p><p className="text-sm text-muted-foreground">{money(item.unitPrice)} cada</p></div><button onClick={() => setCart((current) => current.filter((x) => x.key !== item.key))} aria-label="Remover item"><Trash2 className="h-4 w-4 text-muted-foreground" /></button></div><div className="mt-3 flex items-center justify-between"><div className="flex items-center gap-2"><Button size="icon" variant="outline" onClick={() => changeQuantity(item.key, -1)}><Minus className="h-4 w-4" /></Button><span className="w-6 text-center">{item.quantity}</span><Button size="icon" variant="outline" onClick={() => changeQuantity(item.key, 1)}><Plus className="h-4 w-4" /></Button></div><span className="font-semibold">{money(item.quantity * item.unitPrice)}</span></div></div>)}</div>}
+        <div className="border-t border-white/10 pt-4"><label className="text-sm text-muted-foreground">Cliente (opcional)</label><select className="mt-1 h-10 w-full rounded-md border border-white/10 bg-background px-3" value={clientId} onChange={(e) => setClientId(e.target.value)}><option value="">Cliente ocasional</option>{clients.map((client) => <option key={client.id} value={client.id}>{client.name_complete}{client.num_phone ? ` · ${client.num_phone}` : ""}</option>)}</select><label className="mt-4 block text-sm text-muted-foreground">Desconto</label><Input className="mt-1" type="number" min="0" step="0.01" value={discount} onChange={(e) => setDiscount(Number(e.target.value) || 0)} /><label className="mt-4 block text-sm text-muted-foreground">Método de pagamento</label><select className="mt-1 h-10 w-full rounded-md border border-white/10 bg-background px-3" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}><option value="cash">Dinheiro</option><option value="card">Cartão</option><option value="transfer">Transferência</option><option value="other">Outro</option></select><div className="mt-5 flex justify-between text-sm"><span>Subtotal</span><span>{money(subtotal)}</span></div><div className="mt-1 flex justify-between text-sm"><span>Desconto</span><span>-{money(appliedDiscount)}</span></div><div className="mt-2 flex justify-between text-xl font-semibold"><span>Total</span><span>{money(total)}</span></div><Button className="mt-5 w-full" size="lg" disabled={!cart.length || submitting} onClick={() => void checkout()}>{submitting ? "A processar..." : "Concluir venda"}</Button></div></CardContent></Card>
+    </div>
+
+    <Card><CardHeader><CardTitle className="flex items-center gap-2"><Receipt className="h-5 w-5" />Histórico</CardTitle></CardHeader><CardContent>{transactions.length === 0 ? <p className="py-10 text-center text-muted-foreground">Ainda não existem transações.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[850px] text-sm"><thead className="border-b border-white/10 text-left text-muted-foreground"><tr><th className="px-3 py-3">Data</th><th className="px-3 py-3">Itens</th><th className="px-3 py-3">Pagamento</th><th className="px-3 py-3">Total</th><th className="px-3 py-3">Estado</th><th className="px-3 py-3 text-right">Ações</th></tr></thead><tbody className="divide-y divide-white/10">{transactions.map((transaction) => <tr key={transaction.id}><td className="px-3 py-4 text-muted-foreground">{new Date(transaction.created_at).toLocaleString("pt-PT")}</td><td className="max-w-[300px] px-3 py-4">{(transaction.pos_transaction_items ?? []).map((item) => `${item.description} × ${item.quantity}`).join(", ") || "—"}</td><td className="px-3 py-4 capitalize">{transaction.payment_method}</td><td className="px-3 py-4 font-medium">{money(transaction.total)}</td><td className="px-3 py-4"><span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs capitalize">{transaction.status}</span></td><td className="px-3 py-4">{transaction.status === "completed" ? <div className="flex justify-end gap-2"><Button size="sm" variant="outline" disabled={reversing === transaction.id} onClick={() => void reverseTransaction(transaction, "refund")}><Undo2 className="mr-1.5 h-3.5 w-3.5" /> Reembolsar</Button><Button size="sm" variant="ghost" disabled={reversing === transaction.id} onClick={() => void reverseTransaction(transaction, "void")}><RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Anular</Button></div> : <span className="block text-right text-xs text-muted-foreground">Sem ações</span>}</td></tr>)}</tbody></table></div>}</CardContent></Card>
+
+    <Card><CardContent className="flex items-center gap-3 py-4 text-sm text-muted-foreground">Os preços, stock e total são sempre revalidados pelo servidor antes de concluir a venda.</CardContent></Card>
+  </div></main>;
 }
