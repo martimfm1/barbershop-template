@@ -16,6 +16,7 @@
 - Added APIs for private client notes and client tag management.
 - Added an Advanced CRM dashboard at `/dashboard/crm` with client search, segmentation tags and plan gating.
 - Added a 360º client profile at `/dashboard/crm/[clientId]` with appointment history and private notes.
+- Added secure CRM customer segmentation by inactivity, visit frequency, customer value and recency.
 
 ### Security
 - Hardened tenant isolation with a server-resolved current barbershop helper.
@@ -34,4 +35,5 @@
 - Advanced CRM records are tenant-scoped with RLS and database-level cross-tenant validation.
 - CRM APIs authenticate every request and resolve the tenant from the authenticated user instead of accepting a client-supplied tenant ID.
 - Client 360 queries only return clients, appointments, notes and tags belonging to the authenticated barbershop.
+- CRM segmentation resolves all data through the authenticated tenant and never accepts a client-supplied `barbershop_id`.
 
