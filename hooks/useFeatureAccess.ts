@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useSubscription } from "@/hooks/useSubscription";
-import { PLAN_FEATURES, type FeatureKey } from "@/lib/billing/plan-features";
+import { PLAN_FEATURES, hasPlanFeature, type FeatureKey } from "@/lib/billing/plan-features";
 import type { BillingPlan } from "@/types/stripe";
 
 /**
@@ -11,17 +11,16 @@ import type { BillingPlan } from "@/types/stripe";
  */
 export function useFeatureAccess() {
   const { plan, isPro, isBusiness, isTrial, loading, isAuthenticated } = useSubscription();
+  const resolvedPlan = plan as BillingPlan;
 
   const hasFeature = useMemo(() => {
-    return (feature: FeatureKey): boolean => {
-      return PLAN_FEATURES[plan as BillingPlan].includes(feature);
-    };
-  }, [plan]);
+    return (feature: FeatureKey): boolean => hasPlanFeature(resolvedPlan, feature);
+  }, [resolvedPlan]);
 
-  const features = useMemo(() => PLAN_FEATURES[plan as BillingPlan], [plan]);
+  const features = useMemo(() => PLAN_FEATURES[resolvedPlan], [resolvedPlan]);
 
   return {
-    plan: plan as BillingPlan,
+    plan: resolvedPlan,
     isPro,
     isBusiness,
     isTrial,
