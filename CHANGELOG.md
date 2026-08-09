@@ -19,6 +19,10 @@
 - Added secure CRM customer segmentation by inactivity, visit frequency, customer value and recency.
 - Added marketing campaign domain primitives for Pro email/SMS campaigns.
 - Added centralized campaign channel/status validation and initial monthly recipient/campaign quotas.
+- Added tenant-scoped marketing campaign and recipient persistence with RLS.
+- Added reusable Brevo transactional/marketing email provider integration.
+- Added reusable Twilio SMS provider integration with pay-as-you-go delivery.
+- Added authenticated marketing campaign creation/list API with audience validation.
 
 ### Security
 - Hardened tenant isolation with a server-resolved current barbershop helper.
@@ -38,6 +42,9 @@
 - CRM APIs authenticate every request and resolve the tenant from the authenticated user instead of accepting a client-supplied tenant ID.
 - Client 360 queries only return clients, appointments, notes and tags belonging to the authenticated barbershop.
 - CRM segmentation resolves all data through the authenticated tenant and never accepts a client-supplied `barbershop_id`.
+- Marketing campaign records are tenant-scoped and recipient delivery rows are server-managed.
+- Provider credentials are read only from server-side environment variables and are never accepted from request bodies.
+- SMS recipients and message lengths are validated before requests reach Twilio.
 
 ## [0.3.1] - 2026-08-06
 
