@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Clock3 } from "lucide-react";
+import { ArrowLeft, Clock3 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 function getGreeting(hour: number) {
@@ -36,16 +37,22 @@ export function DashboardTopBar() {
 
   const greeting = getGreeting(now.getHours());
   const time = now.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
-  const date = now.toLocaleDateString("pt-PT", { weekday: "long", day: "numeric", month: "long" });
 
   return (
-    <header className="fixed inset-x-0 top-0 z-30 border-b border-white/5 bg-zinc-950/55 backdrop-blur-xl lg:left-64" aria-label="Resumo do dashboard">
+    <header className="fixed inset-x-0 top-0 z-30 border-b border-white/5 bg-zinc-950/55 backdrop-blur-xl lg:left-64" aria-label="Barra superior do dashboard">
       <div className="mx-auto flex min-h-16 max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <div className="min-w-0">
+        <div className="flex min-w-0 items-center gap-3">
+          <Link
+            href="/"
+            className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+            aria-label="Voltar ao site da Silentra"
+          >
+            <ArrowLeft className="size-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Voltar ao site</span>
+          </Link>
           <p className="truncate text-sm font-semibold text-zinc-100 sm:text-base">
             {greeting}, {name}
           </p>
-          <p className="truncate text-xs text-zinc-500">{date}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-zinc-200" aria-label={`Hora atual ${time}`}>
           <Clock3 className="size-4 text-emerald-400" aria-hidden="true" />
