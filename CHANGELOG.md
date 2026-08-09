@@ -10,6 +10,7 @@
 - Added the `locations` tenant entity with an initial location backfill for existing barbershops.
 - Added authenticated location management API with create, list, update and delete operations.
 - Added atomic location quota enforcement: Free 1, Pro 1, Enterprise unlimited.
+- Added the first Advanced CRM backend foundation with client notes, tags and tag assignments.
 
 ### Security
 - Hardened tenant isolation with a server-resolved current barbershop helper.
@@ -25,6 +26,7 @@
 - Location mutations require an authenticated owner/admin and always scope the target location to the caller's barbershop.
 - Location quota checks are serialized per barbershop to prevent concurrent-request bypasses.
 - Client-side direct writes to the locations table are disabled; mutations must use the server API.
+- Advanced CRM records are tenant-scoped with RLS and database-level cross-tenant validation.
 
 ## [0.3.1] - 2026-08-06
 
