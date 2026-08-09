@@ -29,8 +29,8 @@ export function CustomBillingPortal() {
   const primaryCard = billing.paymentMethods.find((method) => method.isDefault) ?? billing.paymentMethods[0];
   const hasActiveSubscription = Boolean(
     subscription &&
-    [PLANS.PRO, PLANS.ENTERPRISE].includes(subscription.plan) &&
-    ["active", "trialing"].includes(subscription.status),
+    (subscription.plan === PLANS.PRO || subscription.plan === PLANS.ENTERPRISE) &&
+    (subscription.status === "active" || subscription.status === "trialing"),
   );
   const currentPlan = subscription?.plan ?? PLANS.FREE;
   const formatPrice = (plan: BillingPrice) => new Intl.NumberFormat("pt-PT", { style: "currency", currency: plan.currency }).format(plan.unitAmount / 100);
