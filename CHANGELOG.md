@@ -1,5 +1,27 @@
 # Changelog
 
+## v3.0.22 — 2026-08-10
+
+### Added
+- Added a branded Silentra header to the dashboard sidebar.
+- Added a personalized dashboard top bar with the user's first name, contextual Portuguese greeting, current date and live local clock.
+- Added manual email messaging at `/dashboard/mensagens` with reusable templates and custom messages.
+- Added secure server-side email delivery through the existing Brevo configuration.
+- Added tenant-scoped recipient validation and audit logging for manual emails.
+
+### Changed
+- Manual messaging now uses the barbershop name as the Brevo sender name.
+- Email templates support `{{nome}}` and `{{barbearia}}` placeholders.
+- Improved the messaging UI with accessible controls, preview, validation and responsive layout.
+
+### Disabled
+- Manual SMS sending remains explicitly disabled until the SMS provider is activated.
+
+### Security
+- Manual email recipients are resolved server-side and must belong to the authenticated user's barbershop.
+- The API never accepts a client-supplied barbershop ID for authorization.
+- Email message HTML is escaped server-side before being sent.
+
 ## v3.0.21 — 2026-08-10
 
 ### Changed
