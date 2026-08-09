@@ -1,5 +1,31 @@
 # Changelog
 
+## v3.0.8 — 2026-08-09
+
+### Added
+- Added a shared server-side authorization boundary for Pro/Enterprise module APIs.
+- Added protected CRM tag management using the new `customer_tags` model.
+- Added protected automation rule management.
+- Added Enterprise inventory product API.
+- Added Enterprise location API with plan quota enforcement.
+- Added Enterprise commissions API with tenant validation and database-calculated commission amounts.
+- Added Enterprise advanced report configuration API.
+- Added Enterprise staff permission API.
+- Added Enterprise POS transaction API with server-side totals and tenant validation.
+
+### Security
+- Pro/Enterprise API access is resolved from the authenticated subscription, never from client-supplied plan values.
+- Module APIs resolve the authenticated user's barbershop server-side and enforce tenant boundaries.
+- Enterprise permission checks are enforced server-side for staff operations.
+- POS products and services are validated against the authenticated barbershop before transaction creation.
+- Marketing campaigns now enforce the `marketing_campaigns` entitlement and use server-side tenant access.
+- The existing locations endpoint was aligned with the new `parent_barbershop_id` schema and multi-location entitlement.
+
+### Compatibility
+- Reused the existing billing entitlement and module authorization architecture.
+- Existing marketing, CRM, loyalty and location APIs remain under their existing routes.
+- No Stripe subscription contract was changed.
+
 ## v3.0.7 — 2026-08-09
 
 ### Fixed
