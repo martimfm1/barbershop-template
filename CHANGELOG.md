@@ -1,5 +1,29 @@
 # Changelog
 
+## v3.0.20 — 2026-08-10
+
+### Changed
+- Renamed the dashboard navigation entry from `Stats` to `Analytics` and moved the primary analytics experience to `/dashboard/analytics`.
+- Added a shared desktop dashboard sidebar with navigation for overview, Analytics, Marketing, Automations, Loyalty, POS, billing and settings.
+- Dashboard navigation now uses the canonical plan entitlements for gated modules.
+- Made the existing dashboard navbar transparent on dashboard routes while keeping its original behaviour elsewhere.
+- Highlighted the authenticated user's current plan in the full plan comparison table.
+
+### Fixed
+- Fixed the Analytics API returning a payload shape that did not match the Analytics UI.
+- Fixed Analytics daily revenue, service, professional and KPI rendering to consume the actual `/api/analytics` response.
+- Fixed an accidental `analytics` permission requirement that could return `PERMISSION_DENIED` to valid Pro/Enterprise users even when the plan entitlement was present.
+- Reduced stale subscription state so a recently changed Enterprise subscription is not incorrectly displayed as Pro for several minutes.
+- Analytics now explicitly bypasses browser HTTP caching when resolving the current subscription state.
+
+### Security / Access
+- Analytics remains protected server-side by the canonical `advanced_analytics` entitlement.
+- Tenant isolation continues to be enforced by the server-side module context and authenticated user/barbershop resolution.
+- Removing the accidental role-permission gate does not remove plan enforcement; users without the Analytics entitlement still receive the feature-not-included response.
+
+### Notes
+- The legacy `/dashboard/stats` implementation is no longer linked from the dashboard navigation; `/dashboard/analytics` is the canonical route.
+
 ## v3.0.19 — 2026-08-09
 
 ### Changed
