@@ -1,67 +1,19 @@
 # Changelog
 
-## [Unreleased]
-
-### Added
-- Added server-side billing entitlement primitives for feature checks and plan quotas.
-- Added centralized helpers for paid-plan checks and professional/location limits.
-- Added atomic professional creation with plan-aware quota enforcement and audit logging.
-- Added strict server-side validation for professional creation requests.
-- Added the `locations` tenant entity with an initial location backfill for existing barbershops.
-- Added authenticated location management API with create, list, update and delete operations.
-- Added atomic location quota enforcement: Free 1, Pro 1, Enterprise unlimited.
-- Added the first Advanced CRM backend foundation with client notes, tags and tag assignments.
-- Added tenant-safe CRM client search with pagination.
-- Added a client 360 API returning profile, appointment history, notes and tags.
-- Added APIs for private client notes and client tag management.
-- Added an Advanced CRM dashboard at `/dashboard/crm` with client search, segmentation tags and plan gating.
-- Added a 360º client profile at `/dashboard/crm/[clientId]` with appointment history and private notes.
-- Added secure CRM customer segmentation by inactivity, visit frequency, customer value and recency.
-- Added marketing campaign domain primitives for Pro email/SMS campaigns.
-- Added centralized campaign channel/status validation and initial monthly recipient/campaign quotas.
-- Added tenant-scoped marketing campaign and recipient persistence with RLS.
-- Added reusable Brevo transactional/marketing email provider integration.
-- Added reusable Twilio SMS provider integration with pay-as-you-go delivery.
-- Added authenticated marketing campaign creation/list API with audience validation.
-- Added per-barbershop email sender names while keeping the verified Silentra sender email on Brevo.
-- Added Twilio alphanumeric sender-name normalization for barbershop-branded SMS.
-- Added provider-neutral notification types and a single notification provider facade.
-- Added feature flags for email, SMS and push notification channels.
-- Added a Twilio SMS provider that is disabled by default through `SMS_ENABLED=false`.
-- Added a Brevo email adapter behind the common notification interface.
-
-### Security
-- Hardened tenant isolation with a server-resolved current barbershop helper.
-- Prevented client-side changes to user `barbershop_id`, `role`, and account identity.
-- Restricted user mutations to the authenticated tenant and client records.
-- Removed public appointment reads while preserving validated public booking creation.
-- Validated appointment service and professional ownership against the selected barbershop.
-- Restricted barbershop and marketplace shop writes to the appropriate owner/admin tenant.
-- Hardened audit logs against direct client-side writes.
-- Added indexes for tenant-scoped users and appointment queries.
-- Professional quota checks are serialized per barbershop to prevent concurrent-request bypasses.
-- Professional creation now resolves the effective plan from server-side subscription state instead of trusting browser input.
-- Location mutations require an authenticated owner/admin and always scope the target location to the caller's barbershop.
-- Location quota checks are serialized per barbershop to prevent concurrent-request bypasses.
-- Client-side direct writes to the locations table are disabled; mutations must use the server API.
-- Advanced CRM records are tenant-scoped with RLS and database-level cross-tenant validation.
-- CRM APIs authenticate every request and resolve the tenant from the authenticated user instead of accepting a client-supplied tenant ID.
-- Client 360 queries only return clients, appointments, notes and tags belonging to the authenticated barbershop.
-- CRM segmentation resolves all data through the authenticated tenant and never accepts a client-supplied `barbershop_id`.
-- Marketing campaign records are tenant-scoped and recipient delivery rows are server-managed.
-- Provider credentials are read only from server-side environment variables and are never accepted from request bodies.
-- SMS recipients and message lengths are validated before requests reach Twilio.
-- Sender names are sanitized server-side and are never accepted as arbitrary provider credentials.
-- SMS credentials are never accessed when `SMS_ENABLED=false`, so development does not make Twilio requests accidentally.
-
-## [0.3.1] - 2026-08-06
-
-### Added
-- Email notification for bookings
-- Forgot password page and systems
+## v3.0.1 — 2026-08-09
 
 ### Changed
-- Subscription prices
+- Removed **Assistente de IA** from Pro and Enterprise entitlements.
+- Removed **Acesso à API** from Enterprise entitlements.
+- Removed the corresponding feature keys from the canonical billing model so they cannot be granted accidentally through the entitlement service.
+- Kept Free as the fully usable base plan with its existing core booking and management features.
+- Kept Pro focused on CRM, analytics, automation, marketing, loyalty, reports and team management.
+- Kept Enterprise focused on multi-location, global management, permissions, commissions, inventory, POS and enterprise reporting.
+- Improved Pro and Enterprise plan descriptions for the pricing UI.
 
-### Fixed
-- Mobile acessebility in login page
+### Security
+- Plan entitlements now have no AI/API capabilities available through the canonical feature registry.
+- Paid features continue to be resolved from server-side subscription state rather than client-provided plan values.
+
+### Next
+- Continue implementing the remaining Pro and Enterprise backend modules behind the existing entitlement guards.
