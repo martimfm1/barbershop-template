@@ -15,14 +15,14 @@ const HERO_FEATURES = {
   pro: [
     "Até 5 barbeiros",
     "CRM e analytics avançados",
-    "Automação e marketing",
-    "Loyalty + Assistente de IA",
+    "Automação e campanhas de marketing",
+    "Fidelização e follow-ups automáticos",
   ],
   enterprise: [
     "Barbeiros e localizações ilimitados",
     "POS, stock e comissões",
     "Permissões e gestão global",
-    "API + IA avançada",
+    "Relatórios empresariais avançados",
   ],
 } as const;
 
@@ -38,7 +38,7 @@ export function PricingSection() {
         </div>
         <div className="flex max-w-2xl flex-col gap-3 sm:flex-row sm:items-center lg:justify-end">
           <p className="text-sm leading-6 text-zinc-400 sm:text-base lg:text-right">
-            O Free dá-te uma operação completa. Faz upgrade quando precisares de mais equipa, automação, inteligência e controlo.
+            O Free dá-te uma operação completa. Faz upgrade quando precisares de mais equipa, automação e controlo.
           </p>
           <Link
             href="/plans"
@@ -67,7 +67,7 @@ export function PricingSection() {
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/[0.025] px-5 py-4">
           <p className="text-sm font-semibold text-zinc-100">Enterprise para escalar</p>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">Operações multi-localização com controlo, POS, API e IA avançada.</p>
+          <p className="mt-1 text-xs leading-5 text-zinc-500">Operações multi-localização com controlo, POS, stock e relatórios avançados.</p>
         </div>
       </div>
     </section>
