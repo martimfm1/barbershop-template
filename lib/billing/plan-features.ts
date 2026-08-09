@@ -1,13 +1,6 @@
 import { PLANS, type BillingPlan } from "@/lib/stripe/constants";
 
-/**
- * Typed feature keys — the only valid feature names. Never pass
- * arbitrary strings when checking entitlements.
- *
- * Free/Pro/Enterprise cover the product surface. Legacy keys are kept as
- * first-class features because existing UI and API guards still reference
- * them; new code should prefer the new product keys.
- */
+/** Typed product feature keys used by the entitlement system. */
 export type FreeFeatureKey =
   | "agenda"
   | "appointments"
@@ -30,7 +23,6 @@ export type ProFeatureKey =
   | "customer_segments"
   | "loyalty"
   | "advanced_reports"
-  | "ai_assistant"
   | "team_management"
   | "advanced_notifications";
 
@@ -41,15 +33,9 @@ export type EnterpriseFeatureKey =
   | "commissions"
   | "inventory"
   | "pos"
-  | "api_access"
-  | "advanced_ai"
   | "enterprise_reports";
 
-/**
- * Backwards-compatible legacy keys, still referenced by existing dashboard
- * cards and API guards. They are intentionally kept on the same plans as
- * before so no caller breaks until it migrates to the new product keys.
- */
+/** Legacy keys retained until existing callers are migrated. */
 export type LegacyFeatureKey = "professionals" | "analytics";
 
 export type FeatureKey =
@@ -82,10 +68,8 @@ const PRO_FEATURES: readonly FeatureKey[] = [
   "customer_segments",
   "loyalty",
   "advanced_reports",
-  "ai_assistant",
   "team_management",
   "advanced_notifications",
-  // Legacy keys kept for existing callers (same Pro access as before).
   "professionals",
   "analytics",
 ];
@@ -98,23 +82,15 @@ const ENTERPRISE_FEATURES: readonly FeatureKey[] = [
   "commissions",
   "inventory",
   "pos",
-  "api_access",
-  "advanced_ai",
   "enterprise_reports",
 ];
 
-/** All features, grouped by plan. Pro and Enterprise inherit from lower plans. */
 export const PLAN_FEATURES: Record<BillingPlan, readonly FeatureKey[]> = {
   [PLANS.FREE]: FREE_FEATURES,
   [PLANS.PRO]: PRO_FEATURES,
   [PLANS.ENTERPRISE]: ENTERPRISE_FEATURES,
 };
 
-/**
- * Quantitative limits per plan. Free is a real, fully usable product for a
- * small barbershop — only team and location headcounts are limited.
- * Unlimited is represented by {@link UNLIMITED}.
- */
 export const UNLIMITED = Infinity;
 
 export interface PlanLimits {
@@ -158,9 +134,7 @@ export const PLAN_NAMES: Record<BillingPlan, string> = {
   enterprise: "Barbers Enterprise",
 };
 
-/** UI copy for each feature (used in pricing cards and feature lists). */
 export const FEATURE_LABELS: Record<FeatureKey, string> = {
-  // Free
   agenda: "Agenda completa",
   appointments: "Marcações ilimitadas",
   clients: "Clientes ilimitados",
@@ -172,7 +146,6 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   basic_revenue: "Receita básica",
   basic_client_history: "Histórico do cliente",
   basic_notifications: "Notificações essenciais",
-  // Pro
   advanced_crm: "CRM avançado",
   advanced_analytics: "Analytics avançado",
   automated_reminders: "Lembretes automáticos",
@@ -181,20 +154,15 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   customer_segments: "Segmentos de clientes",
   loyalty: "Programa de fidelização",
   advanced_reports: "Relatórios avançados",
-  ai_assistant: "Assistente de IA",
   team_management: "Gestão de equipa",
   advanced_notifications: "Notificações avançadas",
-  // Enterprise
   multi_location: "Multi-localização",
   global_dashboard: "Dashboard global",
   advanced_permissions: "Permissões avançadas",
   commissions: "Comissões",
   inventory: "Gestão de stock",
   pos: "Ponto de venda (POS)",
-  api_access: "Acesso à API",
-  advanced_ai: "IA avançada",
   enterprise_reports: "Relatórios empresariais",
-  // Legacy (kept for existing callers)
   professionals: "Até 5 profissionais",
   analytics: "Análises essenciais do negócio",
 };
