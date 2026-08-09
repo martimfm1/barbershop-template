@@ -35,14 +35,3 @@
 - CRM APIs authenticate every request and resolve the tenant from the authenticated user instead of accepting a client-supplied tenant ID.
 - Client 360 queries only return clients, appointments, notes and tags belonging to the authenticated barbershop.
 
-## [0.3.1] - 2026-08-06
-
-### Added
-- Email notification for bookings
-- Forgot password page and systems
-
-### Changed
-- Subscription prices
-
-### Fixed
-- Mobile acessebility in login page
