@@ -1,5 +1,27 @@
 # Changelog
 
+## v3.0.12 — 2026-08-09
+
+### Added
+- Added Enterprise POS sales checkout UI at `/dashboard/pos`.
+- Added searchable product and service catalog.
+- Added cart with quantity controls and product stock limits.
+- Added optional client association.
+- Added payment method selection and discount input.
+- Added server-backed checkout using the existing atomic POS transaction API.
+- Added automatic catalog/history refresh after successful sales and reversals.
+
+### Security
+- POS checkout continues to require the Enterprise `pos` entitlement.
+- Product, service and client data are read through the authenticated Supabase client with existing tenant RLS; the checkout endpoint remains the authoritative mutation boundary.
+- Client-provided prices, totals and stock are never trusted by the backend; the atomic PostgreSQL function revalidates them before committing.
+- UI-only cart metadata is stripped before the checkout request.
+
+### UX
+- Added responsive catalog, sticky cart and transaction history layout.
+- Added clear empty, loading, success and error states.
+- Added server-validation notice to make the checkout trust boundary explicit.
+
 ## v3.0.11 — 2026-08-09
 
 ### Added
