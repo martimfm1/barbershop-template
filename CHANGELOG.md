@@ -11,6 +11,9 @@
 - Added authenticated location management API with create, list, update and delete operations.
 - Added atomic location quota enforcement: Free 1, Pro 1, Enterprise unlimited.
 - Added the first Advanced CRM backend foundation with client notes, tags and tag assignments.
+- Added tenant-safe CRM client search with pagination.
+- Added a client 360 API returning profile, appointment history, notes and tags.
+- Added APIs for private client notes and client tag management.
 
 ### Security
 - Hardened tenant isolation with a server-resolved current barbershop helper.
@@ -27,6 +30,8 @@
 - Location quota checks are serialized per barbershop to prevent concurrent-request bypasses.
 - Client-side direct writes to the locations table are disabled; mutations must use the server API.
 - Advanced CRM records are tenant-scoped with RLS and database-level cross-tenant validation.
+- CRM APIs authenticate every request and resolve the tenant from the authenticated user instead of accepting a client-supplied tenant ID.
+- Client 360 queries only return clients, appointments, notes and tags belonging to the authenticated barbershop.
 
 ## [0.3.1] - 2026-08-06
 
