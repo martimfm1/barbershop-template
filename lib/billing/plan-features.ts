@@ -3,7 +3,7 @@ import { PLANS, type BillingPlan } from "@/lib/stripe/constants";
 export type FreeFeatureKey =
   | "agenda" | "appointments" | "clients" | "services" | "online_booking"
   | "booking_page" | "qr_booking" | "basic_dashboard" | "basic_revenue"
-  | "basic_client_history" | "basic_notifications" | "team_management";
+  | "basic_client_history" | "basic_notifications" | "team_management" | "messaging";
 
 export type ProFeatureKey =
   | "advanced_crm" | "advanced_analytics" | "automated_reminders"
@@ -20,7 +20,7 @@ export type FeatureKey = FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey |
 const FREE_FEATURES: readonly (FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey)[] = [
   "agenda", "appointments", "clients", "services", "online_booking", "booking_page",
   "qr_booking", "basic_dashboard", "basic_revenue", "basic_client_history", "basic_notifications",
-  "team_management",
+  "team_management", "messaging",
 ];
 
 const PRO_FEATURES: readonly (FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey)[] = [
@@ -56,10 +56,7 @@ export const PLAN_LIMITS: Record<BillingPlan, PlanLimits> = {
   [PLANS.ENTERPRISE]: { barbers: UNLIMITED, locations: UNLIMITED },
 };
 
-export function getPlanLimit(plan: BillingPlan, limit: PlanLimitKey): number {
-  return PLAN_LIMITS[plan][limit];
-}
-
+export function getPlanLimit(plan: BillingPlan, limit: PlanLimitKey): number { return PLAN_LIMITS[plan][limit]; }
 export function isUnlimited(value: number): boolean { return value === UNLIMITED; }
 export function getPlanFeatures(plan: BillingPlan) { return PLAN_FEATURES[plan]; }
 
@@ -85,7 +82,8 @@ export const FEATURE_LABELS: Record<FreeFeatureKey | ProFeatureKey | EnterpriseF
   services: "Serviços ilimitados", online_booking: "Reservas online", booking_page: "Página de reservas",
   qr_booking: "Reservas por QR code", basic_dashboard: "Dashboard básico", basic_revenue: "Receita básica",
   basic_client_history: "Histórico do cliente", basic_notifications: "Notificações essenciais",
-  team_management: "Gestão de equipa", advanced_crm: "CRM avançado", advanced_analytics: "Analytics avançado",
+  team_management: "Gestão de equipa", messaging: "Mensagens por email",
+  advanced_crm: "CRM avançado", advanced_analytics: "Analytics avançado",
   automated_reminders: "Lembretes automáticos", automated_followups: "Follow-ups automáticos",
   marketing_campaigns: "Campanhas de marketing", customer_segments: "Segmentos de clientes",
   loyalty: "Programa de fidelização", advanced_reports: "Relatórios avançados",
