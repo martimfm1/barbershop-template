@@ -45,9 +45,15 @@ export function useSubscription() {
     retry: 1,
   });
 
-  const subscription = data?.subscription ?? null;
   const isAuthenticated = data?.isAuthenticated ?? false;
   const plan = data?.plan ?? "free";
+
+  // /api/stripe/subscription resolves the effective plan from Stripe. Keep that
+  // value as the single source of truth for every billing UI consumer instead
+  // of allowing a stale local subscriptions.plan value to leak into the UI.
+  const subscription = data?.subscription
+    ? { ...data.subscription, plan }
+    : null;
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
