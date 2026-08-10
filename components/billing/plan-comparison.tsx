@@ -12,7 +12,7 @@ type ComparisonFeatureKey = FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKe
 const PLAN_ORDER: readonly BillingPlan[] = [PLANS.FREE, PLANS.PRO, PLANS.ENTERPRISE];
 const FEATURE_GROUPS: ReadonlyArray<{ title: string; features: readonly ComparisonFeatureKey[] }> = [
   { title: "Gestão da barbearia", features: ["agenda", "appointments", "clients", "services", "online_booking", "booking_page", "qr_booking", "basic_dashboard", "basic_revenue", "basic_client_history"] },
-  { title: "Comunicação e automação", features: ["basic_notifications", "automated_reminders", "automated_followups", "advanced_notifications", "marketing_campaigns"] },
+  { title: "Comunicação e automação", features: ["messaging", "basic_notifications", "automated_reminders", "automated_followups", "advanced_notifications", "marketing_campaigns"] },
   { title: "Crescimento e clientes", features: ["advanced_crm", "customer_segments", "loyalty"] },
   { title: "Analytics e relatórios", features: ["advanced_analytics", "advanced_reports", "enterprise_reports"] },
   { title: "Equipa e operação", features: ["team_management", "multi_location", "global_dashboard", "advanced_permissions", "commissions", "inventory", "pos"] },
