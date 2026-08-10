@@ -1,5 +1,31 @@
 # Changelog
 
+## v3.0.29 — 2026-08-10
+
+### UI/UX
+- Harmonized the dashboard visual language across clients, services, team, messaging, billing and public plans.
+- Improved page headers, spacing, surfaces, hierarchy and responsive behavior for desktop, tablet and mobile.
+- Added a shared dashboard UI safety layer to prevent horizontal overflow and improve touch targets.
+- Improved mobile dialog sizing and internal scrolling for dashboard forms.
+- Improved settings-page mobile behavior through shared responsive safeguards without changing its existing business logic.
+
+### Messages
+- Redesigned the manual email composer with clearer recipient, template, subject and message sections.
+- Added a more realistic email preview with sender, recipient and subject context.
+- Improved placeholder guidance for `{{nome}}` and `{{barbearia}}`.
+- Kept manual SMS explicitly disabled while preserving the future integration surface.
+- Added stronger client-side input limits and safer validation feedback while keeping server-side validation authoritative.
+
+### Accessibility
+- Increased interactive control targets to at least 44px in dashboard contexts.
+- Added clearer labels and descriptions to edited fields and message controls.
+- Added reduced-motion support for users who request it.
+- Improved mobile dialog and form navigation.
+
+### Security
+- UI changes do not replace server-side authorization, tenant isolation or plan entitlement checks.
+- Messaging continues to resolve and validate recipients server-side.
+
 ## v3.0.28 — 2026-08-10
 
 ### Performance
@@ -71,36 +97,3 @@
 - Added clearer controller/processor responsibilities between Silentra and barbershops for customer data.
 - Expanded information about retention, international transfers, security, data-subject rights and third-party service providers.
 - Updated the last-review date of both legal documents to 10 August 2026.
-
-## v3.0.23 — 2026-08-10
-
-### Changed
-- Removed the dashboard sidebar navigation to simplify the dashboard layout.
-- Removed the dashboard date from the top bar because the date is already available in the existing dashboard context.
-- Kept the personalized greeting with the authenticated user's first name, contextual greeting and live clock in the top bar.
-
-### Added
-- Added an accessible "Voltar ao site" action in the dashboard top bar linking to `/`.
-- The return action includes a keyboard-visible focus state and an accessible label.
-
-## v3.0.22 — 2026-08-10
-
-### Added
-- Added a branded Silentra header to the dashboard sidebar.
-- Added a personalized dashboard top bar with the user's first name, contextual Portuguese greeting, current date and live local clock.
-- Added manual email messaging at `/dashboard/mensagens` with reusable templates and custom messages.
-- Added secure server-side email delivery through the existing Brevo configuration.
-- Added tenant-scoped recipient validation and audit logging for manual emails.
-
-### Changed
-- Manual messaging now uses the barbershop name as the Brevo sender name.
-- Email templates support `{{nome}}` and `{{barbearia}}` placeholders.
-- Improved the messaging UI with accessible controls, preview, validation and responsive layout.
-
-### Disabled
-- Manual SMS sending remains explicitly disabled until the SMS provider is activated.
-
-### Security
-- Manual email recipients are resolved server-side and must belong to the authenticated user's barbershop.
-- The API never accepts a client-supplied barbershop ID for authorization.
-- Email message HTML is escaped server-side before being sent.
