@@ -44,11 +44,11 @@ export default function MensagensPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [clientId, setClientId] = useState("");
   const [template, setTemplate] = useState<TemplateKey>("reminder");
-  const [subject, setSubject] = useState(templates.reminder.subject);
-  const [body, setBody] = useState(templates.reminder.body);
+  const [subject, setSubject] = useState<string>(templates.reminder.subject as string);
+  const [body, setBody] = useState<string>(templates.reminder.body as string);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [shopName, setShopName] = useState("a sua barbearia");
+  const [shopName, setShopName] = useState<string>("a sua barbearia");
   const { barbershopId } = useBarbershop();
 
   useEffect(() => {
