@@ -10,6 +10,7 @@ import { Appointment, Professional, Service, Client } from "@/types";
 import { appointmentService } from "@/app/dashboard/_services/appointments.service";
 import { servicesService } from "@/app/dashboard/_services/services.service";
 import { professionalService } from "@/app/dashboard/_services/professionals.service";
+import { authService } from "@/app/dashboard/_services/auth.service";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spotlight } from "@/components/aceternity/spotlight";
@@ -30,6 +31,7 @@ export default function DashboardPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [userName, setUserName] = useState<string | null>(null);
   const [loadingInitial, setLoadingInitial] = useState(true);
 
   const fetchInitialData = useCallback(async () => {
@@ -62,6 +64,15 @@ export default function DashboardPage() {
     if (isLoadingBarbershop) return;
     if (barbershopId) queueMicrotask(() => void fetchInitialData());
   }, [barbershopId, fetchInitialData, isLoadingBarbershop]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void authService.getCurrentUser().then(({ data }) => {
+      if (cancelled || !data) return;
+      setUserName(data.name_complete || data.email?.split("@")[0] || null);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const chartConfig = {
     revenue: { label: "Receita (€)", color: "hsl(var(--chart-1))" },
@@ -135,7 +146,7 @@ export default function DashboardPage() {
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-400">Painel</p>
               <h1 id="dashboard-greeting" className="mt-1 font-heading text-2xl font-bold tracking-tight text-zinc-50 sm:text-3xl">
-                {new Date().getHours() < 12 ? "Bom dia" : new Date().getHours() < 20 ? "Boa tarde" : "Boa noite"} 👋
+                {new Date().getHours() < 12 ? "Bom dia" : new Date().getHours() < 20 ? "Boa tarde" : "Boa noite"}{userName ? `, ${userName}` : ""} 👋
               </h1>
               <p className="mt-1 text-sm capitalize text-zinc-400">{new Date().toLocaleDateString("pt-PT", { weekday: "long", day: "numeric", month: "long" })}</p>
             </div>

@@ -10,6 +10,7 @@ export interface UserSessionProfile {
   email: string | undefined;
   role: string | undefined;
   barbershop_id?: string;
+  name_complete?: string | null;
 }
 
 export async function logout(): Promise<AuthResponse<null>> {
@@ -59,7 +60,7 @@ export async function getCurrentUser(): Promise<
 
     const { data: publicUserData, error: dbError } = await supabase
       .from("users")
-      .select("role, barbershop_id")
+      .select("role, barbershop_id, name_complete")
       .eq("id", user.id)
       .single();
 
@@ -75,6 +76,7 @@ export async function getCurrentUser(): Promise<
       email: user.email,
       role: publicUserData?.role || user.role,
       barbershop_id: publicUserData?.barbershop_id,
+      name_complete: publicUserData?.name_complete,
     };
 
     return { data: profile, error: null };
