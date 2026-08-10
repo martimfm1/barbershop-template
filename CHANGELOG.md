@@ -1,5 +1,16 @@
 # Changelog
 
+## v3.0.26 — 2026-08-10
+
+### Fixed
+- Made the resolved Stripe plan the single source of truth for billing UI consumers.
+- Fixed stale local subscription plans causing Enterprise accounts to appear as Pro or Free in billing-related UI.
+- Billing consumers now receive the effective plan returned by `/api/stripe/subscription` while preserving the subscription's Stripe identifiers and billing status.
+
+### Changed
+- Removed the personalized greeting from the dashboard top bar; the top bar now focuses on navigation and the live clock.
+- Preserved the dashboard hero greeting and date presentation in the main dashboard content.
+
 ## v3.0.25 — 2026-08-10
 
 ### Fixed
