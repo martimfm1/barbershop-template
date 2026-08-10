@@ -1,173 +1,54 @@
 "use client";
 
-// utils
 import { ServicesListCardProps } from "@/types";
-
-// UI
-import { Scissors, Plus, Clock, DollarSign, Pencil, Trash2 } from "lucide-react";
+import { Scissors, Plus, Clock3, Pencil, Trash2, Euro, Sparkles, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { Input } from "@/components/ui/input";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-export function ServicesListCard({
-  servicesCount,
-  services,
-  showAddServiceForm,
-  setShowAddServiceForm,
-  newServiceData,
-  setNewServiceData,
-  handleCreateService,
-  setEditingService,
-  handleDeleteService,
-  loading,
-}: ServicesListCardProps) {
+export function ServicesListCard({ servicesCount, services, showAddServiceForm, setShowAddServiceForm, newServiceData, setNewServiceData, handleCreateService, setEditingService, handleDeleteService, loading }: ServicesListCardProps) {
   return (
-    <Card className="border border-amber-500/20 bg-zinc-950/80 animate-in fade-in slide-in-from-top-4 duration-200">
-      <CardHeader className="flex flex-row justify-between items-center">
-        <div className="flex gap-4 items-center">
-          <CardTitle className="text-xl flex gap-2 text-amber-500">
-            <Scissors className="size-5" /> Services ({servicesCount})
-          </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowAddServiceForm(!showAddServiceForm)}
-            className="border border-white/10 text-zinc-300 cursor-pointer"
-          >
-            <Plus className="size-4 mr-2" /> New Service
-          </Button>
+    <Card className="overflow-hidden border-white/10 bg-zinc-900/60 shadow-xl backdrop-blur-xl">
+      <CardHeader className="border-b border-white/10 p-5 sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-amber-500/20 bg-amber-500/10 text-amber-400"><Scissors className="size-5" aria-hidden="true" /></div>
+            <div><CardTitle className="text-lg font-semibold text-zinc-50">O teu menu</CardTitle><p className="mt-1 text-sm text-zinc-500">{servicesCount === 0 ? "Adiciona o primeiro serviço para começares a aceitar marcações." : `${servicesCount} ${servicesCount === 1 ? "serviço configurado" : "serviços configurados"}. Mantém o menu simples e fácil de escolher.`}</p></div>
+          </div>
+          <Button onClick={() => setShowAddServiceForm(!showAddServiceForm)} className="min-h-11 w-full bg-zinc-50 text-zinc-950 hover:bg-zinc-200 sm:w-auto"><Plus className="mr-2 size-4" />{showAddServiceForm ? "Fechar" : "Adicionar serviço"}</Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-5 sm:p-6">
         {showAddServiceForm && (
-          <form
-            onSubmit={handleCreateService}
-            className="mb-6 grid gap-4 sm:grid-cols-4 items-end bg-amber-500/5 p-4 rounded-xl border border-amber-500/20"
-          >
-            <div className="grid gap-1.5">
-              <label className="text-xs text-zinc-400">Service Name</label>
-              <input
-                required
-                placeholder="Enter name"
-                className="bg-zinc-900 border border-white/10 rounded-lg p-2 text-xs text-white"
-                value={newServiceData.name}
-                onChange={(e) =>
-                  setNewServiceData({
-                    ...newServiceData,
-                    name: e.target.value,
-                  })
-                }
-              />
+          <form onSubmit={handleCreateService} className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/[0.05] p-4 sm:p-5">
+            <div className="mb-4 flex items-start gap-3"><Sparkles className="mt-0.5 size-4 shrink-0 text-amber-400" /><div><p className="text-sm font-semibold text-zinc-100">Adiciona um serviço</p><p className="mt-1 text-xs leading-5 text-zinc-500">Começa pelo mais procurado. Podes adicionar os restantes depois.</p></div></div>
+            <div className="grid gap-4 md:grid-cols-[1.5fr_1fr_1fr_auto] md:items-end">
+              <div className="grid gap-1.5"><label htmlFor="new-service-name" className="text-xs font-medium text-zinc-400">Nome</label><Input id="new-service-name" required autoFocus placeholder="Ex.: Corte + Barba" className="min-h-11 bg-zinc-950/70" value={newServiceData.name} onChange={(e) => setNewServiceData({ ...newServiceData, name: e.target.value })} /></div>
+              <div className="grid gap-1.5"><label htmlFor="new-service-price" className="text-xs font-medium text-zinc-400">Preço</label><div className="relative"><Euro className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-600" /><Input id="new-service-price" required type="number" min="0" step="0.01" placeholder="15,00" className="min-h-11 bg-zinc-950/70 pl-9" value={newServiceData.price || ""} onChange={(e) => setNewServiceData({ ...newServiceData, price: parseFloat(e.target.value) })} /></div></div>
+              <div className="grid gap-1.5"><label htmlFor="new-service-duration" className="text-xs font-medium text-zinc-400">Duração</label><div className="relative"><Clock3 className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-600" /><Input id="new-service-duration" required type="number" min="1" placeholder="30" className="min-h-11 bg-zinc-950/70 pl-9 pr-12" value={newServiceData.duration || ""} onChange={(e) => setNewServiceData({ ...newServiceData, duration: parseInt(e.target.value, 10) })} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-600">min</span></div></div>
+              <Button type="submit" disabled={loading} className="min-h-11 bg-amber-600 text-white hover:bg-amber-500">{loading ? <Spinner className="size-4" /> : <><span>Adicionar</span><ArrowRight className="ml-2 size-4" /></>}</Button>
             </div>
-            <div className="grid gap-1.5">
-              <label className="text-xs text-zinc-400">Price (€)</label>
-              <input
-                required
-                type="number"
-                placeholder="Enter price"
-                step="0.01"
-                className="bg-zinc-900 border border-white/10 rounded-lg p-2 text-xs text-white"
-                value={newServiceData.price || ""}
-                onChange={(e) =>
-                  setNewServiceData({
-                    ...newServiceData,
-                    price: parseFloat(e.target.value),
-                  })
-                }
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <label className="text-xs text-zinc-400">Duration (min)</label>
-              <input
-                required
-                type="number"
-                placeholder="Enter duration"
-                className="bg-zinc-900 border border-white/10 rounded-lg p-2 text-xs text-white"
-                value={newServiceData.duration || ""}
-                onChange={(e) =>
-                  setNewServiceData({
-                    ...newServiceData,
-                    duration: parseInt(e.target.value, 10),
-                  })
-                }
-              />
-            </div>
-            <Button
-              type="submit"
-              disabled={loading}
-              variant="ghost"
-              className="bg-amber-600 hover:bg-amber-500 text-white h-9 cursor-pointer"
-            >
-              {loading ? <Spinner className="size-4" /> : "Create Service"}
-            </Button>
           </form>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {services.map((service) => (
-            <div
-              key={service.id}
-              className="border border-white/5 bg-black/40 rounded-xl p-4 flex flex-col justify-between hover:border-amber-500/30 transition-colors"
-            >
-              <div>
-                <p className="font-semibold text-sm text-zinc-100">{service.name}</p>
-                <div className="flex gap-4 mt-2">
-                  <p className="text-xs text-zinc-400 flex items-center gap-1">
-                    <DollarSign className="size-3 text-green-400" /> {service.price}€
-                  </p>
-                  <p className="text-xs text-zinc-400 flex items-center gap-1">
-                    <Clock className="size-3 text-blue-400" /> {service.duration ?? (service as any).min_duration ?? "—"} min
-                  </p>
-                </div>
-              </div>
-              <div className="mt-3 flex gap-1 justify-end pt-3 border-t border-white/5">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setEditingService(service)}
-                  className="h-7 w-7 text-blue-400 hover:bg-blue-500/10"
-                >
-                  <Pencil className="size-3.5" />
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:bg-red-500/10">
-                      <Trash2 className="size-3.5" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="bg-zinc-950 border-white/10">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Service permanently?</AlertDialogTitle>
-                      <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel className="bg-transparent text-white border-white/10">
-                        Cancel
-                      </AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-red-600 text-white"
-                        onClick={() => handleDeleteService(service.id)}
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
-          ))}
-        </div>
+        {services.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-5 py-12 text-center"><Scissors className="mx-auto size-7 text-zinc-600" /><p className="mt-3 text-sm font-semibold text-zinc-200">Ainda não tens serviços.</p><p className="mx-auto mt-1 max-w-md text-xs leading-5 text-zinc-500">Cria um serviço com nome, preço e duração. Não precisas de configurar o menu inteiro de uma vez.</p><Button onClick={() => setShowAddServiceForm(true)} variant="outline" className="mt-5 min-h-11 border-white/10"><Plus className="mr-2 size-4" />Adicionar o primeiro serviço</Button></div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {services.map((service) => (
+              <article key={service.id} className="group flex min-h-[150px] flex-col justify-between rounded-2xl border border-white/10 bg-white/[0.025] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-500/30 hover:bg-white/[0.045]">
+                <div><div className="flex items-start justify-between gap-3"><h3 className="truncate text-sm font-semibold text-zinc-100">{service.name}</h3><span className="shrink-0 rounded-full bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-300">{Number(service.price).toFixed(2).replace(".", ",")} €</span></div><div className="mt-4 flex items-center gap-2 text-xs text-zinc-500"><Clock3 className="size-3.5" /> {service.duration ?? (service as any).min_duration ?? "—"} min</div></div>
+                <div className="mt-4 flex justify-end gap-1 border-t border-white/5 pt-3"><Button variant="ghost" size="icon" onClick={() => setEditingService(service)} className="size-9 text-zinc-400 hover:bg-white/10 hover:text-white" aria-label={`Editar ${service.name}`}><Pencil className="size-4" /></Button><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="size-9 text-zinc-500 hover:bg-red-500/10 hover:text-red-400" aria-label={`Eliminar ${service.name}`}><Trash2 className="size-4" /></Button></AlertDialogTrigger><AlertDialogContent className="border-white/10 bg-zinc-950"><AlertDialogHeader><AlertDialogTitle>Eliminar este serviço?</AlertDialogTitle><AlertDialogDescription>As marcações existentes não devem ser alteradas. Confirma apenas se já não precisas deste serviço.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="border-white/10 bg-transparent text-white">Manter</AlertDialogCancel><AlertDialogAction className="bg-red-600 text-white" onClick={() => handleDeleteService(service.id)}>Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></div>
+              </article>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
