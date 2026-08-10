@@ -17,10 +17,8 @@ const items: SidebarItem[] = [
   { href: "/dashboard/agenda", label: "Agenda", icon: CalendarDays },
   { href: "/dashboard/clientes", label: "Clientes", icon: Users },
   { href: "/dashboard/servicos", label: "Serviços", icon: Scissors },
-  // Equipa is intentionally available on every plan. The Free plan's limits
-  // are enforced inside the page and at the database boundary.
-  { href: "/dashboard/equipa", label: "Equipa", icon: Briefcase },
-  { href: "/dashboard/mensagens", label: "Mensagens", icon: MessageCircle },
+  { href: "/dashboard/equipa", label: "Equipa", icon: Briefcase, feature: "team_management" },
+  { href: "/dashboard/mensagens", label: "Mensagens", icon: MessageCircle, feature: "messaging" },
   { href: "/dashboard/analytics", label: "Análise", icon: BarChart3, feature: "advanced_analytics" },
   { href: "/dashboard/marketing", label: "Marketing", icon: Megaphone, feature: "marketing_campaigns" },
   { href: "/dashboard/automations", label: "Automações", icon: Sparkles, feature: "automated_followups" },
