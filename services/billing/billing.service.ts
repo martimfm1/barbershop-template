@@ -6,6 +6,8 @@ import { PLAN_ACCESS_STATUSES } from "@/lib/billing/plan-access";
 import { BillingError, type SubscriptionRecord } from "@/types/stripe";
 import { SubscriptionService } from "./subscription.service";
 
+const PENDING_INVOICE_TTL_MS = 10 * 60 * 1000;
+
 export interface CreateCheckoutInput {
   userId: string;
   email: string;
@@ -77,12 +79,22 @@ export class BillingService {
   static async getInvoices(userId: string) {
     const customer = await this.getCustomerId(userId);
     const invoices = await getStripeClient().invoices.list({ customer, limit: 12 });
-    return invoices.data.map((invoice) => {
-      const price = invoice.lines.data.find((line) => line.subscription)?.pricing?.price_details?.price;
-      const priceId = typeof price === "string" ? price : price?.id;
-      const plan = priceId ? planForPrice(priceId) : undefined;
-      return { id: invoice.id, amount: invoice.amount_paid || invoice.amount_due, currency: invoice.currency.toUpperCase(), status: invoice.status, plan: plan === PLANS.ENTERPRISE ? "Barbers Enterprise" : plan === PLANS.PRO ? "Barbers Pro" : "Subscrição", date: new Date(invoice.created * 1000).toLocaleDateString("pt-PT", { day: "2-digit", month: "short", year: "numeric" }), invoice_pdf: invoice.invoice_pdf };
-    });
+    const now = Date.now();
+
+    return invoices.data
+      .filter((invoice) => {
+        // Stripe uses a nullable status while an invoice is being finalized/created.
+        // These transient invoices are intentionally hidden after ten minutes; they
+        // remain intact in Stripe and can still be recovered from the Stripe portal.
+        const isPending = invoice.status === null || invoice.status === "draft";
+        return !isPending || now - invoice.created * 1000 <= PENDING_INVOICE_TTL_MS;
+      })
+      .map((invoice) => {
+        const price = invoice.lines.data.find((line) => line.subscription)?.pricing?.price_details?.price;
+        const priceId = typeof price === "string" ? price : price?.id;
+        const plan = priceId ? planForPrice(priceId) : undefined;
+        return { id: invoice.id, amount: invoice.amount_paid || invoice.amount_due, currency: invoice.currency.toUpperCase(), status: invoice.status, plan: plan === PLANS.ENTERPRISE ? "Barbers Enterprise" : plan === PLANS.PRO ? "Barbers Pro" : "Subscrição", date: new Date(invoice.created * 1000).toLocaleDateString("pt-PT", { day: "2-digit", month: "short", year: "numeric" }), invoice_pdf: invoice.invoice_pdf };
+      });
   }
 
   static async createSetupIntent(userId: string, email: string): Promise<string> {
@@ -92,11 +104,6 @@ export class BillingService {
     return intent.client_secret;
   }
 
-  /**
-   * Creates the first paid Stripe subscription for a user whose default row is Free,
-   * or changes the existing paid Stripe subscription to the requested price.
-   * There is never a second paid subscription for the same user.
-   */
   static async createSubscription(userId: string, email: string, priceId: string): Promise<{ subscriptionId: string; clientSecret: string | null; action: "created" | "changed" }> {
     const requestedPlan = planForPrice(priceId);
     if (!requestedPlan || requestedPlan === PLANS.FREE) throw new BillingError("The requested price is not available.", "INVALID_PRICE", { priceId });
