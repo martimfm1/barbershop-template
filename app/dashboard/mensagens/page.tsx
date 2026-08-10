@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { useBarbershop } from "@/context/BarbershopContext";
 
 interface Client {
   id: string;
@@ -47,22 +48,36 @@ export default function MensagensPage() {
   const [body, setBody] = useState<string>(templates.reminder.body);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [shopName, setShopName] = useState<string>("a sua barbearia");
+  const { barbershopId } = useBarbershop();
 
   useEffect(() => {
-    const loadClients = async () => {
+    const loadData = async () => {
       try {
-        const response = await fetch("/api/crm/clients?limit=100", { cache: "no-store" });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Não foi possível carregar os clientes.");
-        setClients(data.clients ?? []);
+        // Carregar clientes
+        const clientsResponse = await fetch("/api/crm/clients?limit=100", { cache: "no-store" });
+        const clientsData = await clientsResponse.json();
+        if (!clientsResponse.ok) throw new Error(clientsData.error || "Não foi possível carregar os clientes.");
+        setClients(clientsData.clients ?? []);
+
+        // Carregar nome da barbearia se barbershopId existir
+        if (barbershopId) {
+          const shopResponse = await fetch(`/api/barbershops/${barbershopId}`, { cache: "no-store" });
+          if (shopResponse.ok) {
+            const shopData = await shopResponse.json();
+            if (shopData.name) {
+              setShopName(shopData.name);
+            }
+          }
+        }
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Erro ao carregar clientes.");
+        toast.error(error instanceof Error ? error.message : "Erro ao carregar dados.");
       } finally {
         setLoading(false);
       }
     };
-    void loadClients();
-  }, []);
+    void loadData();
+  }, [barbershopId]);
 
   const selectedClient = useMemo(() => clients.find((client) => client.id === clientId), [clients, clientId]);
 
@@ -74,7 +89,7 @@ export default function MensagensPage() {
 
   const preview = body
     .replaceAll("{{nome}}", selectedClient?.name_complete || selectedClient?.name || "Nome do cliente")
-    .replaceAll("{{barbearia}}", "a sua barbearia");
+    .replaceAll("{{barbearia}}", shopName);
 
   const sendEmail = async () => {
     if (!clientId) return toast.error("Selecione um cliente.");
@@ -134,14 +149,31 @@ export default function MensagensPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="subject">Assunto</Label>
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="subject">Assunto</Label>
+                  <span className="text-xs text-zinc-500">{subject.length}/180</span>
+                </div>
                 <Input id="subject" value={subject} onChange={(event) => setSubject(event.target.value)} maxLength={180} className="min-h-11 bg-black/20" />
+                {subject.length >= 180 && <p className="text-xs text-amber-400">Limite de caracteres atingido.</p>}
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between gap-3"><Label htmlFor="body">Mensagem</Label><span className="text-xs text-zinc-500">Use {{nome}} e {{barbearia}}</span></div>
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="body">Mensagem</Label>
+                  <span className="text-xs text-zinc-500">{body.length}/8000</span>
+                </div>
                 <Textarea id="body" value={body} onChange={(event) => setBody(event.target.value)} maxLength={8000} className="min-h-52 resize-y bg-black/20 leading-6" />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-500">Use {'{{nome}}'} e {'{{barbearia}}'}</span>
+                  {body.length >= 8000 && <p className="text-xs text-amber-400">Limite de caracteres atingido.</p>}
+                </div>
               </div>
+
+              {selectedClient && !selectedClient.email && (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                  <p className="text-sm text-amber-300">Este cliente não tem um endereço de email registado. Não é possível enviar email.</p>
+                </div>
+              )}
 
               <Button type="button" onClick={sendEmail} disabled={sending || !clientId || !selectedClient?.email} className="min-h-11 w-full sm:w-auto">
                 <Send className="mr-2 size-4" aria-hidden="true" />{sending ? "A enviar…" : "Enviar email"}
