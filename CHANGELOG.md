@@ -1,5 +1,18 @@
 # Changelog
 
+## v3.0.25 — 2026-08-10
+
+### Fixed
+- Fixed paid-plan authorization using the current Stripe subscription price as the source of truth when the persisted subscription row is stale.
+- Fixed cases where an Enterprise subscription could be persisted or resolved as Pro and consequently receive incorrect feature entitlements.
+- Fixed access checks continuing to grant paid access from stale local state when Stripe reports a subscription status that does not grant paid access.
+- Added reconciliation of the local plan, Stripe price ID, subscription status and billing period when the current Stripe subscription is available.
+- Pending/transient Stripe invoices older than 10 minutes are no longer returned by the billing invoices API.
+- Pending invoices are hidden from the application without deleting them from Stripe.
+
+### Documentation
+- Reworked the README to accurately document the current SaaS architecture, dashboard, plans, billing, security model, integrations, development workflow and roadmap.
+
 ## v3.0.24 — 2026-08-10
 
 ### Legal
@@ -17,7 +30,7 @@
 ### Changed
 - Removed the dashboard sidebar navigation to simplify the dashboard layout.
 - Removed the dashboard date from the top bar because the date is already available in the existing dashboard context.
-- Kept the personalized greeting with the authenticated user's first name and the live clock in the top bar.
+- Kept the personalized greeting with the authenticated user's first name, contextual greeting and live clock in the top bar.
 
 ### Added
 - Added an accessible "Voltar ao site" action in the dashboard top bar linking to `/`.
