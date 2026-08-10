@@ -9,10 +9,16 @@ import type { FeatureKey } from "@/lib/billing/plan-features";
 import type { BillingPlan } from "@/types/stripe";
 
 const PLAN_LABEL: Record<BillingPlan, string> = { free: "Free", pro: "Pro", enterprise: "Enterprise" };
+
+/**
+ * Only features that are genuinely unavailable on Free need a minimum-plan
+ * override here. Team/professional management is available on every plan;
+ * Free is limited by the professional quota (1), not by feature access.
+ */
 const FEATURE_MIN_PLAN: Partial<Record<FeatureKey, BillingPlan>> = {
   advanced_crm: "pro", advanced_analytics: "pro", automated_reminders: "pro", automated_followups: "pro",
   marketing_campaigns: "pro", customer_segments: "pro", loyalty: "pro", advanced_reports: "pro",
-  team_management: "pro", advanced_notifications: "pro", professionals: "pro", analytics: "pro",
+  advanced_notifications: "pro", analytics: "pro",
   multi_location: "enterprise", global_dashboard: "enterprise", advanced_permissions: "enterprise",
   commissions: "enterprise", inventory: "enterprise", pos: "enterprise", enterprise_reports: "enterprise",
 };
