@@ -1,119 +1,221 @@
-# 💈 Silentra for barbers — Agendamentos de Barbearia sem Fricção
+# Silentra for Barbers
 
-> Plataforma SaaS *Mobile-First* de agendamento rápido de cortes e barba, eliminando a necessidade de os clientes criarem conta ou descarregarem aplicações.
+> SaaS de gestão e agendamento para barbearias, construído para reduzir a fricção entre clientes e equipas de barbearia.
 
-![Next.js](https://img.shields.io/badge/Next.js_16-black?style=for-the-badge&logo=next.js&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-000000?style=for-the-badge&logo=shadcnui&logoColor=white)
-![Aceternity UI](https://img.shields.io/badge/Aceternity_UI-000000?style=for-the-badge&logo=framer&logoColor=white)
----
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e?logo=supabase)](https://supabase.com/)
+[![Stripe](https://img.shields.io/badge/Stripe-Billing-635bff?logo=stripe)](https://stripe.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06b6d4?logo=tailwindcss)](https://tailwindcss.com/)
 
-## 🎯 A Visão do Produto
+## Sobre o projeto
 
-A maioria das plataformas de agendamento obriga o cliente a:
-1. Descarregar uma aplicação pesada.
-2. Criar conta e confirmar e-mail antes de ver os horários.
-3. Passar por fluxos lentos e com demasiados passos.
+O Silentra for Barbers é uma plataforma web multi-tenant para barbearias. O produto combina uma experiência pública de marcação com um dashboard de gestão para proprietários e equipas.
 
-**O Silentra for barbers resolve este problema.** O foco é a **fricção zero**: o cliente escolhe a barbearia, seleciona o dia/hora e confirma com Nome, Telemóvel e Email em menos de 30 segundos.
+O objetivo do produto é simples: permitir que um cliente faça uma marcação rapidamente e dar à barbearia ferramentas para gerir agenda, clientes, equipa, comunicação, métricas e subscrição num único sistema.
 
----
+## Funcionalidades
 
-## ✨ Funcionalidades Principais
+### Experiência do cliente
 
-### 📱 Para Clientes (Experiência Web/Mobile)
-* **Agendamento em 3 Passos**: Seleção de serviço e horário → Escolha de barbeiro → Confirmação direta (sem registo de conta nem instalação de apps).
-* **Disponibilidade Real**: Algoritmo que filtra e exibe apenas barbearias com vagas livres no dia selecionado (*Hoje* ou *Amanhã*).
-* **Geolocalização & Proximidade (`Near Me`)**: Cálculo de distância exata em quilómetros a partir da posição GPS do dispositivo.
-* **Filtros Inteligentes**: Ordenação dinâmica por proximidade geográfica ou por avaliação dos utilizadores (`Top Rated`).
+- Marcações sem obrigar o cliente a criar uma conta.
+- Seleção de barbearia, serviço, profissional, data e horário.
+- Disponibilidade baseada na agenda e bloqueios existentes.
+- Marketplace público de barbearias.
+- Pesquisa, filtros e localização.
+- Gestão de uma marcação através de token seguro.
+- Confirmação e validação de dados do cliente.
 
----
+### Dashboard
 
-## 🛠️ Tech Stack
+- Visão geral operacional da barbearia.
+- Agenda e gestão de marcações.
+- Gestão de clientes.
+- Serviços, preços e duração.
+- Profissionais e permissões.
+- Bloqueios de agenda.
+- Analytics e métricas.
+- Marketing e campanhas.
+- Mensagens manuais por email.
+- Notificações push para alertas operacionais aos barbeiros.
+- Gestão de subscrição e faturação.
+- Configurações da barbearia.
 
-* **Framework**: [Next.js](https://nextjs.org/) (App Router, Server Actions e API Routes)
-* **Linguagem**: [TypeScript](https://www.typescriptlang.org/)
-* **Base de Dados & Auth**: [Supabase](https://supabase.com/) (PostgreSQL + Row Level Security)
-* **Estilização**: [Tailwind CSS](https://tailwindcss.com/)
-* **Componentes UI & Ícones**: [Lucide React](https://lucide.dev/), [Shadcn](https://ui.shadcn.com/), [Aceterny UI](https://ui.aceternity.com/) 
+### Comunicação
 
-## 🗺️ Roadmap de Desenvolvimento
+- Email transacional e mensagens manuais através da Brevo.
+- Templates de email com variáveis da barbearia e do cliente.
+- Sender name baseado no nome da barbearia.
+- Push notifications para a equipa, incluindo alertas de novas marcações.
+- SMS manual atualmente desativado e preparado para futura ativação através de Twilio.
 
----
+### Planos SaaS
 
-### 🟢 Fase 1: Motor de Agendamento Base & UX Mobile *(Concluído)*
-> **Objetivo:** Eliminar totalmente a fricção no agendamento e garantir uma experiência perfeita em smartphones.
+O acesso às funcionalidades é controlado no servidor através dos entitlements dos planos.
 
-- [x] **Agendamento em 3 Passos** (`BookingDrawer.tsx`) sem necessidade de criação de conta.
-- [x] **Validação Rápida em Tempo Real**: Sanitização e validação de Nome, Telemóvel PT e Email.
-- [x] **Ajustes Avançados de Viewport Mobile**:
-  - Resolução de sobreposição pelo teclado virtual (`scrollIntoView` suave).
-  - Prevenção de auto-zoom no iOS Safari (`text-base` em ecrãs pequenos).
-  - Configuração de ações do teclado virtual (`enterKeyHint="next"` / `"done"`).
-- [x] **Proteção contra Duplos Agendamentos**: Gestão de estado de envio e bloqueio do botão de submissão.
+| Área | Free | Pro | Enterprise |
+|---|:---:|:---:|:---:|
+| Gestão de marcações | ✓ | ✓ | ✓ |
+| Clientes e serviços | ✓ | ✓ | ✓ |
+| Gestão de profissionais | ✓ | ✓ | ✓ |
+| Dashboard operacional | ✓ | ✓ | ✓ |
+| Funcionalidades avançadas | — | ✓ | ✓ |
+| Marketing e automações | — | ✓ | ✓ |
+| Analytics avançado | — | ✓ | ✓ |
+| Funcionalidades Enterprise | — | — | ✓ |
 
----
+> As quotas e os entitlements efetivos são definidos no código e validados pelas APIs. A interface adapta-se ao plano atual do utilizador, mas nunca é usada como mecanismo de segurança.
 
-### 🟢 Fase 2: Pesquisa, Filtros & Geolocalização *(Concluído)*
-> **Objetivo:** Permitir ao cliente encontrar horários disponíveis e barbearias próximas de forma instantânea.
+## Billing
 
-- [x] **Barra de Pesquisa Otimizada**: Implementação de *Debounce* (300ms) para minimizar re-renders e chamadas à API.
-- [x] **Filtro Estrito de Disponibilidade**: Exibição exclusiva de barbearias com vagas livres no dia selecionado (*Hoje* ou *Amanhã*).
-- [x] **Geolocalização "Perto de Mim"**: Integração da `Geolocation API` do navegador com cálculo de distância exata em km via *Fórmula Haversine*.
-- [x] **Ordenação Dinâmica**: Filtros por proximidade geográfica ou por classificação média (`Top Rated`).
+A faturação é integrada com Stripe Billing.
 
----
+- Cada utilizador começa com uma subscrição Free.
+- Um upgrade cria ou altera a subscrição paga existente, evitando subscrições pagas duplicadas.
+- Pro e Enterprise são resolvidos através dos Stripe Price IDs configurados no ambiente.
+- O estado da subscrição é sincronizado através dos eventos Stripe.
+- O backend reconcilia o plano guardado com o preço atual da subscrição Stripe para evitar que um utilizador Enterprise seja incorretamente tratado como Pro.
+- Faturas transitórias pendentes são removidas da apresentação após o período de retenção de 10 minutos; não são apagadas do Stripe.
 
-### 🟠 Fase 3: Sistema de Avaliações Verificadas *(Próximo Sprint)*
-> **Objetivo:** Construir prova social legítima baseada exclusivamente em serviços efetivamente realizados.
+## Segurança e arquitetura
 
-- [ ] **Modelação de Dados & Supabase**:
-  - Tabela `reviews` com associação direta ao `booking_id`, pontuação (1-5 estrelas) e comentário.
-  - *Trigger/Database Function* em SQL para atualização automática do `rating` médio e `reviewCount` da barbearia.
-- [ ] **Fluxo de Submissão Pós-Corte**:
-  - Envio automático de link temporário com token único por e-mail/SMS X horas após a conclusão do serviço.
-  - Modal interativo de avaliação de 1 a 5 estrelas com caixa de comentários rápida.
-- [ ] **Componente de Exibição de Reviews**: Secção de testemunhos verificados no perfil público da barbearia.
+O projeto utiliza uma arquitetura multi-tenant com autorização server-side.
 
----
+- **Supabase Auth** para autenticação.
+- **PostgreSQL + Row Level Security (RLS)** para isolamento dos dados.
+- Clientes administrativos do Supabase apenas em código server-side.
+- APIs validam a identidade do utilizador antes de aceder a dados protegidos.
+- Entitlements de planos são verificados no backend.
+- Permissões de staff são verificadas separadamente das permissões do plano.
+- Stripe webhooks sincronizam o estado de billing.
+- Tokens de gestão de marcações são armazenados de forma segura.
+- Dados de auditoria e filas de notificações suportam operações assíncronas.
 
-### 🔵 Fase 4: Painel de Controlo do Barbeiro *(Dashboard SaaS)*
-> **Objetivo:** Entregar a ferramenta central de gestão operacional e financeira para os donos e barbeiros.
+## Stack
 
-- [ ] **Autenticação & Níveis de Acesso (RBAC)**:
-  - Autenticação via **Supabase Auth** com perfis diferenciados (`owner` vs `barber`).
-- [ ] **Dashboard & Cards de Métricas**:
-  - **Faturação Estimada**: Métrica diária e mensal com comparativo percentual em relação ao período anterior.
-  - **Agendamentos do Dia**: Estado em tempo real (*Confirmados*, *Em Andamento*, *Concluídos*, *Cancelados*).
-  - **Taxa de Ocupação (%)**: Percentagem de horas preenchidas vs. capacidade total da agenda.
-  - **Taxa de No-Show**: Controlo visual de faltas não justificadas.
-  - **Barbeiro em Destaque**: Identificação do colaborador com mais serviços realizados e melhor nota média.
-- [ ] **Gestão de Agenda & Calendário**:
-  - **Visão Multicoluna**: Visualização diária/semanal lado a lado para cada barbeiro da equipa.
-  - **Bloqueio Rápido de Slots**: Pausa imediata de horários (almoço, emergências).
-  - **Marcação Manual (Walk-in)**: Registo rápido de clientes presenciais sem agendamento prévio.
-  - **Reagendamento Drag & Drop**: Mover marcações entre horários ou barbeiros.
-- [ ] **Catálogo, Equipa & CRM**:
-  - **Gestão de Serviços**: Definição de preço, duração e tempo de margem entre cortes.
-  - **Gestão de Turnos**: Horários de trabalho, folgas e pausas fixas por colaborador.
-  - **Ficha do Cliente & Blacklist**: Histórico por telemóvel e bloqueio de clientes recorrentes em *no-show*.
+- **Framework:** Next.js 16, App Router
+- **Linguagem:** TypeScript
+- **UI:** React, Tailwind CSS, shadcn/ui, Lucide
+- **Backend:** Next.js API Routes / server-side services
+- **Database:** Supabase PostgreSQL
+- **Authentication:** Supabase Auth
+- **Billing:** Stripe
+- **Email:** Brevo
+- **Push:** Web Push
+- **SMS:** Twilio (infraestrutura preparada, envio manual desativado)
 
----
+## Estrutura do projeto
 
-### 🟣 Fase 5: Comunicação & Notificações Automáticas
-> **Objetivo:** Maximizar a comparência dos clientes e manter os barbeiros informados em tempo real.
+```text
+app/
+├── api/                  # APIs e webhooks
+├── dashboard/            # Área autenticada da barbearia
+├── plans/                # Planos públicos
+└── ...
 
-- [ ] **Confirmação Instantânea**: Envio imediato de e-mail de confirmação de reserva via **Resend** / **SendGrid**.
-- [ ] **Lembretes via WhatsApp / SMS**: Envio de lembretes automáticos 2h e 24h antes do corte (via **Twilio** ou **Z-API**).
-- [ ] **Alertas de Cancelamento**: Notificação em tempo real para o barbeiro em caso de cancelamento por parte do cliente.
+components/               # Componentes React reutilizáveis
+lib/                      # Supabase, Stripe, billing, utilitários
+services/                 # Regras de negócio e serviços server-side
+supabase/
+├── migrations/           # Migrações PostgreSQL
+└── ...
+scripts/                  # Scripts de desenvolvimento/manutenção
+types/                    # Tipos partilhados
+```
 
----
+## Desenvolvimento local
 
-### ⚪ Fase 6: Pagamentos & Monetização SaaS
-> **Objetivo:** Gerar receita recorrente para a plataforma e proteger as barbearias contra perdas financeiras.
+### Requisitos
 
-- [ ] **Sinal / Caução de Reserva**: Cobrança opcional de valor parcial no agendamento via **Stripe** / **MB WAY** para evitar *no-shows*.
-- [ ] **Planos de Subscrição SaaS**: Criação e gestão dos planos *Starter*, *Pro* e *Enterprise* para as barbearias (**Stripe Billing**).
-- [ ] **Faturação Automática**: Gestão e emissão automática das mensalidades do software.
+- Node.js compatível com a versão definida no projeto.
+- pnpm.
+- Uma conta Supabase para a base de dados e autenticação.
+- Stripe para billing, quando as funcionalidades de subscrição forem utilizadas.
+- Docker Desktop apenas quando forem necessárias operações locais do Supabase CLI que criem uma shadow database.
+
+### Instalação
+
+```bash
+pnpm install
+```
+
+Cria `.env.local` com as credenciais e configurações necessárias para o ambiente de desenvolvimento.
+
+### Desenvolvimento
+
+```bash
+pnpm dev
+```
+
+### Validação
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm build
+```
+
+## Supabase
+
+As alterações de schema são versionadas em `supabase/migrations`.
+
+Antes de aplicar migrações num ambiente remoto, confirma o estado da migration history e evita editar migrações que já tenham sido aplicadas em produção. Quando a history local e remota divergir, resolve primeiro a discrepância de migrations em vez de executar comandos destrutivos.
+
+## Variáveis de ambiente
+
+Os nomes exatos podem evoluir com a implementação. As principais integrações utilizam variáveis semelhantes a:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PRICE_PRO_MONTHLY=
+STRIPE_PRICE_PRO_YEARLY=
+STRIPE_PRICE_ENTERPRISE_MONTHLY=
+STRIPE_PRICE_ENTERPRISE_YEARLY=
+
+BREVO_API_KEY=
+SENDER_EMAIL=
+
+# Preparado para futura ativação de SMS
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_PHONE_NUMBER=
+```
+
+Nunca coloques chaves privadas, tokens ou secrets diretamente no repositório.
+
+## Roadmap
+
+O desenvolvimento do Silentra está organizado em ciclos incrementais. Entre as áreas de evolução estão:
+
+- Internacionalização completa da aplicação.
+- Melhorias contínuas de analytics e reporting.
+- Expansão de automações de marketing.
+- Melhorias de comunicação e notificações.
+- Ativação de SMS quando o fornecedor estiver configurado.
+- Mais ferramentas Enterprise.
+- Melhorias contínuas de UX, acessibilidade e experiência mobile.
+
+## Documentação legal
+
+A aplicação disponibiliza Termos de Serviço e Política de Privacidade atualizados para o modelo SaaS atual. Estes documentos devem ser revistos juridicamente antes de uma utilização comercial definitiva.
+
+## Estado do projeto
+
+O Silentra for Barbers encontra-se em desenvolvimento ativo. APIs, schema, UI e regras de billing continuam a evoluir em conjunto.
+
+Para alterações de schema, billing ou autorização, deve ser sempre validado o impacto entre:
+
+```text
+UI → API → service layer → Supabase / Stripe
+```
+
+Uma funcionalidade não deve ser considerada concluída apenas porque a UI funciona; o entitlement e a autorização server-side devem permanecer como fonte de verdade.
+
+## Licença
+
+Projeto privado. A licença e as condições de utilização do código são definidas pelo proprietário do repositório.
