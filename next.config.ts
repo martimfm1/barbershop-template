@@ -7,6 +7,8 @@ type WebpackConfig = {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   allowedDevOrigins: ["192.168.56.1", "localhost:3000", "192.168.1.6"],
+  poweredByHeader: false,
+  optimizePackageImports: ["lucide-react", "@tabler/icons-react", "date-fns"],
   images: {
     remotePatterns: [
       {
@@ -28,6 +30,12 @@ const nextConfig = {
             value: "camera=(), microphone=(), geolocation=(self)",
           },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          { key: "X-DNS-Prefetch-Control", value: "on" },
+          { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains; preload",
+          },
         ],
       },
     ];
