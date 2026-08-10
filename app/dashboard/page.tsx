@@ -15,8 +15,6 @@ import { servicesService } from "@/app/dashboard/_services/services.service";
 import { professionalService } from "@/app/dashboard/_services/professionals.service";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SiteNavbar } from "@/components/site-navbar";
-import { BackgroundBeams } from "@/components/aceternity/background-beams";
 import { Spotlight } from "@/components/aceternity/spotlight";
 import { StatusBadge } from "@/app/state/_components/shared/StatusBadge";
 import {
@@ -169,9 +167,7 @@ export default function DashboardPage() {
 
   return (
     <TooltipProvider>
-      <main className="relative min-h-screen overflow-hidden bg-background text-foreground pb-5 pt-22">
-        <SiteNavbar />
-        <BackgroundBeams className="opacity-35" />
+      <main className="relative min-h-screen overflow-hidden bg-background text-foreground pb-5 pt-16">
         <Spotlight className="opacity-70" />
 
         <div className="relative px-3 pb-5 pt-8 text-foreground sm:px-5 md:px-8 md:pb-12">
