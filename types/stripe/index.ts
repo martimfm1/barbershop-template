@@ -10,6 +10,8 @@ export interface SubscriptionRecord {
   stripe_subscription_id: string | null;
   stripe_price_id: string | null;
   plan: BillingPlan;
+  /** Optional support/admin override managed directly in Supabase. */
+  plan_override: BillingPlan | null;
   status: SubscriptionStatus;
   trial_end: string | null;
   current_period_end: string | null;
