@@ -1,5 +1,26 @@
 # Changelog
 
+## v3.0.28 — 2026-08-10
+
+### Performance
+- Enabled Next.js package import optimization for frequently used client libraries (`lucide-react`, `@tabler/icons-react` and `date-fns`) to reduce unnecessary client bundle code.
+- Kept Vercel Analytics and Speed Insights enabled globally so production Core Web Vitals and real-user performance data continue to be collected across the SaaS.
+
+### Security
+- Disabled the `X-Powered-By` response header to reduce framework fingerprinting.
+- Added HSTS with subdomain coverage and preload eligibility.
+- Added DNS prefetch control and cross-domain policy hardening headers.
+- Preserved existing anti-clickjacking, MIME-sniffing, referrer and permissions policies.
+
+### Audit
+- Reviewed authentication, tenant scoping, Stripe webhook signature verification, service-role usage and manual email recipient validation.
+- Confirmed the Stripe webhook verifies `stripe-signature` before processing events.
+- Confirmed tenant-scoped APIs validate the authenticated user's `barbershop_id` before accessing protected barbershop data.
+
+### Security follow-up
+- Identified that the repository is currently pinned to Next.js `16.2.6`, while the July 2026 security release requires `16.2.11` or later. The dependency and lockfile upgrade is intentionally left as a separate change because the committed `pnpm-lock.yaml` must be regenerated with pnpm rather than edited manually.
+- Identified `@whiskeysockets/baileys@7.0.0-rc13` as a release-candidate dependency. The currently documented critical message-spoofing advisory is patched in `7.0.0-rc12` and therefore does not target this version, but the project should move to a stable supported release when the WhatsApp integration permits it.
+
 ## v3.0.27 — 2026-08-10
 
 ### Fixed
