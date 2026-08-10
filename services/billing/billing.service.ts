@@ -83,10 +83,10 @@ export class BillingService {
 
     return invoices.data
       .filter((invoice) => {
-        // Stripe uses a nullable status while an invoice is being finalized/created.
-        // These transient invoices are intentionally hidden after ten minutes; they
-        // remain intact in Stripe and can still be recovered from the Stripe portal.
-        const isPending = invoice.status === null || invoice.status === "draft";
+        // The billing UI represents draft/open invoices as "Pendente".
+        // Keep them visible for ten minutes, then stop returning them from the
+        // application without deleting or modifying the Stripe invoice itself.
+        const isPending = invoice.status === null || invoice.status === "draft" || invoice.status === "open";
         return !isPending || now - invoice.created * 1000 <= PENDING_INVOICE_TTL_MS;
       })
       .map((invoice) => {
