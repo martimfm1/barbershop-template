@@ -8,7 +8,9 @@ type WebpackConfig = {
 const nextConfig = {
   allowedDevOrigins: ["192.168.56.1", "localhost:3000", "192.168.1.6"],
   poweredByHeader: false,
-  optimizePackageImports: ["lucide-react", "@tabler/icons-react", "date-fns"],
+  experimental: {
+    optimizePackageImports: ["lucide-react", "@tabler/icons-react", "date-fns"],
+  },
   images: {
     remotePatterns: [
       {

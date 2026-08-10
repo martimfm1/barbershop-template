@@ -40,7 +40,7 @@ export const PLAN_FEATURES: Record<BillingPlan, readonly (FreeFeatureKey | ProFe
   [PLANS.ENTERPRISE]: ENTERPRISE_FEATURES,
 };
 
-const LEGACY_FEATURE_ALIASES: Record<LegacyFeatureKey, ProFeatureKey> = {
+const LEGACY_FEATURE_ALIASES: Record<LegacyFeatureKey, FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey> = {
   professionals: "team_management",
   analytics: "advanced_analytics",
 };
