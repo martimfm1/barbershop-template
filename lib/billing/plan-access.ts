@@ -28,12 +28,18 @@ export function hasActivePaidSubscription(
 ): subscription is PlanRecord & { plan: BillingPlan } {
   return Boolean(
     subscription &&
-      isPaidPlan(subscription.plan) &&
-      (PLAN_ACCESS_STATUSES as readonly string[]).includes(subscription.status ?? ""),
+    isPaidPlan(subscription.plan) &&
+    (PLAN_ACCESS_STATUSES as readonly string[]).includes(
+      subscription.status ?? "",
+    ),
   );
 }
 
 /** Resolves the effective plan from the persisted subscription state. */
-export function resolvePlan(subscription: PlanRecord | null | undefined): BillingPlan {
-  return hasActivePaidSubscription(subscription) ? subscription.plan : PLANS.FREE;
+export function resolvePlan(
+  subscription: PlanRecord | null | undefined,
+): BillingPlan {
+  return hasActivePaidSubscription(subscription)
+    ? subscription.plan
+    : PLANS.FREE;
 }
