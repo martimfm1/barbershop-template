@@ -9,6 +9,11 @@ export class ModuleAuthorizationError extends Error {
   }
 }
 
+const PERMISSION_ALIASES: Record<string, readonly string[]> = {
+  manage_professionals: ["manage_professionals", "team_management", "manage_team"],
+  manage_messages: ["manage_messages", "messages", "send_messages"],
+};
+
 export async function requireModuleContext(feature: FeatureKey, permission?: string) {
   const access = await getAccessPlanForRequest();
   if (!access.ok) throw new ModuleAuthorizationError("UNAUTHORIZED");
@@ -22,20 +27,24 @@ export async function requireModuleContext(feature: FeatureKey, permission?: str
   const admin = createAdminClient();
   const { data: profile, error } = await admin
     .from("users")
-    .select("barbershop_id, role")
+    .select("id, barbershop_id, role")
     .eq("id", access.userId)
     .maybeSingle();
 
   if (error || !profile?.barbershop_id) throw new ModuleAuthorizationError("FORBIDDEN");
 
-  if (permission && !["admin", "owner"].includes(profile.role ?? "")) {
+  if (permission && !["admin", "owner"].includes(String(profile.role ?? "").toLowerCase())) {
+    const acceptedPermissions = PERMISSION_ALIASES[permission] ?? [permission];
     const { data: grant } = await admin
       .from("staff_permissions")
       .select("allowed")
       .eq("barbershop_id", profile.barbershop_id)
       .eq("user_id", access.userId)
-      .eq("permission", permission)
+      .in("permission", acceptedPermissions)
+      .eq("allowed", true)
+      .limit(1)
       .maybeSingle();
+
     if (!grant?.allowed) throw new ModuleAuthorizationError("PERMISSION_DENIED");
   }
 
