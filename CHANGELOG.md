@@ -1,5 +1,20 @@
 # Changelog
 
+## v3.0.27 — 2026-08-10
+
+### Fixed
+- Added an explicit Supabase-managed billing plan override so support/admin staff can change a user's effective plan without changing Stripe data.
+- Billing plan resolution now checks `subscriptions.plan_override` before Stripe/local plan resolution.
+- Improved the subscription payment dialog for mobile and desktop with constrained viewport sizing, internal scrolling, larger touch targets, visible focus states, accessible loading/error states and clearer payment security messaging.
+
+### Supabase
+- Added `supabase/migrations/20260810130000_add_plan_override.sql`.
+- Set `subscriptions.plan_override` to `free`, `pro`, `enterprise`, or `NULL` to control whether a user has a manual plan override.
+- `NULL` keeps the normal Stripe-based plan resolution.
+
+### Notes
+- Manual paid-plan overrides are intended for controlled support/admin use. When setting a paid override for a user without an active Stripe subscription, keep the subscription status as an access-granting status such as `active` if downstream billing components require an active subscription.
+
 ## v3.0.26 — 2026-08-10
 
 ### Fixed
