@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Mail, Phone, Send, Smartphone } from "lucide-react";
+import { Mail, Phone, Send, Smartphone, UserRound, Building2, Eye, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,30 +44,26 @@ export default function MensagensPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [clientId, setClientId] = useState("");
   const [template, setTemplate] = useState<TemplateKey>("reminder");
-  const [subject, setSubject] = useState<string>(templates.reminder.subject);
-  const [body, setBody] = useState<string>(templates.reminder.body);
+  const [subject, setSubject] = useState(templates.reminder.subject);
+  const [body, setBody] = useState(templates.reminder.body);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [shopName, setShopName] = useState<string>("a sua barbearia");
+  const [shopName, setShopName] = useState("a sua barbearia");
   const { barbershopId } = useBarbershop();
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Carregar clientes
         const clientsResponse = await fetch("/api/crm/clients?limit=100", { cache: "no-store" });
         const clientsData = await clientsResponse.json();
         if (!clientsResponse.ok) throw new Error(clientsData.error || "Não foi possível carregar os clientes.");
         setClients(clientsData.clients ?? []);
 
-        // Carregar nome da barbearia se barbershopId existir
         if (barbershopId) {
           const shopResponse = await fetch(`/api/barbershops/${barbershopId}`, { cache: "no-store" });
           if (shopResponse.ok) {
             const shopData = await shopResponse.json();
-            if (shopData.name) {
-              setShopName(shopData.name);
-            }
+            if (shopData.name) setShopName(shopData.name);
           }
         }
       } catch (error) {
@@ -93,6 +89,7 @@ export default function MensagensPage() {
 
   const sendEmail = async () => {
     if (!clientId) return toast.error("Selecione um cliente.");
+    if (!selectedClient?.email) return toast.error("O cliente selecionado não tem email.");
     if (!subject.trim() || !body.trim()) return toast.error("Preencha o assunto e a mensagem.");
 
     setSending(true);
@@ -100,7 +97,7 @@ export default function MensagensPage() {
       const response = await fetch("/api/messages/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId, template, subject, body }),
+        body: JSON.stringify({ clientId, template, subject: subject.trim(), body: body.trim() }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Não foi possível enviar o email.");
@@ -113,25 +110,32 @@ export default function MensagensPage() {
   };
 
   return (
-    <main className="min-h-screen bg-background px-4 pb-24 pt-24 text-foreground sm:px-6 lg:px-8 lg:pt-10">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <header>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">Comunicação</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-50">Mensagens</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">Envie mensagens manuais aos seus clientes através de email, usando templates prontos ou uma mensagem personalizada.</p>
+    <main className="dashboard-page min-h-screen bg-background px-4 pb-24 pt-24 text-foreground sm:px-6 lg:px-8 lg:pt-10">
+      <div className="mx-auto max-w-6xl space-y-7">
+        <header className="dashboard-page-header">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">
+              <Mail className="size-4" aria-hidden="true" /> Comunicação
+            </div>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight text-zinc-50 sm:text-3xl">Mensagens</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">Envie emails personalizados aos seus clientes com templates, variáveis e pré-visualização em tempo real.</p>
+          </div>
+          <Badge variant="secondary" className="w-fit gap-1.5 border border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
+            <ShieldCheck className="size-3.5" aria-hidden="true" /> Email seguro
+          </Badge>
         </header>
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <Card className="border-white/10 bg-white/[0.03]">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-zinc-100"><Mail className="size-5 text-emerald-400" aria-hidden="true" /> Email</CardTitle>
-              <CardDescription>O nome da sua barbearia será usado automaticamente como remetente.</CardDescription>
+        <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <Card className="dashboard-card min-w-0 border-white/10 bg-white/[0.03]">
+            <CardHeader className="border-b border-white/10 pb-5">
+              <CardTitle className="flex items-center gap-2 text-zinc-100"><Mail className="size-5 text-emerald-400" aria-hidden="true" /> Nova mensagem</CardTitle>
+              <CardDescription>O nome da tua barbearia é usado como remetente.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-5">
+            <CardContent className="space-y-5 pt-6">
               <div className="space-y-2">
                 <Label htmlFor="client">Destinatário</Label>
                 <Select value={clientId} onValueChange={setClientId} disabled={loading}>
-                  <SelectTrigger id="client" className="min-h-11 bg-black/20"><SelectValue placeholder={loading ? "A carregar clientes…" : "Selecionar cliente"} /></SelectTrigger>
+                  <SelectTrigger id="client" className="min-h-11 w-full bg-black/20"><SelectValue placeholder={loading ? "A carregar clientes…" : "Selecionar cliente"} /></SelectTrigger>
                   <SelectContent>
                     {clients.filter((client) => client.email).map((client) => (
                       <SelectItem key={client.id} value={client.id}>{client.name_complete || client.name || "Cliente"} — {client.email}</SelectItem>
@@ -140,40 +144,33 @@ export default function MensagensPage() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="template">Template</Label>
-                <Select value={template} onValueChange={(value) => applyTemplate(value as TemplateKey)}>
-                  <SelectTrigger id="template" className="min-h-11 bg-black/20"><SelectValue /></SelectTrigger>
-                  <SelectContent>{Object.entries(templates).map(([key, item]) => <SelectItem key={key} value={key}>{item.label}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-3">
-                  <Label htmlFor="subject">Assunto</Label>
-                  <span className="text-xs text-zinc-500">{subject.length}/180</span>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="template">Template</Label>
+                  <Select value={template} onValueChange={(value) => applyTemplate(value as TemplateKey)}>
+                    <SelectTrigger id="template" className="min-h-11 bg-black/20"><SelectValue /></SelectTrigger>
+                    <SelectContent>{Object.entries(templates).map(([key, item]) => <SelectItem key={key} value={key}>{item.label}</SelectItem>)}</SelectContent>
+                  </Select>
                 </div>
-                <Input id="subject" value={subject} onChange={(event) => setSubject(event.target.value)} maxLength={180} className="min-h-11 bg-black/20" />
-                {subject.length >= 180 && <p className="text-xs text-amber-400">Limite de caracteres atingido.</p>}
-              </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-3">
-                  <Label htmlFor="body">Mensagem</Label>
-                  <span className="text-xs text-zinc-500">{body.length}/8000</span>
+                <div className="space-y-2 sm:col-span-2">
+                  <div className="flex items-center justify-between gap-3"><Label htmlFor="subject">Assunto</Label><span className="text-xs tabular-nums text-zinc-500">{subject.length}/180</span></div>
+                  <Input id="subject" value={subject} onChange={(event) => setSubject(event.target.value)} maxLength={180} className="min-h-11 bg-black/20" aria-describedby="subject-help" />
+                  <p id="subject-help" className="text-xs text-zinc-500">Mantém o assunto curto e direto.</p>
                 </div>
-                <Textarea id="body" value={body} onChange={(event) => setBody(event.target.value)} maxLength={8000} className="min-h-52 resize-y bg-black/20 leading-6" />
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-zinc-500">Use {'{{nome}}'} e {'{{barbearia}}'}</span>
-                  {body.length >= 8000 && <p className="text-xs text-amber-400">Limite de caracteres atingido.</p>}
+
+                <div className="space-y-2 sm:col-span-2">
+                  <div className="flex items-center justify-between gap-3"><Label htmlFor="body">Mensagem</Label><span className="text-xs tabular-nums text-zinc-500">{body.length}/8000</span></div>
+                  <Textarea id="body" value={body} onChange={(event) => setBody(event.target.value)} maxLength={8000} className="min-h-56 resize-y bg-black/20 leading-6" aria-describedby="body-help" />
+                  <div id="body-help" className="flex flex-wrap gap-2 text-xs text-zinc-500">
+                    <span>Variáveis:</span>
+                    <code className="rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5">{'{{nome}}'}</code>
+                    <code className="rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5">{'{{barbearia}}'}</code>
+                  </div>
                 </div>
               </div>
 
-              {selectedClient && !selectedClient.email && (
-                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
-                  <p className="text-sm text-amber-300">Este cliente não tem um endereço de email registado. Não é possível enviar email.</p>
-                </div>
-              )}
+              {selectedClient && !selectedClient.email && <div role="alert" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">Este cliente não tem um endereço de email registado.</div>}
 
               <Button type="button" onClick={sendEmail} disabled={sending || !clientId || !selectedClient?.email} className="min-h-11 w-full sm:w-auto">
                 <Send className="mr-2 size-4" aria-hidden="true" />{sending ? "A enviar…" : "Enviar email"}
@@ -181,28 +178,30 @@ export default function MensagensPage() {
             </CardContent>
           </Card>
 
-          <div className="space-y-5">
-            <Card className="border-white/10 bg-white/[0.03]">
-              <CardHeader><CardTitle className="text-base">Pré-visualização</CardTitle><CardDescription>Assim verá o cliente o conteúdo principal.</CardDescription></CardHeader>
-              <CardContent>
-                <div className="rounded-xl border border-white/10 bg-zinc-950 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">{subject || "Sem assunto"}</p>
-                  <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-zinc-200">{preview}</p>
+          <aside className="space-y-5" aria-label="Pré-visualização da mensagem">
+            <Card className="dashboard-card overflow-hidden border-white/10 bg-white/[0.03]">
+              <CardHeader className="border-b border-white/10 pb-4"><CardTitle className="flex items-center gap-2 text-base"><Eye className="size-4 text-emerald-400" aria-hidden="true" /> Pré-visualização</CardTitle><CardDescription>O conteúdo final depois de substituir as variáveis.</CardDescription></CardHeader>
+              <CardContent className="p-4 sm:p-5">
+                <div className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-950 shadow-xl">
+                  <div className="border-b border-white/10 bg-white/[0.03] p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400"><Building2 className="size-4" aria-hidden="true" /></div>
+                      <div className="min-w-0"><p className="truncate text-sm font-semibold text-zinc-100">{shopName}</p><p className="truncate text-xs text-zinc-500">para {selectedClient?.email || "cliente@exemplo.pt"}</p></div>
+                    </div>
+                    <p className="mt-4 break-words text-sm font-semibold text-zinc-100">{subject || "Sem assunto"}</p>
+                  </div>
+                  <div className="min-h-48 p-4 sm:p-5"><p className="whitespace-pre-wrap break-words text-sm leading-6 text-zinc-300">{preview || "A tua mensagem aparecerá aqui."}</p></div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-white/10 bg-white/[0.03]">
-              <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Smartphone className="size-4" aria-hidden="true" /> Telemóvel</CardTitle><CardDescription>Mensagens SMS estão temporariamente indisponíveis.</CardDescription></CardHeader>
+            <Card className="dashboard-card border-white/10 bg-white/[0.03]">
+              <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Smartphone className="size-4" aria-hidden="true" /> Telemóvel</CardTitle><CardDescription>O envio manual por SMS está temporariamente desativado.</CardDescription></CardHeader>
               <CardContent>
-                <div className="rounded-xl border border-dashed border-white/10 bg-zinc-950/60 p-4">
-                  <Badge variant="secondary" className="mb-3">Desativado</Badge>
-                  <p className="text-sm leading-6 text-zinc-400">O envio por SMS permanece desligado enquanto o fornecedor de SMS não estiver ativo.</p>
-                  <Button type="button" disabled className="mt-4 w-full"><Phone className="mr-2 size-4" aria-hidden="true" /> Enviar SMS</Button>
-                </div>
+                <div className="rounded-xl border border-dashed border-white/10 bg-zinc-950/60 p-4"><Badge variant="secondary" className="mb-3">Desativado</Badge><p className="text-sm leading-6 text-zinc-400">Quando o serviço SMS for ativado, esta área poderá ser disponibilizada sem alterar o composer de email.</p><Button type="button" disabled className="mt-4 min-h-11 w-full"><Phone className="mr-2 size-4" aria-hidden="true" /> Enviar SMS</Button></div>
               </CardContent>
             </Card>
-          </div>
+          </aside>
         </div>
       </div>
     </main>
