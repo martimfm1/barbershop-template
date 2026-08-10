@@ -45,17 +45,15 @@ export class SubscriptionService {
     const subscription = await this.getForUser(userId);
     if (!subscription) return PLANS.FREE;
 
-    if (
-      subscription.stripe_subscription_id &&
-      (PLAN_ACCESS_STATUSES as readonly string[]).includes(subscription.status)
-    ) {
+    if (subscription.stripe_subscription_id) {
       try {
         const stripeSubscription = await getStripeClient().subscriptions.retrieve(subscription.stripe_subscription_id);
         const stripePriceId = stripeSubscription.items.data[0]?.price.id;
         const stripePlan = stripePriceId ? planForPrice(stripePriceId) : undefined;
+        const stripeStatusAllowsAccess = (PLAN_ACCESS_STATUSES as readonly string[]).includes(stripeSubscription.status);
 
-        if (stripePlan && stripePlan !== PLANS.FREE) {
-          if (subscription.plan !== stripePlan || subscription.stripe_price_id !== stripePriceId) {
+        if (stripePlan && stripePlan !== PLANS.FREE && stripeStatusAllowsAccess) {
+          if (subscription.plan !== stripePlan || subscription.stripe_price_id !== stripePriceId || subscription.status !== stripeSubscription.status) {
             const { error } = await createAdminClient()
               .from("subscriptions")
               .update({
@@ -72,6 +70,8 @@ export class SubscriptionService {
           }
           return stripePlan;
         }
+
+        if (!stripeStatusAllowsAccess) return PLANS.FREE;
       } catch (error) {
         if (error instanceof BillingError) throw error;
         // Fall back to the last known valid paid state if Stripe is temporarily unavailable.
