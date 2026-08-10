@@ -3,30 +3,30 @@ import { PLANS, type BillingPlan } from "@/lib/stripe/constants";
 export type FreeFeatureKey =
   | "agenda" | "appointments" | "clients" | "services" | "online_booking"
   | "booking_page" | "qr_booking" | "basic_dashboard" | "basic_revenue"
-  | "basic_client_history" | "basic_notifications";
+  | "basic_client_history" | "basic_notifications" | "team_management";
 
 export type ProFeatureKey =
   | "advanced_crm" | "advanced_analytics" | "automated_reminders"
   | "automated_followups" | "marketing_campaigns" | "customer_segments"
-  | "loyalty" | "advanced_reports" | "team_management" | "advanced_notifications";
+  | "loyalty" | "advanced_reports" | "advanced_notifications";
 
 export type EnterpriseFeatureKey =
   | "multi_location" | "global_dashboard" | "advanced_permissions"
   | "commissions" | "inventory" | "pos" | "enterprise_reports";
 
-/** @deprecated Use the canonical feature keys below. Kept only for old UI call-sites during migration. */
 export type LegacyFeatureKey = "professionals" | "analytics";
 export type FeatureKey = FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey | LegacyFeatureKey;
 
 const FREE_FEATURES: readonly (FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey)[] = [
   "agenda", "appointments", "clients", "services", "online_booking", "booking_page",
   "qr_booking", "basic_dashboard", "basic_revenue", "basic_client_history", "basic_notifications",
+  "team_management",
 ];
 
 const PRO_FEATURES: readonly (FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey)[] = [
   ...FREE_FEATURES, "advanced_crm", "advanced_analytics", "automated_reminders",
   "automated_followups", "marketing_campaigns", "customer_segments", "loyalty",
-  "advanced_reports", "team_management", "advanced_notifications",
+  "advanced_reports", "advanced_notifications",
 ];
 
 const ENTERPRISE_FEATURES: readonly (FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey)[] = [
@@ -85,12 +85,12 @@ export const FEATURE_LABELS: Record<FreeFeatureKey | ProFeatureKey | EnterpriseF
   services: "Serviços ilimitados", online_booking: "Reservas online", booking_page: "Página de reservas",
   qr_booking: "Reservas por QR code", basic_dashboard: "Dashboard básico", basic_revenue: "Receita básica",
   basic_client_history: "Histórico do cliente", basic_notifications: "Notificações essenciais",
-  advanced_crm: "CRM avançado", advanced_analytics: "Analytics avançado",
+  team_management: "Gestão de equipa", advanced_crm: "CRM avançado", advanced_analytics: "Analytics avançado",
   automated_reminders: "Lembretes automáticos", automated_followups: "Follow-ups automáticos",
   marketing_campaigns: "Campanhas de marketing", customer_segments: "Segmentos de clientes",
   loyalty: "Programa de fidelização", advanced_reports: "Relatórios avançados",
-  team_management: "Gestão de equipa", advanced_notifications: "Notificações avançadas",
-  multi_location: "Multi-localização", global_dashboard: "Dashboard global",
-  advanced_permissions: "Permissões avançadas", commissions: "Comissões", inventory: "Gestão de stock",
-  pos: "Ponto de venda (POS)", enterprise_reports: "Relatórios empresariais",
+  advanced_notifications: "Notificações avançadas", multi_location: "Multi-localização",
+  global_dashboard: "Dashboard global", advanced_permissions: "Permissões avançadas",
+  commissions: "Comissões", inventory: "Gestão de stock", pos: "Ponto de venda (POS)",
+  enterprise_reports: "Relatórios empresariais",
 };
