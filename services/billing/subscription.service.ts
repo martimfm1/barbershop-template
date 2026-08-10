@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getStripeClient } from "@/lib/stripe/server";
 import { planForPrice, PLANS } from "@/lib/stripe/constants";
 import { PLAN_ACCESS_STATUSES, resolvePlan } from "@/lib/billing/plan-access";
 import { BillingError, type BillingPlan, type SubscriptionRecord } from "@/types/stripe";
@@ -35,9 +36,48 @@ export class SubscriptionService {
       : null;
   }
 
-  /** Resolves the plan that actually grants access to the user. */
+  /**
+   * Resolves the effective plan from Stripe when a paid subscription exists.
+   * This repairs stale plan values in the local subscription row instead of
+   * incorrectly denying a user whose Stripe price grants Pro or Enterprise.
+   */
   static async getAccessPlan(userId: string): Promise<BillingPlan> {
     const subscription = await this.getForUser(userId);
+    if (!subscription) return PLANS.FREE;
+
+    if (
+      subscription.stripe_subscription_id &&
+      (PLAN_ACCESS_STATUSES as readonly string[]).includes(subscription.status)
+    ) {
+      try {
+        const stripeSubscription = await getStripeClient().subscriptions.retrieve(subscription.stripe_subscription_id);
+        const stripePriceId = stripeSubscription.items.data[0]?.price.id;
+        const stripePlan = stripePriceId ? planForPrice(stripePriceId) : undefined;
+
+        if (stripePlan && stripePlan !== PLANS.FREE) {
+          if (subscription.plan !== stripePlan || subscription.stripe_price_id !== stripePriceId) {
+            const { error } = await createAdminClient()
+              .from("subscriptions")
+              .update({
+                plan: stripePlan,
+                stripe_price_id: stripePriceId,
+                status: stripeSubscription.status,
+                current_period_end: stripeSubscription.items.data[0]?.current_period_end
+                  ? new Date(stripeSubscription.items.data[0].current_period_end * 1000).toISOString()
+                  : subscription.current_period_end,
+                cancel_at_period_end: stripeSubscription.cancel_at_period_end,
+              })
+              .eq("user_id", userId);
+            if (error) throw new BillingError("Could not reconcile subscription plan.", "DB_WRITE_FAILED", { userId });
+          }
+          return stripePlan;
+        }
+      } catch (error) {
+        if (error instanceof BillingError) throw error;
+        // Fall back to the last known valid paid state if Stripe is temporarily unavailable.
+      }
+    }
+
     return resolvePlan(subscription);
   }
 
