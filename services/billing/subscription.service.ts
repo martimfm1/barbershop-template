@@ -26,24 +26,23 @@ export class SubscriptionService {
     return data as SubscriptionRecord | null;
   }
 
-  /** Returns only a paid Stripe subscription that currently grants paid access. Free is implicit. */
+  /** Returns only a paid subscription that currently grants paid access. */
   static async getActiveForUser(userId: string): Promise<SubscriptionRecord | null> {
     const subscription = await this.getForUser(userId);
     if (!subscription) return null;
-    if (subscription.plan === PLANS.FREE) return null;
+    const effectivePlan = subscription.plan_override ?? subscription.plan;
+    if (effectivePlan === PLANS.FREE) return null;
     return (PLAN_ACCESS_STATUSES as readonly string[]).includes(subscription.status)
       ? subscription
       : null;
   }
 
-  /**
-   * Resolves the effective plan from Stripe when a paid subscription exists.
-   * This repairs stale plan values in the local subscription row instead of
-   * incorrectly denying a user whose Stripe price grants Pro or Enterprise.
-   */
+  /** Resolves the effective plan, allowing an explicit Supabase admin override. */
   static async getAccessPlan(userId: string): Promise<BillingPlan> {
     const subscription = await this.getForUser(userId);
     if (!subscription) return PLANS.FREE;
+
+    if (subscription.plan_override) return subscription.plan_override;
 
     if (subscription.stripe_subscription_id) {
       try {
@@ -74,7 +73,6 @@ export class SubscriptionService {
         if (!stripeStatusAllowsAccess) return PLANS.FREE;
       } catch (error) {
         if (error instanceof BillingError) throw error;
-        // Fall back to the last known valid paid state if Stripe is temporarily unavailable.
       }
     }
 
