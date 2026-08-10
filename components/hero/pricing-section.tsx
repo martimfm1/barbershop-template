@@ -1,22 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { PricingCard } from "@/components/billing/PricingCard";
 import { PLAN_DESCRIPTIONS } from "@/lib/billing/plan-features";
 
 const HERO_FEATURES = {
   free: [
-    "Marcações ilimitadas",
+    "Agendamentos ilimitados",
     "Clientes e serviços ilimitados",
-    "Reservas online + QR code",
+    "Reservas online + código QR",
     "1 barbeiro e 1 localização",
   ],
   pro: [
     "Até 5 barbeiros",
-    "CRM e analytics avançados",
+    "CRM e estatísticas avançadas",
     "Automação e campanhas de marketing",
-    "Fidelização e follow-ups automáticos",
+    "Fidelização e seguimentos automáticos",
   ],
   enterprise: [
     "Barbeiros e localizações ilimitados",
@@ -28,24 +28,16 @@ const HERO_FEATURES = {
 
 export function PricingSection() {
   return (
-    <section id="prices" className="space-y-7">
+    <section id="precos" className="space-y-7">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.34em] text-zinc-500">Planos</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-zinc-50 sm:text-4xl">
-            Começa grátis. Cresce sem trocar de plataforma.
-          </h2>
+          <p className="text-xs uppercase tracking-[0.34em] text-zinc-500">Preços simples</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-zinc-50 sm:text-4xl">Começa grátis. Faz upgrade quando fizer sentido.</h2>
         </div>
         <div className="flex max-w-2xl flex-col gap-3 sm:flex-row sm:items-center lg:justify-end">
-          <p className="text-sm leading-6 text-zinc-400 sm:text-base lg:text-right">
-            O Free dá-te uma operação completa. Faz upgrade quando precisares de mais equipa, automação e controlo.
-          </p>
-          <Link
-            href="/plans"
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-zinc-100 transition hover:border-emerald-400/30 hover:bg-emerald-500/10 hover:text-emerald-300"
-          >
-            Ver todos os planos
-            <ArrowRight className="size-3.5" />
+          <p className="text-sm leading-6 text-zinc-400 sm:text-base lg:text-right">O plano gratuito permite experimentar a operação real antes de tomares uma decisão.</p>
+          <Link href="/plans" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-zinc-100 transition hover:border-emerald-400/30 hover:bg-emerald-500/10 hover:text-emerald-300">
+            Comparar planos <ArrowRight className="size-3.5" />
           </Link>
         </div>
       </div>
@@ -58,16 +50,16 @@ export function PricingSection() {
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-white/10 bg-white/[0.025] px-5 py-4">
-          <p className="text-sm font-semibold text-zinc-100">Free para sempre</p>
+          <p className="flex items-center gap-2 text-sm font-semibold text-zinc-100"><Check className="size-4" /> Grátis para começar</p>
           <p className="mt-1 text-xs leading-5 text-zinc-500">Sem cartão e sem período experimental obrigatório.</p>
         </div>
         <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.04] px-5 py-4">
           <p className="text-sm font-semibold text-emerald-300">Pro para crescer</p>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">Automatiza tarefas e transforma clientes em clientes recorrentes.</p>
+          <p className="mt-1 text-xs leading-5 text-zinc-500">Automatiza trabalho repetitivo e cria mais oportunidades de retorno.</p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/[0.025] px-5 py-4">
           <p className="text-sm font-semibold text-zinc-100">Enterprise para escalar</p>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">Operações multi-localização com controlo, POS, stock e relatórios avançados.</p>
+          <p className="mt-1 text-xs leading-5 text-zinc-500">Para operações com várias localizações e necessidades avançadas.</p>
         </div>
       </div>
     </section>
