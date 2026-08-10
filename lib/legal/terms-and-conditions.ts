@@ -9,221 +9,239 @@ export type TermsDocument = {
   sections: LegalSection[];
 };
 
-export const TERMS_LAST_UPDATED = "21 de julho de 2026";
+export const TERMS_LAST_UPDATED = "10 de agosto de 2026";
 
 export const termsAndConditions: Record<"pt" | "en", TermsDocument> = {
   pt: {
     lastUpdated: TERMS_LAST_UPDATED,
     intro:
-      "Estes Termos e Condições regulam o acesso e a utilização da plataforma Silentra for Barbers (doravante, «Silentra» ou «Plataforma»), disponível em barbershop.silentra.me. Ao criar conta, iniciar sessão ou utilizar qualquer funcionalidade, confirmas que leste, compreendeste e aceitas estes termos.",
+      "Estes Termos e Condições regulam o acesso e a utilização da plataforma Silentra for Barbers («Silentra» ou «Plataforma»), um serviço SaaS para gestão de barbearias, reservas, clientes, comunicações, analytics e faturação. Ao criar uma conta, iniciar sessão ou utilizar a Plataforma, confirmas que leste e aceitas estes termos.",
     sections: [
       {
-        title: "1. Objeto do serviço",
+        title: "1. Serviço",
         paragraphs: [
-          "A Silentra é uma plataforma de software como serviço (SaaS) destinada à gestão operacional de barbearias, incluindo agendamentos, clientes, serviços, profissionais, estatísticas e comunicações automatizadas.",
-          "A Plataforma inclui um marketplace público que permite a clientes finais pesquisar barbearias e efetuar reservas online sem criação de conta, sujeito à disponibilidade de cada estabelecimento.",
-          "A Silentra atua exclusivamente como fornecedora de tecnologia. A prestação do serviço de barbearia, preços, horários, cancelamentos e atendimento presencial são da responsabilidade de cada barbearia registada.",
+          "A Silentra fornece software para ajudar barbearias a gerir agendamentos, clientes, serviços, profissionais, analytics, comunicações e outras operações disponibilizadas no plano aplicável.",
+          "A Plataforma pode incluir um marketplace público através do qual clientes finais descobrem barbearias e efetuam reservas. A Silentra fornece tecnologia e não presta o serviço de barbearia.",
+          "A barbearia é responsável pelos preços, horários, disponibilidade, qualidade do serviço, confirmação, alteração e cancelamento das marcações e pelo cumprimento das suas obrigações perante os clientes.",
         ],
       },
       {
-        title: "2. Elegibilidade e registo",
+        title: "2. Conta e elegibilidade",
         paragraphs: [
-          "O registo destina-se a profissionais ou representantes autorizados de barbearias com idade mínima de 18 anos.",
-          "Comprometes-te a fornecer informação verdadeira, completa e atualizada (nome, email, telefone e demais dados solicitados). És responsável por manter esses dados corretos.",
-          "Cada conta é pessoal e intransmissível. A partilha de credenciais ou o acesso por pessoas não autorizadas é proibida. Deves notificar-nos de imediato em caso de uso não autorizado da tua conta.",
+          "A utilização da conta destina-se a profissionais, proprietários ou representantes autorizados de barbearias com capacidade legal para contratar e, quando aplicável, idade mínima de 18 anos.",
+          "Deves fornecer informação verdadeira, completa e atualizada e manter as credenciais da conta confidenciais. És responsável pelas atividades realizadas através da tua conta, salvo quando resultem de uma falha imputável à Silentra.",
+          "Não podes utilizar a Plataforma para criar contas fraudulentas, aceder a dados de terceiros sem autorização ou contornar mecanismos de segurança ou limites do plano.",
         ],
       },
       {
-        title: "3. Utilização aceitável",
+        title: "3. Planos, funcionalidades e quotas",
         paragraphs: [
-          "Comprometes-te a utilizar a Plataforma apenas para fins legítimos de gestão de barbearia e em conformidade com a legislação aplicável.",
-          "É expressamente proibido: (a) tentar aceder a dados de outras barbearias ou utilizadores; (b) interferir com a segurança, integridade ou disponibilidade da Plataforma; (c) automatizar acessos de forma abusiva; (d) introduzir código malicioso; (e) utilizar a Plataforma para spam, fraude ou recolha ilícita de dados pessoais.",
-          "Reservamo-nos o direito de monitorizar padrões de utilização para prevenir abuso, garantir estabilidade do serviço e cumprir obrigações legais.",
+          "A Silentra disponibiliza diferentes níveis de subscrição, incluindo free, pro e enterprise. Cada plano pode ter funcionalidades, quotas, limites de utilização, número de profissionais, localizações, módulos e condições comerciais diferentes.",
+          "O plano e as permissões aplicáveis são determinados pelo estado de subscrição da conta. A existência de uma interface para uma funcionalidade não constitui garantia de disponibilidade se essa funcionalidade não estiver incluída no plano aplicável.",
+          "A Silentra pode alterar funcionalidades e limites de planos para novos contratos ou após comunicação de alterações relevantes. Não serão utilizadas alterações de plano para contornar direitos obrigatórios previstos na lei.",
         ],
       },
       {
-        title: "4. Reservas e clientes finais",
+        title: "4. Reservas e marketplace",
         paragraphs: [
-          "Quando um cliente final efetua uma reserva através do marketplace, recolhemos os dados estritamente necessários para processar o pedido (nome, contacto telefónico e email).",
-          "A barbearia destinatária é responsável por confirmar, reagendar ou cancelar marcações, prestar o serviço acordado e tratar reclamações dos seus clientes.",
-          "A Silentra não garante a disponibilidade de horários publicados em tempo real, embora empregue mecanismos para evitar conflitos de agenda. Em caso de erro técnico, a barbearia deve contactar o cliente final diretamente.",
+          "As reservas podem ser criadas por clientes finais ou pela própria barbearia. A Plataforma tenta manter a agenda consistente, mas não garante disponibilidade ininterrupta, ausência absoluta de conflitos ou funcionamento sem erros.",
+          "A barbearia deve verificar e gerir as marcações e contactar diretamente o cliente quando seja necessário corrigir uma marcação, indisponibilidade ou erro.",
+          "A Silentra não é parte do contrato entre a barbearia e o cliente final e não é responsável pela execução do serviço reservado.",
         ],
       },
       {
         title: "5. Comunicações",
         paragraphs: [
-          "A Plataforma pode enviar notificações automatizadas por SMS, email ou push relacionadas com agendamentos, lembretes e mensagens operacionais configuradas pela barbearia.",
-          "Ao ativar integrações de mensagens, confirmas que possuis base legal para contactar os teus clientes e que cumpres as políticas dos fornecedores de mensagens aplicáveis.",
-          "Custos de dados ou mensagens cobrados pelo operador móvel são da responsabilidade do destinatário ou da barbearia, consoante o caso. Podes desativar funcionalidades de mensagens nas definições da conta, quando disponível.",
+          "A Plataforma pode disponibilizar email, notificações push e outras funcionalidades de comunicação conforme o plano e a configuração da conta.",
+          "Atualmente, as notificações push são utilizadas para alertar os barbeiros sobre eventos operacionais, incluindo novos bookings. A barbearia é responsável por utilizar estas funcionalidades de acordo com a legislação aplicável.",
+          "O envio manual de email pode utilizar a infraestrutura da Brevo e o nome da barbearia como nome do remetente. O envio manual de SMS encontra-se atualmente desativado.",
+          "Quando forem utilizadas funcionalidades de marketing ou mensagens para clientes, a barbearia é responsável por possuir uma base legal adequada, respeitar preferências de comunicação e cumprir as regras aplicáveis a comunicações comerciais.",
         ],
       },
       {
-        title: "6. Dados pessoais e privacidade",
+        title: "6. Dados pessoais",
         paragraphs: [
-          "Tratamos dados pessoais em conformidade com o Regulamento Geral sobre a Proteção de Dados (RGPD) e a legislação portuguesa aplicável.",
-          "Enquanto titular de conta, és responsável pelos dados de clientes e colaboradores que introduzes na Plataforma, devendo informá-los sobre o tratamento e obter consentimentos quando legalmente exigido.",
-          "Os dados são armazenados em infraestrutura cloud segura (incluindo Supabase). Implementamos medidas técnicas e organizativas adequadas, mas nenhum sistema é totalmente isento de risco.",
-          "Podes solicitar acesso, retificação, eliminação ou portabilidade dos teus dados pessoais contactando contact@silentra.me. Respondemos no prazo legal aplicável.",
+          "A utilização da Plataforma está sujeita à Política de Privacidade da Silentra. A barbearia permanece responsável pelos dados pessoais de clientes e profissionais que introduz e pelas obrigações legais que lhe sejam aplicáveis.",
+          "A barbearia deve disponibilizar aos seus clientes informação adequada sobre o tratamento dos seus dados e obter consentimentos quando estes sejam legalmente necessários.",
+          "A Silentra pode atuar como responsável pelo tratamento ou como subcontratante, dependendo da natureza da operação e das responsabilidades concretas das partes.",
         ],
       },
       {
-        title: "7. Propriedade intelectual",
+        title: "7. Propriedade intelectual e dados do cliente",
         paragraphs: [
-          "A Silentra, o seu código, design, marca e documentação são propriedade da Silentra ou dos seus licenciadores. Estes termos não conferem qualquer direito de propriedade sobre a Plataforma.",
-          "Manténs a titularidade dos dados comerciais que carregas (clientes, serviços, horários, etc.). Concedes-nos uma licença limitada para processar esses dados exclusivamente para prestar o serviço.",
+          "A marca Silentra, software, design, documentação e componentes proprietários permanecem propriedade da Silentra ou dos respetivos licenciadores. Estes termos não transferem propriedade da Plataforma.",
+          "A barbearia mantém os direitos sobre os dados comerciais que introduz. Concede à Silentra apenas os direitos necessários para alojar, processar, transmitir, fazer backup e utilizar esses dados para prestar e proteger o serviço.",
+          "Não deves carregar conteúdo que viole direitos de terceiros, legislação aplicável ou estes termos.",
         ],
       },
       {
-        title: "8. Disponibilidade, manutenção e alterações",
+        title: "8. Utilização aceitável e segurança",
         paragraphs: [
-          "A Plataforma é fornecida numa base de «melhor esforço». Podemos realizar manutenções programadas ou de emergência que afetem temporariamente o acesso.",
-          "Podemos adicionar, alterar ou descontinuar funcionalidades. Alterações materiais serão comunicadas através da Plataforma ou por email, quando aplicável.",
-          "Funcionalidades beta ou experimentais podem ser disponibilizadas sem garantias de estabilidade ou continuidade.",
+          "É proibido tentar aceder a dados de outras contas ou barbearias, explorar vulnerabilidades, introduzir malware, interferir com a disponibilidade da Plataforma, realizar scraping abusivo, contornar quotas, praticar fraude ou utilizar a Plataforma para spam ou recolha ilícita de dados.",
+          "Podemos limitar, bloquear ou suspender atividades que representem risco de segurança, abuso, fraude ou incumprimento destes termos, preservando os direitos legalmente aplicáveis.",
         ],
       },
       {
-        title: "9. Planos, preços e faturação",
+        title: "9. Faturação e pagamentos",
         paragraphs: [
-          "Determinadas funcionalidades podem estar sujeitas a planos pagos no futuro. Quando aplicável, os preços, ciclo de faturação e condições de cancelamento serão apresentados antes da contratação.",
-          "Na ausência de plano pago ativo, o acesso pode estar limitado às funcionalidades disponíveis no momento do registo.",
+          "Os planos pagos podem ser faturados através da Stripe. A subscrição free existente numa conta pode ser substituída por um plano pago quando o utilizador faz upgrade, de acordo com o fluxo de faturação apresentado pela Plataforma.",
+          "Preços, periodicidade, impostos aplicáveis, período de faturação, cancelamento e eventuais condições de reembolso serão apresentados antes da contratação ou alteração de um plano pago.",
+          "A falta de pagamento, chargeback ou estado de subscrição incompatível pode resultar na limitação ou suspensão de funcionalidades pagas, respeitando as regras e prazos legalmente aplicáveis.",
         ],
       },
       {
-        title: "10. Limitação de responsabilidade",
+        title: "10. Disponibilidade e alterações",
         paragraphs: [
-          "Na máxima extensão permitida por lei, a Silentra não é responsável por perdas indiretas, lucros cessantes, interrupção de negócio ou danos resultantes de decisões tomadas com base em informação exibida na Plataforma.",
-          "A responsabilidade total da Silentra por qualquer reclamação relacionada com estes termos fica limitada ao montante pago por ti nos 12 meses anteriores ao evento que originou a reclamação, ou a zero euros se não existir plano pago.",
-          "Nada nestes termos exclui responsabilidade que não possa ser legalmente limitada, incluindo dolo ou negligência grave.",
+          "A Plataforma é fornecida numa base de esforço razoável e pode ficar temporariamente indisponível devido a manutenção, atualizações, falhas de fornecedores, incidentes de segurança ou acontecimentos fora do controlo da Silentra.",
+          "Podemos adicionar, alterar ou descontinuar funcionalidades. Quando uma alteração material afetar um serviço contratado, procuraremos comunicar a alteração de forma razoável, sem prejuízo dos direitos legais do utilizador.",
+          "Funcionalidades experimentais ou beta podem ter limitações adicionais que serão indicadas quando disponibilizadas.",
         ],
       },
       {
-        title: "11. Suspensão e rescisão",
+        title: "11. Limitação de responsabilidade",
         paragraphs: [
-          "Podes encerrar a tua conta a qualquer momento contactando contact@silentra.me ou através das funcionalidades de conta, quando disponíveis.",
-          "Podemos suspender ou encerrar o acesso imediatamente em caso de violação destes termos, risco de segurança, ordem legal ou utilização abusiva da Plataforma.",
-          "Após rescisão, poderemos reter dados durante o período necessário para cumprimento legal, resolução de litígios ou backups de rotina, após o qual serão eliminados ou anonimizados.",
+          "Na máxima medida permitida pela lei, a Silentra não responde por perdas indiretas, perda de lucros, perda de oportunidade ou interrupção de negócio decorrentes da utilização da Plataforma, salvo quando a lei imponha responsabilidade que não possa ser excluída.",
+          "A Silentra não garante que os dados, horários, disponibilidade ou métricas apresentados pela Plataforma estejam sempre livres de erros e a barbearia deve manter procedimentos próprios para verificar informação crítica.",
+          "Nada nestes termos exclui ou limita responsabilidade que não possa legalmente ser excluída ou limitada, incluindo situações de dolo ou outras responsabilidades imperativas previstas na lei.",
         ],
       },
       {
-        title: "12. Alterações aos termos",
+        title: "12. Suspensão e encerramento",
         paragraphs: [
-          "Podemos atualizar estes Termos e Condições periodicamente. A data da última revisão consta no topo deste documento.",
-          "Alterações relevantes serão comunicadas com antecedência razoável. A continuação da utilização após a entrada em vigor implica aceitação da versão atualizada.",
+          "Podes deixar de utilizar a Plataforma e solicitar o encerramento da conta através dos mecanismos disponibilizados ou contactando contact@silentra.me.",
+          "Podemos suspender ou encerrar uma conta em caso de violação destes termos, risco de segurança, fraude, obrigação legal ou abuso grave. Quando possível e adequado, será dada oportunidade para corrigir o incumprimento.",
+          "Após encerramento, os dados podem ser conservados pelo período necessário para obrigações legais, faturação, resolução de litígios, segurança e backups, nos termos da Política de Privacidade.",
         ],
       },
       {
-        title: "13. Lei aplicável e foro",
+        title: "13. Alterações aos termos",
         paragraphs: [
-          "Estes termos regem-se pela lei portuguesa. Qualquer litígio será submetido aos tribunais competentes em Portugal, salvo disposição legal imperativa em contrário.",
-          "Para questões sobre estes termos ou sobre a Plataforma, contacta contact@silentra.me.",
+          "Podemos atualizar estes termos para refletir alterações legais, técnicas, comerciais ou funcionais. A data da última revisão é apresentada no topo desta página.",
+          "Alterações materiais serão comunicadas com antecedência razoável quando legalmente exigido ou apropriado. A utilização continuada após a entrada em vigor da nova versão constitui aceitação na medida permitida pela lei.",
+        ],
+      },
+      {
+        title: "14. Lei aplicável e contacto",
+        paragraphs: [
+          "Estes termos regem-se pela lei portuguesa, sem prejuízo das normas imperativas de proteção do consumidor ou outras regras que tenham aplicação obrigatória.",
+          "Para questões sobre estes termos, faturação ou utilização da Plataforma, contacta contact@silentra.me.",
         ],
       },
     ],
   },
   en: {
-    lastUpdated: "July 21, 2026",
+    lastUpdated: "August 10, 2026",
     intro:
-      "These Terms and Conditions govern access to and use of the Silentra for Barbers platform (\"Silentra\" or the \"Platform\"), available at barbershop.silentra.me. By creating an account, signing in, or using any feature, you confirm that you have read, understood, and accepted these terms.",
+      "These Terms and Conditions govern access to and use of the Silentra for Barbers platform (\"Silentra\" or the \"Platform\"), a SaaS service for barbershop management, bookings, customers, communications, analytics, and billing. By creating an account, signing in, or using the Platform, you confirm that you have read and accept these terms.",
     sections: [
       {
-        title: "1. Service scope",
+        title: "1. Service",
         paragraphs: [
-          "Silentra is a software-as-a-service (SaaS) platform for barbershop operations, including appointments, clients, services, staff, analytics, and automated communications.",
-          "The Platform includes a public marketplace that allows end customers to discover barbershops and book online without creating an account, subject to each shop's availability.",
-          "Silentra acts solely as a technology provider. Service delivery, pricing, schedules, cancellations, and in-person appointments remain the responsibility of each registered barbershop.",
+          "Silentra provides software to help barbershops manage appointments, customers, services, professionals, analytics, communications, and other operations made available under the applicable plan.",
+          "The Platform may include a public marketplace through which end customers discover barbershops and make bookings. Silentra provides technology and does not provide barbershop services.",
+          "The barbershop is responsible for pricing, schedules, availability, service quality, appointment confirmation, changes and cancellations, and compliance with its obligations toward customers.",
         ],
       },
       {
-        title: "2. Eligibility and registration",
+        title: "2. Account and eligibility",
         paragraphs: [
-          "Registration is intended for professionals or authorized representatives of barbershops who are at least 18 years old.",
-          "You agree to provide accurate, complete, and up-to-date information (name, email, phone, and any other requested data). You are responsible for keeping this information correct.",
-          "Each account is personal and non-transferable. Sharing credentials or allowing unauthorized access is prohibited. You must notify us immediately of any unauthorized use of your account.",
+          "Accounts are intended for professionals, owners, or authorized representatives of barbershops with legal capacity to contract and, where applicable, a minimum age of 18.",
+          "You must provide accurate, complete, and current information and keep your credentials confidential. You are responsible for activity performed through your account except where caused by a failure attributable to Silentra.",
+          "You may not use the Platform to create fraudulent accounts, access third-party data without authorization, or bypass security mechanisms or plan limits.",
         ],
       },
       {
-        title: "3. Acceptable use",
+        title: "3. Plans, features, and quotas",
         paragraphs: [
-          "You agree to use the Platform only for legitimate barbershop management purposes and in compliance with applicable law.",
-          "The following is strictly prohibited: (a) attempting to access other barbershops' or users' data; (b) interfering with the Platform's security, integrity, or availability; (c) abusive automated access; (d) introducing malicious code; (e) using the Platform for spam, fraud, or unlawful personal data collection.",
-          "We reserve the right to monitor usage patterns to prevent abuse, ensure service stability, and comply with legal obligations.",
+          "Silentra offers different subscription levels, including free, pro, and enterprise. Plans may differ in features, quotas, usage limits, number of professionals, locations, modules, and commercial terms.",
+          "The applicable plan and permissions are determined by the account's subscription state. The presence of a UI entry does not guarantee access where a feature is not included in the applicable plan.",
+          "Silentra may change features and plan limits for new contracts or after notice of material changes. Changes will not be used to circumvent mandatory rights under applicable law.",
         ],
       },
       {
-        title: "4. Bookings and end customers",
+        title: "4. Bookings and marketplace",
         paragraphs: [
-          "When an end customer books through the marketplace, we collect only the data required to process the request (name, phone contact, and email).",
-          "The receiving barbershop is responsible for confirming, rescheduling, or canceling appointments, delivering the agreed service, and handling customer complaints.",
-          "Silentra does not guarantee real-time availability of published time slots, although conflict-prevention mechanisms are in place. In case of technical error, the barbershop must contact the end customer directly.",
+          "Bookings may be created by end customers or by the barbershop. The Platform attempts to keep schedules consistent but does not guarantee uninterrupted availability, complete absence of conflicts, or error-free operation.",
+          "The barbershop must review and manage bookings and contact the customer directly when a booking, availability issue, or technical error needs correction.",
+          "Silentra is not a party to the contract between the barbershop and end customer and is not responsible for delivery of the booked service.",
         ],
       },
       {
         title: "5. Communications",
         paragraphs: [
-          "The Platform may send automated notifications via SMS, email, or push related to appointments, reminders, and operational messages configured by the barbershop.",
-          "By enabling messaging integrations, you confirm that you have a lawful basis to contact your customers and that you comply with applicable messaging provider policies.",
-          "Data or messaging costs charged by mobile carriers are the responsibility of the recipient or the barbershop, as applicable. You may disable messaging features in account settings when available.",
+          "The Platform may provide email, push notifications, and other communication features depending on the plan and account configuration.",
+          "Push notifications are currently used to alert barbers about operational events, including new bookings. The barbershop is responsible for using these features in accordance with applicable law.",
+          "Manual email may use Brevo infrastructure and the barbershop name as the sender name. Manual SMS sending is currently disabled.",
+          "When marketing or customer messaging features are used, the barbershop is responsible for having an appropriate lawful basis, respecting communication preferences, and complying with applicable commercial-communication rules.",
         ],
       },
       {
-        title: "6. Personal data and privacy",
+        title: "6. Personal data",
         paragraphs: [
-          "We process personal data in accordance with the General Data Protection Regulation (GDPR) and applicable Portuguese law.",
-          "As an account holder, you are responsible for customer and staff data you enter into the Platform, and you must inform data subjects and obtain consent where legally required.",
-          "Data is stored on secure cloud infrastructure (including Supabase). We implement appropriate technical and organizational measures, but no system is completely risk-free.",
-          "You may request access, rectification, erasure, or portability of your personal data by contacting contact@silentra.me. We will respond within the applicable legal timeframe.",
+          "Use of the Platform is subject to Silentra's Privacy Policy. The barbershop remains responsible for personal data relating to customers and professionals that it enters and for its applicable legal obligations.",
+          "The barbershop must provide appropriate privacy information to customers and obtain consent where legally required.",
+          "Silentra may act as controller or processor depending on the nature of the operation and the parties' specific responsibilities.",
         ],
       },
       {
-        title: "7. Intellectual property",
+        title: "7. Intellectual property and customer data",
         paragraphs: [
-          "Silentra, its code, design, brand, and documentation are owned by Silentra or its licensors. These terms do not grant any ownership rights in the Platform.",
-          "You retain ownership of the business data you upload (clients, services, schedules, etc.). You grant us a limited license to process that data solely to provide the service.",
+          "The Silentra brand, software, design, documentation, and proprietary components remain owned by Silentra or its licensors. These terms do not transfer ownership of the Platform.",
+          "The barbershop retains rights in the business data it provides and grants Silentra only the rights required to host, process, transmit, back up, and use that data to provide and protect the service.",
+          "You may not upload content that infringes third-party rights, applicable law, or these terms.",
         ],
       },
       {
-        title: "8. Availability, maintenance, and changes",
+        title: "8. Acceptable use and security",
         paragraphs: [
-          "The Platform is provided on a best-effort basis. We may perform scheduled or emergency maintenance that temporarily affects access.",
-          "We may add, modify, or discontinue features. Material changes will be communicated through the Platform or by email, where applicable.",
-          "Beta or experimental features may be offered without guarantees of stability or continuity.",
+          "You may not attempt to access other accounts or barbershops' data, exploit vulnerabilities, introduce malware, interfere with Platform availability, perform abusive scraping, bypass quotas, commit fraud, or use the Platform for spam or unlawful data collection.",
+          "We may limit, block, or suspend activity that creates a security, abuse, fraud, or terms-compliance risk, subject to applicable legal rights.",
         ],
       },
       {
-        title: "9. Plans, pricing, and billing",
+        title: "9. Billing and payments",
         paragraphs: [
-          "Certain features may be subject to paid plans in the future. When applicable, pricing, billing cycles, and cancellation terms will be presented before purchase.",
-          "In the absence of an active paid plan, access may be limited to features available at the time of registration.",
+          "Paid plans may be billed through Stripe. An existing free subscription may be replaced by a paid plan when a user upgrades, according to the billing flow presented by the Platform.",
+          "Pricing, billing period, applicable taxes, cancellation, and any refund conditions will be presented before purchasing or changing a paid plan.",
+          "Non-payment, chargebacks, or an incompatible subscription state may result in limitations or suspension of paid features, subject to applicable rules and legal notice requirements.",
         ],
       },
       {
-        title: "10. Limitation of liability",
+        title: "10. Availability and changes",
         paragraphs: [
-          "To the maximum extent permitted by law, Silentra is not liable for indirect losses, lost profits, business interruption, or damages arising from decisions made based on information displayed on the Platform.",
-          "Silentra's total liability for any claim related to these terms is limited to the amount paid by you in the 12 months preceding the event giving rise to the claim, or zero euros if no paid plan exists.",
-          "Nothing in these terms excludes liability that cannot legally be limited, including wilful misconduct or gross negligence.",
+          "The Platform is provided on a reasonable-efforts basis and may be temporarily unavailable due to maintenance, updates, provider failures, security incidents, or events outside Silentra's control.",
+          "We may add, change, or discontinue features. Where a material change affects a contracted service, we will seek to communicate it reasonably, without prejudice to mandatory legal rights.",
+          "Experimental or beta features may have additional limitations that will be disclosed when made available.",
         ],
       },
       {
-        title: "11. Suspension and termination",
+        title: "11. Limitation of liability",
         paragraphs: [
-          "You may close your account at any time by contacting contact@silentra.me or through account features when available.",
-          "We may suspend or terminate access immediately in case of terms violations, security risk, legal order, or abusive use of the Platform.",
-          "After termination, we may retain data for the period necessary for legal compliance, dispute resolution, or routine backups, after which it will be deleted or anonymized.",
+          "To the maximum extent permitted by law, Silentra is not liable for indirect losses, lost profits, lost opportunities, or business interruption arising from use of the Platform, except where liability cannot lawfully be excluded.",
+          "Silentra does not guarantee that data, schedules, availability, or metrics displayed by the Platform will always be error-free, and the barbershop should maintain its own procedures for verifying critical information.",
+          "Nothing in these terms excludes or limits liability that cannot legally be excluded or limited, including wilful misconduct or other mandatory liabilities.",
         ],
       },
       {
-        title: "12. Changes to these terms",
+        title: "12. Suspension and termination",
         paragraphs: [
-          "We may update these Terms and Conditions periodically. The date of the last revision appears at the top of this document.",
-          "Material changes will be communicated with reasonable notice. Continued use after the effective date constitutes acceptance of the updated version.",
+          "You may stop using the Platform and request account closure through available account mechanisms or by contacting contact@silentra.me.",
+          "We may suspend or terminate an account for terms violations, security risks, fraud, legal obligations, or serious abuse. Where appropriate and possible, we will provide an opportunity to remedy the breach.",
+          "After termination, data may be retained as necessary for legal obligations, billing, dispute resolution, security, and backups, as described in the Privacy Policy.",
         ],
       },
       {
-        title: "13. Governing law and contact",
+        title: "13. Changes to these terms",
         paragraphs: [
-          "These terms are governed by Portuguese law. Any dispute shall be submitted to the competent courts in Portugal, unless mandatory legal provisions state otherwise.",
-          "For questions about these terms or the Platform, contact contact@silentra.me.",
+          "We may update these terms to reflect legal, technical, commercial, or functional changes. The last revision date is shown at the top of this page.",
+          "Material changes will be communicated with reasonable notice where legally required or appropriate. Continued use after the effective date constitutes acceptance to the extent permitted by law.",
+        ],
+      },
+      {
+        title: "14. Governing law and contact",
+        paragraphs: [
+          "These terms are governed by Portuguese law, without prejudice to mandatory consumer-protection rules or other provisions that must apply.",
+          "For questions about these terms, billing, or use of the Platform, contact contact@silentra.me.",
         ],
       },
     ],

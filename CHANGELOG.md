@@ -1,5 +1,17 @@
 # Changelog
 
+## v3.0.24 — 2026-08-10
+
+### Legal
+- Updated the Terms and Conditions to reflect the current SaaS model, free/pro/enterprise plans, plan-based quotas and feature access, Stripe billing, public bookings, marketplace responsibilities, and account lifecycle.
+- Updated the Privacy Policy to reflect current account, booking, customer, analytics, audit, billing, email, push-notification and operational data processing.
+- Documented Brevo as the email delivery provider and clarified that the barbershop name may be used as the sender name.
+- Clarified that manual SMS sending is currently disabled.
+- Clarified that push notifications are currently used for operational alerts to barbers, including new bookings.
+- Added clearer controller/processor responsibilities between Silentra and barbershops for customer data.
+- Expanded information about retention, international transfers, security, data-subject rights and third-party service providers.
+- Updated the last-review date of both legal documents to 10 August 2026.
+
 ## v3.0.23 — 2026-08-10
 
 ### Changed
@@ -32,27 +44,3 @@
 - Manual email recipients are resolved server-side and must belong to the authenticated user's barbershop.
 - The API never accepts a client-supplied barbershop ID for authorization.
 - Email message HTML is escaped server-side before being sent.
-
-## v3.0.21 — 2026-08-10
-
-### Changed
-- Redesigned the dashboard navigation for mobile-first use with a persistent bottom navigation for the most common sections.
-- Added an accessible full-screen mobile navigation drawer for all dashboard sections.
-- Improved dashboard navigation spacing, focus states, active states and touch targets.
-- Added safe-area support for mobile devices with gesture/navigation areas.
-- Added explicit locked-feature states with an upgrade action instead of navigating to unavailable modules.
-- Added accessible labels and semantic navigation landmarks throughout the dashboard navigation.
-- Reserved mobile viewport space for the fixed dashboard navigation to prevent content from being obscured.
-
-### Accessibility
-- Increased primary mobile navigation targets to at least 44px high.
-- Added visible keyboard focus indicators.
-- Added `aria-current`, `aria-expanded`, `aria-modal` and descriptive labels where applicable.
-- Locked features now expose their unavailable state to assistive technologies.
-
-## v3.0.20 — 2026-08-10
-
-### Changed
-- Moved dashboard cards into dedicated pages: `/dashboard/agenda`, `/dashboard/clientes`, `/dashboard/servicos`, `/dashboard/equipa`, `/dashboard/mensagens`.
-- `/dashboard` is now an overview with quick actions, business KPIs, weekly chart and upcoming appointments.
-- Updated `DashboardSidebar` with the new navigation entries.
