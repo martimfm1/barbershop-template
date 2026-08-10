@@ -6,10 +6,12 @@ import { PricingSection } from "@/components/hero/pricing-section";
 import { CtaSection } from "@/components/hero/cta-section";
 import { FooterSection } from "@/components/hero/footer-section";
 
+// Dados de demonstração deliberadamente realistas para que o visitante perceba valor
+// antes de criar uma conta. O objetivo é reduzir a fricção e tornar o primeiro clique útil.
 const services = [
-  { id: "haircut", name: "Haircut", duration: "30m", price: "€25" },
-  { id: "fade", name: "Fade + Beard", duration: "45m", price: "€38" },
-  { id: "cleanup", name: "Quick Cleanup", duration: "20m", price: "€18" },
+  { id: "corte", name: "Corte", duration: "30 min", price: "15 €" },
+  { id: "corte-barba", name: "Corte + Barba", duration: "45 min", price: "20 €" },
+  { id: "barba", name: "Barba", duration: "20 min", price: "10 €" },
 ] as const;
 
 const slots = ["09:00", "09:30", "10:00", "11:30", "12:00", "13:30"] as const;
