@@ -3,7 +3,8 @@ import type { Client, Professional, Service } from "./entities";
 
 /** Data and callbacks accepted by dashboard form cards. */
 export interface BookingFormData {
-  clientId?: string;
+  /** Explicitly present so React state setters remain assignable across the form. */
+  clientId: string | undefined;
   name_complete: string;
   num_phone: string;
   email: string;
