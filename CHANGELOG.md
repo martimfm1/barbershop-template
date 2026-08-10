@@ -7,8 +7,8 @@
 - Fixed cases where an Enterprise subscription could be persisted or resolved as Pro and consequently receive incorrect feature entitlements.
 - Fixed access checks continuing to grant paid access from stale local state when Stripe reports a subscription status that does not grant paid access.
 - Added reconciliation of the local plan, Stripe price ID, subscription status and billing period when the current Stripe subscription is available.
-- Pending/transient Stripe invoices older than 10 minutes are no longer returned by the billing invoices API.
-- Pending invoices are hidden from the application without deleting them from Stripe.
+- Pending Stripe invoices in `draft`/`open`/transitional states older than 10 minutes are no longer returned by the billing invoices API.
+- Pending invoices are hidden from the application without deleting or modifying them in Stripe.
 
 ### Documentation
 - Reworked the README to accurately document the current SaaS architecture, dashboard, plans, billing, security model, integrations, development workflow and roadmap.
