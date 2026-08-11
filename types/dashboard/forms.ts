@@ -9,6 +9,7 @@ export interface BookingFormData {
   num_phone: string;
   email: string;
   service_id: string;
+  birth_date: string;
 }
 
 export interface BookingFormProps {
