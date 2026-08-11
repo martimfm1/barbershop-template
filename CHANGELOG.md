@@ -13,6 +13,18 @@
 - A automação é protegida server-side pelo entitlement `automated_followups`, disponível em Pro e Enterprise.
 - Registados envios bem-sucedidos e falhados em `birthday_email_logs` para auditoria e diagnóstico.
 
+### Clientes e agenda
+- Adicionada uma acção server-side para transformar uma marcação concluída num cliente da barbearia.
+- A operação verifica a marcação, tenant e estado `completed` antes de criar o cliente.
+- É feita verificação por telefone para reduzir duplicados.
+- Quando o cliente já existe, a marcação é associada ao cliente existente em vez de criar um registo duplicado.
+- Adicionado estado de carregamento específico para a acção de adicionar cliente na agenda.
+
+### Mensagens
+- Adicionado acesso rápido à automação de aniversários em `/dashboard/mensagens`.
+- Adicionado botão "Aniversários" no cabeçalho da página de Mensagens.
+- Adicionado cartão contextual para gerir a automação de aniversários.
+
 ### Fixed
 - Corrigido o acesso à gestão de profissionais no plano Free.
 - O plano Free pode adicionar o primeiro profissional e fica limitado a 1 profissional.
