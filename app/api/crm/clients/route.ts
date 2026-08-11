@@ -7,19 +7,25 @@ export const dynamic = "force-dynamic";
 async function getTenantUser(req: Request) {
   const authUser = await getCurrentUser(req);
   if (!authUser) return null;
+
   const admin = createAdminClient();
-  const { data } = await admin
+  const { data, error } = await admin
     .from("users")
     .select("id, barbershop_id, role")
     .eq("id", authUser.id)
     .maybeSingle();
-  if (!data?.barbershop_id || !["admin", "owner", "staff"].includes(data.role ?? "staff")) return null;
+
+  // Dashboard access is based on tenant membership, not on a hard-coded list
+  // of legacy role names. This keeps staff/manager/owner role variants working
+  // while still preventing client accounts from reading the CRM.
+  if (error || !data?.barbershop_id || data.id !== authUser.id || data.role === "client") return null;
+
   return { authUser, admin, barbershopId: data.barbershop_id };
 }
 
 export async function GET(req: Request) {
   const tenant = await getTenantUser(req);
-  if (!tenant) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!tenant) return NextResponse.json({ error: "Não autenticado ou sem acesso à barbearia." }, { status: 401 });
 
   const url = new URL(req.url);
   const search = url.searchParams.get("search")?.trim() ?? "";
@@ -37,6 +43,6 @@ export async function GET(req: Request) {
   if (search) query = query.or(`name_complete.ilike.%${search}%,name.ilike.%${search}%,email.ilike.%${search}%,num_phone.ilike.%${search}%`);
 
   const { data, count, error } = await query;
-  if (error) return NextResponse.json({ error: "Failed to load clients" }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Não foi possível carregar os clientes." }, { status: 500 });
   return NextResponse.json({ clients: data ?? [], total: count ?? 0, limit, offset });
 }
