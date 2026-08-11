@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 function getSafeNext(value: string | null): string {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/login?status=confirmed";
+    return "/email-confirmed";
   }
 
   return value;
