@@ -2,6 +2,18 @@
 
 ## Unreleased — 2026-08-11
 
+### Onboarding e equipa
+- Adicionado sistema de funções de equipa: proprietário, administrador, gestor, barbeiro e rececionista.
+- O utilizador que cria uma nova barbearia passa a ser explicitamente o proprietário.
+- Adicionados códigos de entrada de utilização única para onboarding.
+- Os códigos são armazenados apenas como hash e expiram automaticamente após 10 minutos.
+- O proprietário ou administrador pode gerar um código e escolher a função que será atribuída ao novo membro.
+- O fluxo de entrada existente `/api/onboarding/join` é encaminhado para a validação server-side segura do novo sistema.
+- O novo membro recebe automaticamente a barbearia e a função associadas ao código.
+- Adicionados valores de acesso predefinidos por função, mantendo `staff_permissions` como mecanismo para permissões adicionais.
+- Adicionada interface na página Equipa para gerar, copiar e acompanhar o tempo restante do código.
+- O código nunca é exposto em listagens da base de dados nem reutilizado depois de consumido.
+
 ### Billing e planos
 - Melhorada a resolução de `plan_override` para que uma atribuição administrativa `pro` ou `enterprise` seja tratada como entitlement efectivo em toda a aplicação.
 - Um override administrativo não depende do estado da subscrição Stripe nem cria uma subscrição Stripe fictícia.
