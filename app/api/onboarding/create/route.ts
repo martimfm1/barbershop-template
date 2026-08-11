@@ -66,7 +66,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Os dados de preço ou localização são inválidos." }, { status: 400 });
     }
 
-    // STEP 1: Criar Barbearia (Sem a coluna slug)
     const { data: barbershop, error: barbershopError } = await supabase
       .from("barbershops")
       .insert({
@@ -87,7 +86,6 @@ export async function POST(request: Request) {
 
     const barbershopId = barbershop.id;
 
-    // STEP 2: Criar Listing do Marketplace (Slug enviado exclusivamente aqui)
     const { error: shopError } = await supabase
       .from("shops")
       .insert({
@@ -103,20 +101,17 @@ export async function POST(request: Request) {
 
     if (shopError) {
       console.error("[ONBOARDING_SHOP_FAIL]", shopError);
-      // Rollback
       await supabase.from("barbershops").delete().eq("id", barbershopId);
       return NextResponse.json({ error: "Falha ao criar listing no marketplace" }, { status: 500 });
     }
 
-    // STEP 3: Vincular ao Utilizador na tabela 'users'
     const { error: userUpdateError } = await supabase
       .from("users")
-      .update({ barbershop_id: barbershopId })
+      .update({ barbershop_id: barbershopId, role: "owner" })
       .eq("id", user.id);
 
     if (userUpdateError) {
       console.error("[ONBOARDING_USER_LINK_FAIL]", userUpdateError);
-      // Rollback completo
       await supabase.from("shops").delete().eq("barbershop_id", barbershopId);
       await supabase.from("barbershops").delete().eq("id", barbershopId);
       return NextResponse.json(
@@ -128,6 +123,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       barbershopId,
+      role: "owner",
     });
   } catch (error) {
     console.error("[ONBOARDING_CRITICAL_ERROR]", error);
