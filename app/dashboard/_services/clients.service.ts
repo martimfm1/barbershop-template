@@ -11,6 +11,7 @@ export interface CreateClientPayload {
   name_complete: string;
   num_phone: string;
   email?: string;
+  birth_date?: string | null;
   barbershop_id: string | null;
   role: "client";
 }
@@ -19,39 +20,24 @@ export interface UpdateClientPayload {
   name_complete: string;
   num_phone: string;
   email?: string;
+  birth_date?: string | null;
 }
 
 export const clientsService = {
-  // 1. Obter configuração da barbearia
   async getBarbershopConfig(shopId: string) {
     const supabase = createClient();
-    return await supabase
-      .from("barbershops")
-      .select("*")
-      .eq("id", shopId)
-      .maybeSingle();
+    return await supabase.from("barbershops").select("*").eq("id", shopId).maybeSingle();
   },
 
-  // 2. Atualizar configuração da barbearia
   async updateBarbershopConfig(shopId: string, config: Record<string, unknown>) {
     const supabase = createClient();
-    return await supabase
-      .from("barbershops")
-      .update(config)
-      .eq("id", shopId);
+    return await supabase.from("barbershops").update(config).eq("id", shopId);
   },
 
-  // 3. Criar novo cliente
   async createClient(clientData: CreateClientPayload) {
     const supabase = createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      throw new Error("Usuário não autenticado.");
-    }
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error("Utilizador não autenticado.");
 
     const { data: profile, error: profileError } = await supabase
       .from("users")
@@ -59,40 +45,19 @@ export const clientsService = {
       .eq("id", user.id)
       .maybeSingle();
 
-    const resolvedBarbershopId =
-      clientData.barbershop_id ??
-      profile?.barbershop_id ??
-      getBrowserBarbershopIdFromCookie();
+    const resolvedBarbershopId = clientData.barbershop_id ?? profile?.barbershop_id ?? getBrowserBarbershopIdFromCookie();
+    if (profileError || !resolvedBarbershopId) throw new Error("Não foi possível encontrar a barbearia do utilizador autenticado.");
 
-    if (profileError || !resolvedBarbershopId) {
-      throw new Error("Não foi possível encontrar o barbershop_id do utilizador autenticado.");
-    }
-
-    const payload = {
-      ...clientData,
-      barbershop_id: resolvedBarbershopId,
-    };
-
-    console.log("[Client Service Payload]", payload);
-
-    return await supabase.from("users").insert([payload]).select();
+    return await supabase.from("users").insert([{ ...clientData, barbershop_id: resolvedBarbershopId }]).select();
   },
 
-  // 4. Atualizar dados do cliente
   async updateClient(id: string, clientData: UpdateClientPayload) {
     const supabase = createClient();
-    return await supabase
-      .from("users")
-      .update(clientData)
-      .eq("id", id);
+    return await supabase.from("users").update(clientData).eq("id", id);
   },
 
-  // 5. Apagar cliente
   async deleteClient(id: string) {
     const supabase = createClient();
-    return await supabase
-      .from("users")
-      .delete()
-      .eq("id", id);
-  }
+    return await supabase.from("users").delete().eq("id", id);
+  },
 } as const;
