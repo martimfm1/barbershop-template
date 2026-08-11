@@ -4,6 +4,7 @@ export interface Client {
   name_complete: string;
   num_phone: string;
   email?: string;
+  birth_date?: string | null;
   style_notes?: string;
 }
 
