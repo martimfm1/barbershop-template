@@ -29,9 +29,9 @@ const SUPPORTED_IMAGE_TYPES = new Set([
 
 /**
  * Validates, decodes and converts a user image to a real WebP before uploading it.
- * This utility is intentionally limited to image validation, processing and
- * Supabase Storage I/O. Database metadata updates belong to the application
- * service/API layer.
+ * Storage paths are returned to the caller. Avatar metadata is updated through
+ * the protected database RPC because the current Settings flow owns the upload
+ * operation and must keep the Storage + metadata update atomic from the UI.
  */
 export async function processAndUploadImage({
   file,
@@ -90,7 +90,7 @@ export async function processAndUploadImage({
       return {
         data: null,
         error: new Error(
-          "Não foi possível carregar a imagem para o armazenamento.",
+          "Não foi possível carregar a imagem para o armazenamento. Verifica as permissões de armazenamento.",
         ),
       };
     }
@@ -109,6 +109,36 @@ export async function processAndUploadImage({
         data: null,
         error: new Error("Não foi possível obter o endereço da imagem."),
       };
+    }
+
+    if (bucket === "avatar") {
+      const barbershopId = webpPath.split("/")[0];
+      if (!barbershopId) {
+        return { data: null, error: new Error("Caminho do avatar inválido.") };
+      }
+
+      const { error: metadataError } = await supabase.rpc(
+        "set_barbershop_avatar_url",
+        {
+          p_barbershop_id: barbershopId,
+          p_avatar_url: publicUrl,
+        },
+      );
+
+      if (metadataError) {
+        console.error("[Avatar Metadata Error]:", metadataError);
+        return {
+          data: null,
+          error: new Error(
+            metadataError.message.includes("authentication")
+              ? "A tua sessão expirou. Inicia sessão novamente."
+              : metadataError.message.includes("permission") ||
+                  metadataError.message.includes("authorized")
+                ? "Não tens permissão para alterar o avatar desta barbearia."
+                : "Não foi possível associar o avatar à barbearia.",
+          ),
+        };
+      }
     }
 
     return {
