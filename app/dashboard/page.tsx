@@ -18,8 +18,8 @@ import { StatusBadge } from "@/app/state/_components/shared/StatusBadge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Area, AreaChart, CartesianGrid, Line, XAxis, YAxis } from "recharts";
-import { Users, Scissors, Briefcase, CalendarDays, Clock, ChevronRight, Crown, CalendarPlus, User, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Users, Scissors, Briefcase, CalendarDays, Clock, ChevronRight, Crown, CalendarPlus, ArrowRight, CheckCircle2 } from "lucide-react";
 import { PLAN_NAMES } from "@/lib/billing/plan-features";
 
 const getDayIndex = (value: string) => (new Date(value).getDay() + 6) % 7;
@@ -75,7 +75,7 @@ export default function DashboardPage() {
   }, []);
 
   const chartConfig = {
-    revenue: { label: "Receita (€)", color: "hsl(var(--chart-1))" },
+    revenue: { label: "Receita", color: "hsl(var(--chart-1))" },
     bookings: { label: "Marcações", color: "hsl(var(--chart-2))" },
   } satisfies ChartConfig;
 
@@ -232,8 +232,9 @@ export default function DashboardPage() {
 
           <section className="grid gap-3 pt-5 md:gap-4 lg:grid-cols-[1fr_360px]">
             <Card className="border border-white/10 bg-zinc-900/60 shadow-xl backdrop-blur-xl">
-              <CardHeader className="pb-2"><div className="flex items-start justify-between gap-3"><div><CardTitle className="text-lg font-medium text-zinc-100">Evolução semanal</CardTitle><CardDescription className="mt-1 text-zinc-500">Receita e marcações por dia.</CardDescription></div><Link href="/dashboard/stats" className="text-xs font-medium text-zinc-500 hover:text-zinc-200">Ver análise</Link></div></CardHeader>
-              <CardContent className="h-[250px] w-full pt-4"><ChartContainer config={chartConfig} className="h-full w-full"><AreaChart data={dynamicChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}><defs><linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ffffff" stopOpacity={0.12} /><stop offset="95%" stopColor="#ffffff" stopOpacity={0} /></linearGradient></defs><CartesianGrid vertical={false} strokeDasharray="4 4" stroke="rgba(255,255,255,0.07)" /><XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: "#a1a1aa", fontSize: 12 }} dy={8} /><YAxis tickLine={false} axisLine={false} width={36} tick={{ fill: "#a1a1aa", fontSize: 12 }} /><ChartTooltip content={<ChartTooltipContent />} /><Area dataKey="revenue" type="monotone" fill="url(#revenueGradient)" stroke="#ffffff" strokeWidth={2} /><Line dataKey="bookings" type="monotone" stroke="#10b981" strokeWidth={2} /></AreaChart></ChartContainer></CardContent>
+              <CardHeader className="pb-2"><div className="flex items-start justify-between gap-3"><div><CardTitle className="text-lg font-medium text-zinc-100">Atividade semanal</CardTitle><CardDescription className="mt-1 text-zinc-500">Compara rapidamente as marcações e a receita de cada dia.</CardDescription></div><Link href="/dashboard/stats" className="text-xs font-medium text-zinc-500 hover:text-zinc-200">Ver análise</Link></div></CardHeader>
+              <CardContent className="h-[280px] w-full pt-4"><ChartContainer config={chartConfig} className="h-full w-full"><BarChart data={dynamicChartData} margin={{ top: 10, right: 10, left: -12, bottom: 0 }} barGap={6}><CartesianGrid vertical={false} strokeDasharray="4 4" stroke="rgba(255,255,255,0.07)" /><XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: "#a1a1aa", fontSize: 12 }} dy={8} /><YAxis tickLine={false} axisLine={false} width={36} tick={{ fill: "#a1a1aa", fontSize: 12 }} allowDecimals={false} /><ChartTooltip cursor={{ fill: "rgba(255,255,255,0.04)" }} content={<ChartTooltipContent />} /><Bar dataKey="revenue" name="Receita" fill="var(--color-revenue)" radius={[6, 6, 2, 2]} maxBarSize={22} /><Bar dataKey="bookings" name="Marcações" fill="var(--color-bookings)" radius={[6, 6, 2, 2]} maxBarSize={22} /></BarChart></ChartContainer></CardContent>
+              <div className="flex flex-wrap items-center justify-center gap-4 px-5 pb-5 pt-1 text-xs text-zinc-500" aria-label="Legenda do gráfico"><span className="inline-flex items-center gap-2"><span className="size-2 rounded-full bg-[hsl(var(--chart-1))]" aria-hidden="true" />Receita</span><span className="inline-flex items-center gap-2"><span className="size-2 rounded-full bg-[hsl(var(--chart-2))]" aria-hidden="true" />Marcações</span></div>
             </Card>
 
             <Card className="border border-white/10 bg-zinc-900/60 shadow-xl backdrop-blur-xl">
