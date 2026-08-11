@@ -12,6 +12,8 @@
 - Corrigido o acesso ao módulo Mensagens para membros autenticados da barbearia.
 - Removida a dependência de uma lista rígida de roles no carregamento dos clientes usado pelo módulo Mensagens.
 - Mantida a distinção entre autenticação, autorização e limite de plano.
+- Adicionada uma opção para ocultar uma barbearia do diretório público `/barbearias`.
+- O estado de visibilidade é validado no servidor do diretório e também ao abrir a página pública direta da barbearia.
 
 ### Email
 - Adicionado o avatar/logótipo da própria barbearia aos emails de confirmação de agendamento.
@@ -25,9 +27,15 @@
 - O acesso a clientes e envio de mensagens continua limitado ao tenant autenticado.
 - O plano Free não pode alterar a comissão do seu profissional através do frontend/API.
 - Dados apresentados no HTML dos emails são escapados antes de serem inseridos no template.
+- A preferência de visibilidade é armazenada por barbearia e não permite que um tenant altere a visibilidade de outro.
 
 ### Supabase
 - Adicionada a migration `20260811040000_finalize_professional_management_authorization.sql` para consolidar a autorização da Equipa e as quotas Free/Pro/Enterprise.
+- Adicionada a migration `20260811050000_add_barbershop_directory_visibility.sql` com `is_public_in_directory`, por defeito `true` para preservar as barbearias existentes.
+
+### UI/UX
+- Adicionado às Definições um controlo simples de visibilidade no diretório público.
+- A opção indica claramente se a barbearia está visível ou oculta e mantém o link direto da barbearia disponível quando está oculta.
 
 ## v3.0.29 — 2026-08-10
 
