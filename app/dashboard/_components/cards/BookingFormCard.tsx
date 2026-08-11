@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { type BookingFormProps } from "@/types";
@@ -14,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Plus } from "lucide-react";
 
 export function BookingForm({ clients, services, professionals, loading, formData, setFormData, selectedProfessionalId, setSelectedProfessionalId, selectedDate, setSelectedDate, selectedTime, setSelectedTime, onSubmit }: BookingFormProps) {
-  const [birthDate, setBirthDate] = useState("");
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <Card className="animate-in fade-in slide-in-from-top-4 border border-emerald-500/20 bg-black/40 backdrop-blur-md duration-200">
@@ -26,8 +25,7 @@ export function BookingForm({ clients, services, professionals, loading, formDat
             <Combobox value={formData.clientId || ""} onValueChange={(val) => {
               const cl = clients.find((c) => c.id === val);
               if (cl) {
-                setFormData({ ...formData, clientId: cl.id, name_complete: cl.name_complete, num_phone: cl.num_phone, email: cl.email || "" });
-                setBirthDate(cl.birth_date || "");
+                setFormData({ ...formData, clientId: cl.id, name_complete: cl.name_complete, num_phone: cl.num_phone, email: cl.email || "", birth_date: cl.birth_date || "" });
               }
             }}>
               <ComboboxInput id="booking-client" placeholder="Pesquisar cliente…" className="border-white/10 bg-zinc-900 text-white" />
@@ -37,7 +35,7 @@ export function BookingForm({ clients, services, professionals, loading, formDat
 
           <div className="grid gap-2"><label className="text-xs text-zinc-400" htmlFor="booking-name">Nome do cliente</label><input id="booking-name" required placeholder="Nome completo" className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-sm text-white" value={formData.name_complete} onChange={(e) => setFormData({ ...formData, clientId: "", name_complete: e.target.value })} /></div>
           <div className="grid gap-2"><label className="text-xs text-zinc-400" htmlFor="booking-phone">Telemóvel</label><input id="booking-phone" required placeholder="+351 9xx xxx xxx" type="tel" className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-sm text-white" value={formData.num_phone} onChange={(e) => setFormData({ ...formData, clientId: "", num_phone: e.target.value })} /></div>
-          <div className="grid gap-2"><label className="text-xs text-zinc-400" htmlFor="booking-birth-date">Data de nascimento</label><input id="booking-birth-date" name="manual_birth_date" type="date" max={new Date().toISOString().slice(0, 10)} className="color-scheme-dark rounded-lg border border-white/10 bg-white/5 p-2.5 text-sm text-white" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} /><p className="text-[11px] text-zinc-500">Opcional. Usada para aniversários e analytics.</p></div>
+          <div className="grid gap-2"><label className="text-xs text-zinc-400" htmlFor="booking-birth-date">Data de nascimento</label><input id="booking-birth-date" type="date" max={today} className="color-scheme-dark rounded-lg border border-white/10 bg-white/5 p-2.5 text-sm text-white" value={formData.birth_date} onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })} /><p className="text-[11px] text-zinc-500">Opcional. Ajuda nos aniversários e no analytics.</p></div>
 
           <div className="grid gap-2"><label className="text-xs text-zinc-400" htmlFor="booking-barber">Barbeiro</label><Select value={selectedProfessionalId} onValueChange={setSelectedProfessionalId}><SelectTrigger id="booking-barber" className="cursor-pointer border-white/10 bg-zinc-900 text-white"><SelectValue placeholder="Selecionar" /></SelectTrigger><SelectContent className="cursor-pointer border-white/10 bg-zinc-900 text-white"><SelectGroup>{professionals.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectGroup></SelectContent></Select></div>
           <div className="grid gap-2"><label className="text-xs text-zinc-400" htmlFor="booking-service">Serviço</label><Select value={formData.service_id} onValueChange={(val) => setFormData({ ...formData, service_id: val })}><SelectTrigger id="booking-service" className="cursor-pointer border-white/10 bg-zinc-900 text-white"><SelectValue placeholder="Selecionar" /></SelectTrigger><SelectContent className="cursor-pointer border-white/10 bg-zinc-900 text-white"><SelectGroup>{services.map((s) => <SelectItem key={s.id} value={s.id}>{s.name} ({Number(s.price).toFixed(2)}€)</SelectItem>)}</SelectGroup></SelectContent></Select></div>
