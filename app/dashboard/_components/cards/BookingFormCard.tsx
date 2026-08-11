@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Plus } from "lucide-react";
 
-export function BookingForm({ clients, services, professionals, loading, formData, setFormData, selectedProfessionalId, setSelectedProfessionalId, selectedDate, setSelectedDate, selectedTime, onSubmit }: BookingFormProps) {
+export function BookingForm({ clients, services, professionals, loading, formData, setFormData, selectedProfessionalId, setSelectedProfessionalId, selectedDate, setSelectedDate, selectedTime, setSelectedTime, onSubmit }: BookingFormProps) {
   const [birthDate, setBirthDate] = useState("");
 
   return (
