@@ -2,6 +2,14 @@
 
 ## Unreleased — 2026-08-11
 
+### Billing e planos
+- Melhorada a resolução de `plan_override` para que uma atribuição administrativa `pro` ou `enterprise` seja tratada como entitlement efectivo em toda a aplicação.
+- Um override administrativo não depende do estado da subscrição Stripe nem cria uma subscrição Stripe fictícia.
+- As quotas PostgreSQL passam a usar a mesma resolução de plano efectiva da aplicação.
+- A remoção do override (`NULL`) devolve o controlo do plano à subscrição Stripe/local.
+- `free` pode ser usado explicitamente como override para forçar o plano gratuito.
+- Adicionado o RPC interno `get_effective_billing_plan` e alinhada a criação de profissionais com a mesma regra de entitlement.
+
 ### Marcações, clientes e analytics
 - Adicionado campo opcional de data de nascimento ao criar uma marcação.
 - A data de nascimento de clientes existentes é reutilizada automaticamente ao selecionar o cliente.
