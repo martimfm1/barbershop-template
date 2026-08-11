@@ -2,12 +2,69 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { UUID_PATTERN } from "@/lib/validation";
+import { getAccessPlanForRequest } from "@/services/billing/plan-access.guard";
+import { getPlanLimit } from "@/lib/billing/plan-features";
 
 export const runtime = "nodejs";
 
+const PROFESSIONAL_PERMISSION_ALIASES = [
+  "team",
+  "manage_professionals",
+  "team_management",
+  "manage_team",
+  "professionals",
+] as const;
+
+/**
+ * Verifies tenant membership and the canonical team-management permission.
+ * The API keeps this check server-side so an old/stale database RPC cannot
+ * accidentally turn a valid Free-plan request into a permission error.
+ */
+async function canManageProfessionals(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  barbershopId: string,
+) {
+  const { data: profile, error: profileError } = await admin
+    .from("users")
+    .select("id, barbershop_id, role")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (profileError || !profile?.barbershop_id || profile.barbershop_id !== barbershopId) {
+    return { allowed: false as const, reason: "BARBERSHOP_ACCESS_DENIED" as const };
+  }
+
+  const role = String(profile.role ?? "").toLowerCase();
+  if (["admin", "owner"].includes(role)) {
+    return { allowed: true as const, role };
+  }
+
+  const { data: grant, error: permissionError } = await admin
+    .from("staff_permissions")
+    .select("permission, allowed")
+    .eq("barbershop_id", barbershopId)
+    .eq("user_id", userId)
+    .in("permission", [...PROFESSIONAL_PERMISSION_ALIASES])
+    .eq("allowed", true)
+    .limit(1)
+    .maybeSingle();
+
+  if (permissionError) {
+    console.error("[PROFESSIONAL_PERMISSION_LOOKUP]", permissionError);
+    return { allowed: false as const, reason: "PROFESSIONAL_MANAGEMENT_DENIED" as const };
+  }
+
+  return grant?.allowed
+    ? { allowed: true as const, role, permission: grant.permission }
+    : { allowed: false as const, reason: "PROFESSIONAL_MANAGEMENT_DENIED" as const };
+}
+
 /**
  * Creates a professional through the service-role boundary.
- * Quota enforcement and the insert itself happen atomically in Postgres.
+ * The normal path uses the atomic Postgres RPC. A compatibility fallback is
+ * kept for deployments where the latest RPC migration has not yet reached the
+ * database; it performs the same tenant/permission/plan checks server-side.
  */
 export async function POST(
   request: Request,
@@ -49,6 +106,20 @@ export async function POST(
     }
 
     const admin = createAdminClient();
+    const authorization = await canManageProfessionals(admin, user.id, barbershopId);
+
+    if (!authorization.allowed) {
+      return NextResponse.json(
+        {
+          error: authorization.reason === "BARBERSHOP_ACCESS_DENIED"
+            ? "Acesso negado a esta barbearia."
+            : "Não tens permissão para gerir profissionais.",
+          code: authorization.reason,
+        },
+        { status: 403 },
+      );
+    }
+
     const { data, error } = await admin.rpc("create_professional_with_plan_quota", {
       p_actor_user_id: user.id,
       p_barbershop_id: barbershopId,
@@ -62,8 +133,16 @@ export async function POST(
     switch (error.message) {
       case "BARBERSHOP_ACCESS_DENIED":
         return NextResponse.json({ error: "Acesso negado a esta barbearia.", code: "BARBERSHOP_ACCESS_DENIED" }, { status: 403 });
-      case "PROFESSIONAL_MANAGEMENT_DENIED":
-        return NextResponse.json({ error: "Não tens permissão para gerir profissionais.", code: "PROFESSIONAL_MANAGEMENT_DENIED" }, { status: 403 });
+      case "PROFESSIONAL_MANAGEMENT_DENIED": {
+        // A valid API-level permission check above means this is almost always
+        // an older RPC still deployed in Supabase. Fall through to the
+        // compatibility insert instead of reporting a false permission error.
+        console.warn("[PROFESSIONAL_RPC_PERMISSION_STALE]", {
+          userId: user.id,
+          barbershopId,
+        });
+        break;
+      }
       case "PROFESSIONAL_LIMIT_REACHED":
         return NextResponse.json({
           error: "Atingiste o limite de profissionais do teu plano.",
@@ -76,6 +155,48 @@ export async function POST(
         console.error("[PROFESSIONAL_CREATE_ERROR]", error);
         return NextResponse.json({ error: "Não foi possível criar o barbeiro.", code: "CREATE_PROFESSIONAL_FAILED" }, { status: 500 });
     }
+
+    const access = await getAccessPlanForRequest();
+    if (!access.ok || access.userId !== user.id) {
+      return NextResponse.json({ error: "Não autenticado.", code: "UNAUTHORIZED" }, { status: 401 });
+    }
+
+    const limit = getPlanLimit(access.plan, "barbers");
+    const { count, error: countError } = await admin
+      .from("professionals")
+      .select("id", { count: "exact", head: true })
+      .eq("barbershop_id", barbershopId);
+
+    if (countError) {
+      console.error("[PROFESSIONAL_QUOTA_LOOKUP]", countError);
+      return NextResponse.json({ error: "Não foi possível verificar o limite da equipa.", code: "QUOTA_CHECK_FAILED" }, { status: 500 });
+    }
+
+    if (Number(count ?? 0) >= limit) {
+      return NextResponse.json({
+        error: "Atingiste o limite de profissionais do teu plano.",
+        code: "LIMIT_REACHED",
+      }, { status: 409 });
+    }
+
+    const commissionForPlan = access.plan === "free" ? 100 : (commission ?? 100);
+    const { data: professional, error: insertError } = await admin
+      .from("professionals")
+      .insert({
+        barbershop_id: barbershopId,
+        name,
+        commission_percentage: commissionForPlan,
+        active: body.active ?? true,
+      })
+      .select()
+      .single();
+
+    if (insertError || !professional) {
+      console.error("[PROFESSIONAL_COMPAT_INSERT]", insertError);
+      return NextResponse.json({ error: "Não foi possível criar o barbeiro.", code: "CREATE_PROFESSIONAL_FAILED" }, { status: 500 });
+    }
+
+    return NextResponse.json({ data: professional }, { status: 201 });
   } catch (error) {
     console.error("[PROFESSIONAL_CREATE_INTERNAL]", error);
     return NextResponse.json({ error: "Erro interno.", code: "INTERNAL_ERROR" }, { status: 500 });
