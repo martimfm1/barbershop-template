@@ -24,6 +24,7 @@ export function useAppointments(
     time: "",
     manualName: "",
     manualPhone: "",
+    manualBirthDate: "",
   });
 
   const [blockFormData, setBlockFormData] = useState<BlockFormData>({
@@ -39,7 +40,7 @@ export function useAppointments(
     if (!barbershopId) return;
     setLoading(true);
     try {
-      const { clientId, serviceId, professionalId, date, time, manualName, manualPhone } = bookingFormData;
+      const { clientId, serviceId, professionalId, date, time, manualName, manualPhone, manualBirthDate } = bookingFormData;
       if (!serviceId || !professionalId || !date || !time) {
         toast.error("Preenche o serviço, o profissional, a data e a hora.");
         return;
@@ -54,10 +55,11 @@ export function useAppointments(
         professional_id: professionalId,
         manual_name: manualName || null,
         manual_phone: manualPhone || null,
+        manual_birth_date: manualBirthDate || null,
       });
       if (error) throw error;
       toast.success("Marcação criada com sucesso.");
-      setBookingFormData({ clientId: "", serviceId: "", professionalId: "", date: "", time: "", manualName: "", manualPhone: "" });
+      setBookingFormData({ clientId: "", serviceId: "", professionalId: "", date: "", time: "", manualName: "", manualPhone: "", manualBirthDate: "" });
       await onRefreshData();
     } catch (error) {
       console.error("[Create Booking Hook Error]:", error);
@@ -182,6 +184,7 @@ export function useAppointments(
     finalizeBooking,
     addCompletedAppointmentClient,
     handleCreateBlock,
+    handleDeleteBlock,
     handleDeleteBlock,
     handleDeleteBooking,
   };
