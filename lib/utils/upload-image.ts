@@ -8,7 +8,15 @@ interface UploadImageOptions {
   quality?: number;
 }
 
+interface UploadImageResult {
+  path: string;
+  publicUrl: string;
+  storagePath: string;
+}
+
 const MAX_SOURCE_SIZE = 10 * 1024 * 1024;
+const MAX_SOURCE_DIMENSION = 8192;
+const MAX_SOURCE_PIXELS = 40_000_000;
 const SUPPORTED_IMAGE_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -17,24 +25,35 @@ const SUPPORTED_IMAGE_TYPES = new Set([
   "image/bmp",
   "image/tiff",
   "image/avif",
-  "image/svg+xml",
 ]);
 
+/**
+ * Validates, decodes and converts a user image to a real WebP before uploading it.
+ * This utility is intentionally limited to image processing and Storage I/O.
+ * Database metadata updates are performed through a protected RPC.
+ */
 export async function processAndUploadImage({
   file,
   bucket,
   path,
   maxWidth = 1200,
   quality = 0.8,
-}: UploadImageOptions): Promise<{ data: any; error: any }> {
+}: UploadImageOptions): Promise<{
+  data: UploadImageResult | null;
+  error: Error | null;
+}> {
   try {
-    if (!file.type.startsWith("image/") || !SUPPORTED_IMAGE_TYPES.has(file.type)) {
+    if (!SUPPORTED_IMAGE_TYPES.has(file.type)) {
       return {
         data: null,
         error: new Error(
-          "Formato de imagem não suportado. Usa JPG, PNG, WebP, GIF, BMP, TIFF, AVIF ou SVG.",
+          "Formato de imagem não suportado. Usa JPG, JPEG, PNG, WebP, GIF, BMP, TIFF ou AVIF.",
         ),
       };
+    }
+
+    if (file.size <= 0) {
+      return { data: null, error: new Error("O ficheiro de imagem está vazio.") };
     }
 
     if (file.size > MAX_SOURCE_SIZE) {
@@ -45,12 +64,17 @@ export async function processAndUploadImage({
     }
 
     const webpBlob = await convertToWebp(file, maxWidth, quality);
-    const supabase = createClient();
+    if (webpBlob.type !== "image/webp") {
+      return {
+        data: null,
+        error: new Error("Não foi possível validar a conversão para WebP."),
+      };
+    }
 
-    // O caminho é sempre normalizado para .webp, independentemente da extensão original.
+    const supabase = createClient();
     const webpPath = path.replace(/\.[^/.]+$/, "") + ".webp";
 
-    const { data, error } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from(bucket)
       .upload(webpPath, webpBlob, {
         contentType: "image/webp",
@@ -58,32 +82,56 @@ export async function processAndUploadImage({
         upsert: true,
       });
 
-    if (error) {
-      console.error(`[Upload Error - ${bucket}]:`, error);
-      return { data: null, error };
+    if (uploadError) {
+      console.error(`[Upload Error - ${bucket}]:`, uploadError);
+      return { data: null, error: new Error("Não foi possível carregar a imagem para o armazenamento.") };
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(webpPath);
+    const publicUrl = publicUrlData.publicUrl;
+
+    if (!publicUrl) {
+      console.error("[Upload Error]: Supabase did not return a public URL", {
+        bucket,
+        path: webpPath,
+      });
+      return { data: null, error: new Error("Não foi possível obter o endereço da imagem.") };
     }
 
     if (bucket === "avatar") {
       const barbershopId = webpPath.split("/")[0];
-      if (barbershopId) {
-        const { data: publicUrl } = supabase.storage
-          .from(bucket)
-          .getPublicUrl(webpPath);
+      if (!barbershopId) {
+        return { data: null, error: new Error("Caminho do avatar inválido.") };
+      }
 
-        const { error: metadataError } = await supabase
-          .from("barbershops")
-          .update({ avatar_url: publicUrl.publicUrl })
-          .eq("id", barbershopId);
+      const { error: metadataError } = await supabase.rpc(
+        "set_barbershop_avatar_url",
+        {
+          p_barbershop_id: barbershopId,
+          p_avatar_url: publicUrl,
+        },
+      );
 
-        if (metadataError) {
-          console.error("[Avatar Metadata Error]:", metadataError);
-          return { data: null, error: metadataError };
-        }
+      if (metadataError) {
+        console.error("[Avatar Metadata Error]:", metadataError);
+        return {
+          data: null,
+          error: new Error(
+            "Não foi possível associar o avatar à barbearia. Verifica as permissões da tua conta.",
+          ),
+        };
       }
     }
 
     return {
-      data: { ...data, path: webpPath },
+      data: {
+        ...uploadData,
+        path: webpPath,
+        publicUrl,
+        storagePath: webpPath,
+      },
       error: null,
     };
   } catch (err) {
@@ -106,19 +154,39 @@ function convertToWebp(
   return new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);
     const img = new Image();
+    let settled = false;
+
+    const fail = (error: Error) => {
+      if (settled) return;
+      settled = true;
+      URL.revokeObjectURL(objectUrl);
+      reject(error);
+    };
 
     img.onload = () => {
       try {
-        let width = img.naturalWidth;
-        let height = img.naturalHeight;
+        const sourceWidth = img.naturalWidth;
+        const sourceHeight = img.naturalHeight;
 
-        if (!width || !height) {
-          reject(new Error("Não foi possível determinar as dimensões da imagem."));
+        if (!sourceWidth || !sourceHeight) {
+          fail(new Error("Não foi possível determinar as dimensões da imagem."));
           return;
         }
 
+        if (
+          sourceWidth > MAX_SOURCE_DIMENSION ||
+          sourceHeight > MAX_SOURCE_DIMENSION ||
+          sourceWidth * sourceHeight > MAX_SOURCE_PIXELS
+        ) {
+          fail(new Error("As dimensões da imagem são demasiado grandes."));
+          return;
+        }
+
+        let width = sourceWidth;
+        let height = sourceHeight;
+
         if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
+          height = Math.max(1, Math.round((height * maxWidth) / width));
           width = maxWidth;
         }
 
@@ -128,7 +196,7 @@ function convertToWebp(
 
         const ctx = canvas.getContext("2d");
         if (!ctx) {
-          reject(new Error("Não foi possível inicializar o processamento da imagem."));
+          fail(new Error("Não foi possível inicializar o processamento da imagem."));
           return;
         }
 
@@ -138,30 +206,30 @@ function convertToWebp(
 
         canvas.toBlob(
           (blob) => {
-            if (!blob) {
-              reject(new Error("Falha ao converter a imagem para WebP."));
+            if (!blob || blob.type !== "image/webp") {
+              fail(new Error("O navegador não conseguiu converter a imagem para WebP."));
               return;
             }
 
+            if (settled) return;
+            settled = true;
+            URL.revokeObjectURL(objectUrl);
             resolve(blob);
           },
           "image/webp",
           Math.min(1, Math.max(0.1, quality)),
         );
       } catch (error) {
-        reject(
+        fail(
           error instanceof Error
             ? error
             : new Error("Falha ao processar a imagem."),
         );
-      } finally {
-        URL.revokeObjectURL(objectUrl);
       }
     };
 
     img.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      reject(
+      fail(
         new Error(
           "Não foi possível ler esta imagem. Escolhe uma imagem válida num formato suportado.",
         ),
