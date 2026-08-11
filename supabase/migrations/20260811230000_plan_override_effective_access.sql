@@ -10,9 +10,9 @@ security definer
 set search_path = public
 as $$
   select case
-    when s.plan_override in ('pro', 'enterprise') then s.plan_override
-    when s.plan in ('pro', 'enterprise') and s.status in ('active', 'trialing') then s.plan
-    else 'free'
+    when s.plan_override in ('pro', 'enterprise') then s.plan_override::text
+    when s.plan::text in ('pro', 'enterprise') and s.status in ('active', 'trialing') then s.plan::text
+    else 'free'::text
   end
   from public.subscriptions s
   where s.user_id = p_user_id
