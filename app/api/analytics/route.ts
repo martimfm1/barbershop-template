@@ -14,24 +14,37 @@ type AppointmentRow = {
   service: { name: string; price: number | string } | null;
   professional: { name: string } | null;
   client_id: string | null;
+  manual_birth_date: string | null;
+  user: { birth_date: string | null } | null;
 };
 type PosRow = { id: string; created_at: string; total: number | string; status: string; location_id: string | null };
 
-function parseDate(value: string | null, fallback: Date) {
-  if (!value) return fallback;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? fallback : date;
-}
+type AgeGroup = { label: string; count: number };
+
+function parseDate(value: string | null, fallback: Date) { if (!value) return fallback; const date = new Date(value); return Number.isNaN(date.getTime()) ? fallback : date; }
 function startOfDay(date: Date) { const result = new Date(date); result.setHours(0, 0, 0, 0); return result; }
 function endOfDay(date: Date) { const result = new Date(date); result.setHours(23, 59, 59, 999); return result; }
 function money(value: number) { return Math.round(value * 100) / 100; }
+function calculateAge(birthDate: string, referenceDate: Date) {
+  const birth = new Date(`${birthDate}T00:00:00`);
+  if (Number.isNaN(birth.getTime()) || birth > referenceDate) return null;
+  let age = referenceDate.getFullYear() - birth.getFullYear();
+  const month = referenceDate.getMonth() - birth.getMonth();
+  if (month < 0 || (month === 0 && referenceDate.getDate() < birth.getDate())) age -= 1;
+  return age >= 0 && age <= 120 ? age : null;
+}
+function ageGroup(age: number): string {
+  if (age < 18) return "Menos de 18";
+  if (age <= 24) return "18–24";
+  if (age <= 34) return "25–34";
+  if (age <= 44) return "35–44";
+  if (age <= 54) return "45–54";
+  if (age <= 64) return "55–64";
+  return "65+";
+}
 
 export async function GET(request: Request) {
   try {
-    // Analytics access is an entitlement, not a separate role permission.
-    // Staff authorization can still be added independently when a dedicated
-    // analytics permission is introduced. Requiring it here caused valid Pro
-    // and Enterprise users without an explicit staff_permissions row to get 403.
     const { admin, barbershopId, plan } = await requireModuleContext("advanced_analytics");
     const url = new URL(request.url);
     const now = new Date();
@@ -42,7 +55,7 @@ export async function GET(request: Request) {
 
     const { data: appointments, error: appointmentsError } = await admin
       .from("appointments")
-      .select("id,date_hour,status,value_products,client_id,service:services(name,price),professional:professionals(name)")
+      .select("id,date_hour,status,value_products,client_id,manual_birth_date,service:services(name,price),professional:professionals(name),user:users!appointments_client_id_fkey(birth_date)")
       .eq("barbershop_id", barbershopId).gte("date_hour", from.toISOString()).lte("date_hour", to.toISOString());
     if (appointmentsError) throw appointmentsError;
 
@@ -54,26 +67,35 @@ export async function GET(request: Request) {
     const serviceStats = new Map<string, { bookings: number; revenue: number }>();
     const professionalStats = new Map<string, { bookings: number; revenue: number }>();
     const clientIds = new Set<string>();
+    const clientAgeGroups = new Map<string, Set<string>>();
 
     for (const row of completed) {
       const revenue = Number(row.service?.price ?? 0) + Number(row.value_products ?? 0);
       const safeRevenue = Number.isFinite(revenue) ? revenue : 0;
       const day = row.date_hour.slice(0, 10);
       revenueByDay.set(day, money((revenueByDay.get(day) ?? 0) + safeRevenue));
-      if (row.service?.name) {
-        const current = serviceStats.get(row.service.name) ?? { bookings: 0, revenue: 0 };
-        current.bookings += 1; current.revenue = money(current.revenue + safeRevenue); serviceStats.set(row.service.name, current);
+      if (row.service?.name) { const current = serviceStats.get(row.service.name) ?? { bookings: 0, revenue: 0 }; current.bookings += 1; current.revenue = money(current.revenue + safeRevenue); serviceStats.set(row.service.name, current); }
+      if (row.professional?.name) { const current = professionalStats.get(row.professional.name) ?? { bookings: 0, revenue: 0 }; current.bookings += 1; current.revenue = money(current.revenue + safeRevenue); professionalStats.set(row.professional.name, current); }
+      if (row.client_id) {
+        clientIds.add(row.client_id);
+        const birthDate = row.user?.birth_date ?? row.manual_birth_date;
+        if (birthDate) {
+          const age = calculateAge(birthDate, new Date(row.date_hour));
+          if (age !== null) {
+            const group = ageGroup(age);
+            const set = clientAgeGroups.get(group) ?? new Set<string>();
+            set.add(row.client_id); clientAgeGroups.set(group, set);
+          }
+        }
       }
-      if (row.professional?.name) {
-        const current = professionalStats.get(row.professional.name) ?? { bookings: 0, revenue: 0 };
-        current.bookings += 1; current.revenue = money(current.revenue + safeRevenue); professionalStats.set(row.professional.name, current);
-      }
-      if (row.client_id) clientIds.add(row.client_id);
     }
 
-    const { count: newClients, error: clientsError } = await admin.from("users").select("id", { count: "exact", head: true }).eq("barbershop_id", barbershopId).gte("created_at", from.toISOString()).lte("created_at", to.toISOString());
+    const orderedAgeLabels = ["Menos de 18", "18–24", "25–34", "35–44", "45–54", "55–64", "65+"];
+    const ageInsights: AgeGroup[] = orderedAgeLabels.map((label) => ({ label, count: clientAgeGroups.get(label)?.size ?? 0 })).filter((item) => item.count > 0);
+
+    const { count: newClients, error: clientsError } = await admin.from("users").select("id", { count: "exact", head: true }).eq("barbershop_id", barbershopId).eq("role", "client").gte("created_at", from.toISOString()).lte("created_at", to.toISOString());
     if (clientsError) throw clientsError;
-    const { count: totalClients, error: totalClientsError } = await admin.from("users").select("id", { count: "exact", head: true }).eq("barbershop_id", barbershopId);
+    const { count: totalClients, error: totalClientsError } = await admin.from("users").select("id", { count: "exact", head: true }).eq("barbershop_id", barbershopId).eq("role", "client");
     if (totalClientsError) throw totalClientsError;
 
     const revenue = money(completed.reduce((sum, row) => sum + Number(row.service?.price ?? 0) + Number(row.value_products ?? 0), 0));
@@ -86,16 +108,11 @@ export async function GET(request: Request) {
     const response: Record<string, unknown> = {
       plan,
       period: { from: from.toISOString(), to: to.toISOString(), previousFrom: previousFrom.toISOString(), previousTo: previousTo.toISOString() },
-      overview: {
-        revenue, previousRevenue,
-        revenueChangePercent: previousRevenue === 0 ? null : money(((revenue - previousRevenue) / previousRevenue) * 100),
-        appointments: rows.length, completedAppointments: completed.length, scheduledAppointments: scheduled.length,
-        cancelledAppointments: cancelled.length, cancellationRate: rows.length === 0 ? 0 : money((cancelled.length / rows.length) * 100),
-        newClients: newClients ?? 0, totalClients: totalClients ?? 0, activeClientsInPeriod: clientIds.size,
-      },
+      overview: { revenue, previousRevenue, revenueChangePercent: previousRevenue === 0 ? null : money(((revenue - previousRevenue) / previousRevenue) * 100), appointments: rows.length, completedAppointments: completed.length, scheduledAppointments: scheduled.length, cancelledAppointments: cancelled.length, cancellationRate: rows.length === 0 ? 0 : money((cancelled.length / rows.length) * 100), newClients: newClients ?? 0, totalClients: totalClients ?? 0, activeClientsInPeriod: clientIds.size },
       revenueByDay: Array.from(revenueByDay.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({ date, value })),
       topServices: Array.from(serviceStats.entries()).map(([name, stats]) => ({ name, count: stats.bookings, revenue: stats.revenue })).sort((a, b) => b.revenue - a.revenue).slice(0, 10),
       professionals: Array.from(professionalStats.entries()).map(([name, stats]) => ({ name, appointments: stats.bookings, revenue: stats.revenue })).sort((a, b) => b.revenue - a.revenue),
+      clientAgeGroups: ageInsights,
     };
 
     if (plan === PLANS.ENTERPRISE) {
@@ -105,21 +122,13 @@ export async function GET(request: Request) {
       const completedPos = posRows.filter((row) => row.status === "completed");
       const posRevenue = money(completedPos.reduce((sum, row) => sum + Number(row.total), 0));
       const locationStats = new Map<string, { transactions: number; revenue: number }>();
-      for (const row of completedPos) {
-        const key = row.location_id ?? "main";
-        const current = locationStats.get(key) ?? { transactions: 0, revenue: 0 };
-        current.transactions += 1; current.revenue = money(current.revenue + Number(row.total)); locationStats.set(key, current);
-      }
-      response.enterprise = {
-        posRevenue, posTransactions: completedPos.length, combinedRevenue: money(revenue + posRevenue),
-        locations: Array.from(locationStats.entries()).map(([locationId, stats]) => ({ locationId, ...stats })).sort((a, b) => b.revenue - a.revenue),
-      };
+      for (const row of completedPos) { const key = row.location_id ?? "main"; const current = locationStats.get(key) ?? { transactions: 0, revenue: 0 }; current.transactions += 1; current.revenue = money(current.revenue + Number(row.total)); locationStats.set(key, current); }
+      response.enterprise = { posRevenue, posTransactions: completedPos.length, combinedRevenue: money(revenue + posRevenue), locations: Array.from(locationStats.entries()).map(([locationId, stats]) => ({ locationId, ...stats })).sort((a, b) => b.revenue - a.revenue) };
     }
 
     return NextResponse.json(response, { headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=120" } });
   } catch (error) {
-    const response = moduleErrorResponse(error);
-    if (response) return response;
+    const response = moduleErrorResponse(error); if (response) return response;
     console.error("Analytics API error", error);
     return NextResponse.json({ error: "Unable to load analytics" }, { status: 500 });
   }
