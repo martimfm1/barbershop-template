@@ -50,9 +50,9 @@ async function getTenant(req: Request) {
     .eq("id", authUser.id)
     .maybeSingle();
 
-  if (error || !user?.barbershop_id || !["admin", "owner", "staff"].includes(user.role ?? "staff")) {
-    return null;
-  }
+  // Messaging is a tenant-level Free feature. Access is based on authenticated
+  // membership in the barbershop, not on a hard-coded legacy role whitelist.
+  if (error || !user?.barbershop_id || user.id !== authUser.id || user.role === "client") return null;
 
   const { data: shop } = await admin
     .from("barbershops")
@@ -66,7 +66,7 @@ async function getTenant(req: Request) {
 
 export async function POST(req: Request) {
   const tenant = await getTenant(req);
-  if (!tenant) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!tenant) return NextResponse.json({ error: "Não autenticado ou sem acesso à barbearia." }, { status: 401 });
 
   let payload: unknown;
   try {
