@@ -12,7 +12,7 @@ export function useAppointments(barbershopId: string | null, onRefreshData: () =
   const [addingClientAppointmentId, setAddingClientAppointmentId] = useState<string | null>(null);
   const [valueProducts, setValueProducts] = useState("");
   const [descriptionProducts, setDescriptionProducts] = useState("");
-  const [bookingFormData, setBookingFormData] = useState({ clientId: "", serviceId: "", professionalId: "", date: "", time: "", manualName: "", manualPhone: "" });
+  const [bookingFormData, setBookingFormData] = useState({ clientId: "", serviceId: "", professionalId: "", date: "", time: "", manualName: "", manualPhone: "", birthDate: "" });
   const [blockFormData, setBlockFormData] = useState<BlockFormData>({ professional_id: "", start_date: "", start_time: "", end_time: "", reason: "" });
 
   const addCompletedAppointmentClient = useCallback(async (appointmentId: string) => {
@@ -34,15 +34,12 @@ export function useAppointments(barbershopId: string | null, onRefreshData: () =
     if (!barbershopId) return;
     setLoading(true);
     try {
-      const { clientId, serviceId, professionalId, date, time, manualName, manualPhone } = bookingFormData;
+      const { clientId, serviceId, professionalId, date, time, manualName, manualPhone, birthDate } = bookingFormData;
       if (!serviceId || !professionalId || !date || !time) { toast.error("Preenche o serviço, o profissional, a data e a hora."); return; }
-      const form = e?.currentTarget as HTMLFormElement | null;
-      const birthInput = form?.elements.namedItem("manual_birth_date");
-      const birthDate = birthInput instanceof HTMLInputElement ? birthInput.value || null : null;
-      const { error } = await appointmentService.create({ barbershop_id: barbershopId, date_hour: combineDatetime(date, time), status: "pending", client_id: clientId || null, service_id: serviceId, professional_id: professionalId, manual_name: manualName || null, manual_phone: manualPhone || null, manual_birth_date: birthDate });
+      const { error } = await appointmentService.create({ barbershop_id: barbershopId, date_hour: combineDatetime(date, time), status: "pending", client_id: clientId || null, service_id: serviceId, professional_id: professionalId, manual_name: manualName || null, manual_phone: manualPhone || null, manual_birth_date: birthDate || null });
       if (error) throw error;
       toast.success("Marcação criada com sucesso.");
-      setBookingFormData({ clientId: "", serviceId: "", professionalId: "", date: "", time: "", manualName: "", manualPhone: "" });
+      setBookingFormData({ clientId: "", serviceId: "", professionalId: "", date: "", time: "", manualName: "", manualPhone: "", birthDate: "" });
       await onRefreshData();
     } catch (error) { console.error("[Create Booking Hook Error]:", error); toast.error(getErrorMessage(error)); }
     finally { setLoading(false); }
