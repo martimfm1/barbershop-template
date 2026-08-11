@@ -11,15 +11,19 @@ alter table public.users
   add constraint users_role_check
   check (role in ('owner', 'admin', 'barber', 'receptionist'));
 
--- Existing users who own a barbershop become owners.
+-- Existing single-user barbershops are migrated to the owner role.
+-- Multi-user shops are left unchanged so ownership is not guessed.
 update public.users u
 set role = 'owner'
 where u.barbershop_id is not null
-  and exists (
-    select 1
-    from public.barbershops b
-    where b.id = u.barbershop_id
-      and b.owner_id = u.id
+  and not exists (
+    select 1 from public.users existing_owner
+    where existing_owner.barbershop_id = u.barbershop_id
+      and existing_owner.role = 'owner'
+  )
+  and 1 = (
+    select count(*) from public.users shop_users
+    where shop_users.barbershop_id = u.barbershop_id
   );
 
 create table if not exists public.barbershop_invite_codes (
