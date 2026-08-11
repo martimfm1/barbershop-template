@@ -4,5 +4,8 @@
       "path": "/api/cron/birthdays",
       "schedule": "5 0 * * *"
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": false
+  }
 }
