@@ -9,7 +9,8 @@ export interface BookingFormData {
   num_phone: string;
   email: string;
   service_id: string;
-  birth_date: string;
+  /** Optional because existing booking state can be created before birth date is collected. */
+  birth_date?: string;
 }
 
 export interface BookingFormProps {
