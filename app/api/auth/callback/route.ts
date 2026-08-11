@@ -2,10 +2,19 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+function getSafeNext(value: string | null): string {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return "/login?status=confirmed";
+  }
+
+  return value;
+}
+
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/reset-password";
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get("code");
+  const next = getSafeNext(requestUrl.searchParams.get("next"));
+  const origin = requestUrl.origin;
 
   if (code) {
     const cookieStore = await cookies();
@@ -20,24 +29,29 @@ export async function GET(request: Request) {
           setAll(cookiesToSet) {
             try {
               cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
+                cookieStore.set(name, value, options),
               );
             } catch {
               // Ignorado no contexto de Server Components / Handlers
             }
           },
         },
-      }
+      },
     );
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      return NextResponse.redirect(new URL(next, origin));
     }
+
+    console.warn("[AUTH_CALLBACK_REJECTED]", {
+      code: error.code,
+      status: error.status,
+    });
   }
 
   return NextResponse.redirect(
-    `${origin}/login?error=Link+inv%C3%A1lido+ou+expirado`
+    new URL("/login?error=Link+inv%C3%A1lido+ou+expirado", origin),
   );
 }
