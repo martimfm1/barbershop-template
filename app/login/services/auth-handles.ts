@@ -2,6 +2,42 @@ import { FormEvent } from "react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 
+/**
+ * Compatibility handler for Supabase confirmation links that still use the
+ * legacy implicit flow and return access/refresh tokens in the URL fragment.
+ * Fragments never reach the server, so this must be handled in the browser.
+ */
+if (typeof window !== "undefined") {
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const accessToken = hash.get("access_token");
+  const refreshToken = hash.get("refresh_token");
+  const authType = hash.get("type");
+
+  if (accessToken && refreshToken && authType === "signup") {
+    void (async () => {
+      try {
+        const supabase = createClient();
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+
+        if (error) {
+          console.error("[AUTH_CONFIRMATION_HASH_REJECTED]", error);
+          window.location.replace("/login?error=Link+inv%C3%A1lido+ou+expirado");
+          return;
+        }
+
+        window.history.replaceState({}, document.title, "/login");
+        window.location.replace("/email-confirmed");
+      } catch (error) {
+        console.error("[AUTH_CONFIRMATION_HASH_ERROR]", error);
+        window.location.replace("/login?error=Link+inv%C3%A1lido+ou+expirado");
+      }
+    })();
+  }
+}
+
 interface LoginParams {
   event: FormEvent<HTMLFormElement>;
   setIsSubmitting: (loading: boolean) => void;
