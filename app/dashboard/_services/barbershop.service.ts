@@ -27,16 +27,8 @@ export async function getBarbershopConfig(barbershopId: string): Promise<Service
       .single();
     if (barberError || !barberData) throw new Error(barberError?.message || "Configurações não encontradas.");
 
-    const { data: shopData } = await supabase
-      .from("shops")
-      .select("popular_service_id")
-      .eq("barbershop_id", barbershopId)
-      .maybeSingle();
-
-    return {
-      data: { ...barberData, popular_service_id: shopData?.popular_service_id || null },
-      error: null,
-    };
+    const { data: shopData } = await supabase.from("shops").select("popular_service_id").eq("barbershop_id", barbershopId).maybeSingle();
+    return { data: { ...barberData, popular_service_id: shopData?.popular_service_id || null }, error: null };
   } catch (error: unknown) {
     console.error("[Service Exception - getBarbershopConfig]:", error);
     return { data: null, error: error instanceof Error ? error : new Error("Erro desconhecido.") };
@@ -51,18 +43,32 @@ export async function updateBarbershopConfig(
   try {
     if (Object.keys(payload).length === 0) throw new Error("Payload vazio.");
 
+    const directoryVisibility = payload.is_public_in_directory;
     const popularServiceId = payload.popular_service_id;
     const barbershopPayload: Record<string, unknown> = { ...payload };
     delete barbershopPayload.popular_service_id;
+    delete barbershopPayload.is_public_in_directory;
+
+    if (directoryVisibility !== undefined) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Sessão inválida.");
+
+      const { error } = await supabase.rpc("set_barbershop_directory_visibility", {
+        p_actor_user_id: user.id,
+        p_barbershop_id: barbershopId,
+        p_visible: directoryVisibility,
+      });
+      if (error) {
+        if (error.message.includes("DIRECTORY_VISIBILITY_PRO_REQUIRED")) {
+          throw new Error("A visibilidade no diretório está disponível no plano Pro.");
+        }
+        throw error;
+      }
+    }
 
     let updatedBarberData: BarbershopConfigPayload | null = null;
     if (Object.keys(barbershopPayload).length > 0) {
-      const { data, error } = await supabase
-        .from("barbershops")
-        .update(barbershopPayload)
-        .eq("id", barbershopId)
-        .select()
-        .single();
+      const { data, error } = await supabase.from("barbershops").update(barbershopPayload).eq("id", barbershopId).select().single();
       if (error) throw error;
       updatedBarberData = data;
     }
@@ -70,29 +76,18 @@ export async function updateBarbershopConfig(
     const shopUpdatePayload: Record<string, unknown> = {};
     if (popularServiceId !== undefined) shopUpdatePayload.popular_service_id = popularServiceId;
     let finalPopularServiceId = popularServiceId;
-
     if (Object.keys(shopUpdatePayload).length > 0) {
-      const { data: updatedShop, error } = await supabase
-        .from("shops")
-        .update(shopUpdatePayload)
-        .eq("barbershop_id", barbershopId)
-        .select("popular_service_id")
-        .maybeSingle();
+      const { data: updatedShop, error } = await supabase.from("shops").update(shopUpdatePayload).eq("barbershop_id", barbershopId).select("popular_service_id").maybeSingle();
       if (error) throw error;
       if (updatedShop) finalPopularServiceId = updatedShop.popular_service_id;
     }
 
-    return {
-      data: { ...(updatedBarberData || {}), popular_service_id: finalPopularServiceId },
-      error: null,
-    };
+    const visibility = directoryVisibility ?? updatedBarberData?.is_public_in_directory;
+    return { data: { ...(updatedBarberData || {}), popular_service_id: finalPopularServiceId, ...(visibility !== undefined ? { is_public_in_directory: visibility } : {}) }, error: null };
   } catch (error: unknown) {
     console.error("[Service Exception - updateBarbershopConfig]:", error);
     return { data: null, error: error instanceof Error ? error : new Error("Erro ao guardar atualizações.") };
   }
 }
 
-export const barbershopService = {
-  getConfig: getBarbershopConfig,
-  updateConfig: updateBarbershopConfig,
-} as const;
+export const barbershopService = { getConfig: getBarbershopConfig, updateConfig: updateBarbershopConfig } as const;
