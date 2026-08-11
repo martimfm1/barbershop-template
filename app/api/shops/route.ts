@@ -3,7 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import type { MarketplaceBarbershopRelation, MarketplaceShopRecord } from "@/types/marketplace/shops";
 import { mapRecordToMarketplaceShopResponse } from "@/lib/marketplace/shop-mappers";
 
-type ShopRelation = MarketplaceBarbershopRelation & { lunch_start?: string | null; lunch_end?: string | null };
+type ShopRelation = MarketplaceBarbershopRelation & {
+  lunch_start?: string | null;
+  lunch_end?: string | null;
+  is_public_in_directory?: boolean | null;
+};
 type ShopRecord = Omit<MarketplaceShopRecord, "barbershops"> & {
   rating?: number | null;
   reviews_count?: number | null;
@@ -61,13 +65,25 @@ export async function GET(request: Request) {
     const latitude = Number(searchParams.get("lat")); const longitude = Number(searchParams.get("lng"));
     const canMeasureDistance = Number.isFinite(latitude) && Number.isFinite(longitude);
     const supabase = await createClient();
-    const { data, error } = await supabase.from("shops").select(`id, barbershop_id, city, price, tags, lat, lng, is_active, rating, reviews_count, barbershops ( name, address, opening_time, closing_time, lunch_start, lunch_end, slug )`).eq("is_active", true);
-    if (error) { console.error("[SHOPS_GET_ERROR]", error); return NextResponse.json({ error: "Failed to fetch shops" }, { status: 500 }); }
+    const { data, error } = await supabase
+      .from("shops")
+      .select(`id, barbershop_id, city, price, tags, lat, lng, is_active, rating, reviews_count, barbershops ( name, address, opening_time, closing_time, lunch_start, lunch_end, slug, is_public_in_directory )`)
+      .eq("is_active", true);
+
+    if (error) {
+      console.error("[SHOPS_GET_ERROR]", error);
+      return NextResponse.json({ error: "Failed to fetch shops" }, { status: 500 });
+    }
+
     const records = ((data as unknown as ShopRecord[]) ?? []).filter((record) => {
-      if (!query) return true;
       const relation = Array.isArray(record.barbershops) ? record.barbershops[0] : record.barbershops;
+
+      // Backwards-compatible default: existing rows without the column value remain visible.
+      if (relation?.is_public_in_directory === false) return false;
+      if (!query) return true;
       return [relation?.name, relation?.address, record.city, ...(record.tags ?? [])].some((value) => value?.toLocaleLowerCase().includes(query));
     });
+
     const barbershopIds = records.map((record) => record.barbershop_id).filter(Boolean);
     const { data: appointments } = barbershopIds.length ? await supabase.from("appointments").select("barbershop_id, date_hour").in("barbershop_id", barbershopIds).gte("date_hour", `${date}T00:00:00`).lte("date_hour", `${date}T23:59:59`) : { data: [] as { barbershop_id: string; date_hour: string }[] };
     const bookedByShop = new Map<string, Set<string>>();
@@ -85,5 +101,8 @@ export async function GET(request: Request) {
     if (filter === "Near Me" && canMeasureDistance) shops.sort((a, b) => a.distanceKm - b.distanceKm);
     if (filter === "Top Rated") shops.sort((a, b) => b.rating - a.rating || b.reviewsCount - a.reviewsCount);
     return NextResponse.json({ data: shops });
-  } catch (error) { console.error("[SHOPS_INTERNAL_ERROR]", error); return NextResponse.json({ error: "Internal server error" }, { status: 500 }); }
+  } catch (error) {
+    console.error("[SHOPS_INTERNAL_ERROR]", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
