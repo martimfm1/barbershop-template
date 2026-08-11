@@ -12,12 +12,34 @@ function cleanTemplate(value: unknown, fallback: string, max: number) {
   return trimmed.slice(0, max) || fallback;
 }
 
+function getAvatarUrl(barbershopId: string) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+  if (!supabaseUrl) return null;
+  return `${supabaseUrl}/storage/v1/object/public/avatar/${barbershopId}/avatar.webp`;
+}
+
 export async function GET() {
   try {
     const { admin, barbershopId } = await requireModuleContext("automated_followups", "marketing");
-    const { data, error } = await admin.from("birthday_email_automations").select("id, enabled, subject, body, created_at, updated_at").eq("barbershop_id", barbershopId).maybeSingle();
+    const [{ data, error }, { data: shop, error: shopError }] = await Promise.all([
+      admin.from("birthday_email_automations").select("id, enabled, subject, body, created_at, updated_at").eq("barbershop_id", barbershopId).maybeSingle(),
+      admin.from("barbershops").select("name").eq("id", barbershopId).maybeSingle(),
+    ]);
+
     if (error) throw error;
-    return NextResponse.json({ automation: data ?? { enabled: false, subject: DEFAULT_SUBJECT, body: DEFAULT_BODY } });
+    if (shopError) throw shopError;
+
+    return NextResponse.json({
+      automation: data ?? { enabled: false, subject: DEFAULT_SUBJECT, body: DEFAULT_BODY },
+      branding: {
+        name: shop?.name?.trim() || "A tua barbearia",
+        avatarUrl: getAvatarUrl(barbershopId),
+      },
+      preview: {
+        nome: "João Silva",
+        barbearia: shop?.name?.trim() || "A tua barbearia",
+      },
+    });
   } catch (error) {
     const response = moduleErrorResponse(error);
     if (response) return response;
