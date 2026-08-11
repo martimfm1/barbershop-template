@@ -26,18 +26,29 @@ export class SubscriptionService {
     return data as SubscriptionRecord | null;
   }
 
-  /** Returns only a paid subscription that currently grants paid access. */
+  /** Returns a subscription that currently grants paid access, including an explicit admin override. */
   static async getActiveForUser(userId: string): Promise<SubscriptionRecord | null> {
     const subscription = await this.getForUser(userId);
     if (!subscription) return null;
-    const effectivePlan = subscription.plan_override ?? subscription.plan;
-    if (effectivePlan === PLANS.FREE) return null;
+
+    if (subscription.plan_override && subscription.plan_override !== PLANS.FREE) {
+      return subscription;
+    }
+
+    if (subscription.plan === PLANS.FREE) return null;
     return (PLAN_ACCESS_STATUSES as readonly string[]).includes(subscription.status)
       ? subscription
       : null;
   }
 
-  /** Resolves the effective plan, allowing an explicit Supabase admin override. */
+  /**
+   * Resolves the effective plan.
+   *
+   * A non-null admin override is authoritative and deliberately bypasses the
+   * Stripe subscription status. This lets support/admins grant a plan directly
+   * from Supabase while keeping the same feature and quota system used by paid
+   * subscriptions. Setting the override back to NULL restores Stripe control.
+   */
   static async getAccessPlan(userId: string): Promise<BillingPlan> {
     const subscription = await this.getForUser(userId);
     if (!subscription) return PLANS.FREE;
@@ -126,6 +137,9 @@ export class SubscriptionService {
   }
 
   static async markCanceled(userId: string): Promise<void> {
+    const subscription = await this.getForUser(userId);
+    if (subscription?.plan_override && subscription.plan_override !== PLANS.FREE) return;
+
     const { error } = await createAdminClient()
       .from("subscriptions")
       .update({ status: "canceled", plan: PLANS.FREE, cancel_at_period_end: false })
@@ -135,6 +149,9 @@ export class SubscriptionService {
   }
 
   static async revokePaidAccess(userId: string, status: SubscriptionRecord["status"]): Promise<void> {
+    const subscription = await this.getForUser(userId);
+    if (subscription?.plan_override && subscription.plan_override !== PLANS.FREE) return;
+
     const { error } = await createAdminClient()
       .from("subscriptions")
       .update({ status, plan: PLANS.FREE, cancel_at_period_end: false })
