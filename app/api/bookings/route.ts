@@ -49,12 +49,11 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
-    
-    // 1. Obter barbershop_id, NOME e ENDEREÇO da barbearia
+
     const { data: shop, error: shopError } = await supabase
       .from("shops")
       .select(`
-        barbershop_id, 
+        barbershop_id,
         is_active,
         barbershops (
           name,
@@ -73,7 +72,6 @@ export async function POST(request: Request) {
     const barbershopName = shopRelation?.name || "Barbearia";
     const barbershopAddress = shopRelation?.address || "Endereço sob consulta";
 
-    // 2. Verificar e obter o NOME do serviço
     const { data: selectedService, error: serviceError } = await supabase
       .from("services")
       .select("id, name")
@@ -89,8 +87,6 @@ export async function POST(request: Request) {
     }
 
     const serviceName = selectedService.name || "Serviço";
-
-    // 3. Verificar conflitos de horário
     const dateHourIso = `${bookingDate}T${bookingTime}:00`;
     const { data: existingAppointment, error: conflictError } = await supabase
       .from("appointments")
@@ -115,7 +111,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // 4. Inserir o agendamento
     const { data: appointment, error: insertError } = await supabase
       .from("appointments")
       .insert({
@@ -138,13 +133,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // 5. Enviar e-mail via Brevo (Non-blocking / Em segundo plano)
     sendBookingConfirmationEmail({
       to: email,
       clientName: name,
       serviceName,
       date: bookingDate,
       time: bookingTime,
+      barbershopId,
       barbershopName,
       barbershopAddress,
     }).catch((err) => {
