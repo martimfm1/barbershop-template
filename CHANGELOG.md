@@ -2,6 +2,17 @@
 
 ## Unreleased — 2026-08-11
 
+### Birthday Automation
+- Adicionada a automação de emails de aniversário para planos Pro e Enterprise.
+- Criada a página `/dashboard/mensagens/birthdays` para ativar/desativar a automação e gerir o template.
+- Adicionadas as variáveis `{{nome}}`, `{{barbearia}}` e `{{booking_url}}`.
+- Adicionada a data de nascimento opcional aos clientes.
+- Cada cliente só pode receber uma mensagem por aniversário através de um registo idempotente.
+- Adicionado worker diário protegido por `CRON_SECRET` e agendado através do Vercel Cron.
+- O envio usa o provider Brevo existente e o nome/avatar da barbearia quando disponíveis.
+- A automação é protegida server-side pelo entitlement `automated_followups`, disponível em Pro e Enterprise.
+- Registados envios bem-sucedidos e falhados em `birthday_email_logs` para auditoria e diagnóstico.
+
 ### Fixed
 - Corrigido o acesso à gestão de profissionais no plano Free.
 - O plano Free pode adicionar o primeiro profissional e fica limitado a 1 profissional.
@@ -32,10 +43,12 @@
 ### Supabase
 - Adicionada a migration `20260811040000_finalize_professional_management_authorization.sql` para consolidar a autorização da Equipa e as quotas Free/Pro/Enterprise.
 - Adicionada a migration `20260811050000_add_barbershop_directory_visibility.sql` com `is_public_in_directory`, por defeito `true` para preservar as barbearias existentes.
+- Adicionada a migration `20260811070000_birthday_email_automation.sql` com datas de nascimento, configurações e histórico idempotente de emails de aniversário.
 
 ### UI/UX
 - Adicionado às Definições um controlo simples de visibilidade no diretório público.
 - A opção indica claramente se a barbearia está visível ou oculta e mantém o link direto da barbearia disponível quando está oculta.
+- Adicionada uma interface dedicada de automação de aniversários com estado, editor de template, variáveis e pré-visualização.
 
 ## v3.0.29 — 2026-08-10
 
@@ -62,34 +75,3 @@
 ### Security
 - UI changes do not replace server-side authorization, tenant isolation or plan entitlement checks.
 - Messaging continues to resolve and validate recipients server-side.
-
-## v3.0.28 — 2026-08-10
-
-### Performance
-- Enabled Next.js package import optimization for frequently used client libraries (`lucide-react`, `@tabler/icons-react` and `date-fns`) to reduce unnecessary client bundle code.
-- Kept Vercel Analytics and Speed Insights enabled globally so production Core Web Vitals and real-user performance data continue to be collected across the SaaS.
-
-### Security
-- Disabled the `X-Powered-By` response header to reduce framework fingerprinting.
-- Added HSTS with subdomain coverage and preload eligibility.
-- Added DNS prefetch control and cross-domain policy hardening headers.
-- Preserved existing anti-clickjacking, MIME-sniffing, referrer and permissions policies.
-
-### Audit
-- Reviewed authentication, tenant scoping, Stripe webhook signature verification, service-role usage and manual email recipient validation.
-- Confirmed the Stripe webhook verifies `stripe-signature` before processing events.
-- Confirmed tenant-scoped APIs validate the authenticated user's `barbershop_id` before accessing protected barbershop data.
-
-### Security follow-up
-- Identified that the repository is currently pinned to Next.js `16.2.6`, while the July 2026 security release requires `16.2.11` or later. The dependency and lockfile upgrade is intentionally left as a separate change because the committed `pnpm-lock.yaml` must be regenerated with pnpm rather than edited manually.
-- Identified `@whiskeysockets/baileys@7.0.0-rc13` as a release-candidate dependency. The currently documented critical message-spoofing advisory is patched in `7.0.0-rc12` and therefore does not target this version, but the project should move to a stable supported release when the WhatsApp integration permits it.
-
-## v3.0.27 — 2026-08-10
-
-### Fixed
-- Added an explicit Supabase-managed billing plan override so support/admin staff can change a user's effective plan without changing Stripe data.
-- Billing plan resolution now checks `subscriptions.plan_override` before Stripe/local plan resolution.
-- Improved the subscription payment dialog for mobile and desktop with constrained viewport sizing, internal scrolling, larger touch targets, visible focus states, accessible loading/error states and clearer payment security messaging.
-
-### Supabase
-- Added `supabase/migrations/20260810130000_add_plan_override.sql`.
