@@ -9,9 +9,11 @@ export class ModuleAuthorizationError extends Error {
   }
 }
 
+// Keep the canonical database permission (`team`) first while accepting
+// historical names created by older dashboard versions.
 const PERMISSION_ALIASES: Record<string, readonly string[]> = {
-  manage_professionals: ["manage_professionals", "team_management", "manage_team"],
-  manage_messages: ["manage_messages", "messages", "send_messages"],
+  manage_professionals: ["team", "manage_professionals", "team_management", "manage_team", "professionals"],
+  manage_messages: ["messages", "manage_messages", "send_messages"],
 };
 
 export async function requireModuleContext(feature: FeatureKey, permission?: string) {
@@ -33,9 +35,9 @@ export async function requireModuleContext(feature: FeatureKey, permission?: str
 
   if (error || !profile?.barbershop_id) throw new ModuleAuthorizationError("FORBIDDEN");
 
-  if (permission && !["admin", "owner"].includes(String(profile.role ?? "").toLowerCase())) {
+  if (permission && !["admin", "owner", "manager"].includes(String(profile.role ?? "").toLowerCase())) {
     const acceptedPermissions = PERMISSION_ALIASES[permission] ?? [permission];
-    const { data: grant } = await admin
+    const { data: grant, error: permissionError } = await admin
       .from("staff_permissions")
       .select("allowed")
       .eq("barbershop_id", profile.barbershop_id)
@@ -45,7 +47,10 @@ export async function requireModuleContext(feature: FeatureKey, permission?: str
       .limit(1)
       .maybeSingle();
 
-    if (!grant?.allowed) throw new ModuleAuthorizationError("PERMISSION_DENIED");
+    if (permissionError || !grant?.allowed) {
+      if (permissionError) console.error("[MODULE_PERMISSION_LOOKUP]", permissionError);
+      throw new ModuleAuthorizationError("PERMISSION_DENIED");
+    }
   }
 
   return {
