@@ -15,21 +15,9 @@ function cleanTemplate(value: unknown, fallback: string, max: number) {
 export async function GET() {
   try {
     const { admin, barbershopId } = await requireModuleContext("automated_followups", "marketing");
-    const { data, error } = await admin
-      .from("birthday_email_automations")
-      .select("id, enabled, subject, body, created_at, updated_at")
-      .eq("barbershop_id", barbershopId)
-      .maybeSingle();
-
+    const { data, error } = await admin.from("birthday_email_automations").select("id, enabled, subject, body, created_at, updated_at").eq("barbershop_id", barbershopId).maybeSingle();
     if (error) throw error;
-
-    return NextResponse.json({
-      automation: data ?? {
-        enabled: false,
-        subject: DEFAULT_SUBJECT,
-        body: DEFAULT_BODY,
-      },
-    });
+    return NextResponse.json({ automation: data ?? { enabled: false, subject: DEFAULT_SUBJECT, body: DEFAULT_BODY } });
   } catch (error) {
     const response = moduleErrorResponse(error);
     if (response) return response;
@@ -42,21 +30,17 @@ export async function PATCH(request: Request) {
   try {
     const { admin, barbershopId } = await requireModuleContext("automated_followups", "marketing");
     const body = await request.json().catch(() => null) as Record<string, unknown> | null;
-
     const subject = cleanTemplate(body?.subject, DEFAULT_SUBJECT, 180);
     const message = cleanTemplate(body?.body, DEFAULT_BODY, 8000);
     const enabled = body?.enabled === true;
 
-    const { data, error } = await admin
-      .from("birthday_email_automations")
-      .upsert({
-        barbershop_id: barbershopId,
-        enabled,
-        subject,
-        body: message,
-      }, { onConflict: "barbershop_id" })
-      .select("id, enabled, subject, body, created_at, updated_at")
-      .single();
+    const { data, error } = await admin.from("birthday_email_automations").upsert({
+      barbershop_id: barbershopId,
+      enabled,
+      subject,
+      body: message,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "barbershop_id" }).select("id, enabled, subject, body, created_at, updated_at").single();
 
     if (error) throw error;
     return NextResponse.json({ automation: data });
