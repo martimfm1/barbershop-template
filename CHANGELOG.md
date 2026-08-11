@@ -13,11 +13,18 @@
 - Removida a dependência de uma lista rígida de roles no carregamento dos clientes usado pelo módulo Mensagens.
 - Mantida a distinção entre autenticação, autorização e limite de plano.
 
+### Email
+- Adicionado o avatar/logótipo da própria barbearia aos emails de confirmação de agendamento.
+- O avatar é carregado directamente do bucket público `avatar/{barbershopId}/avatar.webp`, usando a mesma imagem configurada nas definições da barbearia.
+- O nome da barbearia continua a ser apresentado junto ao avatar.
+- Emails sem `barbershopId` mantêm fallback sem avatar, preservando compatibilidade com integrações antigas.
+
 ### Security
 - A gestão de profissionais continua a validar a identidade do utilizador e o `barbershop_id` no servidor.
 - A criação de profissionais continua protegida por quota server-side e pelo RPC PostgreSQL com `pg_advisory_xact_lock`.
 - O acesso a clientes e envio de mensagens continua limitado ao tenant autenticado.
 - O plano Free não pode alterar a comissão do seu profissional através do frontend/API.
+- Dados apresentados no HTML dos emails são escapados antes de serem inseridos no template.
 
 ### Supabase
 - Adicionada a migration `20260811040000_finalize_professional_management_authorization.sql` para consolidar a autorização da Equipa e as quotas Free/Pro/Enterprise.
@@ -78,44 +85,3 @@
 
 ### Supabase
 - Added `supabase/migrations/20260810130000_add_plan_override.sql`.
-- Set `subscriptions.plan_override` to `free`, `pro`, `enterprise`, or `NULL` to control whether a user has a manual plan override.
-- `NULL` keeps the normal Stripe-based plan resolution.
-
-### Notes
-- Manual paid-plan overrides are intended for controlled support/admin use. When setting a paid override for a user without an active Stripe subscription, keep the subscription status as an access-granting status such as `active` if downstream billing components require an active subscription.
-
-## v3.0.26 — 2026-08-10
-
-### Fixed
-- Made the resolved Stripe plan the single source of truth for billing UI consumers.
-- Fixed stale local subscription plans causing Enterprise accounts to appear as Pro or Free in billing-related UI.
-- Billing consumers now receive the effective plan returned by `/api/stripe/subscription` while preserving the subscription's Stripe identifiers and billing status.
-
-### Changed
-- Removed the personalized greeting from the dashboard top bar; the top bar now focuses on navigation and the live clock.
-- Preserved the dashboard hero greeting and date presentation in the main dashboard content.
-
-## v3.0.25 — 2026-08-10
-
-### Fixed
-- Fixed paid-plan authorization using the current Stripe subscription price as the source of truth when the persisted subscription row is stale.
-- Fixed cases where an Enterprise subscription could be persisted or resolved as Pro and consequently receive incorrect feature entitlements.
-- Fixed access checks continuing to grant paid access from stale local state when Stripe reports a subscription status that does not grant paid access.
-- Added reconciliation of the local plan, Stripe price ID, subscription status and billing period when the current Stripe subscription is available.
-- Pending Stripe invoices in `draft`/`open`/transitional states older than 10 minutes are no longer returned by the billing invoices API.
-- Pending invoices are hidden from the application without deleting or modifying them in Stripe.
-
-### Documentation
-- Reworked the README to accurately document the current SaaS architecture, dashboard, plans, billing, security model, integrations, development workflow and roadmap.
-
-## v3.0.24 — 2026-08-10
-
-### Legal
-- Updated the Terms and Conditions to reflect the current SaaS model, free/pro/enterprise plans, plan-based quotas and feature access, Stripe billing, public bookings, marketplace responsibilities, and account lifecycle.
-- Updated the Privacy Policy to reflect current account, booking, customer, analytics, audit, billing, email, push-notification and operational data processing.
-- Documented Brevo as the email delivery provider and clarified that the barbershop name may be used as the sender name.
-- Clarified that manual SMS sending is currently disabled.
-- Clarified that push notifications are currently used for operational alerts to barbers, including new bookings.
-- Added clearer controller/processor responsibilities between Silentra and barbershops for customer data.
-- Expanded information about retention, international transfers, data-subject rights and third-party service providers.
-- Updated the last-review date of both legal documents to 10 August 2026.
