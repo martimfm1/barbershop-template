@@ -2,6 +2,23 @@
 
 ## Unreleased — 2026-08-11
 
+### Upload de imagens
+- Corrigido o fluxo de upload de imagens da barbearia para produzir sempre um ficheiro WebP real antes do Storage.
+- Removido o suporte a SVG neste fluxo, evitando formatos vectoriais desnecessários.
+- Mantido o limite máximo de 10 MB para o ficheiro original.
+- Adicionadas validações de dimensões máximas e número máximo de píxeis para reduzir risco de imagens abusivas.
+- Validado o `Content-Type` final como `image/webp` antes do upload.
+- Mantido `upsert: true` e cache de longa duração para os assets versionados pelo caminho.
+- O utilitário de processamento deixou de actualizar directamente a tabela `barbershops`.
+- A associação do avatar à barbearia passou para uma função PostgreSQL protegida por autenticação, tenant e role de administrador.
+- O URL guardado só pode apontar para `avatar/{barbershopId}/avatar.webp` no Storage público do Supabase.
+
+### Security
+- Adicionada a migration `20260811100000_avatar_upload_hardening.sql`.
+- O RPC `set_barbershop_avatar_url` exige uma sessão autenticada e um administrador pertencente à barbearia alvo.
+- O RPC rejeita URLs de avatar fora do caminho esperado do tenant.
+- Nenhum `service_role` é exposto ou utilizado no browser.
+
 ### Birthday Automation
 - Adicionada a automação de emails de aniversário para planos Pro e Enterprise.
 - Criada a página `/dashboard/mensagens/birthdays` para ativar/desativar a automação e gerir o template.
@@ -77,13 +94,3 @@
 - Improved placeholder guidance for `{{nome}}` and `{{barbearia}}`.
 - Kept manual SMS explicitly disabled while preserving the future integration surface.
 - Added stronger client-side input limits and safer validation feedback while keeping server-side validation authoritative.
-
-### Accessibility
-- Increased interactive control targets to at least 44px in dashboard contexts.
-- Added clearer labels and descriptions to edited fields and message controls.
-- Added reduced-motion support for users who request it.
-- Improved mobile dialog and form navigation.
-
-### Security
-- UI changes do not replace server-side authorization, tenant isolation or plan entitlement checks.
-- Messaging continues to resolve and validate recipients server-side.
