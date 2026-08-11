@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Mail, ArrowLeft, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { getClientAuthCallbackUrl } from "@/lib/auth/email-confirmation";
 import { StarfieldBackground } from "@/components/ui/starfield";
 import { Button } from "@/components/ui/button";
 import { SiteNavbar } from "@/components/site-navbar";
@@ -21,27 +22,44 @@ export default function ConfirmEmailPage() {
   const handleResendEmail = async () => {
     if (!email) {
       setResendStatus("error");
-      setStatusMessage("Endereço de e-mail não encontrado.");
+      setStatusMessage("Não foi possível identificar o endereço de e-mail.");
       return;
     }
 
     setIsResending(true);
     setResendStatus("idle");
+    setStatusMessage("");
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email,
-    });
+    try {
+      const supabase = createClient();
+      const emailRedirectTo = getClientAuthCallbackUrl();
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: {
+          emailRedirectTo,
+        },
+      });
 
-    setIsResending(false);
+      if (error) {
+        console.error("[CONFIRM_EMAIL_RESEND_ERROR]", error);
+        setResendStatus("error");
+        setStatusMessage(
+          "Não foi possível reenviar o email de confirmação. Tenta novamente dentro de alguns minutos.",
+        );
+        return;
+      }
 
-    if (error) {
-      setResendStatus("error");
-      setStatusMessage(error.message || "Falha ao reenviar e-mail.");
-    } else {
       setResendStatus("success");
-      setStatusMessage("Novo e-mail de verificação enviado!");
+      setStatusMessage("Novo email de confirmação enviado. Verifica também a pasta de spam.");
+    } catch (error) {
+      console.error("[CONFIRM_EMAIL_RESEND_ERROR]", error);
+      setResendStatus("error");
+      setStatusMessage(
+        "Não foi possível reenviar o email de confirmação. Tenta novamente mais tarde.",
+      );
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -58,7 +76,6 @@ export default function ConfirmEmailPage() {
               transition={{ duration: 0.2 }}
               className="w-full max-w-[460px] border border-white/10 bg-zinc-950/85 p-6 sm:p-8 shadow-2xl shadow-black/80 backdrop-blur-xl rounded-2xl text-center"
             >
-              {/* Ícone Header */}
               <div className="mx-auto mb-6 flex size-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 shadow-inner text-zinc-100">
                 <Mail className="size-7" />
               </div>
@@ -68,25 +85,26 @@ export default function ConfirmEmailPage() {
               </h1>
 
               <p className="mt-3 text-sm text-zinc-400 leading-relaxed">
-                Enviámos um e-mail com o link de confirmação para:
+                Enviámos um email com o link de confirmação para:
               </p>
 
               {email && (
-                <div className="mt-2 inline-block rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-zinc-200">
+                <div className="mt-2 inline-block max-w-full break-all rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-zinc-200">
                   {email}
                 </div>
               )}
 
               <p className="mt-4 text-xs text-zinc-500 leading-relaxed">
-                Clica no link dentro do e-mail para ativares a tua conta e acederes à plataforma.
+                Abre o email e clica no link de confirmação para ativares a tua conta.
+                Se não o encontrares, verifica também a pasta de spam.
               </p>
 
-              {/* Status de Reenvio */}
               {resendStatus === "success" && (
                 <motion.div
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="mt-4 flex items-center justify-center gap-2 text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-xl"
+                  role="status"
                 >
                   <CheckCircle2 className="size-4 shrink-0" />
                   <span>{statusMessage}</span>
@@ -98,25 +116,25 @@ export default function ConfirmEmailPage() {
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="mt-4 flex items-center justify-center gap-2 text-xs font-medium text-red-400 bg-red-500/10 border border-red-500/20 p-2.5 rounded-xl"
+                  role="alert"
                 >
                   <AlertCircle className="size-4 shrink-0" />
                   <span>{statusMessage}</span>
                 </motion.div>
               )}
 
-              {/* Botões de Ação */}
               <div className="mt-8 flex flex-col gap-3">
                 <Button
                   onClick={handleResendEmail}
-                  disabled={isResending}
+                  disabled={isResending || !email}
                   variant="outline"
                   className="h-11 w-full rounded-full border-white/10 bg-white/5 text-xs font-semibold text-zinc-200 hover:bg-white/10 hover:text-white transition-all"
                 >
                   {isResending ? (
-                    <RefreshCw className="size-4 animate-spin text-zinc-300" />
+                    <RefreshCw className="size-4 animate-spin text-zinc-300" aria-hidden="true" />
                   ) : (
                     <span className="flex items-center justify-center gap-2">
-                      <RefreshCw className="size-3.5" /> Reenviar e-mail de verificação
+                      <RefreshCw className="size-3.5" aria-hidden="true" /> Reenviar email de confirmação
                     </span>
                   )}
                 </Button>
@@ -127,7 +145,7 @@ export default function ConfirmEmailPage() {
                     className="h-11 w-full rounded-full bg-zinc-50 text-xs font-bold text-zinc-950 hover:bg-white transition-all shadow-md"
                   >
                     <span className="flex items-center justify-center gap-2">
-                      <ArrowLeft className="size-4" /> Voltar ao Login
+                      <ArrowLeft className="size-4" aria-hidden="true" /> Voltar ao início de sessão
                     </span>
                   </Button>
                 </Link>
