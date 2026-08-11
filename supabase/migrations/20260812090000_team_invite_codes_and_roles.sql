@@ -7,15 +7,19 @@ alter table public.users
 alter table public.users
   drop constraint if exists users_role_check;
 
+-- Preserve legacy application roles used by existing customer/staff records.
+-- New team roles are additive; legacy roles can be migrated separately without
+-- blocking this migration or accidentally changing customer accounts.
 alter table public.users
   add constraint users_role_check
-  check (role in ('owner', 'admin', 'manager', 'barber', 'receptionist'));
+  check (role in ('owner', 'admin', 'manager', 'barber', 'receptionist', 'staff', 'client'));
 
 -- Existing single-user barbershops are migrated to the owner role.
 -- Multi-user shops are left unchanged so ownership is not guessed.
 update public.users u
 set role = 'owner'
 where u.barbershop_id is not null
+  and u.role not in ('client')
   and not exists (
     select 1 from public.users existing_owner
     where existing_owner.barbershop_id = u.barbershop_id
@@ -24,6 +28,7 @@ where u.barbershop_id is not null
   and 1 = (
     select count(*) from public.users shop_users
     where shop_users.barbershop_id = u.barbershop_id
+      and shop_users.role <> 'client'
   );
 
 create table if not exists public.barbershop_invite_codes (
