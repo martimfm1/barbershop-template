@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased — 2026-08-11
+
+### Fixed
+- Corrigido o acesso à gestão de profissionais no plano Free.
+- O plano Free pode adicionar o primeiro profissional e fica limitado a 1 profissional.
+- A comissão do profissional no plano Free é aplicada server-side como 100% fixa.
+- Corrigida a distinção entre permissões de equipa e quotas definidas pelo plano.
+- Corrigido o fluxo de criação de profissionais para não depender de uma lista rígida de roles legados.
+- Adicionados aliases compatíveis para permissões de gestão de equipa.
+- Corrigido o acesso ao módulo Mensagens para membros autenticados da barbearia.
+- Removida a dependência de uma lista rígida de roles no carregamento dos clientes usado pelo módulo Mensagens.
+- Mantida a distinção entre autenticação, autorização e limite de plano.
+
+### Security
+- A gestão de profissionais continua a validar a identidade do utilizador e o `barbershop_id` no servidor.
+- A criação de profissionais continua protegida por quota server-side e pelo RPC PostgreSQL com `pg_advisory_xact_lock`.
+- O acesso a clientes e envio de mensagens continua limitado ao tenant autenticado.
+- O plano Free não pode alterar a comissão do seu profissional através do frontend/API.
+
+### Supabase
+- Adicionada a migration `20260811040000_finalize_professional_management_authorization.sql` para consolidar a autorização da Equipa e as quotas Free/Pro/Enterprise.
+
 ## v3.0.29 — 2026-08-10
 
 ### UI/UX
@@ -95,5 +117,5 @@
 - Clarified that manual SMS sending is currently disabled.
 - Clarified that push notifications are currently used for operational alerts to barbers, including new bookings.
 - Added clearer controller/processor responsibilities between Silentra and barbershops for customer data.
-- Expanded information about retention, international transfers, security, data-subject rights and third-party service providers.
+- Expanded information about retention, international transfers, data-subject rights and third-party service providers.
 - Updated the last-review date of both legal documents to 10 August 2026.
