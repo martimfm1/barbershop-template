@@ -9,11 +9,17 @@ export class ModuleAuthorizationError extends Error {
   }
 }
 
-// Keep the canonical database permission (`team`) first while accepting
-// historical names created by older dashboard versions.
 const PERMISSION_ALIASES: Record<string, readonly string[]> = {
   manage_professionals: ["team", "manage_professionals", "team_management", "manage_team", "professionals"],
   manage_messages: ["messages", "manage_messages", "send_messages"],
+};
+
+// Roles provide safe defaults for common dashboard access. Explicit staff_permissions
+// can still grant additional permissions without weakening tenant isolation.
+const ROLE_DEFAULT_PERMISSIONS: Record<string, readonly string[]> = {
+  manager: ["appointments", "clients", "services", "analytics", "messages", "manage_professionals", "team"],
+  barber: ["appointments", "clients", "services"],
+  receptionist: ["appointments", "clients", "messages"],
 };
 
 export async function requireModuleContext(feature: FeatureKey, permission?: string) {
@@ -35,28 +41,35 @@ export async function requireModuleContext(feature: FeatureKey, permission?: str
 
   if (error || !profile?.barbershop_id) throw new ModuleAuthorizationError("FORBIDDEN");
 
-  if (permission && !["admin", "owner", "manager"].includes(String(profile.role ?? "").toLowerCase())) {
-    const acceptedPermissions = PERMISSION_ALIASES[permission] ?? [permission];
-    const { data: grant, error: permissionError } = await admin
-      .from("staff_permissions")
-      .select("allowed")
-      .eq("barbershop_id", profile.barbershop_id)
-      .eq("user_id", access.userId)
-      .in("permission", acceptedPermissions)
-      .eq("allowed", true)
-      .limit(1)
-      .maybeSingle();
+  const role = String(profile.role ?? "barber").toLowerCase();
 
-    if (permissionError || !grant?.allowed) {
-      if (permissionError) console.error("[MODULE_PERMISSION_LOOKUP]", permissionError);
-      throw new ModuleAuthorizationError("PERMISSION_DENIED");
+  if (permission && !["admin", "owner"].includes(role)) {
+    const rolePermissions = ROLE_DEFAULT_PERMISSIONS[role] ?? [];
+    const acceptedPermissions = PERMISSION_ALIASES[permission] ?? [permission];
+    const roleAllows = acceptedPermissions.some((candidate) => rolePermissions.includes(candidate));
+
+    if (!roleAllows) {
+      const { data: grant, error: permissionError } = await admin
+        .from("staff_permissions")
+        .select("allowed")
+        .eq("barbershop_id", profile.barbershop_id)
+        .eq("user_id", access.userId)
+        .in("permission", acceptedPermissions)
+        .eq("allowed", true)
+        .limit(1)
+        .maybeSingle();
+
+      if (permissionError || !grant?.allowed) {
+        if (permissionError) console.error("[MODULE_PERMISSION_LOOKUP]", permissionError);
+        throw new ModuleAuthorizationError("PERMISSION_DENIED");
+      }
     }
   }
 
   return {
     userId: access.userId,
     barbershopId: profile.barbershop_id as string,
-    role: profile.role ?? "staff",
+    role: profile.role ?? "barber",
     plan: access.plan,
     admin,
   };
