@@ -2,6 +2,15 @@
 
 ## Unreleased — 2026-08-11
 
+### Marcações, clientes e analytics
+- Adicionado campo opcional de data de nascimento ao criar uma marcação.
+- A data de nascimento de clientes existentes é reutilizada automaticamente ao selecionar o cliente.
+- Para marcações manuais, a data fica guardada até o barbeiro decidir adicionar o cliente ao CRM.
+- Ao concluir um serviço, é apresentada uma ação para adicionar o cliente à lista de clientes sem criar duplicados.
+- Ao adicionar um cliente a partir de uma marcação concluída, a data de nascimento é transferida para o perfil CRM.
+- Adicionada análise demográfica por faixa etária na página de Analytics, baseada em clientes únicos com data de nascimento conhecida e serviços concluídos no período.
+- Mantida a proteção por barbearia e o acesso aos Analytics através do sistema de permissões/planos existente.
+
 ### Autenticação e confirmação de email
 - Corrigido o fluxo de registo para usar o cliente público do Supabase Auth em vez da `service_role` para criar contas que necessitam de confirmação por email.
 - Centralizado o URL de callback de confirmação em `lib/auth/email-confirmation.ts`.
@@ -29,3 +38,6 @@
 - O RPC `set_barbershop_avatar_url` exige uma sessão autenticada e um administrador pertencente à barbearia alvo.
 - O RPC rejeita URLs de avatar fora do caminho esperado do tenant.
 - Nenhum `service_role` é exposto ou utilizado no browser.
+
+### Changelog
+- Adicionada uma página dedicada para erros de confirmação de email em `/email-confirmation-error`.
