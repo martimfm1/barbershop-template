@@ -3,15 +3,16 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-// import { Spinner } from "@/components/ui/spinner";
 
 interface BarbershopContextType {
   barbershopId: string | null;
+  barbershopAvatarUrl: string | null;
   loading: boolean;
 }
 
 const BarbershopContext = createContext<BarbershopContextType>({
   barbershopId: null,
+  barbershopAvatarUrl: null,
   loading: true,
 });
 
@@ -25,6 +26,7 @@ const getCookie = (name: string): string | null => {
 
 export function BarbershopProvider({ children }: { children: React.ReactNode }) {
   const [barbershopId, setBarbershopId] = useState<string | null>(null);
+  const [barbershopAvatarUrl, setBarbershopAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -34,33 +36,52 @@ export function BarbershopProvider({ children }: { children: React.ReactNode }) 
     async function loadBarbershopData() {
       try {
         const cookieId = getCookie("barbershop_id");
-        if (cookieId) {
-          setBarbershopId(cookieId);
-          setLoading(false);
-          return;
+        let resolvedBarbershopId = cookieId;
+
+        if (!resolvedBarbershopId) {
+          const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+          if (authError || !user) {
+            console.error("Nenhuma sessão ativa encontrada no browser.");
+            router.push("/login");
+            return;
+          }
+
+          const { data: profile, error: profileError } = await supabase
+            .from("users")
+            .select("barbershop_id")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          if (profileError || !profile?.barbershop_id) {
+            console.warn("Utilizador sem barbershop_id registado.");
+            router.push("/onboarding");
+            return;
+          }
+
+          resolvedBarbershopId = profile.barbershop_id;
+          setBarbershopId(resolvedBarbershopId);
+        } else {
+          setBarbershopId(resolvedBarbershopId);
         }
 
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (resolvedBarbershopId) {
+          const { data: barbershop } = await supabase
+            .from("barbershops")
+            .select("avatar_url")
+            .eq("id", resolvedBarbershopId)
+            .maybeSingle();
 
-        if (authError || !user) {
-          console.error("Nenhuma sessão ativa encontrada no browser.");
-          router.push("/login");
-          return;
+          if (barbershop?.avatar_url) {
+            setBarbershopAvatarUrl(barbershop.avatar_url);
+          } else {
+            const { data: publicUrl } = supabase.storage
+              .from("avatars")
+              .getPublicUrl(`avatar/${resolvedBarbershopId}/avatar.webp`);
+
+            setBarbershopAvatarUrl(publicUrl.publicUrl || null);
+          }
         }
-
-        const { data: profile, error: profileError } = await supabase
-          .from("users")
-          .select("barbershop_id")
-          .eq("id", user.id)
-          .maybeSingle();
-
-        if (profileError || !profile?.barbershop_id) {
-          console.warn("Utilizador sem barbershop_id registado.");
-          router.push("/onboarding");
-          return;
-        }
-
-        setBarbershopId(profile.barbershop_id);
       } catch (error) {
         console.error("Erro ao carregar o layout do dashboard:", error);
         router.push("/login");
@@ -72,17 +93,8 @@ export function BarbershopProvider({ children }: { children: React.ReactNode }) 
     loadBarbershopData();
   }, [router]);
 
-//   if (loading) {
-//     return (
-//       <div className="h-screen w-screen flex flex-col items-center justify-center bg-zinc-950 text-white gap-3">
-//         <Spinner className="size-6 text-blue-500" />
-//         <p className="text-xs text-zinc-400 animate-pulse">A carregar o painel...</p>
-//       </div>
-//     );
-//   }
-
   return (
-    <BarbershopContext.Provider value={{ barbershopId, loading }}>
+    <BarbershopContext.Provider value={{ barbershopId, barbershopAvatarUrl, loading }}>
       {children}
     </BarbershopContext.Provider>
   );
