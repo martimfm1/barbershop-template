@@ -8,7 +8,6 @@ interface UploadImageOptions {
   quality?: number;
 }
 
-
 export async function processAndUploadImage({
   file,
   bucket,
@@ -18,7 +17,6 @@ export async function processAndUploadImage({
 }: UploadImageOptions): Promise<{ data: any; error: any }> {
   try {
     const webpBlob = await convertToWebp(file, maxWidth, quality);
-
     const supabase = createClient();
 
     const { data, error } = await supabase.storage
@@ -31,6 +29,24 @@ export async function processAndUploadImage({
     if (error) {
       console.error(`[Upload Error - ${bucket}]:`, error);
       return { data: null, error };
+    }
+
+    // O email e outros serviços server-side precisam de uma referência persistente
+    // para a imagem. O avatar da barbearia vive no bucket `avatar`.
+    if (bucket === "avatar") {
+      const barbershopId = path.split("/")[0];
+      if (barbershopId) {
+        const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(path);
+        const { error: metadataError } = await supabase
+          .from("barbershops")
+          .update({ avatar_url: publicUrl.publicUrl })
+          .eq("id", barbershopId);
+
+        if (metadataError) {
+          console.error("[Avatar Metadata Error]:", metadataError);
+          return { data: null, error: metadataError };
+        }
+      }
     }
 
     return { data, error: null };
@@ -69,14 +85,11 @@ function convertToWebp(file: File, maxWidth: number, quality: number): Promise<B
 
         canvas.toBlob(
           (blob) => {
-            if (blob) {
-              resolve(blob);
-            } else {
-              reject(new Error("Falha ao converter imagem para WebP."));
-            }
+            if (blob) resolve(blob);
+            else reject(new Error("Falha ao converter imagem para WebP."));
           },
           "image/webp",
-          quality
+          quality,
         );
       };
 
