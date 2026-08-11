@@ -8,7 +8,8 @@ export type FreeFeatureKey =
 export type ProFeatureKey =
   | "advanced_crm" | "advanced_analytics" | "automated_reminders"
   | "automated_followups" | "marketing_campaigns" | "customer_segments"
-  | "loyalty" | "advanced_reports" | "advanced_notifications";
+  | "loyalty" | "advanced_reports" | "advanced_notifications"
+  | "directory_visibility";
 
 export type EnterpriseFeatureKey =
   | "multi_location" | "global_dashboard" | "advanced_permissions"
@@ -26,7 +27,7 @@ const FREE_FEATURES: readonly (FreeFeatureKey | ProFeatureKey | EnterpriseFeatur
 const PRO_FEATURES: readonly (FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey)[] = [
   ...FREE_FEATURES, "advanced_crm", "advanced_analytics", "automated_reminders",
   "automated_followups", "marketing_campaigns", "customer_segments", "loyalty",
-  "advanced_reports", "advanced_notifications",
+  "advanced_reports", "advanced_notifications", "directory_visibility",
 ];
 
 const ENTERPRISE_FEATURES: readonly (FreeFeatureKey | ProFeatureKey | EnterpriseFeatureKey)[] = [
@@ -46,7 +47,6 @@ const LEGACY_FEATURE_ALIASES: Record<LegacyFeatureKey, FreeFeatureKey | ProFeatu
 };
 
 export const UNLIMITED = Infinity;
-
 export interface PlanLimits { barbers: number; locations: number; }
 export type PlanLimitKey = keyof PlanLimits;
 
@@ -82,13 +82,11 @@ export const FEATURE_LABELS: Record<FreeFeatureKey | ProFeatureKey | EnterpriseF
   services: "Serviços ilimitados", online_booking: "Reservas online", booking_page: "Página de reservas",
   qr_booking: "Reservas por QR code", basic_dashboard: "Dashboard básico", basic_revenue: "Receita básica",
   basic_client_history: "Histórico do cliente", basic_notifications: "Notificações essenciais",
-  team_management: "Gestão de equipa", messaging: "Mensagens por email",
-  advanced_crm: "CRM avançado", advanced_analytics: "Analytics avançado",
-  automated_reminders: "Lembretes automáticos", automated_followups: "Follow-ups automáticos",
-  marketing_campaigns: "Campanhas de marketing", customer_segments: "Segmentos de clientes",
-  loyalty: "Programa de fidelização", advanced_reports: "Relatórios avançados",
-  advanced_notifications: "Notificações avançadas", multi_location: "Multi-localização",
-  global_dashboard: "Dashboard global", advanced_permissions: "Permissões avançadas",
-  commissions: "Comissões", inventory: "Gestão de stock", pos: "Ponto de venda (POS)",
-  enterprise_reports: "Relatórios empresariais",
+  team_management: "Gestão de equipa", messaging: "Mensagens por email", directory_visibility: "Visibilidade no diretório",
+  advanced_crm: "CRM avançado", advanced_analytics: "Analytics avançado", automated_reminders: "Lembretes automáticos",
+  automated_followups: "Follow-ups automáticos", marketing_campaigns: "Campanhas de marketing",
+  customer_segments: "Segmentos de clientes", loyalty: "Programa de fidelização", advanced_reports: "Relatórios avançados",
+  advanced_notifications: "Notificações avançadas", multi_location: "Multi-localização", global_dashboard: "Dashboard global",
+  advanced_permissions: "Permissões avançadas", commissions: "Comissões", inventory: "Gestão de stock",
+  pos: "Ponto de venda (POS)", enterprise_reports: "Relatórios empresariais",
 };
