@@ -2,6 +2,16 @@
 
 ## Unreleased — 2026-08-11
 
+### Autenticação e confirmação de email
+- Corrigido o fluxo de registo para usar o cliente público do Supabase Auth em vez da `service_role` para criar contas que necessitam de confirmação por email.
+- Centralizado o URL de callback de confirmação em `lib/auth/email-confirmation.ts`.
+- O callback usa `NEXT_PUBLIC_SITE_URL` quando configurado e valida o destino antes de redirecionar.
+- O email de confirmação passa a regressar para `/login?status=confirmed` depois de uma confirmação bem-sucedida.
+- O reenvio de confirmação usa o mesmo URL de callback do registo, evitando fluxos diferentes entre o primeiro email e os reenvios.
+- Melhorado o tratamento de erros no reenvio sem expor detalhes internos do Supabase ao utilizador.
+- Adicionado aviso para verificar a pasta de spam quando o email não é encontrado.
+- Mantida a proteção contra redirecionamentos externos no callback.
+
 ### Upload de imagens
 - Corrigido o fluxo de upload de imagens da barbearia para produzir sempre um ficheiro WebP real antes do Storage.
 - Removido o suporte a SVG neste fluxo, evitando formatos vectoriais desnecessários.
