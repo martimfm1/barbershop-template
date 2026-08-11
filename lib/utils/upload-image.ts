@@ -8,6 +8,18 @@ interface UploadImageOptions {
   quality?: number;
 }
 
+const MAX_SOURCE_SIZE = 10 * 1024 * 1024;
+const SUPPORTED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/bmp",
+  "image/tiff",
+  "image/avif",
+  "image/svg+xml",
+]);
+
 export async function processAndUploadImage({
   file,
   bucket,
@@ -16,13 +28,33 @@ export async function processAndUploadImage({
   quality = 0.8,
 }: UploadImageOptions): Promise<{ data: any; error: any }> {
   try {
+    if (!file.type.startsWith("image/") || !SUPPORTED_IMAGE_TYPES.has(file.type)) {
+      return {
+        data: null,
+        error: new Error(
+          "Formato de imagem não suportado. Usa JPG, PNG, WebP, GIF, BMP, TIFF, AVIF ou SVG.",
+        ),
+      };
+    }
+
+    if (file.size > MAX_SOURCE_SIZE) {
+      return {
+        data: null,
+        error: new Error("A imagem é demasiado grande. O limite é 10 MB."),
+      };
+    }
+
     const webpBlob = await convertToWebp(file, maxWidth, quality);
     const supabase = createClient();
 
+    // O caminho é sempre normalizado para .webp, independentemente da extensão original.
+    const webpPath = path.replace(/\.[^/.]+$/, "") + ".webp";
+
     const { data, error } = await supabase.storage
       .from(bucket)
-      .upload(path, webpBlob, {
+      .upload(webpPath, webpBlob, {
         contentType: "image/webp",
+        cacheControl: "31536000",
         upsert: true,
       });
 
@@ -31,12 +63,13 @@ export async function processAndUploadImage({
       return { data: null, error };
     }
 
-    // O email e outros serviços server-side precisam de uma referência persistente
-    // para a imagem. O avatar da barbearia vive no bucket `avatar`.
     if (bucket === "avatar") {
-      const barbershopId = path.split("/")[0];
+      const barbershopId = webpPath.split("/")[0];
       if (barbershopId) {
-        const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(path);
+        const { data: publicUrl } = supabase.storage
+          .from(bucket)
+          .getPublicUrl(webpPath);
+
         const { error: metadataError } = await supabase
           .from("barbershops")
           .update({ avatar_url: publicUrl.publicUrl })
@@ -49,22 +82,40 @@ export async function processAndUploadImage({
       }
     }
 
-    return { data, error: null };
+    return {
+      data: { ...data, path: webpPath },
+      error: null,
+    };
   } catch (err) {
     console.error("[Process Image Error]:", err);
-    return { data: null, error: err };
+    return {
+      data: null,
+      error:
+        err instanceof Error
+          ? err
+          : new Error("Não foi possível processar a imagem."),
+    };
   }
 }
 
-function convertToWebp(file: File, maxWidth: number, quality: number): Promise<Blob> {
+function convertToWebp(
+  file: File,
+  maxWidth: number,
+  quality: number,
+): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
 
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
+    img.onload = () => {
+      try {
+        let width = img.naturalWidth;
+        let height = img.naturalHeight;
+
+        if (!width || !height) {
+          reject(new Error("Não foi possível determinar as dimensões da imagem."));
+          return;
+        }
 
         if (width > maxWidth) {
           height = Math.round((height * maxWidth) / width);
@@ -77,27 +128,46 @@ function convertToWebp(file: File, maxWidth: number, quality: number): Promise<B
 
         const ctx = canvas.getContext("2d");
         if (!ctx) {
-          reject(new Error("Não foi possível inicializar o contexto 2D do Canvas."));
+          reject(new Error("Não foi possível inicializar o processamento da imagem."));
           return;
         }
 
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
         ctx.drawImage(img, 0, 0, width, height);
 
         canvas.toBlob(
           (blob) => {
-            if (blob) resolve(blob);
-            else reject(new Error("Falha ao converter imagem para WebP."));
+            if (!blob) {
+              reject(new Error("Falha ao converter a imagem para WebP."));
+              return;
+            }
+
+            resolve(blob);
           },
           "image/webp",
-          quality,
+          Math.min(1, Math.max(0.1, quality)),
         );
-      };
-
-      img.onerror = () => reject(new Error("Erro ao carregar a imagem de origem."));
-      img.src = event.target?.result as string;
+      } catch (error) {
+        reject(
+          error instanceof Error
+            ? error
+            : new Error("Falha ao processar a imagem."),
+        );
+      } finally {
+        URL.revokeObjectURL(objectUrl);
+      }
     };
 
-    reader.onerror = () => reject(new Error("Erro ao ler o ficheiro selecionado."));
-    reader.readAsDataURL(file);
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(
+        new Error(
+          "Não foi possível ler esta imagem. Escolhe uma imagem válida num formato suportado.",
+        ),
+      );
+    };
+
+    img.src = objectUrl;
   });
 }
