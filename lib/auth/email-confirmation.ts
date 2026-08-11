@@ -1,5 +1,3 @@
-const DEFAULT_CONFIRMATION_NEXT = "/login?status=confirmed";
-
 function getBaseUrl(request?: Request): string {
   const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (configuredUrl) return configuredUrl.replace(/\/$/, "");
@@ -14,23 +12,19 @@ function getBaseUrl(request?: Request): string {
   throw new Error("Não foi possível determinar o URL público da aplicação.");
 }
 
-export function getAuthCallbackUrl(
-  request?: Request,
-  next = DEFAULT_CONFIRMATION_NEXT,
-): string {
-  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : DEFAULT_CONFIRMATION_NEXT;
-  const url = new URL("/api/auth/callback", getBaseUrl(request));
-  url.searchParams.set("next", safeNext);
-  return url.toString();
+/**
+ * URL único e estável usado pelo Supabase Auth para confirmação de email.
+ * O destino final é decidido pelo callback server-side, evitando parâmetros
+ * `next` aninhados e dupla codificação no link enviado por email.
+ */
+export function getAuthCallbackUrl(request?: Request): string {
+  return new URL("/api/auth/callback", getBaseUrl(request)).toString();
 }
 
-export function getClientAuthCallbackUrl(next = DEFAULT_CONFIRMATION_NEXT): string {
+export function getClientAuthCallbackUrl(): string {
   if (typeof window === "undefined") {
     throw new Error("getClientAuthCallbackUrl só pode ser usado no browser.");
   }
 
-  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : DEFAULT_CONFIRMATION_NEXT;
-  const url = new URL("/api/auth/callback", window.location.origin);
-  url.searchParams.set("next", safeNext);
-  return url.toString();
+  return new URL("/api/auth/callback", window.location.origin).toString();
 }
