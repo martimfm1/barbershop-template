@@ -4,7 +4,7 @@ export interface BookingEmailPayload {
   serviceName: string;
   date: string;
   time: string;
-  barbershopId: string;
+  barbershopId?: string;
   barbershopName: string;
   barbershopAddress: string;
 }
@@ -22,7 +22,7 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function getBarbershopAvatarUrl(barbershopId: string): string | null {
+function getBarbershopAvatarUrl(barbershopId?: string): string | null {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
   if (!supabaseUrl || !barbershopId) return null;
   return `${supabaseUrl}/storage/v1/object/public/avatar/${encodeURIComponent(barbershopId)}/avatar.webp`;
@@ -104,25 +104,25 @@ export async function sendBookingConfirmationEmail(payload: BookingEmailPayload)
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Confirmação de Agendamento</title>
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color:#0c0c0e; color:#f4f4f5; margin:0; padding:24px 12px; }
-          .card { max-width:500px; margin:0 auto; background-color:#141417; border:1px solid #27272a; border-radius:8px; padding:32px 24px; }
+          body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background-color:#0c0c0e;color:#f4f4f5;margin:0;padding:24px 12px; }
+          .card { max-width:500px;margin:0 auto;background-color:#141417;border:1px solid #27272a;border-radius:8px;padding:32px 24px; }
           .brand { margin-bottom:24px; }
-          .brand-title { font-size:14px; color:#ffffff; font-weight:600; margin-top:10px; }
-          .header { font-size:20px; font-weight:600; color:#ffffff; margin-bottom:12px; }
-          .divider { height:1px; background-color:#27272a; margin:20px 0; border:0; }
-          .details-table { width:100%; border-collapse:collapse; margin-bottom:16px; }
-          .details-table td { padding:10px 0; border-bottom:1px solid #1f1f23; font-size:14px; }
+          .brand-title { font-size:14px;color:#ffffff;font-weight:600;margin-top:10px; }
+          .header { font-size:20px;font-weight:600;color:#ffffff;margin-bottom:12px; }
+          .divider { height:1px;background-color:#27272a;margin:20px 0;border:0; }
+          .details-table { width:100%;border-collapse:collapse;margin-bottom:16px; }
+          .details-table td { padding:10px 0;border-bottom:1px solid #1f1f23;font-size:14px; }
           .details-table tr:last-child td { border-bottom:0; }
-          .label { color:#8e8e93; font-weight:400; width:28%; vertical-align:top; }
-          .value { color:#ffffff; font-weight:600; text-align:right; vertical-align:top; }
+          .label { color:#8e8e93;font-weight:400;width:28%;vertical-align:top; }
+          .value { color:#ffffff;font-weight:600;text-align:right;vertical-align:top; }
           .actions-container { margin-top:20px; }
-          .btn { display:block; text-decoration:none; padding:12px 16px; border-radius:6px; font-weight:500; font-size:13px; line-height:1.4; text-align:center; box-sizing:border-box; }
-          .btn-primary { background-color:#ffffff; color:#09090b !important; border:1px solid #ffffff; margin-bottom:10px; }
-          .btn-secondary { background-color:transparent; color:#ffffff !important; border:1px solid #3f3f46; margin-bottom:16px; }
-          .nav-grid { display:table; width:100%; table-layout:fixed; border-spacing:6px 0; margin-top:6px; }
+          .btn { display:block;text-decoration:none;padding:12px 16px;border-radius:6px;font-weight:500;font-size:13px;line-height:1.4;text-align:center;box-sizing:border-box; }
+          .btn-primary { background-color:#ffffff;color:#09090b !important;border:1px solid #ffffff;margin-bottom:10px; }
+          .btn-secondary { background-color:transparent;color:#ffffff !important;border:1px solid #3f3f46;margin-bottom:16px; }
+          .nav-grid { display:table;width:100%;table-layout:fixed;border-spacing:6px 0;margin-top:6px; }
           .nav-cell { display:table-cell; }
-          .btn-nav { background-color:#1c1c20; color:#a1a1aa !important; border:1px solid #27272a; padding:10px; font-size:12px; }
-          .footer { font-size:12px; color:#66666e; text-align:center; margin-top:28px; line-height:1.5; }
+          .btn-nav { background-color:#1c1c20;color:#a1a1aa !important;border:1px solid #27272a;padding:10px;font-size:12px; }
+          .footer { font-size:12px;color:#66666e;text-align:center;margin-top:28px;line-height:1.5; }
         </style>
       </head>
       <body>
@@ -132,9 +132,7 @@ export async function sendBookingConfirmationEmail(payload: BookingEmailPayload)
             <div class="brand-title">${safeBarbershopName}</div>
           </div>
           <div class="header">Agendamento Confirmado</div>
-          <p style="font-size:14px;color:#a1a1aa;margin:0 0 20px 0;line-height:1.5;">
-            Estimado(a) <strong>${safeClientName}</strong>, confirmamos que a sua marcação foi registada com sucesso.
-          </p>
+          <p style="font-size:14px;color:#a1a1aa;margin:0 0 20px 0;line-height:1.5;">Estimado(a) <strong>${safeClientName}</strong>, confirmamos que a sua marcação foi registada com sucesso.</p>
           <table class="details-table" role="presentation">
             <tr><td class="label">Serviço</td><td class="value">${safeServiceName}</td></tr>
             <tr><td class="label">Data</td><td class="value">${escapeHtml(date)}</td></tr>
@@ -145,10 +143,7 @@ export async function sendBookingConfirmationEmail(payload: BookingEmailPayload)
           <div class="actions-container">
             <a href="${googleCalUrl}" target="_blank" class="btn btn-primary">Adicionar ao Google Calendar</a>
             <a href="${appleCalDataUrl}" download="agendamento.ics" class="btn btn-secondary">Adicionar ao Apple Calendar</a>
-            <div class="nav-grid">
-              <div class="nav-cell"><a href="${googleMapsUrl}" target="_blank" class="btn btn-nav">Google Maps</a></div>
-              <div class="nav-cell"><a href="${appleMapsUrl}" target="_blank" class="btn btn-nav">Apple Maps</a></div>
-            </div>
+            <div class="nav-grid"><div class="nav-cell"><a href="${googleMapsUrl}" target="_blank" class="btn btn-nav">Google Maps</a></div><div class="nav-cell"><a href="${appleMapsUrl}" target="_blank" class="btn btn-nav">Apple Maps</a></div></div>
           </div>
           <div class="footer">Caso necessite de alterar ou cancelar a sua marcação, solicitamos que entre em contacto direto com o estabelecimento.</div>
         </div>
