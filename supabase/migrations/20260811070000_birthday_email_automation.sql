@@ -34,21 +34,12 @@ create table if not exists public.birthday_email_logs (
   unique (barbershop_id, client_id, birthday_date)
 );
 
-create index if not exists idx_birthday_automations_enabled
-  on public.birthday_email_automations (enabled, barbershop_id);
-
-create index if not exists idx_birthday_logs_date
-  on public.birthday_email_logs (birthday_date, status);
+create index if not exists idx_birthday_automations_enabled on public.birthday_email_automations (enabled, barbershop_id);
+create index if not exists idx_birthday_logs_date on public.birthday_email_logs (birthday_date, status);
 
 alter table public.birthday_email_automations enable row level security;
 alter table public.birthday_email_logs enable row level security;
 
--- The application accesses these tables through authenticated server-side routes
--- and the service role for the daily worker. No direct client-table access is granted.
+-- These tables are only accessed through authenticated server-side routes and the service role worker.
 revoke all on public.birthday_email_automations from anon, authenticated;
 revoke all on public.birthday_email_logs from anon, authenticated;
-
-drop trigger if exists birthday_email_automations_updated_at on public.birthday_email_automations;
-create trigger birthday_email_automations_updated_at
-before update on public.birthday_email_automations
-for each row execute function public.set_updated_at();
