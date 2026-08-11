@@ -29,8 +29,9 @@ const SUPPORTED_IMAGE_TYPES = new Set([
 
 /**
  * Validates, decodes and converts a user image to a real WebP before uploading it.
- * This utility is intentionally limited to image processing and Storage I/O.
- * Database metadata updates are performed through a protected RPC.
+ * This utility is intentionally limited to image validation, processing and
+ * Supabase Storage I/O. Database metadata updates belong to the application
+ * service/API layer.
  */
 export async function processAndUploadImage({
   file,
@@ -63,8 +64,10 @@ export async function processAndUploadImage({
       };
     }
 
+    await validateImageSignature(file);
+
     const webpBlob = await convertToWebp(file, maxWidth, quality);
-    if (webpBlob.type !== "image/webp") {
+    if (webpBlob.type !== "image/webp" || webpBlob.size === 0) {
       return {
         data: null,
         error: new Error("Não foi possível validar a conversão para WebP."),
@@ -84,7 +87,12 @@ export async function processAndUploadImage({
 
     if (uploadError) {
       console.error(`[Upload Error - ${bucket}]:`, uploadError);
-      return { data: null, error: new Error("Não foi possível carregar a imagem para o armazenamento.") };
+      return {
+        data: null,
+        error: new Error(
+          "Não foi possível carregar a imagem para o armazenamento.",
+        ),
+      };
     }
 
     const { data: publicUrlData } = supabase.storage
@@ -97,32 +105,10 @@ export async function processAndUploadImage({
         bucket,
         path: webpPath,
       });
-      return { data: null, error: new Error("Não foi possível obter o endereço da imagem.") };
-    }
-
-    if (bucket === "avatar") {
-      const barbershopId = webpPath.split("/")[0];
-      if (!barbershopId) {
-        return { data: null, error: new Error("Caminho do avatar inválido.") };
-      }
-
-      const { error: metadataError } = await supabase.rpc(
-        "set_barbershop_avatar_url",
-        {
-          p_barbershop_id: barbershopId,
-          p_avatar_url: publicUrl,
-        },
-      );
-
-      if (metadataError) {
-        console.error("[Avatar Metadata Error]:", metadataError);
-        return {
-          data: null,
-          error: new Error(
-            "Não foi possível associar o avatar à barbearia. Verifica as permissões da tua conta.",
-          ),
-        };
-      }
+      return {
+        data: null,
+        error: new Error("Não foi possível obter o endereço da imagem."),
+      };
     }
 
     return {
@@ -143,6 +129,46 @@ export async function processAndUploadImage({
           ? err
           : new Error("Não foi possível processar a imagem."),
     };
+  }
+}
+
+async function validateImageSignature(file: File): Promise<void> {
+  const bytes = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+
+  const startsWith = (...values: number[]) =>
+    values.every((value, index) => bytes[index] === value);
+
+  const isJpeg = startsWith(0xff, 0xd8, 0xff);
+  const isPng = startsWith(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a);
+  const isWebp =
+    startsWith(0x52, 0x49, 0x46, 0x46) &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50;
+  const isGif =
+    startsWith(0x47, 0x49, 0x46, 0x38) &&
+    (bytes[4] === 0x37 || bytes[4] === 0x39) &&
+    bytes[5] === 0x61;
+  const isBmp = startsWith(0x42, 0x4d);
+  const isTiff =
+    startsWith(0x49, 0x49, 0x2a, 0x00) ||
+    startsWith(0x4d, 0x4d, 0x00, 0x2a);
+  const isAvif =
+    bytes.length >= 12 &&
+    bytes[4] === 0x66 &&
+    bytes[5] === 0x74 &&
+    bytes[6] === 0x79 &&
+    bytes[7] === 0x70 &&
+    bytes[8] === 0x61 &&
+    bytes[9] === 0x76 &&
+    bytes[10] === 0x69 &&
+    bytes[11] === 0x66;
+
+  if (!(isJpeg || isPng || isWebp || isGif || isBmp || isTiff || isAvif)) {
+    throw new Error(
+      "O conteúdo do ficheiro não corresponde a uma imagem suportada.",
+    );
   }
 }
 
@@ -206,7 +232,7 @@ function convertToWebp(
 
         canvas.toBlob(
           (blob) => {
-            if (!blob || blob.type !== "image/webp") {
+            if (!blob || blob.type !== "image/webp" || blob.size === 0) {
               fail(new Error("O navegador não conseguiu converter a imagem para WebP."));
               return;
             }
@@ -231,7 +257,7 @@ function convertToWebp(
     img.onerror = () => {
       fail(
         new Error(
-          "Não foi possível ler esta imagem. Escolhe uma imagem válida num formato suportado.",
+          "Não foi possível ler esta imagem. O teu navegador pode não suportar este formato.",
         ),
       );
     };
