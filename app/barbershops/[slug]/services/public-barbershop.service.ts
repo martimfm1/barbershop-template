@@ -71,10 +71,14 @@ export const publicBarbershopService = {
       if (shop.barbershop_id) {
         const { data: bData } = await supabase
           .from("barbershops")
-          .select("name, address, opening_time, closing_time, phone")
+          .select("name, address, opening_time, closing_time, phone, is_public_in_directory")
           .eq("id", shop.barbershop_id)
           .maybeSingle();
         barberShopData = bData;
+      }
+
+      if (barberShopData?.is_public_in_directory === false) {
+        return { data: null, error: { message: "Barbearia não encontrada." } };
       }
 
       let servicesQuery = supabase
@@ -82,22 +86,16 @@ export const publicBarbershopService = {
         .select("id, name, price, duration, popular");
 
       if (shop.barbershop_id) {
-        servicesQuery = servicesQuery.or(
-          `barbershop_id.eq.${shop.barbershop_id}`,
-        );
+        servicesQuery = servicesQuery.or(`barbershop_id.eq.${shop.barbershop_id}`);
       } else {
         servicesQuery = servicesQuery.eq("barbershop_id", shop.id);
       }
 
       const { data: servicesRaw } = await servicesQuery;
 
-      const servicesFormatted: ServiceItem[] = (
-        (servicesRaw as RawService[]) ?? []
-      ).map((srv) => ({
+      const servicesFormatted: ServiceItem[] = ((servicesRaw as RawService[]) ?? []).map((srv) => ({
         ...srv,
-        popular: shop.popular_service_id
-          ? srv.id === shop.popular_service_id
-          : Boolean(srv.popular),
+        popular: shop.popular_service_id ? srv.id === shop.popular_service_id : Boolean(srv.popular),
       }));
 
       const { data: reviews } = await supabase
@@ -107,17 +105,9 @@ export const publicBarbershopService = {
         .order("created_at", { ascending: false });
 
       const totalReviews = reviews?.length ?? 0;
-      const ratingAvg =
-        totalReviews > 0
-          ? Number(
-              (
-                (reviews ?? []).reduce(
-                  (acc: number, r: any) => acc + r.rating,
-                  0,
-                ) / totalReviews
-              ).toFixed(1),
-            )
-          : 0;
+      const ratingAvg = totalReviews > 0
+        ? Number(((reviews ?? []).reduce((acc: number, r: any) => acc + r.rating, 0) / totalReviews).toFixed(1))
+        : 0;
 
       const formattedShop: BarbershopPublicDetails = {
         ...shop,
@@ -128,10 +118,8 @@ export const publicBarbershopService = {
         address: shop.address || barberShopData?.address || "",
         phone: shop.phone || barberShopData?.phone || "",
         popular_service_id: shop.popular_service_id || null,
-        opening_time:
-          shop.opening_time || barberShopData?.opening_time || "09:00",
-        closing_time:
-          shop.closing_time || barberShopData?.closing_time || "19:00",
+        opening_time: shop.opening_time || barberShopData?.opening_time || "09:00",
+        closing_time: shop.closing_time || barberShopData?.closing_time || "19:00",
         lunch_start: shop.lunch_start || null,
         lunch_end: shop.lunch_end || null,
         off_days: shop.off_days || [],
