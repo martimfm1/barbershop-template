@@ -7,11 +7,23 @@ const supabase = createClient();
 
 export const appointmentService = {
   async getAll(barbershopId: string) {
-    const { data, error } = await listRecords<Appointment>(supabase, "appointments", { barbershop_id: barbershopId }, { select: "*, users (name_complete, num_phone, email, style_notes), services (name, price), professionals (name)", orderBy: { column: "date_hour", ascending: false } });
+    const { data, error } = await listRecords<Appointment>(supabase, "appointments", { barbershop_id: barbershopId }, { select: "*, users (name_complete, num_phone, email, birth_date, style_notes), services (name, price), professionals (name)", orderBy: { column: "date_hour", ascending: false } });
     return { data: (data ?? []) as Appointment[], error };
   },
-  async create(payload: { barbershop_id: string; date_hour: string; status: Appointment["status"]; client_id: string | null; service_id: string; professional_id: string; manual_name: string | null; manual_phone: string | null }) {
-    const variants = [payload, { barbershop_id: payload.barbershop_id, date: payload.date_hour, status: payload.status, service_id: payload.service_id, barber_id: payload.professional_id, client_name: payload.manual_name ?? "", client_phone: payload.manual_phone ?? "" }] as const;
+  async create(payload: { barbershop_id: string; date_hour: string; status: Appointment["status"]; client_id: string | null; service_id: string; professional_id: string; manual_name: string | null; manual_phone: string | null; manual_birth_date: string | null }) {
+    const variants = [
+      payload,
+      {
+        barbershop_id: payload.barbershop_id,
+        date: payload.date_hour,
+        status: payload.status,
+        service_id: payload.service_id,
+        barber_id: payload.professional_id,
+        client_name: payload.manual_name ?? "",
+        client_phone: payload.manual_phone ?? "",
+        manual_birth_date: payload.manual_birth_date,
+      },
+    ] as const;
     let lastError: Error | null = null;
     for (const variant of variants) { const result = await insertRecord<Appointment>(supabase, "appointments", variant as Partial<Appointment>); if (!result.error) return result; lastError = result.error; }
     return { data: null, error: lastError };
@@ -31,7 +43,7 @@ export const appointmentService = {
   async addClientFromCompletedAppointment(barbershopId: string, appointmentId: string) {
     const { data: appointment, error: appointmentError } = await supabase
       .from("appointments")
-      .select("id, status, barbershop_id, client_id, manual_name, manual_phone")
+      .select("id, status, barbershop_id, client_id, manual_name, manual_phone, manual_birth_date")
       .eq("id", appointmentId)
       .eq("barbershop_id", barbershopId)
       .maybeSingle();
@@ -59,7 +71,12 @@ export const appointmentService = {
 
     const { data: created, error: createError } = await supabase
       .from("users")
-      .insert({ barbershop_id: barbershopId, name_complete: appointment.manual_name.trim(), num_phone: appointment.manual_phone?.trim() || "" })
+      .insert({
+        barbershop_id: barbershopId,
+        name_complete: appointment.manual_name.trim(),
+        num_phone: appointment.manual_phone?.trim() || "",
+        birth_date: appointment.manual_birth_date ?? null,
+      })
       .select("id, name_complete, num_phone, email, birth_date, style_notes")
       .single();
 
