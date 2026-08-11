@@ -59,6 +59,7 @@ export function DashboardSidebar() {
           fill
           sizes={mobile ? "32px" : "36px"}
           className="object-cover"
+          unoptimized
         />
       ) : (
         <BarberIcon className={cn(mobile ? "size-4" : "size-5")} aria-hidden="true" />
