@@ -66,24 +66,28 @@ export async function updateBarbershopConfig(
       }
     }
 
-    let updatedBarberData: BarbershopConfigPayload | null = null;
     if (Object.keys(barbershopPayload).length > 0) {
-      const { data, error } = await supabase.from("barbershops").update(barbershopPayload).eq("id", barbershopId).select().single();
+      const { error } = await supabase
+        .from("barbershops")
+        .update(barbershopPayload)
+        .eq("id", barbershopId);
       if (error) throw error;
-      updatedBarberData = data;
     }
 
     const shopUpdatePayload: Record<string, unknown> = {};
     if (popularServiceId !== undefined) shopUpdatePayload.popular_service_id = popularServiceId;
-    let finalPopularServiceId = popularServiceId;
+
     if (Object.keys(shopUpdatePayload).length > 0) {
-      const { data: updatedShop, error } = await supabase.from("shops").update(shopUpdatePayload).eq("barbershop_id", barbershopId).select("popular_service_id").maybeSingle();
+      const { error } = await supabase
+        .from("shops")
+        .update(shopUpdatePayload)
+        .eq("barbershop_id", barbershopId);
       if (error) throw error;
-      if (updatedShop) finalPopularServiceId = updatedShop.popular_service_id;
     }
 
-    const visibility = directoryVisibility ?? updatedBarberData?.is_public_in_directory;
-    return { data: { ...(updatedBarberData || {}), popular_service_id: finalPopularServiceId, ...(visibility !== undefined ? { is_public_in_directory: visibility } : {}) }, error: null };
+    // Recarrega a configuração completa para respeitar o contrato de BarbershopConfigPayload.
+    // Isto evita devolver um objeto parcial quando a atualização só altera um campo opcional.
+    return getBarbershopConfig(barbershopId);
   } catch (error: unknown) {
     console.error("[Service Exception - updateBarbershopConfig]:", error);
     return { data: null, error: error instanceof Error ? error : new Error("Erro ao guardar atualizações.") };
