@@ -10,8 +10,8 @@ export interface BarbershopConfigPayload {
   allow_online_bookings?: boolean;
   auto_reminders?: boolean;
   popular_service_id?: string | null;
-  lunch_start?: string | null;
-  lunch_end?: string | null;
+  lunch_start?: string;
+  lunch_end?: string;
   is_public_in_directory?: boolean;
 }
 
@@ -28,7 +28,23 @@ export async function getBarbershopConfig(barbershopId: string): Promise<Service
     if (barberError || !barberData) throw new Error(barberError?.message || "Configurações não encontradas.");
 
     const { data: shopData } = await supabase.from("shops").select("popular_service_id").eq("barbershop_id", barbershopId).maybeSingle();
-    return { data: { ...barberData, popular_service_id: shopData?.popular_service_id || null }, error: null };
+    return {
+      data: {
+        ...barberData,
+        phone: barberData.phone ?? undefined,
+        address: barberData.address ?? undefined,
+        opening_time: barberData.opening_time ?? undefined,
+        closing_time: barberData.closing_time ?? undefined,
+        lunch_start: barberData.lunch_start ?? undefined,
+        lunch_end: barberData.lunch_end ?? undefined,
+        closed_days: barberData.closed_days ?? undefined,
+        allow_online_bookings: barberData.allow_online_bookings ?? undefined,
+        auto_reminders: barberData.auto_reminders ?? undefined,
+        is_public_in_directory: barberData.is_public_in_directory ?? undefined,
+        popular_service_id: shopData?.popular_service_id || null,
+      },
+      error: null,
+    };
   } catch (error: unknown) {
     console.error("[Service Exception - getBarbershopConfig]:", error);
     return { data: null, error: error instanceof Error ? error : new Error("Erro desconhecido.") };
@@ -85,8 +101,6 @@ export async function updateBarbershopConfig(
       if (error) throw error;
     }
 
-    // Recarrega a configuração completa para respeitar o contrato de BarbershopConfigPayload.
-    // Isto evita devolver um objeto parcial quando a atualização só altera um campo opcional.
     return getBarbershopConfig(barbershopId);
   } catch (error: unknown) {
     console.error("[Service Exception - updateBarbershopConfig]:", error);
