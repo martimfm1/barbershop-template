@@ -1,45 +1,23 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, ArrowUpRight, Bell, CalendarCheck2, Camera, Check, Clock3, CreditCard, ImageIcon, LogOut, MapPin, Search, Save, Settings, ShieldCheck, Store, UserCircle2 } from "lucide-react";
+import { toast } from "sonner";
 import { useBarbershop } from "@/context/BarbershopContext";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { processAndUploadImage } from "@/lib/utils/upload-image";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Spinner } from "@/components/ui/spinner";
 import { barbershopService } from "@/app/dashboard/_services/barbershop.service";
 import { authService } from "@/app/dashboard/_services/auth.service";
-import {
-  Settings,
-  ArrowLeft,
-  Store,
-  Clock,
-  CalendarOff,
-  Globe,
-  Save,
-  LogOut,
-  ImageIcon,
-  UserCircle2,
-  UtensilsCrossed,
-  Camera,
-  Upload,
-  CreditCard,
-  ArrowUpRight,
-  LockKeyhole,
-  Crown,
-} from "lucide-react";
+import { SettingsLocationPanel } from "@/components/dashboard/settings-location-panel";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
 
 interface BarbershopConfig {
   name: string;
@@ -55,715 +33,113 @@ interface BarbershopConfig {
   is_public_in_directory: boolean;
 }
 
-const DAYS_OF_WEEK = [
-  { eng: "Monday", pt: "Segunda" },
-  { eng: "Tuesday", pt: "Terça" },
-  { eng: "Wednesday", pt: "Quarta" },
-  { eng: "Thursday", pt: "Quinta" },
-  { eng: "Friday", pt: "Sexta" },
-  { eng: "Saturday", pt: "Sábado" },
-  { eng: "Sunday", pt: "Domingo" },
+type SettingsSection = "overview" | "business" | "location" | "hours" | "appearance" | "booking" | "billing" | "account";
+
+const sections: { id: SettingsSection; label: string; description: string; icon: typeof Settings }[] = [
+  { id: "overview", label: "Visão geral", description: "Estado da configuração", icon: Settings },
+  { id: "business", label: "Negócio", description: "Dados públicos", icon: Store },
+  { id: "location", label: "Localização", description: "Morada e mapa", icon: MapPin },
+  { id: "hours", label: "Horários", description: "Funcionamento", icon: Clock3 },
+  { id: "appearance", label: "Aparência", description: "Logótipo e capa", icon: ImageIcon },
+  { id: "booking", label: "Marcações", description: "Regras de reserva", icon: CalendarCheck2 },
+  { id: "billing", label: "Plano e faturação", description: "Subscrição e faturas", icon: CreditCard },
+  { id: "account", label: "Conta e segurança", description: "Sessão e acesso", icon: ShieldCheck },
 ];
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+const DAYS_OF_WEEK = [["Monday", "Segunda-feira"], ["Tuesday", "Terça-feira"], ["Wednesday", "Quarta-feira"], ["Thursday", "Quinta-feira"], ["Friday", "Sexta-feira"], ["Saturday", "Sábado"], ["Sunday", "Domingo"]] as const;
+const INPUT = "min-h-11 rounded-xl border-white/10 bg-white/[0.04] text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-2 focus-visible:ring-emerald-500/40";
+const CARD = "border-white/10 bg-black/30 backdrop-blur-md";
+
+function normalize(value: BarbershopConfig): BarbershopConfig {
+  return { ...value, name: value.name ?? "", phone: value.phone ?? "", address: value.address ?? "", opening_time: value.opening_time ?? "09:00", closing_time: value.closing_time ?? "19:00", lunch_start: value.lunch_start ?? "", lunch_end: value.lunch_end ?? "", closed_days: value.closed_days ?? "None", allow_online_bookings: value.allow_online_bookings ?? true, auto_reminders: false, is_public_in_directory: value.is_public_in_directory ?? true };
+}
 
 export default function SettingsPage() {
   const router = useRouter();
   const { barbershopId } = useBarbershop();
   const { hasFeature, loading: planLoading } = useFeatureAccess();
   const canManageDirectoryVisibility = hasFeature("directory_visibility");
+  const [activeSection, setActiveSection] = useState<SettingsSection>("overview");
+  const [mobileSection, setMobileSection] = useState<SettingsSection>("overview");
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [uploadingCover, setUploadingCover] = useState(false);
-  const [avatarError, setAvatarError] = useState(false);
-  const [bannerError, setBannerError] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
+  const [config, setConfig] = useState<BarbershopConfig>({ name: "", phone: "", address: "", opening_time: "09:00", closing_time: "19:00", lunch_start: "12:30", lunch_end: "13:30", closed_days: "None", allow_online_bookings: true, auto_reminders: false, is_public_in_directory: true });
+  const [initialConfig, setInitialConfig] = useState<BarbershopConfig | null>(null);
   const [avatarTimestamp, setAvatarTimestamp] = useState(Date.now());
   const [bannerTimestamp, setBannerTimestamp] = useState(Date.now());
+  const [uploading, setUploading] = useState<"avatar" | "banner" | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
-
-  const [barbershopConfig, setBarbershopConfig] = useState<BarbershopConfig>({
-    name: "",
-    phone: "",
-    address: "",
-    opening_time: "09:00",
-    closing_time: "19:00",
-    lunch_start: "12:30",
-    lunch_end: "13:30",
-    closed_days: "None",
-    allow_online_bookings: true,
-    auto_reminders: false,
-    is_public_in_directory: true,
-  });
-
-  const avatarUrl = useMemo(() => {
-    if (!SUPABASE_URL || !barbershopId) return null;
-    return `${SUPABASE_URL}/storage/v1/object/public/avatar/${barbershopId}/avatar.webp?t=${avatarTimestamp}`;
-  }, [barbershopId, avatarTimestamp]);
-  const bannerUrl = useMemo(() => {
-    if (!SUPABASE_URL || !barbershopId) return null;
-    return `${SUPABASE_URL}/storage/v1/object/public/banner/${barbershopId}/banner.webp?t=${bannerTimestamp}`;
-  }, [barbershopId, bannerTimestamp]);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const avatarUrl = barbershopId && process.env.NEXT_PUBLIC_SUPABASE_URL ? `${process.env.NEXT_PUBLIC_SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/public/avatar/${barbershopId}/avatar.webp?t=${avatarTimestamp}` : null;
+  const bannerUrl = barbershopId && process.env.NEXT_PUBLIC_SUPABASE_URL ? `${process.env.NEXT_PUBLIC_SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/public/banner/${barbershopId}/banner.webp?t=${bannerTimestamp}` : null;
 
   const fetchSettings = useCallback(async () => {
     if (!barbershopId) return;
-    try {
-      setLoading(true);
-      const res = await barbershopService.getConfig(barbershopId);
-      if (res.error) throw res.error;
-      if (res.data) {
-        setBarbershopConfig({
-          name: res.data.name ?? "",
-          phone: res.data.phone ?? "",
-          address: res.data.address ?? "",
-          opening_time: res.data.opening_time ?? "09:00",
-          closing_time: res.data.closing_time ?? "19:00",
-          lunch_start: res.data.lunch_start ?? "",
-          lunch_end: res.data.lunch_end ?? "",
-          closed_days: res.data.closed_days ?? "None",
-          allow_online_bookings: res.data.allow_online_bookings ?? true,
-          auto_reminders: false,
-          is_public_in_directory: res.data.is_public_in_directory ?? true,
-        });
-      }
-    } catch (error: unknown) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Erro ao carregar as configurações do negócio.",
-      );
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    const result = await barbershopService.getConfig(barbershopId);
+    if (result.error) toast.error(result.error.message || "Não foi possível carregar as definições.");
+    else if (result.data) { const next = normalize(result.data); setConfig(next); setInitialConfig(next); }
+    setLoading(false);
   }, [barbershopId]);
 
-  useEffect(() => {
-    if (barbershopId) void fetchSettings();
-  }, [barbershopId, fetchSettings]);
+  useEffect(() => { void fetchSettings(); }, [fetchSettings]);
+  const dirty = useMemo(() => JSON.stringify(config) !== JSON.stringify(initialConfig), [config, initialConfig]);
+  const completion = useMemo(() => { const checks = [Boolean(config.name.trim()), Boolean(config.phone.trim()), Boolean(config.address.trim()), Boolean(config.opening_time && config.closing_time), config.allow_online_bookings]; return Math.round((checks.filter(Boolean).length / checks.length) * 100); }, [config]);
+  const filteredSections = useMemo(() => { const term = search.trim().toLocaleLowerCase("pt-PT"); return !term ? sections : sections.filter((section) => `${section.label} ${section.description}`.toLocaleLowerCase("pt-PT").includes(term)); }, [search]);
+  const currentClosedDays = useMemo(() => config.closed_days === "None" ? [] : config.closed_days.split(",").map((day) => day.trim()), [config.closed_days]);
 
-  const currentClosedDays = useMemo(() => {
-    if (
-      !barbershopConfig.closed_days ||
-      barbershopConfig.closed_days === "None"
-    )
-      return [];
-    return barbershopConfig.closed_days.split(",").map((d) => d.trim());
-  }, [barbershopConfig.closed_days]);
+  function toggleClosedDay(day: string) { setConfig((current) => { const next = currentClosedDays.includes(day) ? currentClosedDays.filter((item) => item !== day) : [...currentClosedDays, day]; return { ...current, closed_days: next.length ? next.join(",") : "None" }; }); }
 
-  const toggleClosedDay = (dayEng: string) => {
-    const updatedDays = currentClosedDays.includes(dayEng)
-      ? currentClosedDays.filter((d) => d !== dayEng)
-      : [...currentClosedDays, dayEng];
-    setBarbershopConfig((prev) => ({
-      ...prev,
-      closed_days: updatedDays.length ? updatedDays.join(",") : "None",
-    }));
-  };
+  async function saveSettings() {
+    if (!barbershopId || !dirty) return;
+    if (!config.name.trim() || !config.phone.trim() || !config.address.trim()) { toast.error("Complete o nome, telefone e morada antes de guardar."); setActiveSection(!config.name.trim() || !config.phone.trim() ? "business" : "location"); return; }
+    if (config.opening_time >= config.closing_time) { toast.error("O horário de fecho tem de ser posterior ao horário de abertura."); setActiveSection("hours"); return; }
+    setSaving(true);
+    const payload: Partial<BarbershopConfig> = { ...config, auto_reminders: false };
+    if (!canManageDirectoryVisibility) delete payload.is_public_in_directory;
+    const result = await barbershopService.updateConfig(barbershopId, payload);
+    setSaving(false);
+    if (result.error) return toast.error(result.error.message || "Não foi possível guardar as alterações.");
+    const next = normalize(result.data ?? config); setConfig(next); setInitialConfig(next); toast.success("Alterações guardadas.");
+  }
 
-  const handleImageUpload = async (file: File, type: "avatar" | "banner") => {
-    if (!barbershopId) {
-      toast.error("ID da barbearia não encontrado.");
-      return;
-    }
-    const setUploading =
-      type === "avatar" ? setUploadingAvatar : setUploadingCover;
-    setUploading(true);
-    try {
-      const { error } = await processAndUploadImage({
-        file,
-        bucket: type,
-        path: `${barbershopId}/${type}.webp`,
-        maxWidth: type === "avatar" ? 400 : 1200,
-        quality: 0.85,
-      });
-      if (error) throw error;
-      if (type === "avatar") {
-        setAvatarError(false);
-        setAvatarTimestamp(Date.now());
-      } else {
-        setBannerError(false);
-        setBannerTimestamp(Date.now());
-      }
-      toast.success(
-        `${type === "avatar" ? "Logótipo" : "Banner"} atualizado com sucesso!`,
-      );
-    } catch (error) {
-      console.error("Erro de upload:", error);
-      toast.error(
-        "Erro ao carregar imagem. Verifica o formato e as permissões do Supabase.",
-      );
-    } finally {
-      setUploading(false);
-    }
-  };
+  function cancelChanges() { if (!initialConfig) return; setConfig(initialConfig); toast.message("As alterações foram descartadas."); }
+  async function uploadImage(type: "avatar" | "banner", file: File) { if (!barbershopId) return; setUploading(type); const { error } = await processAndUploadImage({ file, bucket: type, path: `${barbershopId}/${type}.webp`, maxWidth: type === "avatar" ? 400 : 1200, quality: 0.85 }); setUploading(null); if (error) return toast.error("Não foi possível atualizar a imagem."); if (type === "avatar") setAvatarTimestamp(Date.now()); else setBannerTimestamp(Date.now()); toast.success(type === "avatar" ? "Logótipo atualizado." : "Capa atualizada."); }
+  async function logout() { setLogoutLoading(true); try { await authService.logout(); router.replace("/login"); router.refresh(); } catch { toast.error("Não foi possível terminar a sessão."); setLogoutLoading(false); } }
+  function selectSection(id: SettingsSection) { setActiveSection(id); setMobileSection(id); document.getElementById(`settings-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }
 
-  const handleSaveSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!barbershopId) return;
-    if (!barbershopConfig.phone?.trim()) {
-      toast.error("O telefone oficial é obrigatório.");
-      return;
-    }
-    if (!barbershopConfig.address?.trim()) {
-      toast.error("A rua/morada é obrigatória.");
-      return;
-    }
-    try {
-      setSubmitting(true);
-      const payload: Partial<BarbershopConfig> = {
-        ...barbershopConfig,
-        auto_reminders: false,
-      };
-      if (!canManageDirectoryVisibility) delete payload.is_public_in_directory;
-      const response = await barbershopService.updateConfig(
-        barbershopId,
-        payload,
-      );
-      if (response.error) throw response.error;
-      toast.success("Configurações atualizadas com sucesso!");
-    } catch (error: unknown) {
-      toast.error(
-        error instanceof Error ? error.message : "Erro ao gravar alterações.",
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      setSubmitting(true);
-      await authService.logout();
-      toast.success("Sessão terminada.");
-      router.push("/login");
-      router.refresh();
-    } catch (error) {
-      console.error("Erro de logout:", error);
-      toast.error("Erro ao efetuar logout.");
-      setSubmitting(false);
-    }
-  };
-
-  if (loading || planLoading)
-    return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-white">
-        <Spinner className="size-8" />
-      </div>
-    );
+  if (loading || planLoading) return <div className="flex min-h-[70vh] items-center justify-center"><Spinner className="size-7 text-zinc-300" /></div>;
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-white p-4 md:p-8 space-y-6 relative z-10">
-      <input
-        type="file"
-        ref={avatarInputRef}
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) void handleImageUpload(file, "avatar");
-          e.target.value = "";
-        }}
-      />
-      <input
-        type="file"
-        ref={coverInputRef}
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) void handleImageUpload(file, "banner");
-          e.target.value = "";
-        }}
-      />
+    <main className="min-h-screen bg-zinc-950 text-zinc-50">
+      <div className="mx-auto max-w-7xl px-4 pb-28 pt-4 sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-30 -mx-4 border-b border-white/10 bg-zinc-950/90 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:static lg:mb-2 lg:border-0 lg:bg-transparent lg:px-0 lg:py-6 lg:backdrop-blur-none">
+          <div className="flex items-center justify-between gap-3"><div className="flex min-w-0 items-center gap-3"><Link href="/dashboard" aria-label="Voltar ao painel" className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-zinc-300 hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"><ArrowLeft className="size-4" /></Link><div className="min-w-0"><p className="text-xs font-medium text-zinc-500">Painel</p><h1 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">Definições</h1></div></div><div className="hidden items-center gap-2 sm:flex">{dirty && <Button type="button" variant="ghost" onClick={cancelChanges} className="min-h-10 text-zinc-400 hover:text-zinc-100">Descartar</Button>}<Button type="button" onClick={() => void saveSettings()} disabled={!dirty || saving} className="min-h-10 rounded-xl bg-zinc-50 px-4 text-zinc-950 hover:bg-white">{saving ? <Spinner className="mr-2 size-4" /> : <Save className="mr-2 size-4" />}{saving ? "A guardar…" : dirty ? "Guardar alterações" : "Tudo guardado"}</Button></div></div>
+          {dirty && <div className="mt-3 flex items-center gap-2 text-xs text-amber-300"><span className="size-1.5 rounded-full bg-amber-300" />Tem alterações por guardar.</div>}
+        </header>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
-        <h1 className="text-3xl font-heading font-bold flex items-center gap-2">
-          <Settings className="text-zinc-400 size-8" /> Definições
-        </h1>
-        <Link href="/dashboard">
-          <Button
-            variant="ghost"
-            className="bg-zinc-900 text-white hover:bg-zinc-800 border border-white/10 text-xs"
-          >
-            <ArrowLeft className="size-4 mr-2" /> Voltar ao Dashboard
-          </Button>
-        </Link>
-      </div>
+        <div className="mt-4 lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
+          <aside className="hidden lg:block"><div className="sticky top-6 space-y-3"><div className="rounded-2xl border border-white/10 bg-white/[0.02] p-2"><div className="mb-2 px-3 pb-2 pt-2 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-600">Organização</div>{filteredSections.map((section) => { const Icon = section.icon; return <button key={section.id} type="button" onClick={() => selectSection(section.id)} className={cn("flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400", activeSection === section.id ? "bg-white/8 text-zinc-100" : "text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300")}><span className={cn("flex size-8 items-center justify-center rounded-lg", activeSection === section.id ? "bg-emerald-500/10 text-emerald-400" : "bg-white/[0.03] text-zinc-600")}><Icon className="size-4" /></span><span className="min-w-0"><span className="block text-sm font-medium">{section.label}</span><span className="block truncate text-[11px] text-zinc-600">{section.description}</span></span></button>; })}</div><div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.04] p-4"><p className="text-xs font-semibold text-emerald-300">Configuração da barbearia</p><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-emerald-400 transition-all" style={{ width: `${completion}%` }} /></div><p className="mt-2 text-xs text-zinc-500">{completion}% concluído</p></div></div></aside>
 
-      <Card className="border-emerald-500/20 bg-emerald-500/[0.04] backdrop-blur-md">
-        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
-              <CreditCard className="size-5" />
-            </div>
-            <div>
-              <h2 className="font-semibold text-zinc-100">Plano e faturação</h2>
-              <p className="mt-1 text-xs leading-5 text-zinc-400">
-                Consulta o teu plano, compara funcionalidades e gere a
-                subscrição.
-              </p>
-            </div>
-          </div>
-          <Button
-            asChild
-            className="shrink-0 bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
-          >
-            <Link href="/dashboard/billing">
-              Gerir plano <ArrowUpRight className="ml-2 size-4" />
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+          <div className="min-w-0">
+            <div className="mb-4 flex gap-2 lg:hidden"><div className="relative min-w-0 flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-600" /><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Pesquisar definições" className={`${INPUT} pl-9`} /></div><select aria-label="Secção das definições" value={mobileSection} onChange={(e) => selectSection(e.target.value as SettingsSection)} className="min-h-11 max-w-[46%] rounded-xl border border-white/10 bg-zinc-900 px-3 text-sm text-zinc-200"><option value="overview">Visão geral</option>{sections.filter((s) => s.id !== "overview").map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}</select></div>
+            <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.02] p-4 lg:hidden"><div className="flex items-center justify-between gap-3"><div><p className="text-xs text-zinc-500">Estado da configuração</p><p className="mt-1 text-lg font-semibold">{completion}% concluído</p></div><div className="size-12 rounded-full border-4 border-emerald-400/20 border-t-emerald-400" aria-hidden="true" /></div></div>
 
-      <form onSubmit={handleSaveSettings} className="grid gap-6 md:grid-cols-2">
-        <Card className="bg-black/40 border-white/10 backdrop-blur-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg text-zinc-100">
-              <Store className="size-4 text-emerald-400" /> Detalhes públicos
-            </CardTitle>
-            <CardDescription className="text-zinc-400 text-xs">
-              Informações visíveis na página de agendamento.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-2">
-              <label className="text-xs text-zinc-400 font-medium">
-                Nome da barbearia
-              </label>
-              <input
-                required
-                className="bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
-                value={barbershopConfig.name}
-                onChange={(e) =>
-                  setBarbershopConfig((p) => ({ ...p, name: e.target.value }))
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <label className="text-xs text-zinc-400 font-medium">
-                Telefone oficial
-              </label>
-              <input
-                type="tel"
-                className="bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
-                value={barbershopConfig.phone}
-                onChange={(e) =>
-                  setBarbershopConfig((p) => ({ ...p, phone: e.target.value }))
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <label className="text-xs text-zinc-400 font-medium">
-                Morada
-              </label>
-              <input
-                className="bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50"
-                value={barbershopConfig.address}
-                onChange={(e) =>
-                  setBarbershopConfig((p) => ({
-                    ...p,
-                    address: e.target.value,
-                  }))
-                }
-              />
-            </div>
-          </CardContent>
-        </Card>
+            <section id="settings-overview" className="scroll-mt-24"><Card className={cn(CARD, "overflow-hidden")}><div className="grid lg:grid-cols-[1.15fr_.85fr]"><div className="p-5 sm:p-7"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">Visão geral</p><h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Tenha o essencial sempre pronto.</h2><p className="mt-3 max-w-xl text-sm leading-6 text-zinc-500">Encontre rapidamente uma definição, perceba o impacto da alteração e continue o trabalho sem perder contexto.</p><div className="mt-6 grid gap-3 sm:grid-cols-2">{sections.filter((section) => section.id !== "overview").slice(0, 4).map((section) => { const Icon = section.icon; return <button key={section.id} type="button" onClick={() => selectSection(section.id)} className="flex min-h-20 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-left hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.04] text-zinc-300"><Icon className="size-4" /></span><span><span className="block text-sm font-medium text-zinc-100">{section.label}</span><span className="mt-0.5 block text-xs text-zinc-600">{section.description}</span></span></button>; })}</div></div><div className="border-t border-white/10 bg-white/[0.02] p-5 sm:p-7 lg:border-l lg:border-t-0"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-600">Atalhos úteis</p><div className="mt-4 space-y-2"><Link href="/dashboard/billing" className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 p-3 hover:bg-white/[0.04]"><span className="flex items-center gap-3"><CreditCard className="size-4 text-zinc-400" /><span className="text-sm">Gerir plano</span></span><ArrowUpRight className="size-4 text-zinc-600" /></Link><Link href="/dashboard/mensagens" className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 p-3 hover:bg-white/[0.04]"><span className="flex items-center gap-3"><Bell className="size-4 text-zinc-400" /><span className="text-sm">Mensagens</span></span><ArrowUpRight className="size-4 text-zinc-600" /></Link></div></div></div></Card></section>
 
-        <Card className="bg-black/40 border-white/10 backdrop-blur-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg text-zinc-100">
-              <ImageIcon className="size-4 text-amber-400" /> Identidade visual
-            </CardTitle>
-            <CardDescription className="text-zinc-400 text-xs">
-              Personaliza o logótipo e a capa da tua barbearia.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="relative w-full h-36 rounded-xl bg-zinc-900 border border-white/10 overflow-hidden group">
-              {bannerUrl && !bannerError ? (
-                <Image
-                  src={bannerUrl}
-                  alt="Banner da barbearia"
-                  width={1200}
-                  height={400}
-                  unoptimized
-                  className="w-full h-full object-cover"
-                  onError={() => setBannerError(true)}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-zinc-600 text-xs">
-                  Sem imagem de capa
-                </div>
-              )}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  disabled={uploadingCover}
-                  onClick={() => coverInputRef.current?.click()}
-                  className="bg-zinc-900/90 text-white text-xs gap-2 border border-white/20"
-                >
-                  {uploadingCover ? (
-                    <Spinner className="size-3.5" />
-                  ) : (
-                    <Upload className="size-3.5" />
-                  )}{" "}
-                  {uploadingCover ? "A enviar..." : "Alterar capa"}
-                </Button>
-              </div>
-              <div className="absolute bottom-2 left-3 size-16 rounded-xl border-2 border-zinc-950 bg-zinc-900 overflow-hidden shadow-lg group/avatar">
-                {avatarUrl && !avatarError ? (
-                  <Image
-                    src={avatarUrl}
-                    alt="Logo da barbearia"
-                    width={160}
-                    height={160}
-                    unoptimized
-                    className="w-full h-full object-cover"
-                    onError={() => setAvatarError(true)}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-zinc-600">
-                    <UserCircle2 className="size-8" />
-                  </div>
-                )}
-                <button
-                  type="button"
-                  disabled={uploadingAvatar}
-                  onClick={() => avatarInputRef.current?.click()}
-                  className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity text-white"
-                  aria-label="Alterar logótipo"
-                >
-                  {uploadingAvatar ? (
-                    <Spinner className="size-4" />
-                  ) : (
-                    <Camera className="size-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={uploadingAvatar}
-                onClick={() => avatarInputRef.current?.click()}
-                className="flex-1 bg-white/5 border-white/10 text-zinc-200 text-xs h-9"
-              >
-                {uploadingAvatar ? (
-                  <Spinner className="mr-2 size-3.5" />
-                ) : (
-                  <Camera className="mr-2 size-3.5 text-amber-400" />
-                )}{" "}
-                Upload logótipo
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={uploadingCover}
-                onClick={() => coverInputRef.current?.click()}
-                className="flex-1 bg-white/5 border-white/10 text-zinc-200 text-xs h-9"
-              >
-                {uploadingCover ? (
-                  <Spinner className="mr-2 size-3.5" />
-                ) : (
-                  <ImageIcon className="mr-2 size-3.5 text-amber-400" />
-                )}{" "}
-                Upload capa
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-black/40 border-white/10 backdrop-blur-md md:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg text-zinc-100">
-              <Clock className="size-4 text-blue-400" /> Horário e agendamento
-            </CardTitle>
-            <CardDescription className="text-zinc-400 text-xs">
-              Define o horário de funcionamento, pausa e dias de encerramento.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <label className="text-xs text-zinc-400 font-medium">
-                  Abertura
-                </label>
-                <input
-                  type="time"
-                  className="bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-white color-scheme-dark"
-                  value={barbershopConfig.opening_time}
-                  onChange={(e) =>
-                    setBarbershopConfig((p) => ({
-                      ...p,
-                      opening_time: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div className="grid gap-2">
-                <label className="text-xs text-zinc-400 font-medium">
-                  Fecho
-                </label>
-                <input
-                  type="time"
-                  className="bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-white color-scheme-dark"
-                  value={barbershopConfig.closing_time}
-                  onChange={(e) =>
-                    setBarbershopConfig((p) => ({
-                      ...p,
-                      closing_time: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-            <div className="p-4 bg-white/2 border border-white/5 rounded-xl space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-amber-400 uppercase tracking-wider">
-                <UtensilsCrossed className="size-4" /> Pausa para almoço
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <label className="text-xs text-zinc-400 font-medium">
-                    Início
-                  </label>
-                  <input
-                    type="time"
-                    className="bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-white color-scheme-dark"
-                    value={barbershopConfig.lunch_start ?? ""}
-                    onChange={(e) =>
-                      setBarbershopConfig((p) => ({
-                        ...p,
-                        lunch_start: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <label className="text-xs text-zinc-400 font-medium">
-                    Fim
-                  </label>
-                  <input
-                    type="time"
-                    className="bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-white color-scheme-dark"
-                    value={barbershopConfig.lunch_end ?? ""}
-                    onChange={(e) =>
-                      setBarbershopConfig((p) => ({
-                        ...p,
-                        lunch_end: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-              <p className="text-[11px] text-zinc-500">
-                Os horários dentro deste intervalo ficam indisponíveis para
-                marcações online.
-              </p>
-            </div>
-            <div className="grid gap-2">
-              <label className="text-xs text-zinc-400 flex items-center gap-1.5 font-medium">
-                <CalendarOff className="size-3.5 text-red-400" /> Dias de folga
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {DAYS_OF_WEEK.map((day) => {
-                  const closed = currentClosedDays.includes(day.eng);
-                  return (
-                    <button
-                      key={day.eng}
-                      type="button"
-                      onClick={() => toggleClosedDay(day.eng)}
-                      className={cn(
-                        "px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-all flex-1 min-w-[72px]",
-                        closed
-                          ? "bg-red-500/20 text-red-400 border-red-500/40"
-                          : "bg-zinc-900/60 text-zinc-400 border-white/5 hover:bg-zinc-800",
-                      )}
-                    >
-                      {day.pt}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-[11px] text-zinc-500">
-                Atualmente:{" "}
-                <span className="text-zinc-400 font-medium">
-                  {barbershopConfig.closed_days === "None"
-                    ? "Aberto todos os dias"
-                    : barbershopConfig.closed_days}
-                </span>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-black/40 border-white/10 md:col-span-2 backdrop-blur-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg text-zinc-100">
-              <Globe className="size-4 text-purple-400" /> Online Platform &amp;
-              Automation
-            </CardTitle>
-            <CardDescription className="text-zinc-400 text-xs">
-              Controla como a tua barbearia aparece e recebe clientes online.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white/[0.02] border border-white/5 rounded-xl">
-              <div>
-                <p className="font-semibold text-zinc-100 text-sm">
-                  Aceitar marcações online
-                </p>
-                <p className="text-xs text-zinc-400 mt-0.5">
-                  Permite que clientes façam marcações autonomamente na página
-                  pública.
-                </p>
-              </div>
-              <Switch
-                className="cursor-pointer"
-                checked={barbershopConfig.allow_online_bookings}
-                onCheckedChange={(v) =>
-                  setBarbershopConfig((p) => ({
-                    ...p,
-                    allow_online_bookings: v,
-                  }))
-                }
-              />
-            </div>
-
-            <div
-              className={cn(
-                "relative overflow-hidden rounded-2xl border p-4 sm:p-5 transition-all",
-                canManageDirectoryVisibility
-                  ? "border-purple-500/20 bg-purple-500/[0.04]"
-                  : "border-white/10 bg-white/[0.02]",
-              )}
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex min-w-0 gap-3">
-                  <div
-                    className={cn(
-                      "flex size-10 shrink-0 items-center justify-center rounded-xl border",
-                      canManageDirectoryVisibility
-                        ? "border-purple-500/20 bg-purple-500/10 text-purple-400"
-                        : "border-white/10 bg-white/5 text-zinc-500",
-                    )}
-                  >
-                    <Globe className="size-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-sm text-zinc-100">
-                        Visibilidade no diretório
-                      </p>
-                      <span className="inline-flex items-center gap-1 rounded-full border border-purple-400/20 bg-purple-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-purple-300">
-                        <Crown className="size-3" /> Pro
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs leading-5 text-zinc-400">
-                      Escolhe se a tua barbearia aparece no diretório público{" "}
-                      <span className="text-zinc-300">/barbearias</span>. A
-                      página pública directa continua disponível.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-3">
-                  <span
-                    className={cn(
-                      "text-xs font-medium",
-                      canManageDirectoryVisibility
-                        ? barbershopConfig.is_public_in_directory
-                          ? "text-emerald-400"
-                          : "text-zinc-500"
-                        : "text-zinc-600",
-                    )}
-                  >
-                    {canManageDirectoryVisibility
-                      ? barbershopConfig.is_public_in_directory
-                        ? "Visível"
-                        : "Oculta"
-                      : "Bloqueado"}
-                  </span>
-                  <Switch
-                    disabled={!canManageDirectoryVisibility}
-                    className="cursor-pointer"
-                    checked={barbershopConfig.is_public_in_directory}
-                    onCheckedChange={(v) =>
-                      setBarbershopConfig((p) => ({
-                        ...p,
-                        is_public_in_directory: v,
-                      }))
-                    }
-                    aria-label={
-                      canManageDirectoryVisibility
-                        ? "Alterar visibilidade no diretório"
-                        : "Visibilidade no diretório disponível no plano Pro"
-                    }
-                  />
-                </div>
-              </div>
-              {!canManageDirectoryVisibility && (
-                <div className="mt-4 flex items-start gap-2 rounded-xl border border-white/5 bg-black/20 px-3 py-2.5 text-xs text-zinc-400">
-                  <LockKeyhole className="mt-0.5 size-3.5 shrink-0 text-zinc-500" />
-                  <span>
-                    Esta funcionalidade está incluída no{" "}
-                    <Link
-                      href="/dashboard/billing"
-                      className="font-semibold text-purple-300 hover:text-purple-200"
-                    >
-                      plano Pro
-                    </Link>
-                    . Faz upgrade para controlar a presença da tua barbearia no
-                    diretório.
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="pt-4 border-t border-white/10 flex justify-end">
-              <Button
-                type="submit"
-                disabled={submitting || uploadingAvatar || uploadingCover}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs px-5 h-10"
-              >
-                {submitting ? (
-                  <Spinner className="mr-2" />
-                ) : (
-                  <Save className="mr-2 size-4" />
-                )}{" "}
-                Guardar alterações
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="md:col-span-2 pt-2">
-          <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4 md:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <h3 className="text-sm font-semibold text-red-400 flex items-center gap-2">
-                <LogOut className="size-4" /> Terminar sessão
-              </h3>
-              <p className="text-xs text-zinc-400 max-w-xl">
-                Desconecta o painel administrativo. Será necessário iniciar
-                sessão novamente.
-              </p>
-            </div>
-            <Button
-              type="button"
-              onClick={handleLogout}
-              disabled={submitting}
-              className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-semibold px-4 h-9"
-            >
-              Sair da conta
-            </Button>
+            <section id="settings-business" className="scroll-mt-24 mt-6"><Card className={CARD}><CardHeader><CardTitle className="flex items-center gap-2"><Store className="size-4 text-emerald-400" /> Negócio</CardTitle><CardDescription>As informações apresentadas aos clientes.</CardDescription></CardHeader><CardContent className="grid gap-5 sm:grid-cols-2"><div className="grid gap-2"><label htmlFor="settings-name" className="text-sm font-medium">Nome da barbearia</label><Input id="settings-name" value={config.name} onChange={(e) => setConfig((c) => ({ ...c, name: e.target.value }))} className={INPUT} placeholder="Ex.: Barbearia Central" /></div><div className="grid gap-2"><label htmlFor="settings-phone" className="text-sm font-medium">Telefone oficial</label><Input id="settings-phone" type="tel" autoComplete="tel" value={config.phone} onChange={(e) => setConfig((c) => ({ ...c, phone: e.target.value }))} className={INPUT} placeholder="+351 9xx xxx xxx" /></div></CardContent></Card></section>
+            <section id="settings-location" className="scroll-mt-24 mt-6"><SettingsLocationPanel barbershopId={barbershopId!} /></section>
+            <section id="settings-hours" className="scroll-mt-24 mt-6"><Card className={CARD}><CardHeader><CardTitle className="flex items-center gap-2"><Clock3 className="size-4 text-blue-400" /> Horários</CardTitle><CardDescription>Defina o horário de funcionamento, pausa e dias de encerramento.</CardDescription></CardHeader><CardContent className="space-y-6"><div className="grid gap-4 sm:grid-cols-2"><div className="grid gap-2"><label htmlFor="settings-open" className="text-sm font-medium">Abertura</label><Input id="settings-open" type="time" value={config.opening_time} onChange={(e) => setConfig((c) => ({ ...c, opening_time: e.target.value }))} className={INPUT} /></div><div className="grid gap-2"><label htmlFor="settings-close" className="text-sm font-medium">Fecho</label><Input id="settings-close" type="time" value={config.closing_time} onChange={(e) => setConfig((c) => ({ ...c, closing_time: e.target.value }))} className={INPUT} /></div></div><div className="grid gap-4 sm:grid-cols-2"><div className="grid gap-2"><label htmlFor="settings-lunch-start" className="text-sm font-medium">Início da pausa <span className="font-normal text-zinc-600">(opcional)</span></label><Input id="settings-lunch-start" type="time" value={config.lunch_start ?? ""} onChange={(e) => setConfig((c) => ({ ...c, lunch_start: e.target.value }))} className={INPUT} /></div><div className="grid gap-2"><label htmlFor="settings-lunch-end" className="text-sm font-medium">Fim da pausa <span className="font-normal text-zinc-600">(opcional)</span></label><Input id="settings-lunch-end" type="time" value={config.lunch_end ?? ""} onChange={(e) => setConfig((c) => ({ ...c, lunch_end: e.target.value }))} className={INPUT} /></div></div><div><p className="text-sm font-medium">Dias de encerramento</p><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{DAYS_OF_WEEK.map(([value, label]) => { const active = currentClosedDays.includes(value); return <button key={value} type="button" onClick={() => toggleClosedDay(value)} className={cn("flex min-h-11 items-center justify-between rounded-xl border px-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400", active ? "border-emerald-500/30 bg-emerald-500/[0.07] text-emerald-200" : "border-white/10 bg-white/[0.02] text-zinc-400 hover:bg-white/[0.05]")}>{label}<span className={cn("flex size-5 items-center justify-center rounded-full border", active ? "border-emerald-400 bg-emerald-400 text-zinc-950" : "border-white/15")}>{active ? <Check className="size-3" /> : null}</span></button>; })}</div></div></CardContent></Card></section>
+            <section id="settings-appearance" className="scroll-mt-24 mt-6"><Card className={CARD}><CardHeader><CardTitle className="flex items-center gap-2"><ImageIcon className="size-4 text-amber-400" /> Aparência</CardTitle><CardDescription>Defina a identidade visual apresentada aos clientes.</CardDescription></CardHeader><CardContent><div className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-900"><div className="relative h-40 sm:h-52">{bannerUrl ? <Image src={bannerUrl} alt="Capa da barbearia" fill className="object-cover" unoptimized /> : <div className="flex h-full items-center justify-center text-sm text-zinc-600">Sem capa definida</div>}<div className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-3"><div className="flex size-16 items-center justify-center overflow-hidden rounded-2xl border-2 border-zinc-950 bg-zinc-800 shadow-xl">{avatarUrl ? <Image src={avatarUrl} alt="Logótipo da barbearia" width={128} height={128} className="h-full w-full object-cover" unoptimized /> : <UserCircle2 className="size-8 text-zinc-600" />}</div><div className="flex gap-2"><Button type="button" variant="secondary" onClick={() => bannerInputRef.current?.click()} disabled={uploading === "banner"} className="min-h-10 rounded-xl bg-zinc-950/80 text-zinc-100">{uploading === "banner" ? <Spinner className="mr-2 size-4" /> : <ImageIcon className="mr-2 size-4" />}Capa</Button><Button type="button" variant="secondary" onClick={() => avatarInputRef.current?.click()} disabled={uploading === "avatar"} className="min-h-10 rounded-xl bg-zinc-950/80 text-zinc-100">{uploading === "avatar" ? <Spinner className="mr-2 size-4" /> : <Camera className="mr-2 size-4" />}Logótipo</Button></div></div></div></div><input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadImage("avatar", file); e.currentTarget.value = ""; }} /><input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadImage("banner", file); e.currentTarget.value = ""; }} /></CardContent></Card></section>
+            <section id="settings-booking" className="scroll-mt-24 mt-6"><Card className={CARD}><CardHeader><CardTitle className="flex items-center gap-2"><CalendarCheck2 className="size-4 text-violet-400" /> Marcações</CardTitle><CardDescription>Escolha como os clientes podem interagir com a sua agenda.</CardDescription></CardHeader><CardContent className="space-y-4"><div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4"><div className="min-w-0"><p className="text-sm font-medium">Permitir marcações online</p><p className="mt-1 text-xs leading-5 text-zinc-600">Quando ativo, os clientes podem marcar através da página pública.</p></div><Switch checked={config.allow_online_bookings} onCheckedChange={(checked) => setConfig((c) => ({ ...c, allow_online_bookings: checked }))} /></div><div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4"><div className="min-w-0"><p className="text-sm font-medium">Aparecer no diretório</p><p className="mt-1 text-xs leading-5 text-zinc-600">Disponível apenas nos planos compatíveis.</p></div><Switch disabled={!canManageDirectoryVisibility} checked={canManageDirectoryVisibility && config.is_public_in_directory} onCheckedChange={(checked) => canManageDirectoryVisibility && setConfig((c) => ({ ...c, is_public_in_directory: checked }))} /></div></CardContent></Card></section>
+            <section id="settings-billing" className="scroll-mt-24 mt-6"><Card className="border-emerald-500/20 bg-emerald-500/[0.04]"><CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">Plano e faturação</p><h2 className="mt-1 text-lg font-semibold">Gerir subscrição, faturas e limites.</h2><p className="mt-1 text-sm text-zinc-500">Veja o plano atual e altere-o quando precisar.</p></div><Button asChild className="min-h-11 rounded-xl bg-emerald-500 text-zinc-950 hover:bg-emerald-400"><Link href="/dashboard/billing">Abrir faturação<ArrowUpRight className="ml-2 size-4" /></Link></Button></CardContent></Card></section>
+            <section id="settings-account" className="scroll-mt-24 mt-6"><Card className={CARD}><CardHeader><CardTitle className="flex items-center gap-2"><ShieldCheck className="size-4 text-emerald-400" /> Conta e segurança</CardTitle><CardDescription>Gestão da sessão e acesso à conta.</CardDescription></CardHeader><CardContent><Button type="button" variant="outline" onClick={() => void logout()} disabled={logoutLoading} className="min-h-11 rounded-xl border-white/10 bg-white/[0.03] text-zinc-200 hover:bg-white/[0.06]"><LogOut className="mr-2 size-4" />{logoutLoading ? "A terminar sessão…" : "Terminar sessão"}</Button></CardContent></Card></section>
           </div>
         </div>
-      </form>
+        {dirty && <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-zinc-950/95 p-3 backdrop-blur-xl sm:hidden"><div className="mx-auto flex max-w-xl items-center gap-2"><Button type="button" variant="ghost" onClick={cancelChanges} className="min-h-11 flex-1 text-zinc-400">Descartar</Button><Button type="button" onClick={() => void saveSettings()} disabled={saving} className="min-h-11 flex-[1.4] rounded-xl bg-zinc-50 text-zinc-950">{saving ? <Spinner className="mr-2 size-4" /> : <Save className="mr-2 size-4" />}Guardar</Button></div></div>}
+      </div>
     </main>
   );
 }
