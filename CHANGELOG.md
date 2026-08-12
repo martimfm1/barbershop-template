@@ -2,6 +2,12 @@
 
 ## Unreleased — 2026-08-12
 
+### Dashboard e autenticação
+- O acesso ao `/dashboard` passa a resolver a barbearia através da sessão Supabase autenticada e do perfil `users`, evitando depender de um cookie como fonte de verdade.
+- O proxy deixou de usar helpers de base de dados com cliente de browser durante a validação SSR da sessão.
+- O `BarbershopProvider` deixou de confiar cegamente no cookie `barbershop_id` e valida sempre a associação através do utilizador autenticado.
+- Adicionados estados de erro distintos para falhas de leitura do perfil e da barbearia, evitando redirecionamentos silenciosos para o onboarding.
+
 ### Onboarding e autenticação
 - O fluxo `/api/onboarding/create` passa a usar `create_barbershop_onboarding()` como operação transacional única.
 - A criação da barbearia, o listing do marketplace e a associação do utilizador como `owner` acontecem na mesma transação PostgreSQL.
