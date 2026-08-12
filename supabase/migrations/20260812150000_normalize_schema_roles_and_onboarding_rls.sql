@@ -26,7 +26,6 @@ alter table public.users
     'client'
   ));
 
--- Keep the role used by new team members deterministic.
 alter table public.users
   alter column role set default 'barber';
 
@@ -50,5 +49,80 @@ create policy "Authenticated users can create their own barbershop"
   with check (created_by = auth.uid());
 
 drop policy if exists "Admins can update their own barbershop" on public.barbershops;
+drop policy if exists "Owners can update their own barbershop" on public.barbershops;
 
-authorization_role_guard_placeholder;
+create policy "Owners and admins can update their own barbershop"
+  on public.barbershops
+  for update to authenticated
+  using (
+    exists (
+      select 1
+      from public.users u
+      where u.id = auth.uid()
+        and u.barbershop_id = barbershops.id
+        and u.role in ('owner', 'admin')
+    )
+  )
+  with check (
+    exists (
+      select 1
+      from public.users u
+      where u.id = auth.uid()
+        and u.barbershop_id = barbershops.id
+        and u.role in ('owner', 'admin')
+    )
+  );
+
+-- -----------------------------------------------------------------------------
+-- SHOPS: the creator of the barbershop may create its marketplace row before
+-- the onboarding RPC attaches the user's profile to the tenant.
+-- -----------------------------------------------------------------------------
+
+drop policy if exists "Barbershop admins can insert marketplace shop" on public.shops;
+drop policy if exists "Owners insert shop" on public.shops;
+
+create policy "Barbershop creators can insert marketplace shop"
+  on public.shops
+  for insert to authenticated
+  with check (
+    exists (
+      select 1
+      from public.barbershops b
+      where b.id = shops.barbershop_id
+        and b.created_by = auth.uid()
+    )
+    or exists (
+      select 1
+      from public.users u
+      where u.id = auth.uid()
+        and u.barbershop_id = shops.barbershop_id
+        and u.role in ('owner', 'admin')
+    )
+  );
+
+-- Keep marketplace updates tenant-scoped.
+drop policy if exists "Barbershop admins can update marketplace shop" on public.shops;
+drop policy if exists "Owners update shop" on public.shops;
+
+drop policy if exists "Barbershop owners and admins can update marketplace shop" on public.shops;
+create policy "Barbershop owners and admins can update marketplace shop"
+  on public.shops
+  for update to authenticated
+  using (
+    exists (
+      select 1
+      from public.users u
+      where u.id = auth.uid()
+        and u.barbershop_id = shops.barbershop_id
+        and u.role in ('owner', 'admin')
+    )
+  )
+  with check (
+    exists (
+      select 1
+      from public.users u
+      where u.id = auth.uid()
+        and u.barbershop_id = shops.barbershop_id
+        and u.role in ('owner', 'admin')
+    )
+  );
