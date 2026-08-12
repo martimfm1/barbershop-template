@@ -1,29 +1,38 @@
 import { NextResponse } from "next/server";
-// Importa a função que cria o cliente SSR que lida com cookies
-import { createClient } from "@/lib/supabase/server"; 
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const body: unknown = await request.json();
+    if (typeof body !== "object" || body === null) {
+      return NextResponse.json({ error: "Pedido inválido." }, { status: 400 });
+    }
 
-    if (!email || !password) {
+    const email =
+      "email" in body && typeof body.email === "string"
+        ? body.email.trim().toLowerCase()
+        : "";
+    const password =
+      "password" in body && typeof body.password === "string"
+        ? body.password
+        : "";
+
+    if (!email || !password || email.length > 254 || password.length > 128) {
       return NextResponse.json(
-        { error: "Email e senha são obrigatórios." }, 
-        { status: 400 }
+        { error: "Email e palavra-passe são obrigatórios." },
+        { status: 400 },
       );
     }
 
     const supabase = await createClient();
 
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data: authData, error: authError } =
+      await supabase.auth.signInWithPassword({ email, password });
 
-    if (authError) {
+    if (authError || !authData.user) {
       return NextResponse.json(
-        { error: "Credenciais inválidas." }, 
-        { status: 401 }
+        { error: "Credenciais inválidas." },
+        { status: 401 },
       );
     }
 
@@ -34,28 +43,47 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (profileError) {
-      console.error("❌ Erro ao obter perfil na DB:", profileError.message);
+      console.error("[LOGIN_PROFILE_ERROR]", profileError.message);
       return NextResponse.json(
-        { error: "Erro interno ao processar o perfil." }, 
-        { status: 500 }
+        { error: "Não foi possível carregar o perfil da conta." },
+        { status: 500 },
       );
     }
 
-    if (!profile) {
-      return NextResponse.json(
-        { error: "Perfil não encontrado." }, 
-        { status: 404 }
-      );
-    }
-
-    // Retorna os dados do perfil para o frontend gerir o estado global (se necessário)
-    return NextResponse.json({ success: true, user: profile }, { status: 200 });
-
-  } catch (error) {
-    console.error("Critical Login Error:", error);
+    // A sessão é persistida pelo cliente SSR através dos cookies Supabase.
+    // Não devolvemos access/refresh tokens no JSON da API.
     return NextResponse.json(
-      { error: "Erro interno no servidor." }, 
-      { status: 500 }
+      {
+        success: true,
+        user: profile
+          ? {
+              ...profile,
+              email: authData.user.email ?? null,
+            }
+          : {
+              id: authData.user.id,
+              name_complete:
+                typeof authData.user.user_metadata?.name_complete === "string"
+                  ? authData.user.user_metadata.name_complete
+                  : null,
+              barbershop_id: null,
+              role: null,
+              email: authData.user.email ?? null,
+            },
+      },
+      {
+        status: 200,
+        headers: { "Cache-Control": "no-store" },
+      },
+    );
+  } catch (error) {
+    console.error(
+      "[LOGIN_ERROR]",
+      error instanceof Error ? error.name : "unknown",
+    );
+    return NextResponse.json(
+      { error: "Ocorreu um erro interno no início de sessão." },
+      { status: 500 },
     );
   }
 }
