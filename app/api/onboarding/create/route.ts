@@ -17,6 +17,7 @@ export async function POST(request: Request) {
     if (!isRecord(body)) {
       return NextResponse.json({ error: "Pedido inválido" }, { status: 400 });
     }
+
     const { name, address, city, hours, price, tags, lat, lng } = body;
     const normalizedName = normalizeText(name, 120);
     const normalizedAddress = normalizeText(address, 240);
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
     if (!normalizedName || !normalizedAddress || !normalizedCity) {
       return NextResponse.json(
         { error: "Campos obrigatórios em falta: name, address, city" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -41,14 +42,17 @@ export async function POST(request: Request) {
     }
 
     if (currentProfile?.barbershop_id) {
-      return NextResponse.json({ error: "Esta conta já tem uma barbearia associada." }, { status: 409 });
+      return NextResponse.json(
+        { error: "Esta conta já tem uma barbearia associada." },
+        { status: 409 },
+      );
     }
 
     let openTime = "09:00:00";
     let closeTime = "19:00:00";
 
     if (typeof hours === "string" && hours.includes("-")) {
-      const parts = hours.split("-").map((h) => h.trim());
+      const parts = hours.split("-").map((part) => part.trim());
       if (parts[0]) openTime = parts[0].length === 5 ? `${parts[0]}:00` : parts[0];
       if (parts[1]) closeTime = parts[1].length === 5 ? `${parts[1]}:00` : parts[1];
     }
@@ -63,7 +67,10 @@ export async function POST(request: Request) {
       !Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
       !Number.isFinite(longitude) || longitude < -180 || longitude > 180
     ) {
-      return NextResponse.json({ error: "Os dados de preço ou localização são inválidos." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Os dados de preço ou localização são inválidos." },
+        { status: 400 },
+      );
     }
 
     const { data: barbershop, error: barbershopError } = await supabase
@@ -93,7 +100,9 @@ export async function POST(request: Request) {
         slug: generatedSlug,
         city: normalizedCity,
         price: numericPrice,
-        tags: Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === "string").slice(0, 12) : [],
+        tags: Array.isArray(tags)
+          ? tags.filter((tag): tag is string => typeof tag === "string").slice(0, 12)
+          : [],
         lat: latitude,
         lng: longitude,
         is_active: true,
@@ -105,18 +114,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Falha ao criar listing no marketplace" }, { status: 500 });
     }
 
-    const { error: userUpdateError } = await supabase
-      .from("users")
-      .update({ barbershop_id: barbershopId, role: "owner" })
-      .eq("id", user.id);
+    const { error: ownerLinkError } = await supabase.rpc(
+      "complete_barbershop_onboarding",
+      { p_barbershop_id: barbershopId },
+    );
 
-    if (userUpdateError) {
-      console.error("[ONBOARDING_USER_LINK_FAIL]", userUpdateError);
+    if (ownerLinkError) {
+      console.error("[ONBOARDING_USER_LINK_FAIL]", ownerLinkError);
       await supabase.from("shops").delete().eq("barbershop_id", barbershopId);
       await supabase.from("barbershops").delete().eq("id", barbershopId);
       return NextResponse.json(
-        { error: "Falha ao associar barbearia ao utilizador" },
-        { status: 500 }
+        { error: "Falha ao associar a barbearia à sua conta." },
+        { status: 500 },
       );
     }
 
