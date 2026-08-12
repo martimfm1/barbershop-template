@@ -2,14 +2,18 @@
 
 ## Unreleased — 2026-08-12
 
-### Base de dados e migrations
-- Identificado e documentado que a história atual de migrations não contém a migration baseline que criou o schema base do produto.
-- Mantida a história existente sem operações destrutivas sobre dados de produção.
-- Adicionada `20260812150000_normalize_schema_roles_and_onboarding_rls.sql` para eliminar a duplicação entre `chk_user_role` e `users_role_check`.
-- A tabela `users` passa a ter uma única constraint canónica de roles: `owner`, `admin`, `manager`, `barber`, `receptionist`, `staff` e `client`.
-- Normalizadas as policies de criação e atualização de `barbershops` para suportar o criador autenticado durante o onboarding sem abrir acesso cross-tenant.
-- Normalizadas as policies de criação e atualização de `shops` para respeitar o criador da barbearia e os roles `owner`/`admin`.
-- Adicionada documentação em `docs/database-rebuild.md` com o procedimento seguro para obter uma baseline real, testar um rebuild completo e só depois fazer squash da história de migrations.
+### Refatoração da base de dados
+- Consolidado o modelo de roles em `users_role_check`, removendo a definição concorrente `chk_user_role`.
+- O modelo canónico de roles passa a ser `owner`, `admin`, `manager`, `barber`, `receptionist`, `staff` e `client`.
+- Criado `get_my_barbershop_id()` como helper canónico de tenant.
+- Mantido `current_barbershop_id()` como alias de compatibilidade para migrations/policies existentes.
+- Normalizadas as RLS de `users` para leitura própria/tenant e atualização apenas da própria linha.
+- Mantida a proteção server-side de `barbershop_id` e `role`, com excepção exclusivamente para o contexto interno de onboarding.
+- Normalizadas as policies de criação/actualização de `barbershops` e `shops` para `created_by` e roles `owner`/`admin`.
+- Adicionados índices para `users.barbershop_id` e `shops.barbershop_id`.
+- Adicionada a migration `20260812160000_database_consistency_refactor.sql`.
+- Adicionada a documentação `docs/database-refactor.md` com o processo para obter uma baseline real, validar um rebuild local e preparar posteriormente um squash seguro.
+- Não foram executadas operações destrutivas sobre a base de dados de produção.
 
 ### Onboarding UX
 - Redesigned the onboarding flow around a clearer two-step journey instead of presenting an open-ended form immediately.
