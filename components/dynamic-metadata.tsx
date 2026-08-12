@@ -28,7 +28,7 @@ function setMetaTag(
 function applyMetadata(isAuthenticated: boolean) {
   const meta = isAuthenticated ? authenticatedMetadata : guestMetadata;
   const title =
-    typeof meta.title === "string" ? meta.title : "Silentra Barbershop";
+    typeof meta.title === "string" ? meta.title : "Silentra for Barbers";
   const description = meta.description ?? "";
 
   document.title = title;
