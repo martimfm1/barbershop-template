@@ -1,6 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { getUserBarbershopId } from "@/lib/db";
 
 export async function proxySupabase(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -10,36 +9,49 @@ export async function proxySupabase(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() { return request.cookies.getAll(); },
+        getAll() {
+          return request.cookies.getAll();
+        },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            response.cookies.set(name, value, options),
           );
         },
       },
-    }
+    },
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
 
-  // 1. Bloqueio de segurança se não estiver autenticado
-  if (!user && (pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding"))) {
+  if (
+    !user &&
+    (pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding"))
+  ) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // 2. Fluxo para utilizadores autenticados
   if (user) {
-    const profile = await getUserBarbershopId(supabase, user.id);
+    // Use the authenticated SSR client directly. Do not import browser-only DB
+    // helpers into the request proxy because they cannot resolve this session.
+    const { data: profile, error: profileError } = await supabase
+      .from("users")
+      .select("barbershop_id")
+      .eq("id", user.id)
+      .maybeSingle();
 
-    // console.log("Profile loaded in Proxy:", profile);
-    const hasBarbershop = !!profile?.barbershop_id;
+    if (profileError) {
+      console.error("[AUTH_PROXY_PROFILE_LOOKUP_FAIL]", profileError.message);
+    }
 
-    // Gerir o cookie da barbearia
-    if (profile?.barbershop_id) {
-      response.cookies.set("barbershop_id", profile.barbershop_id, {
+    const barbershopId = profile?.barbershop_id ?? null;
+
+    if (barbershopId) {
+      response.cookies.set("barbershop_id", barbershopId, {
         path: "/",
         httpOnly: false,
         secure: process.env.NODE_ENV === "production",
@@ -49,11 +61,11 @@ export async function proxySupabase(request: NextRequest) {
       response.cookies.delete("barbershop_id");
     }
 
-    // Redirecionamentos inteligentes do Onboarding / Dashboard
-    if (pathname.startsWith("/dashboard") && !hasBarbershop) {
+    if (pathname.startsWith("/dashboard") && !barbershopId) {
       return NextResponse.redirect(new URL("/onboarding", request.url));
     }
-    if (pathname.startsWith("/onboarding") && hasBarbershop) {
+
+    if (pathname.startsWith("/onboarding") && barbershopId) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
