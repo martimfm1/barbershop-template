@@ -2,16 +2,40 @@
 
 ## Unreleased — 2026-08-12
 
+### Autenticação Supabase
+- Reforçado o fluxo de recuperação de palavra-passe para nunca verificar publicamente se um email existe.
+- Removida a dependência do RPC `check_email_exists()` na recuperação de palavra-passe.
+- Revogada a execução de `check_email_exists(text)` para `public`, `anon` e `authenticated`, fechando o endpoint legado de enumeração de contas.
+- A criação de conta deixou de distinguir respostas para emails já registados.
+- O endpoint de login valida o corpo do pedido, normaliza o email e devolve apenas os dados de perfil necessários; access/refresh tokens não são enviados no JSON.
+- O cliente de browser do Supabase passou a usar tipos reais em vez de `any` e configura explicitamente persistência e renovação automática da sessão.
+- O endpoint de redefinição de palavra-passe valida primeiro a sessão de recuperação através de `auth.getUser()` antes de alterar a palavra-passe.
+- Normalizado o tratamento de erros do reset para evitar exposição de detalhes internos do Supabase.
+- Adicionada `20260812180000_auth_security_hardening.sql` para fechar helpers SECURITY DEFINER de autenticação que já não devem ser executáveis pelo cliente.
+
+### Refatoração da base de dados — RLS e isolamento por tenant
+- Consolidado o acesso multi-tenant das tabelas core através de `current_barbershop_id()`.
+- Mantido `get_my_barbershop_id()` como helper de compatibilidade.
+- Removidas policies duplicadas e permissivas em `users`, `barbershops`, `shops`, `appointments`, `services`, `professionals`, `schedule_blocks` e billing.
+- `users` deixa de permitir que um membro altere a conta de outro membro da mesma barbearia através de RLS; alterações de `role` e `barbershop_id` continuam protegidas server-side.
+- `appointments` deixou de ter leitura pública; a criação pública de marcações continua disponível com validação de barbearia, serviço e profissional.
+- `shops` passou a permitir escrita apenas ao criador da barbearia ou a `owner`/`admin` do respetivo tenant.
+- `barbershops` passou a usar `created_by` para validar o criador e as alterações administrativas.
+- Billing passou a ter uma única policy de leitura por utilizador em `customers` e `subscriptions`.
+- Adicionados índices para consultas frequentes por tenant e data.
+- Mantida a RLS ativa nas tabelas core.
+- Adicionada `20260812170000_database_rls_canonicalization.sql`.
+- Não foram executadas operações destrutivas sobre dados de produção.
+
 ### Refatoração da base de dados
 - Consolidado o modelo de roles em `users_role_check`, removendo a definição concorrente `chk_user_role`.
 - O modelo canónico de roles passa a ser `owner`, `admin`, `manager`, `barber`, `receptionist`, `staff` e `client`.
 - Criado `get_my_barbershop_id()` como helper canónico de tenant.
 - Mantido `current_barbershop_id()` como alias de compatibilidade para migrations/policies existentes.
 - Normalizadas as RLS de `users` para leitura própria/tenant e atualização apenas da própria linha.
-- Mantida a proteção server-side de `barbershop_id` e `role`, com excepção exclusivamente para o contexto interno de onboarding.
+- Mantida a proteção server-side de `barbershop_id` e `role`, com exceção exclusivamente para o contexto interno de onboarding.
 - Normalizadas as policies de criação/actualização de `barbershops` e `shops` para `created_by` e roles `owner`/`admin`.
 - Adicionados índices para `users.barbershop_id` e `shops.barbershop_id`.
-- Adicionada a migration `20260812160000_database_consistency_refactor.sql`.
 - Adicionada a documentação `docs/database-refactor.md` com o processo para obter uma baseline real, validar um rebuild local e preparar posteriormente um squash seguro.
 - Não foram executadas operações destrutivas sobre a base de dados de produção.
 
@@ -33,7 +57,7 @@
 - Fixed the `Falha ao associar barbearia ao utilizador` error caused by direct `users` table updates being blocked by RLS during barbershop creation.
 - Added `complete_barbershop_onboarding(uuid)`, a narrowly scoped `SECURITY DEFINER` RPC that can only modify the authenticated user's own profile and only when that profile is not already linked to a barbershop.
 - The onboarding create API now uses the protected RPC to assign the newly created barbershop and `owner` role.
-- Added a migration aligning `chk_user_role` with the application role model by explicitly allowing `owner`.
+- Added a migration aligning the role constraint with the application role model.
 - Added `barbershops.created_by` and require the onboarding RPC to match the target barbershop to the authenticated creator, preventing cross-tenant association attempts.
 - Hardened the `users` tenant/role trigger so only the explicit onboarding transaction context can perform the owner association; normal client updates remain blocked.
 - Kept the `users` RLS update policy restricted to the authenticated user's own row instead of weakening tenant isolation.
