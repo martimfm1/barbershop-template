@@ -14,6 +14,14 @@
 - Added visible keyboard focus states and mobile-friendly touch targets.
 - Improved address autocomplete feedback, including confirmed-location state and accessible loading feedback.
 - Limited marketplace tags submitted by the onboarding UI to the first eight entries.
+- Added mobile-first layout safeguards for the onboarding container, forms, grids, buttons and safe-area spacing.
+
+### Onboarding security and reliability
+- Fixed the `Falha ao associar barbearia ao utilizador` error caused by direct `users` table updates being blocked by RLS during barbershop creation.
+- Added `complete_barbershop_onboarding(uuid)`, a narrowly scoped `SECURITY DEFINER` RPC that can only modify the authenticated user's own profile and only when that profile is not already linked to a barbershop.
+- The onboarding create API now uses the protected RPC to assign the newly created barbershop and `owner` role.
+- Improved rollback behaviour when owner association fails.
+- Kept authentication and tenant validation server-side; no service-role credentials are exposed to the browser.
 
 ## Unreleased — 2026-08-11
 
