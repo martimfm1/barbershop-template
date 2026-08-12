@@ -1,13 +1,28 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isRecord, normalizeText } from "@/lib/validation";
-import { slugify } from "@/lib/utils/slugify";
+
+function parseTime(value: string): string | null {
+  const trimmed = value.trim();
+  const match = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(trimmed);
+  if (!match) return null;
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const second = Number(match[3] ?? "0");
+
+  if (hour > 23 || minute > 59 || second > 59) return null;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:${String(second).padStart(2, "0")}`;
+}
 
 export async function POST(request: Request) {
   const supabase = await createClient();
 
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
@@ -18,54 +33,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Pedido inválido" }, { status: 400 });
     }
 
-    const { name, address, city, hours, price, tags, lat, lng } = body;
-    const normalizedName = normalizeText(name, 120);
-    const normalizedAddress = normalizeText(address, 240);
-    const normalizedCity = normalizeText(city, 100);
+    const normalizedName = normalizeText(body.name, 120);
+    const normalizedAddress = normalizeText(body.address, 240);
+    const normalizedCity = normalizeText(body.city, 100);
 
     if (!normalizedName || !normalizedAddress || !normalizedCity) {
       return NextResponse.json(
-        { error: "Campos obrigatórios em falta: name, address, city" },
+        { error: "Preenche o nome, a morada e a cidade." },
         { status: 400 },
       );
     }
 
-    const { data: currentProfile, error: profileError } = await supabase
-      .from("users")
-      .select("barbershop_id")
-      .eq("id", user.id)
-      .maybeSingle();
+    const rawHours = typeof body.hours === "string" ? body.hours : "09:00-19:00";
+    const [rawOpen = "09:00", rawClose = "19:00"] = rawHours.split("-").map((part) => part.trim());
+    const openingTime = parseTime(rawOpen) ?? "09:00:00";
+    const closingTime = parseTime(rawClose) ?? "19:00:00";
 
-    if (profileError) {
-      console.error("[ONBOARDING_PROFILE_CHECK_FAIL]", profileError);
-      return NextResponse.json({ error: "Não foi possível validar a conta." }, { status: 503 });
-    }
-
-    if (currentProfile?.barbershop_id) {
-      return NextResponse.json(
-        { error: "Esta conta já tem uma barbearia associada." },
-        { status: 409 },
-      );
-    }
-
-    let openTime = "09:00:00";
-    let closeTime = "19:00:00";
-
-    if (typeof hours === "string" && hours.includes("-")) {
-      const parts = hours.split("-").map((part) => part.trim());
-      if (parts[0]) openTime = parts[0].length === 5 ? `${parts[0]}:00` : parts[0];
-      if (parts[1]) closeTime = parts[1].length === 5 ? `${parts[1]}:00` : parts[1];
-    }
-
-    const generatedSlug = `${slugify(normalizedName)}-${crypto.randomUUID().slice(0, 8)}`;
-    const numericPrice = typeof price === "number" ? price : Number(price);
-    const latitude = typeof lat === "number" ? lat : Number(lat);
-    const longitude = typeof lng === "number" ? lng : Number(lng);
+    const numericPrice = typeof body.price === "number" ? body.price : Number(body.price);
+    const latitude = body.lat == null || body.lat === "" ? null : Number(body.lat);
+    const longitude = body.lng == null || body.lng === "" ? null : Number(body.lng);
 
     if (
-      !Number.isFinite(numericPrice) || numericPrice < 0 || numericPrice > 10_000 ||
-      !Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
-      !Number.isFinite(longitude) || longitude < -180 || longitude > 180
+      !Number.isFinite(numericPrice) ||
+      numericPrice < 0 ||
+      numericPrice > 10_000 ||
+      (latitude !== null && (!Number.isFinite(latitude) || latitude < -90 || latitude > 90)) ||
+      (longitude !== null && (!Number.isFinite(longitude) || longitude < -180 || longitude > 180))
     ) {
       return NextResponse.json(
         { error: "Os dados de preço ou localização são inválidos." },
@@ -73,59 +66,49 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: barbershop, error: barbershopError } = await supabase
-      .from("barbershops")
-      .insert({
-        name: normalizedName,
-        address: normalizedAddress,
-        opening_time: openTime,
-        closing_time: closeTime,
-        allow_online_bookings: true,
-        auto_reminders: false,
-        created_by: user.id,
-      })
-      .select("id")
-      .single();
+    const tags = Array.isArray(body.tags)
+      ? body.tags
+          .filter((tag): tag is string => typeof tag === "string")
+          .map((tag) => tag.trim())
+          .filter(Boolean)
+          .slice(0, 12)
+      : [];
 
-    if (barbershopError || !barbershop) {
-      console.error("[ONBOARDING_BARBERSHOP_FAIL]", barbershopError);
-      return NextResponse.json({ error: "Falha ao criar barbearia" }, { status: 500 });
-    }
-
-    const barbershopId = barbershop.id;
-
-    const { error: shopError } = await supabase
-      .from("shops")
-      .insert({
-        barbershop_id: barbershopId,
-        slug: generatedSlug,
-        city: normalizedCity,
-        price: numericPrice,
-        tags: Array.isArray(tags)
-          ? tags.filter((tag): tag is string => typeof tag === "string").slice(0, 12)
-          : [],
-        lat: latitude,
-        lng: longitude,
-        is_active: true,
-      });
-
-    if (shopError) {
-      console.error("[ONBOARDING_SHOP_FAIL]", shopError);
-      await supabase.from("barbershops").delete().eq("id", barbershopId);
-      return NextResponse.json({ error: "Falha ao criar listing no marketplace" }, { status: 500 });
-    }
-
-    const { error: ownerLinkError } = await supabase.rpc(
-      "complete_barbershop_onboarding",
-      { p_barbershop_id: barbershopId },
+    const { data: barbershopId, error: onboardingError } = await supabase.rpc(
+      "create_barbershop_onboarding",
+      {
+        p_name: normalizedName,
+        p_address: normalizedAddress,
+        p_city: normalizedCity,
+        p_opening_time: openingTime,
+        p_closing_time: closingTime,
+        p_price: numericPrice,
+        p_tags: tags,
+        p_lat: latitude,
+        p_lng: longitude,
+      },
     );
 
-    if (ownerLinkError) {
-      console.error("[ONBOARDING_USER_LINK_FAIL]", ownerLinkError);
-      await supabase.from("shops").delete().eq("barbershop_id", barbershopId);
-      await supabase.from("barbershops").delete().eq("id", barbershopId);
+    if (onboardingError || !barbershopId) {
+      console.error("[ONBOARDING_CREATE_FAIL]", onboardingError);
+
+      const code = onboardingError?.code;
+      if (code === "23505") {
+        return NextResponse.json(
+          { error: "Esta conta já tem uma barbearia associada." },
+          { status: 409 },
+        );
+      }
+
+      if (code === "42501") {
+        return NextResponse.json(
+          { error: "Não tens autorização para concluir este onboarding." },
+          { status: 403 },
+        );
+      }
+
       return NextResponse.json(
-        { error: "Falha ao associar a barbearia à sua conta." },
+        { error: "Não foi possível criar a barbearia. Tenta novamente." },
         { status: 500 },
       );
     }
