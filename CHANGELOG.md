@@ -2,6 +2,15 @@
 
 ## Unreleased — 2026-08-12
 
+### Base de dados e migrations
+- Identificado e documentado que a história atual de migrations não contém a migration baseline que criou o schema base do produto.
+- Mantida a história existente sem operações destrutivas sobre dados de produção.
+- Adicionada `20260812150000_normalize_schema_roles_and_onboarding_rls.sql` para eliminar a duplicação entre `chk_user_role` e `users_role_check`.
+- A tabela `users` passa a ter uma única constraint canónica de roles: `owner`, `admin`, `manager`, `barber`, `receptionist`, `staff` e `client`.
+- Normalizadas as policies de criação e atualização de `barbershops` para suportar o criador autenticado durante o onboarding sem abrir acesso cross-tenant.
+- Normalizadas as policies de criação e atualização de `shops` para respeitar o criador da barbearia e os roles `owner`/`admin`.
+- Adicionada documentação em `docs/database-rebuild.md` com o procedimento seguro para obter uma baseline real, testar um rebuild completo e só depois fazer squash da história de migrations.
+
 ### Onboarding UX
 - Redesigned the onboarding flow around a clearer two-step journey instead of presenting an open-ended form immediately.
 - Added a persistent progress indicator that starts above zero and updates as the user completes the essential setup fields.
