@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased — 2026-08-12
+
+### Onboarding UX
+- Redesigned the onboarding flow around a clearer two-step journey instead of presenting an open-ended form immediately.
+- Added a persistent progress indicator that starts above zero and updates as the user completes the essential setup fields.
+- Added smart defaults for opening time, closing time, reference price and marketplace tags.
+- Reduced decision fatigue by grouping setup fields into Identity, Initial configuration and Visibility sections.
+- Clarified that non-essential settings can be changed later in the dashboard.
+- Improved the primary create-barbershop call to action for desktop and mobile.
+- Added trust-building copy around server-side invitation validation and post-onboarding configuration.
+- Improved the join-existing-barbershop flow with a focused invitation experience and accessible one-time-code autocomplete.
+- Added visible keyboard focus states and mobile-friendly touch targets.
+- Improved address autocomplete feedback, including confirmed-location state and accessible loading feedback.
+- Limited marketplace tags submitted by the onboarding UI to the first eight entries.
+
 ## Unreleased — 2026-08-11
 
 ### Onboarding e equipa
