@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SiteNavbar } from "@/components/site-navbar";
 import { createClient } from "@/lib/supabase/client";
+import { getClientAuthCallbackUrl } from "@/lib/auth/email-confirmation";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -26,39 +27,29 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) return;
+
     setIsSubmitting(true);
     setErrorMsg(null);
 
     try {
       const supabase = createClient();
 
-      // 1. Verifica se o e-mail existe na DB através do RPC
-      const { data: emailExists, error: checkError } = await supabase
-        .rpc("check_email_exists", { email_to_check: email });
-
-      if (checkError) {
-        throw new Error("Erro ao verificar a conta. Tenta novamente.");
-      }
-
-      if (!emailExists) {
-        setErrorMsg("Não existe nenhuma conta associada a este endereço de e-mail.");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // 2. Se existir, envia o e-mail de recuperação
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/api/auth/callback?next=/reset-password`,
+      // Do not check whether the account exists. The response stays
+      // indistinguishable to prevent account enumeration.
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+        redirectTo: `${getClientAuthCallbackUrl()}?next=/reset-password`,
       });
 
-      if (resetError) {
-        throw new Error(resetError.message);
+      if (error) {
+        throw new Error("Não foi possível processar o pedido.");
       }
 
       setIsSent(true);
-    } catch (err: any) {
+    } catch {
       setErrorMsg(
-        err?.message || "Ocorreu um erro ao processar o pedido. Tenta novamente."
+        "Não foi possível processar o pedido. Tenta novamente daqui a pouco.",
       );
     } finally {
       setIsSubmitting(false);
@@ -70,7 +61,7 @@ export default function ForgotPasswordPage() {
       <main className="min-h-dvh w-full bg-background text-foreground flex flex-col antialiased selection:bg-zinc-50 selection:text-zinc-950">
         <StarfieldBackground>
           <div className="flex flex-col min-h-dvh w-full">
-
+            <SiteNavbar />
             <section className="flex-1 w-full flex flex-col items-center justify-center px-4 pt-10 pb-12 sm:px-8 max-w-lg mx-auto">
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
@@ -81,16 +72,16 @@ export default function ForgotPasswordPage() {
                 <CardHeader className="gap-2 pb-2 px-5 sm:px-6 pt-6 sm:pt-7">
                   <div className="flex justify-start">
                     <Badge className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] text-zinc-300 select-none">
-                      Security Center
+                      Segurança da conta
                     </Badge>
                   </div>
                   <CardTitle className="font-heading text-xl sm:text-2xl text-zinc-50 tracking-tight mt-1">
-                    {isSent ? "Check your email" : "Reset your password"}
+                    {isSent ? "Verifica o teu email" : "Redefinir palavra-passe"}
                   </CardTitle>
                   <CardDescription className="text-xs text-zinc-400 leading-relaxed">
                     {isSent
-                      ? `We sent a recovery link to ${email}. Follow the instructions to define a new password.`
-                      : "Enter your account email address and we'll send you a link to reset your password."}
+                      ? `Se existir uma conta associada a ${email}, enviámos instruções para definir uma nova palavra-passe.`
+                      : "Indica o email da tua conta e enviaremos instruções para redefinir a palavra-passe."}
                   </CardDescription>
                 </CardHeader>
 
@@ -124,17 +115,13 @@ export default function ForgotPasswordPage() {
                         <Field>
                           <FieldGroup className="grid gap-1.5">
                             <FieldLabel>
-                              <Label
-                                htmlFor="reset-email"
-                                className="text-xs font-medium text-zinc-300"
-                              >
-                                Email Address
+                              <Label htmlFor="reset-email" className="text-xs font-medium text-zinc-300">
+                                Email
                               </Label>
                             </FieldLabel>
                             <FieldContent>
                               <div className="relative group">
                                 <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-100 transition-colors" />
-
                                 <Input
                                   id="reset-email"
                                   name="email"
@@ -144,23 +131,22 @@ export default function ForgotPasswordPage() {
                                   value={email}
                                   aria-describedby={emailHintId}
                                   onChange={(e) => setEmail(e.target.value)}
-                                  placeholder="admin@barbershop.pt"
+                                  placeholder="ola@barbearia.pt"
                                   className="h-11 text-base sm:text-xs border-white/10 bg-white/5 pl-10 pr-10 text-zinc-50 placeholder:text-zinc-500 focus-visible:border-white/40 focus-visible:ring-2 focus-visible:ring-white/20 transition-all rounded-xl"
                                 />
-
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <button
                                       type="button"
                                       tabIndex={-1}
-                                      aria-label="Informações sobre o e-mail"
+                                      aria-label="Informações sobre o email"
                                       className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 p-1"
                                     >
                                       <Info className="size-3.5" />
                                     </button>
                                   </TooltipTrigger>
                                   <TooltipContent id={emailHintId} side="top">
-                                    Enter the email associated with your workspace.
+                                    Usa o email associado à tua conta Silentra.
                                   </TooltipContent>
                                 </Tooltip>
                               </div>
@@ -170,14 +156,14 @@ export default function ForgotPasswordPage() {
 
                         <Button
                           type="submit"
-                          disabled={isSubmitting || !email}
+                          disabled={isSubmitting || !email.trim()}
                           className="h-11 w-full rounded-full bg-zinc-50 text-xs font-bold text-zinc-950 hover:bg-white active:scale-[0.98] transition-all shadow-md mt-1 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:opacity-30 disabled:pointer-events-none"
                         >
                           {isSubmitting ? (
                             <Spinner className="size-4 text-zinc-950" />
                           ) : (
                             <span className="flex items-center justify-center gap-2">
-                              Send Reset Instructions <ArrowRight className="size-4" />
+                              Enviar instruções <ArrowRight className="size-4" />
                             </span>
                           )}
                         </Button>
@@ -187,7 +173,7 @@ export default function ForgotPasswordPage() {
                             href="/login"
                             className="inline-flex items-center justify-center gap-2 text-xs font-medium text-zinc-400 hover:text-zinc-100 transition-colors min-h-[44px] px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded-md"
                           >
-                            <ArrowLeft className="size-3.5" /> Back to Login
+                            <ArrowLeft className="size-3.5" /> Voltar ao login
                           </Link>
                         </div>
                       </motion.form>
@@ -202,11 +188,9 @@ export default function ForgotPasswordPage() {
                         <div className="size-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                           <CheckCircle2 className="size-6" />
                         </div>
-
                         <p className="text-xs text-zinc-300">
-                          Didn't receive the email? Check your spam folder or try sending again.
+                          Não recebeste o email? Verifica o spam ou tenta novamente.
                         </p>
-
                         <div className="w-full space-y-3 pt-2">
                           <Button
                             type="button"
@@ -214,14 +198,13 @@ export default function ForgotPasswordPage() {
                             variant="outline"
                             className="h-11 w-full rounded-full border-white/10 bg-white/5 text-xs font-semibold text-zinc-200 hover:bg-white/10 hover:text-white transition-all"
                           >
-                            Resend Email
+                            Tentar novamente
                           </Button>
-
                           <Link
                             href="/login"
                             className="inline-flex items-center justify-center gap-2 w-full text-xs font-medium text-zinc-400 hover:text-zinc-100 transition-colors min-h-[44px] px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded-md"
                           >
-                            <ArrowLeft className="size-3.5" /> Back to Login
+                            <ArrowLeft className="size-3.5" /> Voltar ao login
                           </Link>
                         </div>
                       </motion.div>
