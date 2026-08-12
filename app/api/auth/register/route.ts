@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Usa um email válido, uma palavra-passe com pelo menos 12 caracteres e preenche os restantes campos.",
+            "Usa um email válido, uma palavra-passe entre 12 e 128 caracteres e preenche os restantes campos.",
         },
         { status: 400 },
       );
@@ -44,9 +44,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // O registo normal deve usar a chave pública do Supabase. A service role
-    // fica reservada para operações administrativas e nunca é necessária para
-    // criar uma conta que ainda precisa de confirmação por email.
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: false,
@@ -72,22 +69,15 @@ export async function POST(request: Request) {
     });
 
     if (error) {
-      const message = error.message.toLowerCase();
-      const isExistingAccount =
-        message.includes("already") || message.includes("registered");
-
+      // Do not reveal whether an account already exists. Supabase Auth must
+      // remain the authority for account state and enumeration protection.
       console.warn("[REGISTER_REJECTED]", {
         code: error.code,
         status: error.status,
-        message: error.message,
       });
 
       return NextResponse.json(
-        {
-          error: isExistingAccount
-            ? "Já existe uma conta com este email. Inicia sessão em vez de criares uma nova conta."
-            : "Não foi possível enviar o email de confirmação. Confirma os dados e tenta novamente.",
-        },
+        { error: "Não foi possível criar a conta. Confirma os dados e tenta novamente." },
         { status: 400 },
       );
     }
