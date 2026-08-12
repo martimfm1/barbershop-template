@@ -82,6 +82,7 @@ export async function POST(request: Request) {
         closing_time: closeTime,
         allow_online_bookings: true,
         auto_reminders: false,
+        created_by: user.id,
       })
       .select("id")
       .single();
