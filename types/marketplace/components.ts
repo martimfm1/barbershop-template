@@ -12,11 +12,13 @@ export interface MapPreviewProps {
   shops: MarketplaceShop[];
   view: "grid" | "map";
   onSelectShop: (shop: MarketplaceShop) => void;
+  userLocation?: UserCoordinates | null;
 }
 
 export interface MapInnerProps {
   shops: MarketplaceShop[];
   onSelectShop: (shop: MarketplaceShop) => void;
+  userLocation?: UserCoordinates | null;
 }
 
 export interface SearchFilterBarProps {
