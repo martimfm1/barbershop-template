@@ -21,6 +21,9 @@
 - Added `complete_barbershop_onboarding(uuid)`, a narrowly scoped `SECURITY DEFINER` RPC that can only modify the authenticated user's own profile and only when that profile is not already linked to a barbershop.
 - The onboarding create API now uses the protected RPC to assign the newly created barbershop and `owner` role.
 - Added a migration aligning `chk_user_role` with the application role model by explicitly allowing `owner`.
+- Added `barbershops.created_by` and require the onboarding RPC to match the target barbershop to the authenticated creator, preventing cross-tenant association attempts.
+- Hardened the `users` tenant/role trigger so only the explicit onboarding transaction context can perform the owner association; normal client updates remain blocked.
+- Kept the `users` RLS update policy restricted to the authenticated user's own row instead of weakening tenant isolation.
 - Improved rollback behaviour when owner association fails.
 - Kept authentication and tenant validation server-side; no service-role credentials are exposed to the browser.
 
