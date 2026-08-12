@@ -27,6 +27,10 @@ function minutes(time: string | null | undefined, fallback: number) {
   return Number.isFinite(hours) && Number.isFinite(mins) ? hours * 60 + mins : fallback;
 }
 
+function isValidCoordinates(latitude: number, longitude: number) {
+  return Number.isFinite(latitude) && Number.isFinite(longitude) && latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
+}
+
 function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number) {
   const rad = (value: number) => (value * Math.PI) / 180;
   const earthRadiusKm = 6371;
@@ -57,13 +61,30 @@ function hasAvailableSlot(record: ShopRecord, booked: Set<string>, date: string)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const query = searchParams.get("query")?.trim().toLocaleLowerCase() ?? "";
+    const rawQuery = searchParams.get("query")?.trim() ?? "";
+    if (rawQuery.length > 160) {
+      return NextResponse.json({ error: "Pesquisa demasiado longa." }, { status: 400 });
+    }
+
+    const query = rawQuery.toLocaleLowerCase();
     const filter = searchParams.get("filter") ?? "All";
+    if (!["All", "Near Me", "Top Rated"].includes(filter)) {
+      return NextResponse.json({ error: "Filtro inválido." }, { status: 400 });
+    }
+
     const requestedDate = searchParams.get("date");
     const isIsoDate = Boolean(requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) && !Number.isNaN(new Date(`${requestedDate}T12:00:00`).getTime()));
     const date = requestedDate === "Tomorrow" ? lisbonDate(1) : isIsoDate ? requestedDate! : lisbonDate(0);
-    const latitude = Number(searchParams.get("lat")); const longitude = Number(searchParams.get("lng"));
-    const canMeasureDistance = Number.isFinite(latitude) && Number.isFinite(longitude);
+
+    const latitude = Number(searchParams.get("lat"));
+    const longitude = Number(searchParams.get("lng"));
+    const hasLatitude = searchParams.has("lat");
+    const hasLongitude = searchParams.has("lng");
+    if ((hasLatitude || hasLongitude) && !isValidCoordinates(latitude, longitude)) {
+      return NextResponse.json({ error: "Localização inválida." }, { status: 400 });
+    }
+    const canMeasureDistance = isValidCoordinates(latitude, longitude);
+
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("shops")
@@ -72,13 +93,11 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error("[SHOPS_GET_ERROR]", error);
-      return NextResponse.json({ error: "Failed to fetch shops" }, { status: 500 });
+      return NextResponse.json({ error: "Não foi possível carregar as barbearias." }, { status: 500 });
     }
 
     const records = ((data as unknown as ShopRecord[]) ?? []).filter((record) => {
       const relation = Array.isArray(record.barbershops) ? record.barbershops[0] : record.barbershops;
-
-      // Backwards-compatible default: existing rows without the column value remain visible.
       if (relation?.is_public_in_directory === false) return false;
       if (!query) return true;
       return [relation?.name, relation?.address, record.city, ...(record.tags ?? [])].some((value) => value?.toLocaleLowerCase().includes(query));
@@ -92,17 +111,22 @@ export async function GET(request: Request) {
       if (!bookedByShop.has(appointment.barbershop_id)) bookedByShop.set(appointment.barbershop_id, new Set());
       bookedByShop.get(appointment.barbershop_id)?.add(time);
     }
+
     const available = records.filter((record) => hasAvailableSlot(record, bookedByShop.get(record.barbershop_id) ?? new Set(), date));
     const shops = available.map((record) => {
       const shop = mapRecordToMarketplaceShopResponse(record);
-      const distanceKm = canMeasureDistance && Number.isFinite(record.lat) && Number.isFinite(record.lng) ? haversineKm(latitude, longitude, record.lat, record.lng) : null;
+      const distanceKm = canMeasureDistance && isValidCoordinates(Number(record.lat), Number(record.lng))
+        ? haversineKm(latitude, longitude, Number(record.lat), Number(record.lng))
+        : null;
       return { ...shop, distanceKm: distanceKm === null ? 0 : Number(distanceKm.toFixed(1)) };
     });
+
     if (filter === "Near Me" && canMeasureDistance) shops.sort((a, b) => a.distanceKm - b.distanceKm);
     if (filter === "Top Rated") shops.sort((a, b) => b.rating - a.rating || b.reviewsCount - a.reviewsCount);
-    return NextResponse.json({ data: shops });
+
+    return NextResponse.json({ data: shops }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("[SHOPS_INTERNAL_ERROR]", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Ocorreu um erro ao carregar as barbearias." }, { status: 500 });
   }
 }
