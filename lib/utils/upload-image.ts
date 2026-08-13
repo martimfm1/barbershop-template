@@ -28,10 +28,8 @@ const SUPPORTED_IMAGE_TYPES = new Set([
 ]);
 
 /**
- * Validates, decodes and converts a user image to a real WebP before uploading it.
- * Storage paths are returned to the caller. Avatar metadata is updated through
- * the protected database RPC because the current Settings flow owns the upload
- * operation and must keep the Storage + metadata update atomic from the UI.
+ * Validates, decodes and converts a user image to WebP before uploading it.
+ * Avatar metadata is updated through a protected RPC owned by the tenant.
  */
 export async function processAndUploadImage({
   file,
@@ -86,11 +84,17 @@ export async function processAndUploadImage({
       });
 
     if (uploadError) {
-      console.error(`[Upload Error - ${bucket}]:`, uploadError);
+      console.error(`[Upload Error - ${bucket}]`, {
+        message: uploadError.message,
+        name: uploadError.name,
+        statusCode: uploadError.statusCode,
+        path: webpPath,
+      });
       return {
         data: null,
         error: new Error(
-          "Não foi possível carregar a imagem para o armazenamento. Verifica as permissões de armazenamento.",
+          uploadError.message ||
+            "Não foi possível carregar a imagem para o armazenamento.",
         ),
       };
     }
@@ -101,7 +105,7 @@ export async function processAndUploadImage({
     const publicUrl = publicUrlData.publicUrl;
 
     if (!publicUrl) {
-      console.error("[Upload Error]: Supabase did not return a public URL", {
+      console.error("[Upload Error] Supabase did not return a public URL", {
         bucket,
         path: webpPath,
       });
@@ -126,16 +130,35 @@ export async function processAndUploadImage({
       );
 
       if (metadataError) {
-        console.error("[Avatar Metadata Error]:", metadataError);
+        console.error("[Avatar Metadata Error]", {
+          message: metadataError.message,
+          code: metadataError.code,
+          details: metadataError.details,
+          hint: metadataError.hint,
+          barbershopId,
+        });
+
+        // Avoid leaving an orphaned avatar file when metadata cannot be updated.
+        const { error: cleanupError } = await supabase.storage
+          .from("avatar")
+          .remove([webpPath]);
+        if (cleanupError) {
+          console.warn("[Avatar Cleanup Error]", cleanupError);
+        }
+
+        const message = metadataError.message.toLocaleLowerCase();
         return {
           data: null,
           error: new Error(
-            metadataError.message.includes("authentication")
+            message.includes("authentication")
               ? "A tua sessão expirou. Inicia sessão novamente."
-              : metadataError.message.includes("permission") ||
-                  metadataError.message.includes("authorized")
+              : message.includes("not permitted") ||
+                  message.includes("permission") ||
+                  message.includes("authorized")
                 ? "Não tens permissão para alterar o avatar desta barbearia."
-                : "Não foi possível associar o avatar à barbearia.",
+                : message.includes("invalid avatar url")
+                  ? "O endereço gerado para o avatar é inválido."
+                  : "Não foi possível associar o avatar à barbearia.",
           ),
         };
       }
@@ -151,7 +174,7 @@ export async function processAndUploadImage({
       error: null,
     };
   } catch (err) {
-    console.error("[Process Image Error]:", err);
+    console.error("[Process Image Error]", err);
     return {
       data: null,
       error:
