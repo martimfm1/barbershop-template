@@ -23,13 +23,13 @@ revoke all on function public.current_barbershop_id() from public;
 grant execute on function public.current_barbershop_id() to authenticated;
 
 create or replace function public.get_my_barbershop_id()
-returns text
+returns uuid
 language sql
 stable
 security definer
 set search_path = public
 as $$
-  select coalesce(public.current_barbershop_id()::text, '');
+  select public.current_barbershop_id();
 $$;
 
 revoke all on function public.get_my_barbershop_id() from public;
@@ -96,6 +96,7 @@ for each row execute function public.protect_user_tenant_fields();
 
 drop policy if exists "Permitir que barbeiros atualizem utilizadores da sua barbearia" on public.users;
 drop policy if exists "Users can update their own profile" on public.users;
+drop policy if exists "users_update_own_profile" on public.users;
 drop policy if exists "Permitir que barbeiros leiam utilizadores da sua barbearia" on public.users;
 drop policy if exists "Permitir que barbeiros criem clientes para a sua barbearia" on public.users;
 drop policy if exists "Barbershop staff can create clients" on public.users;

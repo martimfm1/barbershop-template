@@ -77,8 +77,8 @@ export function BarbershopProvider({ children }: { children: React.ReactNode }) 
           setBarbershopAvatarUrl(barbershop.avatar_url);
         } else {
           const { data: publicUrl } = supabase.storage
-            .from("avatars")
-            .getPublicUrl(`avatar/${resolvedBarbershopId}/avatar.webp`);
+            .from("avatar")
+            .getPublicUrl(`${resolvedBarbershopId}/avatar.webp`);
 
           setBarbershopAvatarUrl(publicUrl.publicUrl || null);
         }

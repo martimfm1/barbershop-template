@@ -129,20 +129,17 @@ export async function processAndUploadImage({
         return { data: null, error: new Error("Caminho do avatar inválido.") };
       }
 
-      const { error: metadataError } = await supabase.rpc(
-        "set_barbershop_avatar_url",
-        {
-          p_barbershop_id: barbershopId,
-          p_avatar_url: publicUrl,
-        },
-      );
+      const metadataResponse = await fetch("/api/barbershops/avatar", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatarUrl: publicUrl }),
+      });
+      const metadataBody = await metadataResponse.json().catch(() => null);
 
-      if (metadataError) {
+      if (!metadataResponse.ok) {
         console.error("[Avatar Metadata Error]", {
-          message: metadataError.message,
-          code: metadataError.code,
-          details: metadataError.details,
-          hint: metadataError.hint,
+          status: metadataResponse.status,
+          error: metadataBody?.error ?? null,
           barbershopId,
         });
 
@@ -153,19 +150,10 @@ export async function processAndUploadImage({
           console.warn("[Avatar Cleanup Error]", cleanupError);
         }
 
-        const message = metadataError.message.toLocaleLowerCase("pt-PT");
         return {
           data: null,
           error: new Error(
-            message.includes("authentication")
-              ? "A tua sessão expirou. Inicia sessão novamente."
-              : message.includes("not permitted") ||
-                  message.includes("permission") ||
-                  message.includes("authorized")
-                ? "Não tens permissão para alterar o avatar desta barbearia."
-                : message.includes("invalid avatar url")
-                  ? "O endereço gerado para o avatar é inválido."
-                  : "Não foi possível associar o avatar à barbearia.",
+            metadataBody?.error || "Não foi possível associar o avatar à barbearia.",
           ),
         };
       }
