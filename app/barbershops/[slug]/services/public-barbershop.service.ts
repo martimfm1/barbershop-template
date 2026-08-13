@@ -53,34 +53,19 @@ interface RawService {
 }
 
 export const publicBarbershopService = {
-  async getBarbershopData(identifier: string) {
+  async getBarbershopData(slug: string) {
     try {
-      const cleanParam = identifier.toLowerCase().trim();
-      if (!cleanParam) {
+      const cleanSlug = slug.toLowerCase().trim();
+      if (!cleanSlug) {
         return { data: null, error: { message: "Barbearia não encontrada." } };
       }
 
-      // Slug is canonical. UUID lookup exists only as a compatibility fallback.
-      let shop = null;
-      let shopError = null;
-
-      const slugResult = await supabase
+      // The slug route is canonical. UUID fallback is handled by app/barbershops/[id].
+      const { data: shop, error: shopError } = await supabase
         .from("shops")
         .select("*")
-        .ilike("slug", cleanParam)
+        .ilike("slug", cleanSlug)
         .maybeSingle();
-      shop = slugResult.data;
-      shopError = slugResult.error;
-
-      if (!shop && !shopError) {
-        const idResult = await supabase
-          .from("shops")
-          .select("*")
-          .eq("id", cleanParam)
-          .maybeSingle();
-        shop = idResult.data;
-        shopError = idResult.error;
-      }
 
       if (shopError || !shop) {
         return { data: null, error: { message: "Barbearia não encontrada." } };
@@ -128,7 +113,7 @@ export const publicBarbershopService = {
         ? Number(((reviews ?? []).reduce((acc: number, r: any) => acc + r.rating, 0) / totalReviews).toFixed(1))
         : 0;
 
-      const canonicalSlug = String(shop.slug || cleanParam);
+      const canonicalSlug = String(shop.slug || cleanSlug);
       const formattedShop: BarbershopPublicDetails = {
         ...shop,
         id: shop.id,
