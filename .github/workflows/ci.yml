@@ -12,9 +12,9 @@ concurrency:
 
 jobs:
   quality:
-    name: TypeScript + ESLint
+    name: TypeScript + ESLint + Smoke QA
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -40,3 +40,25 @@ jobs:
 
       - name: Lint
         run: pnpm lint
+
+      - name: Build
+        run: pnpm build
+
+      - name: Start production server
+        run: pnpm start > /tmp/silentra-next.log 2>&1 &
+
+      - name: Wait for production server
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/login >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/silentra-next.log
+          exit 1
+
+      - name: Smoke QA
+        env:
+          QA_BASE_URL: http://127.0.0.1:3000
+        run: pnpm qa:smoke
