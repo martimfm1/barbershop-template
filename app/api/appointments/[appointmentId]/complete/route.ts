@@ -106,7 +106,7 @@ export async function POST(
 
     if (customerEmail && shop?.slug) {
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || new URL(request.url).origin;
-      const reviewUrl = `${siteUrl}/barbershops/${encodeURIComponent(shop.slug)}#avaliacao`;
+      const reviewUrl = `${siteUrl}/barbershops/${encodeURIComponent(shop.slug)}`;
       const serviceName = serviceRelation?.name || "o teu atendimento";
 
       try {
