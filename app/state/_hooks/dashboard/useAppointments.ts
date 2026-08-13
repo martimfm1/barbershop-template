@@ -47,9 +47,27 @@ export function useAppointments(barbershopId: string | null, onRefreshData: () =
 
   const confirmBooking = useCallback(async (appointmentId: string) => {
     setLoading(true);
-    try { const { error } = await appointmentService.update(appointmentId, { status: "scheduled" }); if (error) throw error; toast.success("Marcação confirmada com sucesso."); await onRefreshData(); }
-    catch (error) { console.error("[Confirm Booking Hook Error]:", error); toast.error("Erro ao confirmar a marcação."); }
-    finally { setLoading(false); }
+    try {
+      const response = await fetch(`/api/appointments/${appointmentId}/confirm`, { method: "POST" });
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || "Não foi possível confirmar a marcação.");
+      }
+
+      if (result.emailSent) {
+        toast.success("Marcação confirmada e e-mail enviado.");
+      } else if (result.emailError) {
+        toast.warning("Marcação confirmada, mas não foi possível enviar o e-mail.");
+      } else {
+        toast.success("Marcação confirmada. O cliente não tem e-mail associado.");
+      }
+
+      await onRefreshData();
+    } catch (error) {
+      console.error("[Confirm Booking Hook Error]:", error);
+      toast.error(getErrorMessage(error));
+    } finally { setLoading(false); }
   }, [onRefreshData]);
 
   const finalizeBooking = useCallback(async (appointmentId: string, paymentMethod: string) => {
