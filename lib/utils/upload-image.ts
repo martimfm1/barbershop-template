@@ -27,9 +27,15 @@ const SUPPORTED_IMAGE_TYPES = new Set([
   "image/avif",
 ]);
 
+const STORAGE_BUCKETS = {
+  avatar: "avatars",
+  banner: "banner",
+} as const;
+
 /**
  * Validates, decodes and converts a user image to WebP before uploading it.
- * Avatar metadata is updated through a protected RPC owned by the tenant.
+ * The logical `avatar` bucket maps to the existing Supabase `avatars` bucket.
+ * Avatar metadata is updated through a protected tenant-owned RPC.
  */
 export async function processAndUploadImage({
   file,
@@ -73,10 +79,11 @@ export async function processAndUploadImage({
     }
 
     const supabase = createClient();
+    const storageBucket = STORAGE_BUCKETS[bucket];
     const webpPath = path.replace(/\.[^/.]+$/, "") + ".webp";
 
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from(bucket)
+      .from(storageBucket)
       .upload(webpPath, webpBlob, {
         contentType: "image/webp",
         cacheControl: "31536000",
@@ -84,7 +91,7 @@ export async function processAndUploadImage({
       });
 
     if (uploadError) {
-      console.error(`[Upload Error - ${bucket}]`, {
+      console.error(`[Upload Error - ${storageBucket}]`, {
         message: uploadError.message,
         name: uploadError.name,
         statusCode: uploadError.statusCode,
@@ -100,13 +107,13 @@ export async function processAndUploadImage({
     }
 
     const { data: publicUrlData } = supabase.storage
-      .from(bucket)
+      .from(storageBucket)
       .getPublicUrl(webpPath);
     const publicUrl = publicUrlData.publicUrl;
 
     if (!publicUrl) {
       console.error("[Upload Error] Supabase did not return a public URL", {
-        bucket,
+        bucket: storageBucket,
         path: webpPath,
       });
       return {
@@ -116,7 +123,8 @@ export async function processAndUploadImage({
     }
 
     if (bucket === "avatar") {
-      const barbershopId = webpPath.split("/")[0];
+      const pathParts = webpPath.split("/");
+      const barbershopId = pathParts[0];
       if (!barbershopId) {
         return { data: null, error: new Error("Caminho do avatar inválido.") };
       }
@@ -138,15 +146,14 @@ export async function processAndUploadImage({
           barbershopId,
         });
 
-        // Avoid leaving an orphaned avatar file when metadata cannot be updated.
         const { error: cleanupError } = await supabase.storage
-          .from("avatar")
+          .from(storageBucket)
           .remove([webpPath]);
         if (cleanupError) {
           console.warn("[Avatar Cleanup Error]", cleanupError);
         }
 
-        const message = metadataError.message.toLocaleLowerCase();
+        const message = metadataError.message.toLocaleLowerCase("pt-PT");
         return {
           data: null,
           error: new Error(
