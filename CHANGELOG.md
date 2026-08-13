@@ -2,6 +2,16 @@
 
 ## Unreleased — 2026-08-13
 
+### Hardening → UX/Conversion
+- Harmonizados os raios da UI base: controlos e botões usam formas mais retas e cards mantêm apenas uma camada de arredondamento maior para agrupamento visual.
+- Aumentados os targets base dos botões e controlos para melhorar a usabilidade em desktop e mobile.
+- Melhorados os estados de foco visível e a hierarquia de interações para reduzir incerteza durante ações críticas.
+- Adicionado suporte global para `prefers-reduced-motion`, reduzindo animações quando o utilizador o solicita.
+- Criadas classes visuais partilhadas para superfícies, secções, ações primárias/secundárias, estados vazios e CTA, evitando estilos divergentes entre páginas.
+- Reforçada a hierarquia dos preços com o Pro como opção recomendada, contraste visual controlado e CTAs orientadas à ação.
+- Melhorada a comunicação de valor dos planos Free, Pro e Enterprise sem dark patterns.
+- Reforçada a leitura rápida dos benefícios através de espaçamento, agrupamento e contraste.
+
 ### Definições — correções de gravação e avatar
 - Corrigido o fluxo de gravação das definições da barbearia através de um RPC `SECURITY DEFINER` tenant-scoped, permitindo aos proprietários e administradores guardar as alterações sem abrir o RLS.
 - O RPC de definições aceita apenas os campos de configuração suportados e valida a pertença do utilizador à barbearia.
@@ -18,7 +28,6 @@
 - A função `owner` é imutável e mantém acesso total à barbearia.
 - Os membros que entraram por código ficam identificados como tal na gestão da equipa.
 - Adicionados RPCs e API server-side para listar, atualizar e remover membros com validação por tenant.
-- Adicionadas permissões base para dashboard, agenda, clientes, serviços, equipa, mensagens, definições e faturação.
 
 ### Segurança — permissões e CRM
 - Adicionado o RPC `add_client_from_completed_appointment` com `SECURITY DEFINER`, validação de sessão, role e `barbershop_id`.
@@ -58,3 +67,8 @@
 - Melhorados labels, focus states, touch targets e hierarquia visual para acessibilidade.
 - Mantidos os fluxos existentes de localização, faturação, uploads de imagem, marcações e gestão da sessão.
 - O plano e funcionalidades condicionadas continuam dependentes do sistema de permissões existente, sem confiar apenas na UI.
+
+### Pricing
+- Reforçada a diferenciação visual e funcional do plano Pro como escolha recomendada.
+- Os CTAs de pricing foram alinhados com a intenção do utilizador e o estado atual da subscrição.
+- Reduzido o excesso de elementos em formato pill na comparação dos planos.
