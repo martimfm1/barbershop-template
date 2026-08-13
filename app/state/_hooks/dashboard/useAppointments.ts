@@ -50,19 +50,10 @@ export function useAppointments(barbershopId: string | null, onRefreshData: () =
     try {
       const response = await fetch(`/api/appointments/${appointmentId}/confirm`, { method: "POST" });
       const result = await response.json().catch(() => null);
-
-      if (!response.ok || !result?.success) {
-        throw new Error(result?.error || "Não foi possível confirmar a marcação.");
-      }
-
-      if (result.emailSent) {
-        toast.success("Marcação confirmada e e-mail enviado.");
-      } else if (result.emailError) {
-        toast.warning("Marcação confirmada, mas não foi possível enviar o e-mail.");
-      } else {
-        toast.success("Marcação confirmada. O cliente não tem e-mail associado.");
-      }
-
+      if (!response.ok || !result?.success) throw new Error(result?.error || "Não foi possível confirmar a marcação.");
+      if (result.emailSent) toast.success("Marcação confirmada e e-mail enviado.");
+      else if (result.emailError) toast.warning("Marcação confirmada, mas não foi possível enviar o e-mail.");
+      else toast.success("Marcação confirmada. O cliente não tem e-mail associado.");
       await onRefreshData();
     } catch (error) {
       console.error("[Confirm Booking Hook Error]:", error);
@@ -74,15 +65,32 @@ export function useAppointments(barbershopId: string | null, onRefreshData: () =
     setLoading(true);
     try {
       const parsedValue = valueProducts === "" ? 0 : Number(valueProducts);
-      const { error } = await appointmentService.update(appointmentId, { status: "completed", payment_method: paymentMethod, value_products: parsedValue, description_products: descriptionProducts });
-      if (error) throw error;
-      toast.success("Serviço concluído com sucesso.", {
+      if (!Number.isFinite(parsedValue) || parsedValue < 0) throw new Error("O valor adicional não é válido.");
+
+      const response = await fetch(`/api/appointments/${appointmentId}/complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentMethod,
+          valueProducts: parsedValue,
+          descriptionProducts,
+        }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success) throw new Error(result?.error || "Erro ao concluir o serviço.");
+
+      const emailMessage = result.reviewEmailSent
+        ? " Foi enviado um e-mail ao cliente com o pedido de avaliação."
+        : "";
+      toast.success(`Serviço concluído com sucesso.${emailMessage}`, {
         duration: 10000,
         action: { label: "Adicionar aos clientes", onClick: () => void addCompletedAppointmentClient(appointmentId) },
       });
       setFinishingBookingId(null); setValueProducts(""); setDescriptionProducts(""); await onRefreshData();
-    } catch (error) { console.error("[Finalize Booking Hook Error]:", error); toast.error("Erro ao concluir o serviço."); }
-    finally { setLoading(false); }
+    } catch (error) {
+      console.error("[Finalize Booking Hook Error]:", error);
+      toast.error(getErrorMessage(error));
+    } finally { setLoading(false); }
   }, [valueProducts, descriptionProducts, addCompletedAppointmentClient, onRefreshData]);
 
   const handleCreateBlock = useCallback(async (e?: React.SyntheticEvent) => {
@@ -98,5 +106,5 @@ export function useAppointments(barbershopId: string | null, onRefreshData: () =
   const handleDeleteBlock = useCallback(async (id: string) => { setLoading(true); try { const { error } = await deleteScheduleBlock(id); if (error) throw error; toast.success("Bloqueio de horário removido."); await onRefreshData(); } catch (error) { console.error("[Delete Block Hook Error]:", error); toast.error(getErrorMessage(error)); } finally { setLoading(false); } }, [onRefreshData]);
   const handleDeleteBooking = useCallback(async (id: string) => { setLoading(true); try { const { error } = await appointmentService.delete(id); if (error) throw error; toast.success("Marcação eliminada permanentemente."); await onRefreshData(); } catch (error) { console.error("[Delete Booking Hook Error]:", error); toast.error(getErrorMessage(error)); } finally { setLoading(false); } }, [onRefreshData]);
 
-  return { loadingAppointments: loadingAppointments, finishingBookingId, setFinishingBookingId, addingClientAppointmentId, valueProducts, setValueProducts, descriptionProducts, setDescriptionProducts, bookingFormData, setBookingFormData, blockFormData, setBlockFormData, handleCreateBooking, confirmBooking, finalizeBooking, addCompletedAppointmentClient, handleCreateBlock, handleDeleteBlock, handleDeleteBooking };
+  return { loadingAppointments, finishingBookingId, setFinishingBookingId, addingClientAppointmentId, valueProducts, setValueProducts, descriptionProducts, setDescriptionProducts, bookingFormData, setBookingFormData, blockFormData, setBlockFormData, handleCreateBooking, confirmBooking, finalizeBooking, addCompletedAppointmentClient, handleCreateBlock, handleDeleteBlock, handleDeleteBooking };
 }
