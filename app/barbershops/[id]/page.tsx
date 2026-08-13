@@ -1,6 +1,5 @@
-import { redirect, notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import type { Database } from "@/types/database";
 
 export default async function LegacyBarbershopIdPage({
   params,
@@ -16,9 +15,7 @@ export default async function LegacyBarbershopIdPage({
     .eq("id", id)
     .maybeSingle();
 
-  if (error || !shop?.slug) {
-    notFound();
-  }
+  if (error || !shop?.slug) notFound();
 
   redirect(`/barbershops/${encodeURIComponent(shop.slug)}`);
 }
