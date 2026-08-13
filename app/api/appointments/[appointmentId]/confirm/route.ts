@@ -31,8 +31,6 @@ export async function POST(
       );
     }
 
-    // Read the already-authenticated user's profile with the server-only admin client.
-    // This avoids a false 403 caused by client-side RLS while preserving strict tenant checks below.
     const admin = createAdminClient();
     const { data: profile, error: profileError } = await admin
       .from("users")
@@ -55,16 +53,26 @@ export async function POST(
       );
     }
 
+    // Appointment identity is resolved independently from optional PostgREST relations.
+    // A broken service/client relation must never turn an existing appointment into a false 404.
     const { data: appointment, error: appointmentError } = await admin
       .from("appointments")
       .select(
-        "id, status, barbershop_id, date_hour, manual_name, manual_phone, manual_email, client_id, service_id, services(name), users!appointments_client_id_fkey(name_complete, email)",
+        "id, status, barbershop_id, date_hour, manual_name, manual_phone, manual_email, client_id, service_id",
       )
       .eq("id", appointmentId)
       .eq("barbershop_id", profile.barbershop_id)
       .maybeSingle();
 
-    if (appointmentError || !appointment) {
+    if (appointmentError) {
+      console.error("[APPOINTMENT_CONFIRM_LOOKUP_ERROR]", appointmentError);
+      return NextResponse.json(
+        { success: false, error: "Não foi possível consultar a marcação." },
+        { status: 503 },
+      );
+    }
+
+    if (!appointment) {
       return NextResponse.json(
         { success: false, error: "Marcação não encontrada." },
         { status: 404 },
@@ -82,17 +90,45 @@ export async function POST(
       );
     }
 
-    const { data: barbershop, error: barbershopError } = await admin
-      .from("barbershops")
-      .select("name, address")
-      .eq("id", profile.barbershop_id)
-      .maybeSingle();
+    const [{ data: barbershop, error: barbershopError }, { data: service, error: serviceError }] =
+      await Promise.all([
+        admin
+          .from("barbershops")
+          .select("name, address")
+          .eq("id", profile.barbershop_id)
+          .maybeSingle(),
+        appointment.service_id
+          ? admin
+              .from("services")
+              .select("name")
+              .eq("id", appointment.service_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+      ]);
 
     if (barbershopError || !barbershop) {
+      console.error("[APPOINTMENT_CONFIRM_BARBERSHOP_ERROR]", barbershopError);
       return NextResponse.json(
         { success: false, error: "Não foi possível carregar os dados da barbearia." },
         { status: 500 },
       );
+    }
+
+    if (serviceError) {
+      console.error("[APPOINTMENT_CONFIRM_SERVICE_ERROR]", serviceError);
+    }
+
+    let clientRelation: { name_complete?: string | null; email?: string | null } | null = null;
+    if (appointment.client_id) {
+      const { data: client, error: clientError } = await admin
+        .from("users")
+        .select("name_complete, email")
+        .eq("id", appointment.client_id)
+        .maybeSingle();
+      if (clientError) {
+        console.error("[APPOINTMENT_CONFIRM_CLIENT_ERROR]", clientError);
+      }
+      clientRelation = client;
     }
 
     const { data: confirmedAppointment, error: updateError } = await admin
@@ -104,7 +140,7 @@ export async function POST(
       .select("id, status, date_hour")
       .maybeSingle();
 
-    if (updateError || !confirmedAppointment) {
+    if (updateError) {
       console.error("[APPOINTMENT_CONFIRM_UPDATE_ERROR]", updateError);
       return NextResponse.json(
         { success: false, error: "Não foi possível confirmar a marcação." },
@@ -112,12 +148,16 @@ export async function POST(
       );
     }
 
-    const clientRelation = Array.isArray(appointment.users)
-      ? appointment.users[0]
-      : appointment.users;
-    const serviceRelation = Array.isArray(appointment.services)
-      ? appointment.services[0]
-      : appointment.services;
+    if (!confirmedAppointment) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Esta marcação já foi processada por outro utilizador.",
+          alreadyConfirmed: true,
+        },
+        { status: 409 },
+      );
+    }
 
     const recipientEmail =
       appointment.manual_email?.trim().toLowerCase() ||
@@ -136,7 +176,7 @@ export async function POST(
       const result = await sendBookingConfirmationEmail({
         to: recipientEmail,
         clientName: recipientName,
-        serviceName: serviceRelation?.name || "Serviço",
+        serviceName: service?.name || "Serviço",
         date: date.toISOString().slice(0, 10),
         time: date.toTimeString().slice(0, 5),
         barbershopId: profile.barbershop_id,
