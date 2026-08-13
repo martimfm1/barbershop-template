@@ -2,6 +2,13 @@
 
 ## Unreleased — 2026-08-13
 
+### Marcações — dados do cliente e CRM
+- A data de nascimento passou a ser obrigatória no `BookingDrawer` público.
+- A API `/api/bookings` valida a data de nascimento, impede datas futuras e guarda-a em `appointments.manual_birth_date`.
+- A confirmação da agenda passou a permitir adicionar o cliente à lista de clientes antes de escolher o método de pagamento.
+- A associação à lista de clientes reutiliza o cliente existente por telefone quando aplicável e copia nome, telefone, email e data de nascimento da marcação.
+- O fluxo mantém isolamento por barbearia e evita associações duplicadas.
+
 ### Marketplace — URLs canónicas de barbearias
 - A rota pública usa uma única rota dinâmica: `/barbershops/[slug]`.
 - O slug é o identificador público e canónico da barbearia.
