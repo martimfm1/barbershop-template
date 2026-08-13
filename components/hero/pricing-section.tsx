@@ -30,36 +30,41 @@ export function PricingSection() {
   return (
     <section id="precos" className="space-y-7">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.34em] text-zinc-500">Preços simples</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-zinc-50 sm:text-4xl">Começa grátis. Faz upgrade quando fizer sentido.</h2>
+        <div className="max-w-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-400/80">Preços simples</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-zinc-50 sm:text-4xl">
+            Começa grátis. Paga apenas quando o Silentra começar a dar-te mais valor.
+          </h2>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400 sm:text-base">
+            Configura a tua operação sem cartão e faz upgrade quando precisares de automação, crescimento e mais controlo.
+          </p>
         </div>
-        <div className="flex max-w-2xl flex-col gap-3 sm:flex-row sm:items-center lg:justify-end">
-          <p className="text-sm leading-6 text-zinc-400 sm:text-base lg:text-right">O plano gratuito permite experimentar a operação real antes de tomares uma decisão.</p>
-          <Link href="/plans" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-zinc-100 transition hover:border-emerald-400/30 hover:bg-emerald-500/10 hover:text-emerald-300">
-            Comparar planos <ArrowRight className="size-3.5" />
-          </Link>
-        </div>
+        <Link
+          href="/plans"
+          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-zinc-100 transition hover:border-emerald-400/30 hover:bg-emerald-500/10 hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+        >
+          Comparar planos <ArrowRight className="size-4" />
+        </Link>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3 lg:items-stretch">
         <PricingCard tier="free" title="Barbers Free" price="0 €" description={PLAN_DESCRIPTIONS.free} features={HERO_FEATURES.free} />
         <PricingCard tier="pro" title="Barbers Pro" price="9,90 €" description={PLAN_DESCRIPTIONS.pro} features={HERO_FEATURES.pro} popular />
         <PricingCard tier="enterprise" title="Barbers Enterprise" price="A partir de 29,90 €" description={PLAN_DESCRIPTIONS.enterprise} features={HERO_FEATURES.enterprise} />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.025] px-5 py-4">
-          <p className="flex items-center gap-2 text-sm font-semibold text-zinc-100"><Check className="size-4" /> Grátis para começar</p>
+        <div className="rounded-xl border border-white/10 bg-white/[0.025] px-5 py-4">
+          <p className="flex items-center gap-2 text-sm font-semibold text-zinc-100"><Check className="size-4 text-emerald-400" /> Sem risco para começar</p>
           <p className="mt-1 text-xs leading-5 text-zinc-500">Sem cartão e sem período experimental obrigatório.</p>
         </div>
-        <div className="rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.04] px-5 py-4">
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.045] px-5 py-4">
           <p className="text-sm font-semibold text-emerald-300">Pro para crescer</p>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">Automatiza trabalho repetitivo e cria mais oportunidades de retorno.</p>
+          <p className="mt-1 text-xs leading-5 text-zinc-500">Poupa trabalho repetitivo e cria mais oportunidades de retorno.</p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.025] px-5 py-4">
+        <div className="rounded-xl border border-white/10 bg-white/[0.025] px-5 py-4">
           <p className="text-sm font-semibold text-zinc-100">Enterprise para escalar</p>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">Para operações com várias localizações e necessidades avançadas.</p>
+          <p className="mt-1 text-xs leading-5 text-zinc-500">Para equipas, várias localizações e controlo operacional avançado.</p>
         </div>
       </div>
     </section>
