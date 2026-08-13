@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { BarChart3, Megaphone, Settings, Sparkles, Heart, CreditCard, LayoutDashboard, CalendarDays, Users, Scissors, Briefcase, MessageCircle, Menu, X, Lock, type LucideIcon } from "lucide-react";
+import { BarChart3, Megaphone, Settings, Sparkles, Heart, CreditCard, LayoutDashboard, CalendarDays, Users, Scissors, Briefcase, MessageCircle, Menu, X, Lock, QrCode, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
@@ -18,6 +18,7 @@ const items: SidebarItem[] = [
   { href: "/dashboard", label: "Visão geral", icon: LayoutDashboard },
   { href: "/dashboard/agenda", label: "Agenda", icon: CalendarDays },
   { href: "/dashboard/clientes", label: "Clientes", icon: Users },
+  { href: "/dashboard/qr-code", label: "Codigo QR", icon: QrCode },
   { href: "/dashboard/servicos", label: "Serviços", icon: Scissors },
   { href: "/dashboard/equipa", label: "Equipa", icon: Briefcase, feature: "team_management" },
   { href: "/dashboard/mensagens", label: "Mensagens", icon: MessageCircle, feature: "messaging" },
