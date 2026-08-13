@@ -25,8 +25,15 @@ alter table public.appointments
   add constraint appointments_active_professional_overlap_excl
   exclude using gist (
     barbershop_id with =,
-    coalesce(professional_id, '00000000-0000-0000-0000-000000000000'::uuid) with =,
-    tstzrange(date_hour, date_hour + make_interval(mins => duration_minutes), '[)') with &&
-  ) where (status in ('pending', 'scheduled'));
+    professional_id with =,
+    tsrange(
+      date_hour at time zone 'UTC',
+      (date_hour at time zone 'UTC') + make_interval(mins => duration_minutes),
+      '[)'
+    ) with &&
+  ) where (
+    status in ('pending', 'scheduled')
+    and professional_id is not null
+  );
 
 commit;

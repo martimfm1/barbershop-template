@@ -34,7 +34,7 @@ export default function BarbershopsDirectoryPage() {
     return () => { active = false; };
   }, [query, activeDate, activeFilter, userLocation]);
 
-  const handleNavigateToShop = (shop: MarketplaceShop) => router.push(`/barbershops/${shop.slug || shop.id}`);
+  const handleNavigateToShop = (shop: MarketplaceShop) => router.push(`/barbershops/${encodeURIComponent(shop.slug)}`);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 antialiased">

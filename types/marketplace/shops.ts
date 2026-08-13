@@ -4,12 +4,12 @@ export interface MarketplaceBarbershopRelation {
   address: string | null;
   opening_time: string | null;
   closing_time: string | null;
-  slug: string | null;
 }
 
 export interface MarketplaceShopRecord {
   id: string;
   barbershop_id: string;
+  slug: string;
   city: string;
   price: number;
   tags: string[];
@@ -35,7 +35,7 @@ export interface MarketplaceShopResponse {
   distanceKm: number;
   openTime: string;
   closeTime: string;
-  slug: string | null;
+  slug: string;
   nextSlot: string;
   rating: number;
   reviewsCount: number;
@@ -49,7 +49,7 @@ export interface MarketplaceShop {
   closing_time: string;
   opening_time: string;
   name: string;
-  slug: string | null;
+  slug: string;
   address?: string;
   city: string;
   distanceKm: number;

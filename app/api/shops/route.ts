@@ -88,7 +88,7 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("shops")
-      .select(`id, barbershop_id, city, price, tags, lat, lng, is_active, rating, reviews_count, barbershops ( name, address, opening_time, closing_time, lunch_start, lunch_end, slug, is_public_in_directory )`)
+      .select(`id, barbershop_id, slug, city, price, tags, lat, lng, is_active, rating, reviews_count, barbershops ( name, address, opening_time, closing_time, lunch_start, lunch_end, is_public_in_directory )`)
       .eq("is_active", true);
 
     if (error) {
