@@ -18,13 +18,15 @@ alter table public.appointments
   add constraint appointments_duration_minutes_check
   check (duration_minutes > 0 and duration_minutes <= 1440);
 
-create index if not exists appointments_active_professional_time_gist_idx
-on public.appointments
-using gist (
-  barbershop_id,
-  coalesce(professional_id, '00000000-0000-0000-0000-000000000000'::uuid),
-  tstzrange(date_hour, date_hour + make_interval(mins => duration_minutes), '[)')
-)
-where status in ('pending', 'scheduled');
+alter table public.appointments
+  drop constraint if exists appointments_active_professional_overlap_excl;
+
+alter table public.appointments
+  add constraint appointments_active_professional_overlap_excl
+  exclude using gist (
+    barbershop_id with =,
+    coalesce(professional_id, '00000000-0000-0000-0000-000000000000'::uuid) with =,
+    tstzrange(date_hour, date_hour + make_interval(mins => duration_minutes), '[)') with &&
+  ) where (status in ('pending', 'scheduled'));
 
 commit;
