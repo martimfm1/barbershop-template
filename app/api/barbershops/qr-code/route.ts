@@ -2,17 +2,17 @@ import { NextResponse } from "next/server";
 import { requireTenantAuthorization } from "@/services/modules/tenant-authorization";
 
 const QR_MANAGE_ROLES = ["owner", "admin"] as const;
-const DEFAULT_QR_TEXT = "Scaneia para agendar";
+const DEFAULT_QR_TEXT = "Scaneia para conhecer a nossa barbearia e marcar o teu proximo servico.";
 
 export async function GET(request: Request) {
   const tenant = await requireTenantAuthorization(request, QR_MANAGE_ROLES);
   if (!tenant.ok) return NextResponse.json({ error: tenant.status === 401 ? "Nao autenticado." : "Sem permissao." }, { status: tenant.status });
   const [{ data: barbershop }, { data: shop }] = await Promise.all([
-    tenant.admin.from("barbershops").select("qr_code_text").eq("id", tenant.barbershopId).maybeSingle(),
+    tenant.admin.from("barbershops").select("name, qr_code_text").eq("id", tenant.barbershopId).maybeSingle(),
     tenant.admin.from("shops").select("slug").eq("barbershop_id", tenant.barbershopId).eq("is_active", true).maybeSingle(),
   ]);
   if (!shop?.slug) return NextResponse.json({ error: "Nao foi possivel preparar o codigo QR." }, { status: 404 });
-  return NextResponse.json({ slug: shop.slug, text: barbershop?.qr_code_text || DEFAULT_QR_TEXT }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ slug: shop.slug, name: barbershop?.name || "Barbearia", text: barbershop?.qr_code_text || DEFAULT_QR_TEXT }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function PATCH(request: Request) {
