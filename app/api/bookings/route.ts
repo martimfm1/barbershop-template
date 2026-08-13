@@ -36,6 +36,40 @@ function isValidBirthDate(value: string): boolean {
   return parsed.getFullYear() >= 1900;
 }
 
+function timeToMinutes(value: string): number {
+  const [hours, minutes] = value.slice(0, 5).split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function overlaps(start: number, end: number, otherStart: number, otherEnd: number): boolean {
+  return start < otherEnd && end > otherStart;
+}
+
+function parseClosedDays(value: unknown): Set<number> {
+  const names: Record<string, number> = {
+    sunday: 0,
+    monday: 1,
+    tuesday: 2,
+    wednesday: 3,
+    thursday: 4,
+    friday: 5,
+    saturday: 6,
+    domingo: 0,
+    segunda: 1,
+    terça: 2,
+    terca: 2,
+    quarta: 3,
+    quinta: 4,
+    sexta: 5,
+    sábado: 6,
+    sabado: 6,
+  };
+  const values = typeof value === "string" ? value.split(",").map((item) => item.trim().toLowerCase()) : [];
+  const result = new Set<number>();
+  for (const item of values) if (names[item] !== undefined) result.add(names[item]);
+  return result;
+}
+
 function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   const real = request.headers.get("x-real-ip")?.trim();
@@ -95,8 +129,7 @@ export async function POST(request: Request) {
     const birthDate = typeof customerBirthDate === "string" ? customerBirthDate.trim() : "";
     const bookingDate = typeof date === "string" ? date : new Date().toISOString().slice(0, 10);
     const bookingTime = typeof slot === "string" ? slot.slice(0, 5) : "";
-    const normalizedProfessionalId =
-      typeof professionalId === "string" && professionalId ? professionalId : null;
+    const normalizedProfessionalId = typeof professionalId === "string" && professionalId ? professionalId : null;
 
     if (
       typeof shopId !== "string" ||
@@ -114,10 +147,7 @@ export async function POST(request: Request) {
       (normalizedProfessionalId && !UUID_PATTERN.test(normalizedProfessionalId))
     ) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Confirma os dados, incluindo a data de nascimento, e escolhe uma data e hora válidas.",
-        },
+        { success: false, error: "Confirma os dados, incluindo a data de nascimento, e escolhe uma data e hora válidas." },
         { status: 400 },
       );
     }
@@ -138,13 +168,19 @@ export async function POST(request: Request) {
         is_active,
         barbershops (
           name,
-          address
+          address,
+          opening_time,
+          closing_time,
+          lunch_start,
+          lunch_end,
+          closed_days
         )
       `)
       .eq("id", shopId)
       .maybeSingle();
 
     if (shopError || !shop?.barbershop_id || !shop.is_active) {
+      console.error("[API_BOOKING_SHOP_ERROR]", shopError);
       return NextResponse.json({ success: false, error: "Barbearia indisponível." }, { status: 404 });
     }
 
@@ -153,17 +189,68 @@ export async function POST(request: Request) {
     const barbershopName = shopRelation?.name || "Barbearia";
     const barbershopAddress = shopRelation?.address || "Endereço sob consulta";
 
+    const selectedWeekday = new Date(`${bookingDate}T12:00:00`).getDay();
+    const closedDays = parseClosedDays(shopRelation?.closed_days);
+    if (closedDays.has(selectedWeekday)) {
+      return NextResponse.json({ success: false, error: "Este dia é de folga da barbearia. Escolhe outro dia." }, { status: 409 });
+    }
+
+    const openTime = shopRelation?.opening_time || "09:00";
+    const closeTime = shopRelation?.closing_time || "19:00";
+    const lunchStart = shopRelation?.lunch_start ? timeToMinutes(shopRelation.lunch_start) : null;
+    const lunchEnd = shopRelation?.lunch_end ? timeToMinutes(shopRelation.lunch_end) : null;
+    const requestedStart = timeToMinutes(bookingTime);
+
+    if (requestedStart < timeToMinutes(openTime) || requestedStart >= timeToMinutes(closeTime)) {
+      return NextResponse.json({ success: false, error: "Este horário está fora do horário de funcionamento." }, { status: 409 });
+    }
+
     const { data: selectedService, error: serviceError } = await supabase
       .from("services")
-      .select("id, name")
+      .select("id, name, duration")
       .eq("id", service)
       .eq("barbershop_id", barbershopId)
       .maybeSingle();
 
     if (serviceError || !selectedService) {
+      return NextResponse.json({ success: false, error: "Serviço indisponível para esta barbearia." }, { status: 400 });
+    }
+
+    const durationMinutes = Math.min(Math.max(Number(selectedService.duration ?? 30), 1), 1440);
+    const requestedEnd = requestedStart + durationMinutes;
+
+    if (requestedEnd > timeToMinutes(closeTime)) {
+      return NextResponse.json({ success: false, error: "O serviço ultrapassa o horário de funcionamento." }, { status: 409 });
+    }
+
+    if (lunchStart !== null && lunchEnd !== null && overlaps(requestedStart, requestedEnd, lunchStart, lunchEnd)) {
+      return NextResponse.json({ success: false, error: "Este horário coincide com a pausa da barbearia." }, { status: 409 });
+    }
+
+    const { data: blocks, error: blocksError } = await supabase
+      .from("schedule_blocks")
+      .select("professional_id, start_time, end_time, reason")
+      .eq("barbershop_id", barbershopId)
+      .eq("date", bookingDate);
+
+    if (blocksError && blocksError.code !== "42P01") {
+      console.error("[API_BOOKING_BLOCKS_ERROR]", blocksError);
+      return NextResponse.json({ success: false, error: "Não foi possível validar os horários bloqueados." }, { status: 503 });
+    }
+
+    const matchingBlock = (blocks ?? []).find((block: any) => {
+      if (block.professional_id && block.professional_id !== normalizedProfessionalId) return false;
+      if (!block.start_time || !block.end_time) return true;
+      return overlaps(requestedStart, requestedEnd, timeToMinutes(block.start_time), timeToMinutes(block.end_time));
+    });
+
+    if (matchingBlock) {
+      const interval = matchingBlock.start_time && matchingBlock.end_time
+        ? ` (${matchingBlock.start_time.slice(0, 5)}–${matchingBlock.end_time.slice(0, 5)})`
+        : " (todo o dia)";
       return NextResponse.json(
-        { success: false, error: "Serviço indisponível para esta barbearia." },
-        { status: 400 },
+        { success: false, error: `${matchingBlock.reason?.trim() || "Este horário está bloqueado."}${interval}` },
+        { status: 409 },
       );
     }
 
@@ -176,42 +263,40 @@ export async function POST(request: Request) {
         .maybeSingle();
 
       if (professionalError || !professional) {
-        return NextResponse.json(
-          { success: false, error: "O profissional selecionado já não está disponível." },
-          { status: 400 },
-        );
+        return NextResponse.json({ success: false, error: "O profissional selecionado já não está disponível." }, { status: 400 });
       }
     }
 
     const serviceName = selectedService.name || "Serviço";
     const dateHourIso = `${bookingDate}T${bookingTime}:00`;
 
-    let conflictQuery = supabase
+    const dayStart = `${bookingDate}T00:00:00`;
+    const dayEnd = `${bookingDate}T23:59:59`;
+    const { data: existingAppointments, error: conflictError } = await supabase
       .from("appointments")
-      .select("id")
+      .select("id, date_hour, duration_minutes, professional_id")
       .eq("barbershop_id", barbershopId)
-      .eq("date_hour", dateHourIso)
+      .gte("date_hour", dayStart)
+      .lte("date_hour", dayEnd)
       .in("status", ["pending", "scheduled"]);
-
-    conflictQuery = normalizedProfessionalId
-      ? conflictQuery.eq("professional_id", normalizedProfessionalId)
-      : conflictQuery.is("professional_id", null);
-
-    const { data: existingAppointment, error: conflictError } = await conflictQuery.maybeSingle();
 
     if (conflictError) {
       console.error("[API_BOOKING_CONFLICT_CHECK_ERROR]", conflictError);
-      return NextResponse.json(
-        { success: false, error: "Não foi possível confirmar a disponibilidade." },
-        { status: 503 },
-      );
+      return NextResponse.json({ success: false, error: "Não foi possível confirmar a disponibilidade." }, { status: 503 });
     }
 
-    if (existingAppointment) {
-      return NextResponse.json(
-        { success: false, error: "Este horário já não está disponível." },
-        { status: 409 },
-      );
+    const conflict = (existingAppointments ?? []).some((appointment: any) => {
+      if (normalizedProfessionalId && appointment.professional_id !== normalizedProfessionalId) return false;
+      if (!normalizedProfessionalId && appointment.professional_id !== null) return false;
+      const parsed = String(appointment.date_hour || "").includes("T") ? String(appointment.date_hour).split("T") : String(appointment.date_hour).split(" ");
+      if (parsed[0] !== bookingDate || !parsed[1]) return false;
+      const existingStart = timeToMinutes(parsed[1]);
+      const existingEnd = existingStart + Math.min(Math.max(Number(appointment.duration_minutes ?? 30), 1), 1440);
+      return overlaps(requestedStart, requestedEnd, existingStart, existingEnd);
+    });
+
+    if (conflict) {
+      return NextResponse.json({ success: false, error: "Este horário já não está disponível." }, { status: 409 });
     }
 
     const { data: appointment, error: insertError } = await supabase
@@ -226,12 +311,13 @@ export async function POST(request: Request) {
         manual_phone: phone,
         manual_email: email,
         manual_birth_date: birthDate,
+        duration_minutes: durationMinutes,
       })
       .select()
       .single();
 
     if (insertError || !appointment) {
-      if (insertError?.code === "23505") {
+      if (insertError?.code === "23505" || insertError?.code === "23P01") {
         return NextResponse.json(
           { success: false, error: "Este horário acabou de ser reservado por outra pessoa." },
           { status: 409 },
@@ -276,7 +362,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[API_BOOKING_ERROR]", error);
     return NextResponse.json(
-      { success: false, error: "Erro interno no servidor." },
+      { success: false, error: "Erro interno no servidor. Tenta novamente." },
       { status: 500 },
     );
   }

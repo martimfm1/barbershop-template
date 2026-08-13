@@ -6,25 +6,61 @@ const TEAM_VIEW_ROLES = ["owner", "admin"] as const;
 
 export async function GET(request: Request) {
   const tenant = await requireTenantAuthorization(request, TEAM_VIEW_ROLES);
-  if (!tenant.ok) return NextResponse.json({ error: tenant.status === 401 ? "Nao autorizado" : "Sem permissao para ver a equipa." }, { status: tenant.status });
+  if (!tenant.ok) {
+    return NextResponse.json(
+      { error: tenant.status === 401 ? "Nao autorizado" : "Sem permissao para ver a equipa." },
+      { status: tenant.status },
+    );
+  }
 
   const [{ data: members, error: membersError }, { data: permissionRows, error: permissionsError }, { data: inviteRows, error: invitesError }] = await Promise.all([
     tenant.admin.from("users").select("id, name_complete, email, num_phone, role").eq("barbershop_id", tenant.barbershopId),
     tenant.admin.from("barbershop_member_permissions").select("user_id, permissions").eq("barbershop_id", tenant.barbershopId),
     tenant.admin.from("barbershop_invite_codes").select("used_by, used_at").eq("barbershop_id", tenant.barbershopId).not("used_by", "is", null),
   ]);
+
   if (membersError || permissionsError || invitesError) {
-    console.error("[TEAM_MEMBERS_LIST_FAIL]", { members: membersError?.message, permissions: permissionsError?.message, invites: invitesError?.message });
+    console.error("[TEAM_MEMBERS_LIST_FAIL]", {
+      members: membersError?.message,
+      permissions: permissionsError?.message,
+      invites: invitesError?.message,
+    });
     return NextResponse.json({ error: "Nao foi possivel carregar os membros." }, { status: 500 });
   }
 
   const permissionsByUser = new Map((permissionRows ?? []).map((row) => [row.user_id, row.permissions ?? {}]));
   const inviteByUser = new Map<string, string>();
   for (const invite of inviteRows ?? []) {
-    if (invite.used_by && (!inviteByUser.has(invite.used_by) || invite.used_at < inviteByUser.get(invite.used_by)!)) inviteByUser.set(invite.used_by, invite.used_at);
+    if (invite.used_by && (!inviteByUser.has(invite.used_by) || invite.used_at < inviteByUser.get(invite.used_by)!)) {
+      inviteByUser.set(invite.used_by, invite.used_at);
+    }
   }
-  const orderedMembers = [...(members ?? [])].sort((a, b) => a.role === "owner" ? -1 : b.role === "owner" ? 1 : (a.name_complete || a.email || "").localeCompare(b.name_complete || b.email || ""));
-  return NextResponse.json({ members: orderedMembers.map((member) => ({ user_id: member.id, name_complete: member.name_complete, email: member.email, num_phone: member.num_phone, role: member.role, joined_via_code: inviteByUser.has(member.id), joined_at: inviteByUser.get(member.id) ?? null, permissions: permissionsByUser.get(member.id) ?? {} })) }, { headers: { "Cache-Control": "no-store" } });
+
+  // Esta aba representa exclusivamente os barbeiros que foram adicionados à equipa através do fluxo de código.
+  // Owners/admins e utilizadores criados por outros fluxos continuam a existir no sistema, mas não aparecem nesta lista.
+  const teamBarbers = (members ?? []).filter(
+    (member) => member.role === "barber" && inviteByUser.has(member.id),
+  );
+
+  const orderedMembers = [...teamBarbers].sort((a, b) =>
+    (a.name_complete || a.email || "").localeCompare(b.name_complete || b.email || ""),
+  );
+
+  return NextResponse.json(
+    {
+      members: orderedMembers.map((member) => ({
+        user_id: member.id,
+        name_complete: member.name_complete,
+        email: member.email,
+        num_phone: member.num_phone,
+        role: member.role,
+        joined_via_code: true,
+        joined_at: inviteByUser.get(member.id) ?? null,
+        permissions: permissionsByUser.get(member.id) ?? {},
+      })),
+    },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }
 
 export async function PATCH(request: Request) {
