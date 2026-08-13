@@ -43,29 +43,13 @@ function overlaps(start: number, end: number, otherStart: number, otherEnd: numb
 
 function normalizeClosedDays(value: unknown): Set<number> {
   const names: Record<string, number> = {
-    sunday: 0,
-    monday: 1,
-    tuesday: 2,
-    wednesday: 3,
-    thursday: 4,
-    friday: 5,
-    saturday: 6,
-    domingo: 0,
-    segunda: 1,
-    terça: 2,
-    terca: 2,
-    quarta: 3,
-    quinta: 4,
-    sexta: 5,
-    sábado: 6,
-    sabado: 6,
+    sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
+    domingo: 0, segunda: 1, terça: 2, terca: 2, quarta: 3, quinta: 4, sexta: 5, sábado: 6, sabado: 6,
   };
   const result = new Set<number>();
   const values = typeof value === "string"
     ? value.split(",").map((item) => item.trim().toLowerCase())
-    : Array.isArray(value)
-      ? value
-      : [];
+    : Array.isArray(value) ? value : [];
   for (const item of values) {
     if (typeof item === "number" && item >= 0 && item <= 6) result.add(item);
     if (typeof item === "string" && names[item] !== undefined) result.add(names[item]);
@@ -82,26 +66,19 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date");
     const serviceId = searchParams.get("serviceId");
+    const requestedProfessionalId = searchParams.get("professionalId");
 
     if (!UUID_PATTERN.test(shopId) || !date || !isValidDate(date)) {
       return NextResponse.json({ error: "Indica uma data válida." }, { status: 400 });
     }
+    if (requestedProfessionalId && !UUID_PATTERN.test(requestedProfessionalId)) {
+      return NextResponse.json({ error: "Profissional inválido." }, { status: 400 });
+    }
 
     const supabase = await createClient();
-
     const { data: shopRecord, error: shopError } = await supabase
       .from("shops")
-      .select(`
-        id,
-        barbershop_id,
-        barbershops (
-          opening_time,
-          closing_time,
-          lunch_start,
-          lunch_end,
-          closed_days
-        )
-      `)
+      .select(`id, barbershop_id, barbershops (opening_time, closing_time, lunch_start, lunch_end, closed_days)`)
       .eq("id", shopId)
       .single();
 
@@ -111,10 +88,7 @@ export async function GET(
     }
 
     const barbershopId = shopRecord.barbershop_id;
-    const relation = Array.isArray(shopRecord.barbershops)
-      ? shopRecord.barbershops[0]
-      : shopRecord.barbershops;
-
+    const relation = Array.isArray(shopRecord.barbershops) ? shopRecord.barbershops[0] : shopRecord.barbershops;
     if (!barbershopId || !relation) {
       return NextResponse.json({ error: "Configuração da barbearia indisponível." }, { status: 503 });
     }
@@ -127,29 +101,17 @@ export async function GET(
     const selectedWeekday = new Date(`${date}T12:00:00`).getDay();
     const isClosedDay = closedDays.has(selectedWeekday);
 
-    let servicesData: any[] | null = null;
-    const servicesResult = await supabase
-      .from("services")
-      .select("*")
-      .eq("barbershop_id", barbershopId);
+    const servicesResult = await supabase.from("services").select("*").eq("barbershop_id", barbershopId);
     if (servicesResult.error) {
       console.error("[BOOKING_SERVICES_ERROR]", servicesResult.error);
       return NextResponse.json({ error: "Não foi possível carregar os serviços." }, { status: 503 });
     }
-    servicesData = servicesResult.data ?? [];
-
+    let servicesData: any[] = servicesResult.data ?? [];
     if (servicesData.length === 0) {
-      const legacyServicesResult = await supabase
-        .from("services")
-        .select("*")
-        .eq("shop_id", shopId);
-      if (legacyServicesResult.error && legacyServicesResult.error.code !== "42703") {
-        console.error("[BOOKING_LEGACY_SERVICES_ERROR]", legacyServicesResult.error);
-        return NextResponse.json({ error: "Não foi possível carregar os serviços." }, { status: 503 });
-      }
-      servicesData = legacyServicesResult.data ?? [];
+      const legacy = await supabase.from("services").select("*").eq("shop_id", shopId);
+      if (legacy.error && legacy.error.code !== "42703") return NextResponse.json({ error: "Não foi possível carregar os serviços." }, { status: 503 });
+      servicesData = legacy.data ?? [];
     }
-
     const services = servicesData.map((service: any) => ({
       id: service.id,
       barbershopId: service.barbershop_id || service.shop_id || shopId,
@@ -158,34 +120,26 @@ export async function GET(
       durationMinutes: Math.max(1, Number(service.duration || service.duration_minutes || 30)),
     }));
 
-    let professionalsData: any[] | null = null;
-    const professionalsResult = await supabase
-      .from("professionals")
-      .select("*")
-      .eq("barbershop_id", barbershopId);
+    const professionalsResult = await supabase.from("professionals").select("*").eq("barbershop_id", barbershopId);
     if (professionalsResult.error) {
       console.error("[BOOKING_PROFESSIONALS_ERROR]", professionalsResult.error);
       return NextResponse.json({ error: "Não foi possível carregar os barbeiros." }, { status: 503 });
     }
-    professionalsData = professionalsResult.data ?? [];
-
+    let professionalsData: any[] = professionalsResult.data ?? [];
     if (professionalsData.length === 0) {
-      const legacyProfessionalsResult = await supabase
-        .from("professionals")
-        .select("*")
-        .eq("shop_id", shopId);
-      if (legacyProfessionalsResult.error && legacyProfessionalsResult.error.code !== "42703") {
-        console.error("[BOOKING_LEGACY_PROFESSIONALS_ERROR]", legacyProfessionalsResult.error);
-        return NextResponse.json({ error: "Não foi possível carregar os barbeiros." }, { status: 503 });
-      }
-      professionalsData = legacyProfessionalsResult.data ?? [];
+      const legacy = await supabase.from("professionals").select("*").eq("shop_id", shopId);
+      if (legacy.error && legacy.error.code !== "42703") return NextResponse.json({ error: "Não foi possível carregar os barbeiros." }, { status: 503 });
+      professionalsData = legacy.data ?? [];
     }
-
     const professionals = professionalsData.map((professional: any) => ({
       id: professional.id,
       name: professional.name || professional.full_name || "Barbeiro",
       role: professional.role || "Barbeiro Profissional",
     }));
+
+    if (requestedProfessionalId && !professionals.some((professional) => professional.id === requestedProfessionalId)) {
+      return NextResponse.json({ error: "O profissional selecionado não pertence a esta barbearia." }, { status: 400 });
+    }
 
     const { data: blockRows, error: blocksError } = await supabase
       .from("schedule_blocks")
@@ -193,7 +147,6 @@ export async function GET(
       .eq("barbershop_id", barbershopId)
       .eq("date", date)
       .order("start_time", { ascending: true });
-
     if (blocksError && blocksError.code !== "42P01") {
       console.error("[BOOKING_BLOCKS_ERROR]", blocksError);
       return NextResponse.json({ error: "Não foi possível carregar os horários bloqueados." }, { status: 503 });
@@ -217,7 +170,6 @@ export async function GET(
       .gte("date_hour", dayStart)
       .lte("date_hour", dayEnd)
       .in("status", ["pending", "scheduled"]);
-
     if (appointmentsError) {
       console.error("[BOOKING_APPOINTMENTS_ERROR]", appointmentsError);
       return NextResponse.json({ error: "Não foi possível confirmar a agenda." }, { status: 503 });
@@ -225,12 +177,7 @@ export async function GET(
 
     const now = new Date();
     const todayPortugal = now.toLocaleDateString("en-CA", { timeZone: "Europe/Lisbon" });
-    const timePortugal = now.toLocaleTimeString("pt-PT", {
-      timeZone: "Europe/Lisbon",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
+    const timePortugal = now.toLocaleTimeString("pt-PT", { timeZone: "Europe/Lisbon", hour: "2-digit", minute: "2-digit", hour12: false });
     const isToday = date === todayPortugal;
     const currentMinutesNow = timeToMinutes(timePortugal);
     const lunchStartMinutes = lunchStart ? timeToMinutes(lunchStart) : null;
@@ -238,15 +185,31 @@ export async function GET(
     const selectedService = serviceId ? services.find((service) => service.id === serviceId) : services[0];
     const serviceDuration = Math.min(Math.max(Number(selectedService?.durationMinutes ?? 30), 1), 1440);
 
-    const appointmentIntervals = ((appointments ?? []) as AppointmentRow[])
-      .map((appointment) => {
-        const parsed = parseDateHour(appointment.date_hour);
-        if (!parsed || parsed.date !== date) return null;
-        const start = parsed.minutes;
-        const end = start + Math.min(Math.max(Number(appointment.duration_minutes ?? 30), 1), 1440);
-        return { start, end, professionalId: appointment.professional_id };
-      })
-      .filter(Boolean) as Array<{ start: number; end: number; professionalId: string | null }>;
+    const appointmentIntervals = ((appointments ?? []) as AppointmentRow[]).map((appointment) => {
+      const parsed = parseDateHour(appointment.date_hour);
+      if (!parsed || parsed.date !== date) return null;
+      return {
+        start: parsed.minutes,
+        end: parsed.minutes + Math.min(Math.max(Number(appointment.duration_minutes ?? 30), 1), 1440),
+        professionalId: appointment.professional_id,
+      };
+    }).filter(Boolean) as Array<{ start: number; end: number; professionalId: string | null }>;
+
+    const isBlockedForProfessional = (slotStart: number, slotEnd: number, professionalId: string | null) =>
+      blockedIntervals.some((block) => {
+        if (block.professionalId && block.professionalId !== professionalId) return false;
+        if (block.allDay) return true;
+        return overlaps(slotStart, slotEnd, timeToMinutes(block.startTime!), timeToMinutes(block.endTime!));
+      });
+
+    const isBookedForProfessional = (slotStart: number, slotEnd: number, professionalId: string | null) =>
+      appointmentIntervals.some((appointment) => {
+        if (professionalId) return appointment.professionalId === professionalId && overlaps(slotStart, slotEnd, appointment.start, appointment.end);
+        return appointment.professionalId === null && overlaps(slotStart, slotEnd, appointment.start, appointment.end);
+      });
+
+    const canProfessionalTakeSlot = (slotStart: number, slotEnd: number, professionalId: string) =>
+      !isBlockedForProfessional(slotStart, slotEnd, professionalId) && !isBookedForProfessional(slotStart, slotEnd, professionalId);
 
     const availableSlots: string[] = [];
     const openTotalMinutes = timeToMinutes(openTime);
@@ -254,45 +217,43 @@ export async function GET(
 
     for (let slotStart = openTotalMinutes; slotStart < closeTotalMinutes; slotStart += 30) {
       const slotEnd = slotStart + serviceDuration;
-      if (slotEnd > closeTotalMinutes) continue;
-      if (isToday && slotStart <= currentMinutesNow) continue;
-      if (isClosedDay) continue;
+      if (slotEnd > closeTotalMinutes || (isToday && slotStart <= currentMinutesNow) || isClosedDay) continue;
       if (lunchStartMinutes !== null && lunchEndMinutes !== null && overlaps(slotStart, slotEnd, lunchStartMinutes, lunchEndMinutes)) continue;
 
-      const blocked = blockedIntervals.some((block) => {
-        if (block.allDay) return true;
-        const start = timeToMinutes(block.startTime!);
-        const end = timeToMinutes(block.endTime!);
-        return overlaps(slotStart, slotEnd, start, end);
-      });
-      if (blocked) continue;
-
-      const booked = appointmentIntervals.some((appointment) =>
-        overlaps(slotStart, slotEnd, appointment.start, appointment.end),
-      );
-      if (booked) continue;
-
-      availableSlots.push(minutesToTime(slotStart));
+      if (requestedProfessionalId) {
+        if (canProfessionalTakeSlot(slotStart, slotEnd, requestedProfessionalId)) availableSlots.push(minutesToTime(slotStart));
+      } else if (professionals.length > 0) {
+        if (professionals.some((professional) => canProfessionalTakeSlot(slotStart, slotEnd, professional.id))) {
+          availableSlots.push(minutesToTime(slotStart));
+        }
+      } else {
+        const globallyBlocked = blockedIntervals.some((block) => {
+          if (block.professionalId) return false;
+          if (block.allDay) return true;
+          return overlaps(slotStart, slotEnd, timeToMinutes(block.startTime!), timeToMinutes(block.endTime!));
+        });
+        const globallyBooked = isBookedForProfessional(slotStart, slotEnd, null);
+        if (!globallyBlocked && !globallyBooked) availableSlots.push(minutesToTime(slotStart));
+      }
     }
 
-    const isClosed = isClosedDay || blockedIntervals.some((block) => block.allDay) || availableSlots.length === 0;
+    const visibleBlockedIntervals = requestedProfessionalId
+      ? blockedIntervals.filter((block) => !block.professionalId || block.professionalId === requestedProfessionalId)
+      : blockedIntervals;
 
-    return NextResponse.json(
-      {
-        services,
-        professionals,
-        availableSlots,
-        isClosed,
-        closedDay: isClosedDay,
-        blockedIntervals,
-      },
-      { headers: { "Cache-Control": "no-store" } },
-    );
+    const isClosed = isClosedDay || visibleBlockedIntervals.some((block) => block.allDay && (!block.professionalId || block.professionalId === requestedProfessionalId)) || availableSlots.length === 0;
+
+    return NextResponse.json({
+      services,
+      professionals,
+      availableSlots,
+      isClosed,
+      closedDay: isClosedDay,
+      blockedIntervals: visibleBlockedIntervals,
+      selectedProfessionalId: requestedProfessionalId,
+    }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("[BOOKING_DATA_ERROR]", error);
-    return NextResponse.json(
-      { error: "Não foi possível carregar a disponibilidade. Tenta novamente." },
-      { status: 500, headers: { "Cache-Control": "no-store" } },
-    );
+    return NextResponse.json({ error: "Não foi possível carregar a disponibilidade. Tenta novamente." }, { status: 500, headers: { "Cache-Control": "no-store" } });
   }
 }
