@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { sendBookingConfirmationEmail } from "@/lib/brevo/brevo";
+
+const CONFIRM_ROLES = new Set(["owner", "admin", "manager", "receptionist", "staff"]);
 
 export async function POST(
   request: Request,
@@ -21,24 +24,31 @@ export async function POST(
       );
     }
 
-    const { data: profile, error: profileError } = await supabase
+    // Read the already-authenticated user's profile with the server-only admin client.
+    // This avoids a false 403 caused by client-side RLS while preserving strict tenant checks below.
+    const admin = createAdminClient();
+    const { data: profile, error: profileError } = await admin
       .from("users")
       .select("barbershop_id, role")
       .eq("id", user.id)
       .maybeSingle();
 
-    if (
-      profileError ||
-      !profile?.barbershop_id ||
-      !["owner", "admin", "manager", "receptionist", "staff"].includes(profile.role)
-    ) {
+    const role = String(profile?.role ?? "").trim().toLowerCase();
+
+    if (profileError || !profile?.barbershop_id || !CONFIRM_ROLES.has(role)) {
+      console.error("[APPOINTMENT_CONFIRM_PERMISSION]", {
+        userId: user.id,
+        role: profile?.role ?? null,
+        barbershopId: profile?.barbershop_id ?? null,
+        profileError: profileError?.message ?? null,
+      });
       return NextResponse.json(
         { success: false, error: "Sem permissão para confirmar marcações." },
         { status: 403 },
       );
     }
 
-    const { data: appointment, error: appointmentError } = await supabase
+    const { data: appointment, error: appointmentError } = await admin
       .from("appointments")
       .select(
         "id, status, barbershop_id, date_hour, manual_name, manual_phone, manual_email, client_id, service_id, services(name), users!appointments_client_id_fkey(name_complete, email)",
@@ -65,7 +75,7 @@ export async function POST(
       );
     }
 
-    const { data: barbershop, error: barbershopError } = await supabase
+    const { data: barbershop, error: barbershopError } = await admin
       .from("barbershops")
       .select("name, address")
       .eq("id", profile.barbershop_id)
@@ -78,7 +88,7 @@ export async function POST(
       );
     }
 
-    const { data: confirmedAppointment, error: updateError } = await supabase
+    const { data: confirmedAppointment, error: updateError } = await admin
       .from("appointments")
       .update({ status: "scheduled" })
       .eq("id", appointmentId)
