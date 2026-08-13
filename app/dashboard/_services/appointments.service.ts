@@ -100,63 +100,22 @@ export const appointmentService = {
   },
 
   async addClientFromCompletedAppointment(barbershopId: string, appointmentId: string) {
-    const { data: appointment, error: appointmentError } = await supabase
-      .from("appointments")
-      .select("id, status, barbershop_id, client_id, manual_name, manual_phone, manual_email, manual_birth_date")
-      .eq("id", appointmentId)
-      .eq("barbershop_id", barbershopId)
-      .maybeSingle();
+    const { data, error } = await supabase.rpc("add_client_from_completed_appointment", {
+      p_barbershop_id: barbershopId,
+      p_appointment_id: appointmentId,
+    });
 
-    if (appointmentError) return { data: null, error: appointmentError };
-    if (!appointment) return { data: null, error: new Error("Marcação não encontrada.") };
-    if (!["scheduled", "completed"].includes(appointment.status)) {
-      return { data: null, error: new Error("Só podes adicionar clientes de uma marcação confirmada.") };
-    }
-    if (appointment.client_id) return { data: null, alreadyExists: true, error: null };
-    if (!appointment.manual_name?.trim()) return { data: null, error: new Error("Esta marcação não tem um nome de cliente válido.") };
+    if (error) return { data: null, alreadyExists: false, error };
 
-    const normalizedPhone = appointment.manual_phone?.replace(/\s+/g, "").trim() || "";
-    if (normalizedPhone) {
-      const { data: existingByPhone, error: phoneError } = await supabase
-        .from("users")
-        .select("id, name_complete, num_phone, email, birth_date, style_notes")
-        .eq("barbershop_id", barbershopId)
-        .eq("num_phone", appointment.manual_phone)
-        .maybeSingle();
+    const result = data as {
+      already_exists?: boolean;
+      client?: Client;
+    } | null;
 
-      if (phoneError) return { data: null, error: phoneError };
-      if (existingByPhone) {
-        const { error: linkError } = await supabase
-          .from("appointments")
-          .update({ client_id: existingByPhone.id })
-          .eq("id", appointmentId)
-          .eq("barbershop_id", barbershopId);
-        if (linkError) return { data: null, error: linkError };
-        return { data: existingByPhone as Client, alreadyExists: true, error: null };
-      }
-    }
-
-    const { data: created, error: createError } = await supabase
-      .from("users")
-      .insert({
-        barbershop_id: barbershopId,
-        name_complete: appointment.manual_name.trim(),
-        num_phone: appointment.manual_phone?.trim() || "",
-        email: appointment.manual_email?.trim() || null,
-        birth_date: appointment.manual_birth_date ?? null,
-      })
-      .select("id, name_complete, num_phone, email, birth_date, style_notes")
-      .single();
-
-    if (createError) return { data: null, error: createError };
-
-    const { error: linkError } = await supabase
-      .from("appointments")
-      .update({ client_id: created.id })
-      .eq("id", appointmentId)
-      .eq("barbershop_id", barbershopId);
-
-    if (linkError) return { data: null, error: linkError };
-    return { data: created as Client, alreadyExists: false, error: null };
+    return {
+      data: result?.client ?? null,
+      alreadyExists: result?.already_exists ?? false,
+      error: null,
+    };
   },
 } as const;
