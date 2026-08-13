@@ -2,29 +2,93 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isValidDate, UUID_PATTERN } from "@/lib/validation";
 
-// Converte "HH:MM" ou "HH:MM:SS" em minutos totais para facilitar comparações
+type AppointmentRow = {
+  date_hour: string | null;
+  duration_minutes: number | null;
+  professional_id: string | null;
+  status: string | null;
+};
+
+type ScheduleBlockRow = {
+  id: string;
+  professional_id: string | null;
+  date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  reason: string | null;
+};
+
 function timeToMinutes(timeStr: string): number {
   if (!timeStr) return 0;
   const [hours, minutes] = timeStr.split(":").map(Number);
   return hours * 60 + minutes;
 }
 
+function minutesToTime(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function parseDateHour(value: string | null): { date: string; minutes: number } | null {
+  if (!value) return null;
+  const [date, timePart] = value.includes("T") ? value.split("T") : value.split(" ");
+  if (!date || !timePart) return null;
+  return { date, minutes: timeToMinutes(timePart.slice(0, 5)) };
+}
+
+function overlaps(start: number, end: number, otherStart: number, otherEnd: number): boolean {
+  return start < otherEnd && end > otherStart;
+}
+
+function normalizeClosedDays(value: unknown): Set<number> {
+  const names: Record<string, number> = {
+    sunday: 0,
+    monday: 1,
+    tuesday: 2,
+    wednesday: 3,
+    thursday: 4,
+    friday: 5,
+    saturday: 6,
+    domingo: 0,
+    segunda: 1,
+    terça: 2,
+    terca: 2,
+    quarta: 3,
+    quinta: 4,
+    sexta: 5,
+    sábado: 6,
+    sabado: 6,
+  };
+  const result = new Set<number>();
+  const values = typeof value === "string"
+    ? value.split(",").map((item) => item.trim().toLowerCase())
+    : Array.isArray(value)
+      ? value
+      : [];
+  for (const item of values) {
+    if (typeof item === "number" && item >= 0 && item <= 6) result.add(item);
+    if (typeof item === "string" && names[item] !== undefined) result.add(names[item]);
+  }
+  return result;
+}
+
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id: shopId } = await params;
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get("date"); // Formato: YYYY-MM-DD
+    const date = searchParams.get("date");
+    const serviceId = searchParams.get("serviceId");
 
     if (!UUID_PATTERN.test(shopId) || !date || !isValidDate(date)) {
-      return NextResponse.json({ error: "Date is required" }, { status: 400 });
+      return NextResponse.json({ error: "Indica uma data válida." }, { status: 400 });
     }
 
     const supabase = await createClient();
 
-    // 1. Obter Barbershop_id, Horário de Funcionamento e Horário de Almoço
     const { data: shopRecord, error: shopError } = await supabase
       .from("shops")
       .select(`
@@ -34,7 +98,8 @@ export async function GET(
           opening_time,
           closing_time,
           lunch_start,
-          lunch_end
+          lunch_end,
+          closed_days
         )
       `)
       .eq("id", shopId)
@@ -42,7 +107,7 @@ export async function GET(
 
     if (shopError || !shopRecord) {
       console.error("[SHOP_FETCH_ERROR]", shopError);
-      return NextResponse.json({ error: "Shop not found" }, { status: 404 });
+      return NextResponse.json({ error: "Barbearia não encontrada." }, { status: 404 });
     }
 
     const barbershopId = shopRecord.barbershop_id;
@@ -50,160 +115,184 @@ export async function GET(
       ? shopRecord.barbershops[0]
       : shopRecord.barbershops;
 
-    const openTime = relation?.opening_time || "09:00:00";
-    const closeTime = relation?.closing_time || "19:00:00";
-    const lunchStart = relation?.lunch_start || null;
-    const lunchEnd = relation?.lunch_end || null;
+    if (!barbershopId || !relation) {
+      return NextResponse.json({ error: "Configuração da barbearia indisponível." }, { status: 503 });
+    }
 
-    // 2. Procurar Serviços da Barbearia
+    const openTime = relation.opening_time || "09:00:00";
+    const closeTime = relation.closing_time || "19:00:00";
+    const lunchStart = relation.lunch_start || null;
+    const lunchEnd = relation.lunch_end || null;
+    const closedDays = normalizeClosedDays(relation.closed_days);
+    const selectedWeekday = new Date(`${date}T12:00:00`).getDay();
+    const isClosedDay = closedDays.has(selectedWeekday);
+
     let servicesData: any[] | null = null;
-
-    if (barbershopId) {
-      const resA = await supabase
-        .from("services")
-        .select("*")
-        .eq("barbershop_id", barbershopId);
-      if (resA.data && resA.data.length > 0) servicesData = resA.data;
+    const servicesResult = await supabase
+      .from("services")
+      .select("*")
+      .eq("barbershop_id", barbershopId);
+    if (servicesResult.error) {
+      console.error("[BOOKING_SERVICES_ERROR]", servicesResult.error);
+      return NextResponse.json({ error: "Não foi possível carregar os serviços." }, { status: 503 });
     }
+    servicesData = servicesResult.data ?? [];
 
-    if (!servicesData || servicesData.length === 0) {
-      const resB = await supabase
+    if (servicesData.length === 0) {
+      const legacyServicesResult = await supabase
         .from("services")
         .select("*")
         .eq("shop_id", shopId);
-      if (resB.data && resB.data.length > 0) servicesData = resB.data;
+      if (legacyServicesResult.error && legacyServicesResult.error.code !== "42703") {
+        console.error("[BOOKING_LEGACY_SERVICES_ERROR]", legacyServicesResult.error);
+        return NextResponse.json({ error: "Não foi possível carregar os serviços." }, { status: 503 });
+      }
+      servicesData = legacyServicesResult.data ?? [];
     }
 
-    const services = (servicesData || []).map((s: any) => ({
-      id: s.id,
-      barbershopId: s.barbershop_id || s.shop_id || shopId,
-      name: s.name || s.title || "Serviço",
-      price: Number(s.price || s.cost || 0),
-      durationMinutes: Number(s.duration || s.duration_minutes || 30),
+    const services = servicesData.map((service: any) => ({
+      id: service.id,
+      barbershopId: service.barbershop_id || service.shop_id || shopId,
+      name: service.name || service.title || "Serviço",
+      price: Number(service.price || service.cost || 0),
+      durationMinutes: Math.max(1, Number(service.duration || service.duration_minutes || 30)),
     }));
 
-    // 2.5. Procurar Profissionais (Barbeiros) na tabela 'professionals'
     let professionalsData: any[] | null = null;
-
-    if (barbershopId) {
-      const resProA = await supabase
-        .from("professionals")
-        .select("*")
-        .eq("barbershop_id", barbershopId);
-      if (resProA.data && resProA.data.length > 0) professionalsData = resProA.data;
+    const professionalsResult = await supabase
+      .from("professionals")
+      .select("*")
+      .eq("barbershop_id", barbershopId);
+    if (professionalsResult.error) {
+      console.error("[BOOKING_PROFESSIONALS_ERROR]", professionalsResult.error);
+      return NextResponse.json({ error: "Não foi possível carregar os barbeiros." }, { status: 503 });
     }
+    professionalsData = professionalsResult.data ?? [];
 
-    if (!professionalsData || professionalsData.length === 0) {
-      const resProB = await supabase
+    if (professionalsData.length === 0) {
+      const legacyProfessionalsResult = await supabase
         .from("professionals")
         .select("*")
         .eq("shop_id", shopId);
-      if (resProB.data && resProB.data.length > 0) professionalsData = resProB.data;
+      if (legacyProfessionalsResult.error && legacyProfessionalsResult.error.code !== "42703") {
+        console.error("[BOOKING_LEGACY_PROFESSIONALS_ERROR]", legacyProfessionalsResult.error);
+        return NextResponse.json({ error: "Não foi possível carregar os barbeiros." }, { status: 503 });
+      }
+      professionalsData = legacyProfessionalsResult.data ?? [];
     }
 
-    const professionals = (professionalsData || []).map((p: any) => ({
-      id: p.id,
-      name: p.name || p.full_name || "Barbeiro",
-      role: p.role || "Barbeiro Profissional",
+    const professionals = professionalsData.map((professional: any) => ({
+      id: professional.id,
+      name: professional.name || professional.full_name || "Barbeiro",
+      role: professional.role || "Barbeiro Profissional",
     }));
 
-    // 3. Obter agendamentos já marcados para esse dia
+    const { data: blockRows, error: blocksError } = await supabase
+      .from("schedule_blocks")
+      .select("id, professional_id, date, start_time, end_time, reason")
+      .eq("barbershop_id", barbershopId)
+      .eq("date", date)
+      .order("start_time", { ascending: true });
+
+    if (blocksError && blocksError.code !== "42P01") {
+      console.error("[BOOKING_BLOCKS_ERROR]", blocksError);
+      return NextResponse.json({ error: "Não foi possível carregar os horários bloqueados." }, { status: 503 });
+    }
+
+    const blockedIntervals = ((blockRows ?? []) as ScheduleBlockRow[]).map((block) => ({
+      id: block.id,
+      professionalId: block.professional_id,
+      startTime: block.start_time ? block.start_time.slice(0, 5) : null,
+      endTime: block.end_time ? block.end_time.slice(0, 5) : null,
+      reason: block.reason?.trim() || "Horário bloqueado",
+      allDay: !block.start_time || !block.end_time,
+    }));
+
     const dayStart = `${date}T00:00:00`;
     const dayEnd = `${date}T23:59:59`;
-
-    const { data: appointments } = await supabase
+    const { data: appointments, error: appointmentsError } = await supabase
       .from("appointments")
-      .select("date_hour")
+      .select("date_hour, duration_minutes, professional_id, status")
       .eq("barbershop_id", barbershopId)
       .gte("date_hour", dayStart)
-      .lte("date_hour", dayEnd);
+      .lte("date_hour", dayEnd)
+      .in("status", ["pending", "scheduled"]);
 
-    const bookedSlots = new Set(
-      (appointments || []).map((a: { date_hour: string }) => {
-        if (!a.date_hour) return "";
-        return a.date_hour.includes("T")
-          ? a.date_hour.split("T")[1].substring(0, 5)
-          : a.date_hour.split(" ")[1]?.substring(0, 5) || "";
-      })
-    );
+    if (appointmentsError) {
+      console.error("[BOOKING_APPOINTMENTS_ERROR]", appointmentsError);
+      return NextResponse.json({ error: "Não foi possível confirmar a agenda." }, { status: 503 });
+    }
 
-    // 4. Determinar a data e hora atual em Portugal
     const now = new Date();
-    const todayPortugal = now.toLocaleDateString("en-CA", {
-      timeZone: "Europe/Lisbon",
-    });
-    
+    const todayPortugal = now.toLocaleDateString("en-CA", { timeZone: "Europe/Lisbon" });
     const timePortugal = now.toLocaleTimeString("pt-PT", {
       timeZone: "Europe/Lisbon",
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
     });
-
     const isToday = date === todayPortugal;
     const currentMinutesNow = timeToMinutes(timePortugal);
-
     const lunchStartMinutes = lunchStart ? timeToMinutes(lunchStart) : null;
     const lunchEndMinutes = lunchEnd ? timeToMinutes(lunchEnd) : null;
+    const selectedService = serviceId ? services.find((service) => service.id === serviceId) : services[0];
+    const serviceDuration = Math.min(Math.max(Number(selectedService?.durationMinutes ?? 30), 1), 1440);
 
-    // 5. Gerar os Slots de 30 em 30 min
+    const appointmentIntervals = ((appointments ?? []) as AppointmentRow[])
+      .map((appointment) => {
+        const parsed = parseDateHour(appointment.date_hour);
+        if (!parsed || parsed.date !== date) return null;
+        const start = parsed.minutes;
+        const end = start + Math.min(Math.max(Number(appointment.duration_minutes ?? 30), 1), 1440);
+        return { start, end, professionalId: appointment.professional_id };
+      })
+      .filter(Boolean) as Array<{ start: number; end: number; professionalId: string | null }>;
+
     const availableSlots: string[] = [];
-    let [currentHour, currentMinute] = openTime.split(":").map(Number);
-    const [endHour, endMinute] = closeTime.split(":").map(Number);
+    const openTotalMinutes = timeToMinutes(openTime);
+    const closeTotalMinutes = timeToMinutes(closeTime);
 
-    const endTotalMinutes = endHour * 60 + endMinute;
+    for (let slotStart = openTotalMinutes; slotStart < closeTotalMinutes; slotStart += 30) {
+      const slotEnd = slotStart + serviceDuration;
+      if (slotEnd > closeTotalMinutes) continue;
+      if (isToday && slotStart <= currentMinutesNow) continue;
+      if (isClosedDay) continue;
+      if (lunchStartMinutes !== null && lunchEndMinutes !== null && overlaps(slotStart, slotEnd, lunchStartMinutes, lunchEndMinutes)) continue;
 
-    while (currentHour * 60 + currentMinute < endTotalMinutes) {
-      const slotTotalMinutes = currentHour * 60 + currentMinute;
-      const formattedSlot = `${String(currentHour).padStart(2, "0")}:${String(
-        currentMinute
-      ).padStart(2, "0")}`;
+      const blocked = blockedIntervals.some((block) => {
+        if (block.allDay) return true;
+        const start = timeToMinutes(block.startTime!);
+        const end = timeToMinutes(block.endTime!);
+        return overlaps(slotStart, slotEnd, start, end);
+      });
+      if (blocked) continue;
 
-      if (isToday && slotTotalMinutes <= currentMinutesNow) {
-        currentMinute += 30;
-        if (currentMinute >= 60) {
-          currentHour += 1;
-          currentMinute -= 60;
-        }
-        continue;
-      }
+      const booked = appointmentIntervals.some((appointment) =>
+        overlaps(slotStart, slotEnd, appointment.start, appointment.end),
+      );
+      if (booked) continue;
 
-      if (
-        lunchStartMinutes !== null &&
-        lunchEndMinutes !== null &&
-        slotTotalMinutes >= lunchStartMinutes &&
-        slotTotalMinutes < lunchEndMinutes
-      ) {
-        currentMinute += 30;
-        if (currentMinute >= 60) {
-          currentHour += 1;
-          currentMinute -= 60;
-        }
-        continue;
-      }
-
-      if (!bookedSlots.has(formattedSlot)) {
-        availableSlots.push(formattedSlot);
-      }
-
-      currentMinute += 30;
-      if (currentMinute >= 60) {
-        currentHour += 1;
-        currentMinute -= 60;
-      }
+      availableSlots.push(minutesToTime(slotStart));
     }
 
-    return NextResponse.json({
-      services,
-      professionals, // <-- Retornado para o frontend
-      availableSlots,
-      isClosed: availableSlots.length === 0 && bookedSlots.size === 0,
-    });
+    const isClosed = isClosedDay || blockedIntervals.some((block) => block.allDay) || availableSlots.length === 0;
+
+    return NextResponse.json(
+      {
+        services,
+        professionals,
+        availableSlots,
+        isClosed,
+        closedDay: isClosedDay,
+        blockedIntervals,
+      },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   } catch (error) {
     console.error("[BOOKING_DATA_ERROR]", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
+      { error: "Não foi possível carregar a disponibilidade. Tenta novamente." },
+      { status: 500, headers: { "Cache-Control": "no-store" } },
     );
   }
 }
