@@ -14,14 +14,24 @@ type BookingRequestBody = {
   service?: unknown;
   date?: unknown;
   slot?: unknown;
+  professionalId?: unknown;
   customerName?: unknown;
   customerPhone?: unknown;
   customerEmail?: unknown;
+  customerBirthDate?: unknown;
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const BIRTH_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Creates a public booking only after checking the shop, service and slot. */
+function isValidBirthDate(value: string): boolean {
+  if (!BIRTH_DATE_PATTERN.test(value)) return false;
+  const parsed = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) return false;
+  if (parsed > new Date()) return false;
+  return parsed.getFullYear() >= 1900;
+}
+
 export async function POST(request: Request) {
   try {
     const payload: unknown = await request.json();
@@ -29,21 +39,47 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Pedido inválido." }, { status: 400 });
     }
 
-    const { shopId, service, date, slot, customerName, customerPhone, customerEmail } = payload as BookingRequestBody;
+    const {
+      shopId,
+      service,
+      date,
+      slot,
+      professionalId,
+      customerName,
+      customerPhone,
+      customerEmail,
+      customerBirthDate,
+    } = payload as BookingRequestBody;
+
     const name = normalizeText(customerName, 120);
     const phone = normalizeText(customerPhone, 30);
     const email = normalizeText(customerEmail, 254)?.toLowerCase();
+    const birthDate = typeof customerBirthDate === "string" ? customerBirthDate.trim() : "";
     const bookingDate = typeof date === "string" ? date : new Date().toISOString().slice(0, 10);
     const bookingTime = typeof slot === "string" ? slot.slice(0, 5) : "";
+    const normalizedProfessionalId =
+      typeof professionalId === "string" && professionalId ? professionalId : null;
 
     if (
-      typeof shopId !== "string" || !UUID_PATTERN.test(shopId) ||
-      typeof service !== "string" || !UUID_PATTERN.test(service) ||
-      !name || !phone || !email || !EMAIL_PATTERN.test(email) ||
-      !isSafePublicBookingDate(bookingDate) || !isValidTime(bookingTime)
+      typeof shopId !== "string" ||
+      !UUID_PATTERN.test(shopId) ||
+      typeof service !== "string" ||
+      !UUID_PATTERN.test(service) ||
+      !name ||
+      !phone ||
+      !email ||
+      !EMAIL_PATTERN.test(email) ||
+      !birthDate ||
+      !isValidBirthDate(birthDate) ||
+      !isSafePublicBookingDate(bookingDate) ||
+      !isValidTime(bookingTime) ||
+      (normalizedProfessionalId && !UUID_PATTERN.test(normalizedProfessionalId))
     ) {
       return NextResponse.json(
-        { success: false, error: "Confirma os dados e escolhe uma data e hora válidas." },
+        {
+          success: false,
+          error: "Confirma os dados, incluindo a data de nascimento, e escolhe uma data e hora válidas.",
+        },
         { status: 400 },
       );
     }
@@ -86,8 +122,25 @@ export async function POST(request: Request) {
       );
     }
 
+    if (normalizedProfessionalId) {
+      const { data: professional, error: professionalError } = await supabase
+        .from("professionals")
+        .select("id")
+        .eq("id", normalizedProfessionalId)
+        .eq("barbershop_id", barbershopId)
+        .maybeSingle();
+
+      if (professionalError || !professional) {
+        return NextResponse.json(
+          { success: false, error: "O profissional selecionado já não está disponível." },
+          { status: 400 },
+        );
+      }
+    }
+
     const serviceName = selectedService.name || "Serviço";
     const dateHourIso = `${bookingDate}T${bookingTime}:00`;
+
     const { data: existingAppointment, error: conflictError } = await supabase
       .from("appointments")
       .select("id")
@@ -116,11 +169,13 @@ export async function POST(request: Request) {
       .insert({
         barbershop_id: barbershopId,
         service_id: service,
+        professional_id: normalizedProfessionalId,
         date_hour: dateHourIso,
         status: "scheduled",
         manual_name: name,
         manual_phone: phone,
         manual_email: email,
+        manual_birth_date: birthDate,
       })
       .select()
       .single();
