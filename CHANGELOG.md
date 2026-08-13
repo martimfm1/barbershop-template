@@ -2,6 +2,40 @@
 
 ## Unreleased — 2026-08-13
 
+### Booking — disponibilidade, folgas e bloqueios
+
+- Reforçada a API pública de disponibilidade para respeitar os dias de encerramento configurados na barbearia.
+- Os dias de folga continuam selecionáveis no drawer para que o cliente veja explicitamente o aviso de que a barbearia está fechada, em vez de receber apenas um botão desativado.
+- Adicionados avisos visuais para dias de folga no booking drawer mobile.
+- Os `schedule_blocks` específicos da data deixam de aparecer como horários disponíveis.
+- Bloqueios de dia inteiro e bloqueios parciais passam a ser comunicados no drawer com a razão configurada e o intervalo de horas quando aplicável.
+- A geração de horários passou a considerar a duração real do serviço, evitando apresentar slots que ultrapassariam o horário de fecho.
+- A disponibilidade passou a excluir sobreposições com marcações `pending` e `scheduled`, em vez de comparar apenas a hora inicial.
+- A API de criação de marcações passou a repetir server-side todas as validações críticas de disponibilidade: folgas, horário de funcionamento, pausa, bloqueios e conflitos de marcações.
+- Conflitos de corrida de inserção PostgreSQL (`23505` e `23P01`) continuam a ser convertidos em HTTP 409.
+- Melhorado o tratamento de erros da API de disponibilidade e booking para devolver mensagens utilizáveis pelo cliente em vez de um erro interno genérico sempre que a causa é conhecida.
+- O email do cliente não é usado como chave única de marcação: o mesmo email pode ser utilizado em várias reservas.
+
+### Booking — mobile UX
+
+- Melhorada a composição do `BookingDrawer` em ecrãs pequenos, incluindo altura dinâmica, safe-area inferior e footer fixo mais seguro para dispositivos móveis.
+- Reduzidos problemas de overflow horizontal nos seletores de serviços e dias.
+- Melhorados touch targets e estados ativos dos horários.
+- O drawer passa a apresentar diretamente a mensagem devolvida pela API quando uma operação de disponibilidade ou confirmação falha.
+- Adicionada indicação explícita no formulário de que o mesmo email pode ser utilizado em várias marcações.
+
+### Equipa — membros e permissões
+
+- A aba **Membros e permissões** passa a listar exclusivamente utilizadores com função `barber` que tenham efetivamente entrado através de um código de convite utilizado.
+- Administradores, gestores e utilizadores criados por outros fluxos deixam de aparecer nesta lista específica.
+- A associação `joined_via_code` é determinada server-side através dos códigos utilizados, não através de dados enviados pelo frontend.
+- Mantida a validação tenant-scoped da API de membros.
+
+### Definições — mobile
+
+- Mantido o botão de `Guardar alterações` na barra fixa inferior mobile das Definições, juntamente com a ação de descartar quando existem alterações pendentes.
+- A ação de guardar continua a reutilizar o mesmo fluxo server-side das Definições, sem criar um caminho de gravação separado para mobile.
+
 ### Production Hardening
 
 - Criada a branch dedicada `production-hardening` para validação antes de merge na `main`.
