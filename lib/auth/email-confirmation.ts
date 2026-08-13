@@ -1,5 +1,5 @@
 function getBaseUrl(request?: Request): string {
-  const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (configuredUrl) return configuredUrl.replace(/\/$/, "");
 
   const origin = request?.headers.get("origin")?.trim();

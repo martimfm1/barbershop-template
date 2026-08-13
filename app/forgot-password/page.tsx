@@ -14,8 +14,6 @@ import { CardContent, CardHeader, CardTitle, CardDescription } from "@/component
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SiteNavbar } from "@/components/site-navbar";
-import { createClient } from "@/lib/supabase/client";
-import { getClientAuthCallbackUrl } from "@/lib/auth/email-confirmation";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -34,15 +32,13 @@ export default function ForgotPasswordPage() {
     setErrorMsg(null);
 
     try {
-      const supabase = createClient();
-
-      // Do not check whether the account exists. The response stays
-      // indistinguishable to prevent account enumeration.
-      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-        redirectTo: `${getClientAuthCallbackUrl()}?next=/reset-password`,
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalizedEmail }),
       });
 
-      if (error) {
+      if (!response.ok) {
         throw new Error("Não foi possível processar o pedido.");
       }
 
