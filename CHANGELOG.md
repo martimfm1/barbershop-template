@@ -2,6 +2,17 @@
 
 ## Unreleased — 2026-08-13
 
+### Production Hardening
+- Criada a branch dedicada `production-hardening` para validação antes de merge na `main`.
+- Adicionado `/api/health` sem cache para health checks e smoke tests.
+- Reforçada a CI com `typecheck`, `lint`, build, smoke QA, contratos de planos e auditoria estática de segurança.
+- Adicionada auditoria de dependências de produção através de `pnpm qa:deps`.
+- Adicionado `.env.example` sem valores reais para documentar o contrato de ambiente.
+- Adicionada validação local de variáveis obrigatórias com `pnpm qa:env`.
+- Actualizada a checklist `docs/production-readiness.md` com gates P0/P1/P2 e critérios de release.
+- Registado como blocker o pré-check da API de booking, que ainda deve considerar `professional_id` e converter conflitos concorrentes em HTTP 409.
+- Registado como blocker o fluxo público de reviews, que ainda necessita de prova server-side de uma marcação válida antes da publicação.
+
 ### Hardening → UX/Conversion
 - Harmonizados os raios da UI base: controlos e botões usam formas mais retas e cards mantêm apenas uma camada de arredondamento maior para agrupamento visual.
 - Aumentados os targets base dos botões e controlos para melhorar a usabilidade em desktop e mobile.
