@@ -2,6 +2,18 @@
 
 ## Unreleased — 2026-08-13
 
+### Segurança — permissões e CRM
+- Adicionado o RPC `add_client_from_completed_appointment` com `SECURITY DEFINER`, validação de sessão, role e `barbershop_id`.
+- A criação de clientes a partir de marcações deixou de depender de inserts diretos na tabela `users` através do browser.
+- A operação de adicionar cliente passou a ser atómica e tenant-scoped, mantendo `role='client'` e evitando clientes duplicados por telefone.
+- Mantidos os controlos RLS existentes em vez de abrir uma policy genérica de escrita em `users`.
+
+### Jurídico — atualização de 13 de agosto de 2026
+- Atualizados os Termos e Condições com o fluxo atual de reservas, data de nascimento, localização e CRM.
+- Atualizada a Política de Privacidade com o tratamento da localização opcional, data de nascimento em reservas e conversão de marcações em perfis de cliente.
+- Clarificados princípios de minimização, segregação por barbearia e validação server-side.
+- Mantido o envio manual de SMS como desativado.
+
 ### Marcações — dados do cliente e CRM
 - A data de nascimento passou a ser obrigatória no `BookingDrawer` público.
 - A API `/api/bookings` valida a data de nascimento, impede datas futuras e guarda-a em `appointments.manual_birth_date`.
