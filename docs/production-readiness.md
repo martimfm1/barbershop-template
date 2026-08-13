@@ -1,25 +1,46 @@
 # Silentra for Barbers — Production Readiness
 
-## P0 — Blockers
+> Release branch: `production-hardening`
 
-- [ ] Alinhar `package.json` com `pnpm-lock.yaml`: `pino` deve permanecer em `^10.3.1`.
-- [ ] Confirmar `pnpm install --frozen-lockfile`.
-- [ ] Confirmar `pnpm typecheck`.
-- [ ] Confirmar `pnpm lint`.
-- [ ] Confirmar `pnpm build`.
-- [ ] Confirmar `pnpm qa`.
+## P0 — Quality gate
+
+- [x] `package.json` alinhado com `pnpm-lock.yaml` nas dependências corrigidas.
+- [x] CI usa `pnpm install --frozen-lockfile`.
+- [x] TypeScript (`pnpm typecheck`) definido na CI.
+- [x] ESLint (`pnpm lint`) definido na CI.
+- [x] Production build (`pnpm build`) definido na CI.
+- [x] Smoke QA definido e ligado ao servidor de produção local da CI.
+- [x] Health endpoint `/api/health` implementado e incluído no smoke test.
+- [x] Contratos de planos automatizados.
+- [x] Auditoria estática de segurança automatizada.
+- [x] Auditoria de dependências disponível via `pnpm qa:deps`.
+- [ ] Executar e evidenciar todos os comandos localmente / na CI.
 - [ ] Validar migrations do Supabase em staging antes de produção.
 - [ ] Validar variáveis de ambiente obrigatórias por ambiente.
 
 ## P1 — Segurança e dados
 
-- [ ] Teste de isolamento multi-tenant A → A permitido / A → B recusado.
-- [ ] Auditar todas as funções `SECURITY DEFINER`.
+- [x] RLS canónico presente nas tabelas core.
+- [x] Helpers `SECURITY DEFINER` críticos têm `search_path` explícito.
+- [x] `role` e `barbershop_id` do utilizador estão protegidos server-side/database.
+- [x] Índice parcial único protege active double-booking na database.
+- [ ] Corrigir a pré-verificação da API de booking para considerar `professional_id`.
+- [ ] Converter conflito de concorrência `23505` em HTTP 409.
+- [ ] Teste real de isolamento multi-tenant A → A permitido / A → B recusado.
+- [ ] Auditar todas as funções `SECURITY DEFINER` da migration history.
 - [ ] Testar Free/Pro/Enterprise na API e database.
 - [ ] Testar quota Free de 1 profissional sob concorrência.
 - [ ] Validar Storage por tenant e conversão de avatar para WebP.
 - [ ] Rate limiting dos endpoints públicos e de mensagens.
 - [ ] Error tracking e logs estruturados sem secrets.
+- [ ] Auditar CSP/CORS e `allowedDevOrigins` em produção.
+
+## P1 — Reviews / abuso
+
+- [ ] Remover a policy pública de reviews com `WITH CHECK (true)`.
+- [ ] Criar prova de marcação concluída através de token seguro/expirável.
+- [ ] Impedir reviews para marcações inexistentes, não concluídas ou de outro tenant.
+- [ ] Rate limiting / anti-spam do fluxo de reviews.
 
 ## P1 — Billing
 
@@ -29,16 +50,20 @@
 - [ ] Falhas de pagamento.
 - [ ] Webhook idempotente.
 - [ ] Price ID → entitlement server-side.
+- [ ] Não confiar no plano enviado pelo cliente.
+- [ ] Testar eventos Stripe duplicados.
 
 ## P1 — Booking / CRM
 
 - [ ] Criar marcação pública.
-- [ ] Impedir double booking concorrente.
+- [x] DB impede double booking activo para o mesmo slot/profissional.
+- [ ] Impedir double booking concorrente na API + DB.
 - [ ] Confirmar marcação.
 - [ ] Concluir serviço.
 - [ ] Adicionar cliente à CRM.
 - [ ] Reutilizar cliente existente por telefone.
 - [ ] Impedir acesso cross-tenant.
+- [ ] Testar dois profissionais diferentes no mesmo horário.
 
 ## P2 — Comunicação
 
@@ -46,19 +71,66 @@
 - [ ] Validar avatar nos emails.
 - [ ] Testar aniversário, confirmação, cancelamento e mensagem manual.
 - [ ] Validar domínio/sender da Brevo.
+- [ ] Confirmar SPF/DKIM/DMARC.
+- [ ] Garantir que falha de email não falha a operação principal.
 
 ## P2 — Plataforma
 
-- [ ] Staging separado de produção.
+- [x] Staging/production são tratados como ambientes distintos no plano.
+- [x] Health check implementado.
 - [ ] Backups e recuperação testados.
-- [ ] Health checks.
 - [ ] Monitoring e alertas.
+- [ ] Error tracking.
+- [ ] Request/correlation IDs.
 - [ ] Security headers auditados.
 - [ ] `allowedDevOrigins` limitado ao desenvolvimento.
 - [ ] Performance e Core Web Vitals.
 - [ ] Mobile e acessibilidade.
 - [ ] SEO / sitemap / canonical / metadata.
+- [ ] Rollback documentado.
+- [ ] RPO/RTO definidos.
+
+## P2 — Auth / onboarding
+
+- [ ] Login/logout.
+- [ ] Session refresh / expiry.
+- [ ] Password recovery.
+- [ ] Email verification.
+- [ ] Onboarding → primeira marcação.
+- [ ] Sem loops de redirect.
+
+## P2 — Legal / GDPR
+
+- [ ] Privacy Policy final.
+- [ ] Terms of Service final.
+- [ ] Cookie/consentimento quando aplicável.
+- [ ] Data retention.
+- [ ] Account/data deletion.
+- [ ] Data export.
+- [ ] DPA/subprocessors.
+- [ ] Revisão jurídica antes do lançamento comercial.
 
 ## Release gate
 
-O Silentra só deve ser marcado como **Production Ready** quando os P0 e P1 estiverem concluídos e os fluxos críticos E2E tiverem passado em staging.
+A `main` só recebe esta branch depois de:
+
+1. P0 concluído e evidenciado.
+2. Todos os testes de isolamento e quotas passarem em staging.
+3. Stripe + Brevo testados no ambiente correcto.
+4. Booking concorrente testado.
+5. E2E do golden path passar.
+6. CI verde na Pull Request.
+
+## Comandos
+
+```bash
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm lint
+pnpm build
+pnpm qa:smoke
+pnpm qa:plans
+pnpm qa:security
+pnpm qa:deps
+pnpm qa:env
+```
