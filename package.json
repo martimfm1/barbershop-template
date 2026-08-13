@@ -9,6 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "qa:smoke": "node scripts/qa/smoke.mjs",
+    "qa:plans": "node scripts/qa/plan-contracts.mjs",
+    "qa": "pnpm typecheck && pnpm lint && pnpm build && pnpm qa:plans",
     "translate": "tsx scripts/translate.ts"
   },
   "dependencies": {
@@ -40,7 +42,7 @@
     "motion": "^12.40.0",
     "next": "16.2.6",
     "next-themes": "^0.4.6",
-    "pino": "^10.3.1",
+    "pino": "^10.3.0",
     "puppeteer": "^25.1.0",
     "qrcode": "^1.5.4",
     "radix-ui": "^1.4.3",
