@@ -9,7 +9,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     <>
       <DashboardTopBar />
       <DashboardSidebar />
-      <div className="min-w-0 pb-4 pt-16 lg:pl-64">
+      <div className="dashboard-content min-w-0 pt-16 lg:pl-64">
         {children}
       </div>
     </>

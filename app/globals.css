@@ -68,6 +68,10 @@
   --sidebar-primary: oklch(0.73 0.17 163);
   --sidebar-primary-foreground: oklch(0.16 0.04 163);
   --sidebar-ring: oklch(0.73 0.17 163 / 0.62);
+  --surface-subtle: oklch(1 0 0 / 0.018);
+  --surface-raised: oklch(0.18 0.006 285.8 / 0.88);
+  --border-subtle: oklch(1 0 0 / 0.065);
+  --border-strong: oklch(1 0 0 / 0.14);
 }
 
 .dark { color-scheme: dark; }
@@ -79,6 +83,25 @@
   button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
   button, [role="button"] { min-height: 44px; }
   input, select, textarea { max-width: 100%; }
+  select:not([data-slot]) {
+    min-height: 2.75rem;
+    width: 100%;
+    border-radius: 0.75rem;
+    border: 1px solid rgb(255 255 255 / 0.1);
+    background: rgb(255 255 255 / 0.035);
+    padding-inline: 0.875rem;
+    color: rgb(244 244 245);
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+  }
+  select:not([data-slot]):hover { border-color: rgb(255 255 255 / 0.14); }
+  select:not([data-slot]):focus-visible {
+    border-color: rgb(52 211 153 / 0.5);
+    background: rgb(255 255 255 / 0.055);
+    box-shadow: 0 0 0 4px rgb(52 211 153 / 0.1);
+  }
+  select:not([data-slot]):disabled { cursor: not-allowed; opacity: 0.5; }
 }
 
 ::selection { background: rgb(52 211 153 / 0.22); color: #f8fafc; }
@@ -141,8 +164,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert
 .dashboard-page table tbody tr:hover { background: rgb(255 255 255 / 0.025); }
 .dashboard-page table td { vertical-align: middle; }
 
-.silentra-surface { border: 1px solid rgb(255 255 255 / 0.08); background: rgb(255 255 255 / 0.022); }
-.silentra-surface-raised { border: 1px solid rgb(255 255 255 / 0.1); background: rgb(24 24 27 / 0.72); box-shadow: 0 12px 40px rgb(0 0 0 / 0.18); }
+.silentra-surface { border: 1px solid var(--border-subtle); background: var(--surface-subtle); }
+.silentra-surface-raised { border: 1px solid var(--border); background: var(--surface-raised); box-shadow: 0 10px 28px rgb(0 0 0 / 0.16); }
 .silentra-section { border-top: 1px solid rgb(255 255 255 / 0.08); padding-top: 1.5rem; }
 .silentra-control { min-height: 44px; border-radius: 0.75rem; }
 .silentra-action-primary { min-height: 44px; border-radius: 0.75rem; font-weight: 600; box-shadow: 0 8px 24px rgb(16 185 129 / 0.1); }
@@ -151,11 +174,19 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert
 .silentra-focus:focus-visible { border-color: rgb(52 211 153 / 0.55); box-shadow: 0 0 0 3px rgb(52 211 153 / 0.16); }
 .silentra-empty { border: 1px dashed rgb(255 255 255 / 0.13); background: rgb(255 255 255 / 0.012); }
 
+.silentra-form-grid { display: grid; gap: 1.25rem; }
+.silentra-form-field { display: grid; gap: 0.5rem; }
+.silentra-form-field > label { color: rgb(228 228 231); font-size: 0.875rem; font-weight: 500; }
+.silentra-table-wrap { overflow-x: auto; border: 1px solid rgb(255 255 255 / 0.08); border-radius: 0.875rem; }
+.silentra-table-wrap table { min-width: 38rem; }
+.dashboard-content { min-width: 0; padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+
 .dashboard-page h1, .dashboard-page h2, .dashboard-page h3 { text-wrap: balance; }
 .dashboard-page h1 { letter-spacing: -0.035em; }
 
 @media (max-width: 639px) {
   .dashboard-page { padding-inline: 1rem; padding-bottom: 5.5rem; }
+  .dashboard-content { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
   .dashboard-page-header { align-items: flex-start; flex-direction: column; }
   .dashboard-page-header > * { max-width: 100%; }
   .dashboard-page h1 { font-size: 1.55rem; line-height: 1.2; }
