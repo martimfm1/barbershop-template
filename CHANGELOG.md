@@ -2,6 +2,20 @@
 
 ## Unreleased — 2026-08-13
 
+### Customer Booking Portal
+
+- Adicionada a nova página pública `/my-bookings` para os clientes consultarem e gerirem marcações através do email.
+- O acesso usa verificação por código de 6 dígitos enviado por email, com validade curta e limite de tentativas.
+- Criadas sessões httpOnly de portal com expiração, sem exigir criação de password ou conta de cliente.
+- Adicionadas tabelas privadas para códigos de verificação e sessões do portal, sem acesso direto por `anon` ou `authenticated`.
+- O portal lista apenas marcações cujo `manual_email` corresponde ao email verificado da sessão.
+- Adicionados endpoints protegidos para consultar, cancelar e reagendar marcações.
+- Cancelamentos respeitam a janela `time_limit_cancellation_hours` configurada pela barbearia.
+- Reagendamentos respeitam dias de folga, horário de abertura/fecho, pausa, `schedule_blocks`, duração do serviço e conflitos existentes.
+- Ações do cliente são registadas em `audit_logs`.
+- Implementado logout que invalida a sessão do portal.
+- O mesmo email pode continuar a ser utilizado em várias marcações; o portal agrega essas marcações depois da verificação do email.
+
 ### Database — shop slug hardening
 
 - Adicionada proteção server-side para garantir que novos registos em `public.shops` recebem automaticamente um slug quando um fluxo legado não o fornece.
