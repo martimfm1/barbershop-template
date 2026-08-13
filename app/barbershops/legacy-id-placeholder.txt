@@ -1,0 +1,1 @@
+Legacy UUID URLs are handled by the canonical /barbershops/[slug] route. This file is intentionally empty of application logic.
