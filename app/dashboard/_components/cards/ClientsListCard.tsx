@@ -1,21 +1,244 @@
 "use client";
 
 import { ClientsListCardProps } from "@/types";
-import { Users, UserPlus, Search, Phone, Mail, Pencil, Trash2, Sparkles, X, ArrowRight, Cake } from "lucide-react";
+import {
+  Users,
+  UserPlus,
+  Search,
+  Phone,
+  Mail,
+  Pencil,
+  Trash2,
+  Sparkles,
+  X,
+  ArrowRight,
+  Cake,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-export function ClientsListCard({ clientsCount, filteredClients, searchClientQuery, setSearchClientQuery, showAddClientForm, setShowAddClientForm, newClientData, setNewClientData, handleCreateClient, setEditingClient, handleDeleteClient, loading }: ClientsListCardProps) {
+export function ClientsListCard({
+  clientsCount,
+  filteredClients,
+  searchClientQuery,
+  setSearchClientQuery,
+  showAddClientForm,
+  setShowAddClientForm,
+  newClientData,
+  setNewClientData,
+  handleCreateClient,
+  setEditingClient,
+  handleDeleteClient,
+  loading,
+}: ClientsListCardProps) {
   const hasSearch = searchClientQuery.trim().length > 0;
+
   return (
-    <Card className="overflow-hidden rounded-3xl border-white/10 bg-zinc-900/60 shadow-xl backdrop-blur-xl">
-      <CardHeader className="border-b border-white/10 p-5 sm:p-6"><div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div className="flex min-w-0 items-start gap-3"><div className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-500/10 text-blue-400"><Users className="size-5" aria-hidden="true" /></div><div className="min-w-0"><CardTitle className="text-lg font-semibold text-zinc-50">A tua base de clientes</CardTitle><p className="mt-1 text-sm text-zinc-500">{clientsCount === 0 ? "Começa com o essencial. O histórico cresce com as marcações." : `${clientsCount} ${clientsCount === 1 ? "cliente" : "clientes"} na tua base.`}</p></div></div><div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto"><div className="relative flex-1 sm:min-w-[280px]"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-600" /><Input value={searchClientQuery} onChange={(e) => setSearchClientQuery(e.target.value)} placeholder="Pesquisar por nome ou telemóvel..." aria-label="Pesquisar clientes por nome ou telemóvel" className="min-h-11 bg-zinc-950/70 pl-9 pr-10" />{hasSearch && <button type="button" onClick={() => setSearchClientQuery("")} aria-label="Limpar pesquisa" className="absolute right-1 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-lg text-zinc-500 hover:bg-white/10 hover:text-white"><X className="size-4" /></button>}</div><Button onClick={() => setShowAddClientForm(!showAddClientForm)} className="min-h-11 bg-zinc-50 text-zinc-950 hover:bg-zinc-200"><UserPlus className="mr-2 size-4" />{showAddClientForm ? "Fechar" : "Adicionar cliente"}</Button></div></div></CardHeader>
+    <Card className="overflow-hidden rounded-2xl border-white/10 bg-zinc-900/60 shadow-xl backdrop-blur-xl">
+      <CardHeader className="border-b border-white/10 p-5 sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-400">
+              <Users className="size-5" aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <CardTitle className="text-lg font-semibold text-zinc-50">
+                A tua base de clientes
+              </CardTitle>
+              <p className="mt-1 text-sm text-zinc-500">
+                {clientsCount === 0
+                  ? "Começa pelo essencial. O histórico cresce com as marcações."
+                  : `${clientsCount} ${clientsCount === 1 ? "cliente" : "clientes"} na tua base.`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+            <div className="relative min-w-0 flex-1 sm:min-w-[280px]">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-600" />
+              <Input
+                value={searchClientQuery}
+                onChange={(e) => setSearchClientQuery(e.target.value)}
+                placeholder="Pesquisar por nome ou telemóvel"
+                aria-label="Pesquisar clientes por nome ou telemóvel"
+                className="min-h-11 rounded-lg bg-zinc-950/70 pl-9 pr-10"
+              />
+              {hasSearch && (
+                <button
+                  type="button"
+                  onClick={() => setSearchClientQuery("")}
+                  aria-label="Limpar pesquisa"
+                  className="absolute right-1 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-lg text-zinc-500 hover:bg-white/10 hover:text-white"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
+            </div>
+            <Button
+              onClick={() => setShowAddClientForm(!showAddClientForm)}
+              className="min-h-11 rounded-lg bg-zinc-50 text-zinc-950 hover:bg-white"
+            >
+              <UserPlus className="mr-2 size-4" />
+              {showAddClientForm ? "Fechar" : "Adicionar cliente"}
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+
       <CardContent className="p-5 sm:p-6">
-        {showAddClientForm && <form onSubmit={handleCreateClient} className="mb-6 rounded-2xl border border-blue-500/20 bg-blue-500/[0.05] p-4 sm:p-5"><div className="mb-4 flex items-start gap-3"><Sparkles className="mt-0.5 size-4 shrink-0 text-blue-400" /><div><p className="text-sm font-semibold text-zinc-100">Adiciona o essencial</p><p className="mt-1 text-xs leading-5 text-zinc-500">Nome e telemóvel são suficientes. A data de nascimento pode ser gerida na automação de aniversários.</p></div></div><div className="grid gap-4 md:grid-cols-[1.2fr_1fr_1.2fr_auto] md:items-end"><div className="grid gap-1.5"><label htmlFor="new-client-name" className="text-xs font-medium text-zinc-400">Nome completo</label><input id="new-client-name" required disabled={loading} autoFocus placeholder="Ex.: João Silva" className="min-h-11 rounded-xl border border-white/10 bg-zinc-950/70 px-3 text-sm text-white outline-none focus:border-blue-500/50" value={newClientData.name_complete} onChange={(e) => setNewClientData({ ...newClientData, name_complete: e.target.value })} /></div><div className="grid gap-1.5"><label htmlFor="new-client-phone" className="text-xs font-medium text-zinc-400">Telemóvel</label><input id="new-client-phone" required disabled={loading} type="tel" inputMode="tel" placeholder="912 345 678" className="min-h-11 rounded-xl border border-white/10 bg-zinc-950/70 px-3 text-sm text-white outline-none focus:border-blue-500/50" value={newClientData.num_phone} onChange={(e) => setNewClientData({ ...newClientData, num_phone: e.target.value })} /></div><div className="grid gap-1.5"><label htmlFor="new-client-email" className="text-xs font-medium text-zinc-400">Email <span className="font-normal text-zinc-600">(opcional)</span></label><input id="new-client-email" disabled={loading} type="email" placeholder="cliente@email.com" className="min-h-11 rounded-xl border border-white/10 bg-zinc-950/70 px-3 text-sm text-white outline-none focus:border-blue-500/50" value={newClientData.email} onChange={(e) => setNewClientData({ ...newClientData, email: e.target.value })} /></div><Button type="submit" disabled={loading} className="min-h-11 bg-blue-600 text-white hover:bg-blue-500">{loading ? <Spinner className="size-4" /> : <>Adicionar <ArrowRight className="ml-2 size-4" /></>}</Button></div></form>}
-        {filteredClients.length === 0 ? <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-5 py-12 text-center"><Users className="mx-auto size-7 text-zinc-600" /><p className="mt-3 text-sm font-semibold text-zinc-200">{hasSearch ? "Não encontrámos esse cliente." : "A tua base ainda está vazia."}</p><p className="mx-auto mt-1 max-w-md text-xs leading-5 text-zinc-500">{hasSearch ? "Experimenta pesquisar pelo nome ou telemóvel." : "Podes adicionar um cliente agora ou deixá-lo ser criado automaticamente através de uma marcação."}</p><Button variant="outline" onClick={() => hasSearch ? setSearchClientQuery("") : setShowAddClientForm(true)} className="mt-5 min-h-11 border-white/10">{hasSearch ? "Limpar pesquisa" : "Adicionar primeiro cliente"}</Button></div> : <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{filteredClients.map((client) => <article key={client.id} className="group flex min-h-[190px] flex-col justify-between rounded-2xl border border-white/10 bg-white/[0.025] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-500/30 hover:bg-white/[0.045]"><div><div className="flex items-center gap-3"><div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-500/10 text-sm font-semibold text-blue-300">{client.name_complete.slice(0, 1).toUpperCase()}</div><div className="min-w-0"><h3 className="truncate text-sm font-semibold text-zinc-100">{client.name_complete}</h3><p className="mt-1 text-xs text-zinc-500">Cliente</p></div></div><div className="mt-4 space-y-2">{client.num_phone && <p className="flex items-center gap-2 text-xs text-zinc-400"><Phone className="size-3.5 text-zinc-600" />{client.num_phone}</p>}{client.email && <p className="flex items-center gap-2 truncate text-xs text-zinc-500"><Mail className="size-3.5 text-zinc-600" />{client.email}</p>}{client.birth_date && <p className="flex items-center gap-2 text-xs text-zinc-500"><Cake className="size-3.5 text-zinc-600" />{new Date(`${client.birth_date}T12:00:00`).toLocaleDateString("pt-PT")}</p>}</div></div><div className="mt-4 flex justify-end gap-1 border-t border-white/5 pt-3"><Button variant="ghost" size="icon" onClick={() => setEditingClient(client)} className="size-9 text-zinc-400 hover:bg-white/10 hover:text-white" aria-label={`Editar ${client.name_complete}`}><Pencil className="size-4" /></Button><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="size-9 text-zinc-500 hover:bg-red-500/10 hover:text-red-400" aria-label={`Eliminar ${client.name_complete}`}><Trash2 className="size-4" /></Button></AlertDialogTrigger><AlertDialogContent className="border-white/10 bg-zinc-950"><AlertDialogHeader><AlertDialogTitle>Eliminar este cliente?</AlertDialogTitle><AlertDialogDescription>Esta ação é permanente. Se existirem marcações associadas, o histórico deve ser preservado.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="border-white/10 bg-transparent text-white">Manter</AlertDialogCancel><AlertDialogAction className="bg-red-600 text-white" onClick={() => handleDeleteClient(client.id)}>Eliminar</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></div></article>)}</div>}
+        {showAddClientForm && (
+          <form
+            onSubmit={handleCreateClient}
+            className="mb-6 rounded-xl border border-blue-500/20 bg-blue-500/[0.05] p-4 sm:p-5"
+          >
+            <div className="mb-4 flex items-start gap-3">
+              <Sparkles className="mt-0.5 size-4 shrink-0 text-blue-400" />
+              <div>
+                <p className="text-sm font-semibold text-zinc-100">
+                  Adiciona apenas o essencial
+                </p>
+                <p className="mt-1 text-xs leading-5 text-zinc-500">
+                  Nome e telemóvel chegam para começar. O resto pode ser completado mais tarde.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-[1.2fr_1fr_1.2fr_auto] md:items-end">
+              <div className="grid gap-1.5">
+                <label htmlFor="new-client-name" className="text-xs font-medium text-zinc-400">
+                  Nome completo
+                </label>
+                <input
+                  id="new-client-name"
+                  required
+                  disabled={loading}
+                  autoFocus
+                  placeholder="Ex.: João Silva"
+                  className="min-h-11 rounded-lg border border-white/10 bg-zinc-950/70 px-3 text-sm text-white outline-none focus:border-blue-500/50"
+                  value={newClientData.name_complete}
+                  onChange={(e) => setNewClientData({ ...newClientData, name_complete: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <label htmlFor="new-client-phone" className="text-xs font-medium text-zinc-400">
+                  Telemóvel
+                </label>
+                <input
+                  id="new-client-phone"
+                  required
+                  disabled={loading}
+                  type="tel"
+                  inputMode="tel"
+                  placeholder="912 345 678"
+                  className="min-h-11 rounded-lg border border-white/10 bg-zinc-950/70 px-3 text-sm text-white outline-none focus:border-blue-500/50"
+                  value={newClientData.num_phone}
+                  onChange={(e) => setNewClientData({ ...newClientData, num_phone: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <label htmlFor="new-client-email" className="text-xs font-medium text-zinc-400">
+                  Email <span className="font-normal text-zinc-600">(opcional)</span>
+                </label>
+                <input
+                  id="new-client-email"
+                  disabled={loading}
+                  type="email"
+                  placeholder="cliente@email.com"
+                  className="min-h-11 rounded-lg border border-white/10 bg-zinc-950/70 px-3 text-sm text-white outline-none focus:border-blue-500/50"
+                  value={newClientData.email}
+                  onChange={(e) => setNewClientData({ ...newClientData, email: e.target.value })}
+                />
+              </div>
+              <Button type="submit" disabled={loading} className="min-h-11 rounded-lg bg-blue-600 text-white hover:bg-blue-500">
+                {loading ? <Spinner className="size-4" /> : <>Adicionar <ArrowRight className="ml-2 size-4" /></>}
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {filteredClients.length === 0 ? (
+          hasSearch ? (
+            <EmptyState
+              icon={Users}
+              title="Não encontrámos esse cliente"
+              description="Experimenta outro nome ou telemóvel."
+              actionLabel="Limpar pesquisa"
+              onAction={() => setSearchClientQuery("")}
+              tone="blue"
+            />
+          ) : (
+            <EmptyState
+              icon={Users}
+              title="A tua base ainda está vazia"
+              description="Adiciona o primeiro cliente agora ou deixa o Silentra criá-lo a partir de uma marcação concluída."
+              actionLabel="Adicionar primeiro cliente"
+              onAction={() => setShowAddClientForm(true)}
+              tone="blue"
+            />
+          )
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredClients.map((client) => (
+              <article
+                key={client.id}
+                className="group flex min-h-[190px] flex-col justify-between rounded-xl border border-white/10 bg-white/[0.025] p-4 transition-colors hover:border-blue-500/30 hover:bg-white/[0.045]"
+              >
+                <div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-500/10 text-sm font-semibold text-blue-300">
+                      {client.name_complete.slice(0, 1).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-semibold text-zinc-100">{client.name_complete}</h3>
+                      <p className="mt-1 text-xs text-zinc-500">Cliente</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    {client.num_phone && <p className="flex items-center gap-2 text-xs text-zinc-400"><Phone className="size-3.5 text-zinc-600" />{client.num_phone}</p>}
+                    {client.email && <p className="flex items-center gap-2 truncate text-xs text-zinc-500"><Mail className="size-3.5 text-zinc-600" />{client.email}</p>}
+                    {client.birth_date && <p className="flex items-center gap-2 text-xs text-zinc-500"><Cake className="size-3.5 text-zinc-600" />{new Date(`${client.birth_date}T12:00:00`).toLocaleDateString("pt-PT")}</p>}
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-end gap-1 border-t border-white/5 pt-3">
+                  <Button variant="ghost" size="icon" onClick={() => setEditingClient(client)} className="size-9 rounded-lg text-zinc-400 hover:bg-white/10 hover:text-white" aria-label={`Editar ${client.name_complete}`}>
+                    <Pencil className="size-4" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="size-9 rounded-lg text-zinc-500 hover:bg-red-500/10 hover:text-red-400" aria-label={`Eliminar ${client.name_complete}`}>
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="border-white/10 bg-zinc-950">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Eliminar este cliente?</AlertDialogTitle>
+                        <AlertDialogDescription>Esta ação é permanente. Se existirem marcações associadas, o histórico deve ser preservado.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="border-white/10 bg-transparent text-white">Manter</AlertDialogCancel>
+                        <AlertDialogAction className="bg-red-600 text-white" onClick={() => handleDeleteClient(client.id)}>Eliminar</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
