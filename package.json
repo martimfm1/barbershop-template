@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "qa:smoke": "node scripts/qa/smoke.mjs",
     "qa:plans": "node scripts/qa/plan-contracts.mjs",
-    "qa": "pnpm typecheck && pnpm lint && pnpm build && pnpm qa:plans",
+    "qa:env": "node scripts/qa/env-check.mjs",
+    "qa:security": "node scripts/qa/security-audit.mjs",
+    "qa": "pnpm typecheck && pnpm lint && pnpm build && pnpm qa:plans && pnpm qa:security",
     "translate": "tsx scripts/translate.ts"
   },
   "dependencies": {
