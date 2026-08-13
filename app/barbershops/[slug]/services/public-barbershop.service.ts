@@ -56,12 +56,31 @@ export const publicBarbershopService = {
   async getBarbershopData(identifier: string) {
     try {
       const cleanParam = identifier.toLowerCase().trim();
+      if (!cleanParam) {
+        return { data: null, error: { message: "Barbearia não encontrada." } };
+      }
 
-      const { data: shop, error: shopError } = await supabase
+      // Slug is canonical. UUID lookup exists only as a compatibility fallback.
+      let shop = null;
+      let shopError = null;
+
+      const slugResult = await supabase
         .from("shops")
         .select("*")
-        .or(`slug.eq.${cleanParam},id.eq.${cleanParam}`)
+        .ilike("slug", cleanParam)
         .maybeSingle();
+      shop = slugResult.data;
+      shopError = slugResult.error;
+
+      if (!shop && !shopError) {
+        const idResult = await supabase
+          .from("shops")
+          .select("*")
+          .eq("id", cleanParam)
+          .maybeSingle();
+        shop = idResult.data;
+        shopError = idResult.error;
+      }
 
       if (shopError || !shop) {
         return { data: null, error: { message: "Barbearia não encontrada." } };
@@ -86,7 +105,7 @@ export const publicBarbershopService = {
         .select("id, name, price, duration, popular");
 
       if (shop.barbershop_id) {
-        servicesQuery = servicesQuery.or(`barbershop_id.eq.${shop.barbershop_id}`);
+        servicesQuery = servicesQuery.eq("barbershop_id", shop.barbershop_id);
       } else {
         servicesQuery = servicesQuery.eq("barbershop_id", shop.id);
       }
@@ -109,11 +128,12 @@ export const publicBarbershopService = {
         ? Number(((reviews ?? []).reduce((acc: number, r: any) => acc + r.rating, 0) / totalReviews).toFixed(1))
         : 0;
 
+      const canonicalSlug = String(shop.slug || cleanParam);
       const formattedShop: BarbershopPublicDetails = {
         ...shop,
         id: shop.id,
         name: shop.name || barberShopData?.name || "Barbearia",
-        slug: shop.slug || shop.id,
+        slug: canonicalSlug,
         city: shop.city || "",
         address: shop.address || barberShopData?.address || "",
         phone: shop.phone || barberShopData?.phone || "",
