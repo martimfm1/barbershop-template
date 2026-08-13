@@ -2,6 +2,14 @@
 
 ## Unreleased — 2026-08-13
 
+### Definições — correções de gravação e avatar
+- Corrigido o fluxo de gravação das definições da barbearia através de um RPC `SECURITY DEFINER` tenant-scoped, permitindo aos proprietários e administradores guardar as alterações sem abrir o RLS.
+- O RPC de definições aceita apenas os campos de configuração suportados e valida a pertença do utilizador à barbearia.
+- Corrigido o upload do avatar para utilizar o bucket Supabase existente `avatars`, mantendo o caminho público `avatar/{barbershopId}/avatar.webp`.
+- Corrigida a validação do URL do avatar no RPC para corresponder ao bucket real.
+- Mantida a conversão obrigatória para WebP, validação do ficheiro e limpeza do upload quando a associação do avatar falha.
+- Melhorado o tratamento de erros técnicos no service de definições.
+
 ### Equipa — membros, códigos e permissões
 - As entradas através de código passam sempre a entrar como `barber`.
 - Removida da geração de códigos a escolha de funções administrativas; promoções e permissões passam a ser geridas pelo proprietário.
