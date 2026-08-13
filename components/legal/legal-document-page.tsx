@@ -17,13 +17,13 @@ type LocalizedText = Record<Locale, string>;
 
 type LegalSection = {
   title: string;
-  paragraphs: string[];
+  paragraphs: readonly string[];
 };
 
 type LegalDocument = {
   lastUpdated: string;
   intro: string;
-  sections: LegalSection[];
+  sections: readonly LegalSection[];
 };
 
 type Highlight = {
@@ -90,7 +90,7 @@ export function LegalDocumentPage({
           backgroundImage:
             "linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)",
           backgroundSize: "72px 72px",
-          maskImage: "linear-gradient(to_bottom,black,transparent_88%)",
+          maskImage: "linear-gradient(to_bottom,black,transparent 88%)",
         }}
       />
 
