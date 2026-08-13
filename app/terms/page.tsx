@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { Scale, ShieldCheck, UsersRound } from "lucide-react";
 import { LegalDocumentPage } from "@/components/legal/legal-document-page";
 import { termsAndConditions } from "@/lib/legal/terms-and-conditions";
-import { CURRENT_LEGAL_UPDATE, currentTermsAddendum } from "@/lib/legal/current-legal-addendum";
+import {
+  CURRENT_LEGAL_UPDATE,
+  currentTermsAddendum,
+} from "@/lib/legal/current-legal-addendum";
 
 export const metadata: Metadata = {
   title: "Termos e Condições | Silentra for Barbers",
@@ -14,18 +17,12 @@ const currentTerms = {
   pt: {
     ...termsAndConditions.pt,
     lastUpdated: CURRENT_LEGAL_UPDATE,
-    sections: [
-      ...termsAndConditions.pt.sections,
-      currentTermsAddendum.pt,
-    ],
+    sections: [...termsAndConditions.pt.sections, currentTermsAddendum.pt],
   },
   en: {
     ...termsAndConditions.en,
     lastUpdated: "August 13, 2026",
-    sections: [
-      ...termsAndConditions.en.sections,
-      currentTermsAddendum.en,
-    ],
+    sections: [...termsAndConditions.en.sections, currentTermsAddendum.en],
   },
 };
 

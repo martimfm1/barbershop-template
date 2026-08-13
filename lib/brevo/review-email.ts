@@ -26,8 +26,13 @@ export async function sendBookingReviewRequestEmail(
   const senderEmail = process.env.SENDER_EMAIL;
 
   if (!apiKey || !senderEmail) {
-    console.error("[BREVO_REVIEW_ERROR] Variáveis BREVO_API_KEY ou SENDER_EMAIL ausentes.");
-    return { success: false, error: "Configuração do servidor de e-mail incompleta." };
+    console.error(
+      "[BREVO_REVIEW_ERROR] Variáveis BREVO_API_KEY ou SENDER_EMAIL ausentes.",
+    );
+    return {
+      success: false,
+      error: "Configuração do servidor de e-mail incompleta.",
+    };
   }
 
   const safeClientName = escapeHtml(payload.clientName);
@@ -82,10 +87,16 @@ export async function sendBookingReviewRequestEmail(
       }),
     });
 
-    const data = (await response.json()) as { messageId?: string; message?: string };
+    const data = (await response.json()) as {
+      messageId?: string;
+      message?: string;
+    };
     if (!response.ok) {
       console.error("[BREVO_REVIEW_API_ERROR]", data);
-      return { success: false, error: data.message || "Falha ao enviar o pedido de avaliação." };
+      return {
+        success: false,
+        error: data.message || "Falha ao enviar o pedido de avaliação.",
+      };
     }
 
     return { success: true, messageId: data.messageId };
@@ -93,7 +104,10 @@ export async function sendBookingReviewRequestEmail(
     console.error("[BREVO_REVIEW_FETCH_ERROR]", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro ao comunicar com a API do Brevo.",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erro ao comunicar com a API do Brevo.",
     };
   }
 }

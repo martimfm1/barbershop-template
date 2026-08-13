@@ -2,7 +2,10 @@ import { useState, useEffect, useMemo } from "react";
 import { generateNextDays } from "@/app/barbershops/utils/booking-slots";
 import type { UseBookingSlotsReturn } from "@/types/marketplace/booking";
 
-export function useBookingSlots(shopId: string | null, isOpen: boolean): UseBookingSlotsReturn {
+export function useBookingSlots(
+  shopId: string | null,
+  isOpen: boolean,
+): UseBookingSlotsReturn {
   const nextDays = useMemo(() => generateNextDays(5), []);
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [slots, setSlots] = useState<string[]>([]);
@@ -22,7 +25,9 @@ export function useBookingSlots(shopId: string | null, isOpen: boolean): UseBook
       setSelectedSlot(null);
 
       try {
-        const response = await fetch(`/api/shops/${shopId}/slots?date=${currentDay.dateStr}`);
+        const response = await fetch(
+          `/api/shops/${shopId}/slots?date=${currentDay.dateStr}`,
+        );
         const data = await response.json();
 
         if (!isMounted) return;

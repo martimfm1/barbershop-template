@@ -1,6 +1,9 @@
 import process from "node:process";
 
-const baseUrl = (process.env.QA_BASE_URL || "http://127.0.0.1:3000").replace(/\/$/, "");
+const baseUrl = (process.env.QA_BASE_URL || "http://127.0.0.1:3000").replace(
+  /\/$/,
+  "",
+);
 
 const routes = [
   "/",
@@ -43,12 +46,17 @@ async function checkRoute(route) {
   assert(response.status < 500, `${route}: respondeu ${response.status}`);
 
   assert(
-    response.status === 200 || allowedRedirect || (response.status >= 300 && response.status < 400),
+    response.status === 200 ||
+      allowedRedirect ||
+      (response.status >= 300 && response.status < 400),
     `${route}: estado inesperado ${response.status}${location ? ` -> ${location}` : ""}`,
   );
 
   if (route === "/api/health") {
-    assert(response.status === 200, `/api/health: esperado 200, recebido ${response.status}`);
+    assert(
+      response.status === 200,
+      `/api/health: esperado 200, recebido ${response.status}`,
+    );
     const payload = await response.json();
     assert(payload?.ok === true, "/api/health: payload inválido");
     assert(payload?.status === "healthy", "/api/health: status inválido");
@@ -65,9 +73,13 @@ async function main() {
     try {
       results.push(await checkRoute(route));
       const result = results.at(-1);
-      console.log(`✓ ${result.route} (${result.status})${result.location ? ` -> ${result.location}` : ""}`);
+      console.log(
+        `✓ ${result.route} (${result.status})${result.location ? ` -> ${result.location}` : ""}`,
+      );
     } catch (error) {
-      console.error(`✕ ${route}: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(
+        `✕ ${route}: ${error instanceof Error ? error.message : String(error)}`,
+      );
       process.exitCode = 1;
     }
   }

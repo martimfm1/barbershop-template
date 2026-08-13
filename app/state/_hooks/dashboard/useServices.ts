@@ -20,78 +20,89 @@ export function useServices(
     duration: "30",
   });
 
-  const handleCreateService = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!barbershopId) return;
+  const handleCreateService = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!barbershopId) return;
 
-    if (!newServiceData.name.trim() || !newServiceData.price) {
-      toast.error("Introduz o nome e o preço do serviço.");
-      return;
-    }
+      if (!newServiceData.name.trim() || !newServiceData.price) {
+        toast.error("Introduz o nome e o preço do serviço.");
+        return;
+      }
 
-    setLoading(true);
-    try {
-      const { error } = await servicesService.create({
-        name: newServiceData.name.trim(),
-        price: Number(newServiceData.price),
-        duration: Number(newServiceData.duration),
-        barbershop_id: barbershopId,
-      });
+      setLoading(true);
+      try {
+        const { error } = await servicesService.create({
+          name: newServiceData.name.trim(),
+          price: Number(newServiceData.price),
+          duration: Number(newServiceData.duration),
+          barbershop_id: barbershopId,
+        });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast.success("Serviço criado com sucesso!");
-      setNewServiceData({ name: "", price: "", duration: "30" });
-      await onRefreshData();
-    } catch (error) {
-      console.error("❌ [Create Service Hook Error]:", error);
-      toast.error(getErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  }, [barbershopId, newServiceData, onRefreshData]);
+        toast.success("Serviço criado com sucesso!");
+        setNewServiceData({ name: "", price: "", duration: "30" });
+        await onRefreshData();
+      } catch (error) {
+        console.error("❌ [Create Service Hook Error]:", error);
+        toast.error(getErrorMessage(error));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [barbershopId, newServiceData, onRefreshData],
+  );
 
-  const handleUpdateService = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingService) return;
+  const handleUpdateService = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!editingService) return;
 
-    setLoading(true);
-    try {
-      const { error } = await servicesService.update(editingService.id, {
-        name: editingService.name.trim(),
-        price: Number(editingService.price),
-        duration: Number((editingService as any).duration ?? editingService.duration),
-      });
+      setLoading(true);
+      try {
+        const { error } = await servicesService.update(editingService.id, {
+          name: editingService.name.trim(),
+          price: Number(editingService.price),
+          duration: Number(
+            (editingService as any).duration ?? editingService.duration,
+          ),
+        });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast.success("Serviço atualizado com sucesso!");
-      setEditingService(null);
-      await onRefreshData();
-    } catch (error) {
-      console.error("❌ [Update Service Hook Error]:", error);
-      toast.error(getErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  }, [editingService, onRefreshData]);
+        toast.success("Serviço atualizado com sucesso!");
+        setEditingService(null);
+        await onRefreshData();
+      } catch (error) {
+        console.error("❌ [Update Service Hook Error]:", error);
+        toast.error(getErrorMessage(error));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [editingService, onRefreshData],
+  );
 
-  const handleDeleteService = useCallback(async (id: string) => {
-    setLoading(true);
-    try {
-      const { error } = await servicesService.delete(id);
-      if (error) throw error;
-      toast.success("Serviço removido.");
-      await onRefreshData();
-    } catch (error) {
-      console.error("❌ [Delete Service Hook Error]:", error);
-      toast.error(
-        "Erro ao remover. Este serviço possui agendamentos vinculados.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [onRefreshData]);
+  const handleDeleteService = useCallback(
+    async (id: string) => {
+      setLoading(true);
+      try {
+        const { error } = await servicesService.delete(id);
+        if (error) throw error;
+        toast.success("Serviço removido.");
+        await onRefreshData();
+      } catch (error) {
+        console.error("❌ [Delete Service Hook Error]:", error);
+        toast.error(
+          "Erro ao remover. Este serviço possui agendamentos vinculados.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [onRefreshData],
+  );
 
   return {
     loadingService,

@@ -16,12 +16,18 @@ export default function EmailConfirmedPage() {
             <CheckCircle2 className="h-7 w-7" strokeWidth={2} />
           </div>
 
-          <p className="mb-2 text-sm font-medium text-primary">Conta confirmada</p>
-          <h1 id="email-confirmed-title" className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          <p className="mb-2 text-sm font-medium text-primary">
+            Conta confirmada
+          </p>
+          <h1
+            id="email-confirmed-title"
+            className="text-2xl font-semibold tracking-tight sm:text-3xl"
+          >
             O teu email foi confirmado
           </h1>
           <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-muted-foreground sm:text-base">
-            A tua conta está confirmada. Já podes iniciar sessão para entrares no painel da tua barbearia.
+            A tua conta está confirmada. Já podes iniciar sessão para entrares
+            no painel da tua barbearia.
           </p>
 
           <Link

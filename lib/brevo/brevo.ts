@@ -28,7 +28,13 @@ function getBarbershopAvatarUrl(barbershopId?: string): string | null {
   return `${supabaseUrl}/storage/v1/object/public/avatar/${encodeURIComponent(barbershopId)}/avatar.webp`;
 }
 
-function generateHelpers(dateStr: string, timeStr: string, title: string, description: string, location: string) {
+function generateHelpers(
+  dateStr: string,
+  timeStr: string,
+  title: string,
+  description: string,
+  location: string,
+) {
   const [year, month, day] = dateStr.split("-").map(Number);
   const [hours, minutes] = timeStr.split(":").map(Number);
   const startDate = new Date(Date.UTC(year, month - 1, day, hours, minutes));
@@ -67,14 +73,30 @@ function generateHelpers(dateStr: string, timeStr: string, title: string, descri
   };
 }
 
-export async function sendBookingConfirmationEmail(payload: BookingEmailPayload): Promise<SendEmailResponse> {
-  const { to, clientName, serviceName, date, time, barbershopId, barbershopName, barbershopAddress } = payload;
+export async function sendBookingConfirmationEmail(
+  payload: BookingEmailPayload,
+): Promise<SendEmailResponse> {
+  const {
+    to,
+    clientName,
+    serviceName,
+    date,
+    time,
+    barbershopId,
+    barbershopName,
+    barbershopAddress,
+  } = payload;
   const apiKey = process.env.BREVO_API_KEY;
   const senderEmail = process.env.SENDER_EMAIL;
 
   if (!apiKey || !senderEmail) {
-    console.error("[BREVO_ERROR] Variáveis BREVO_API_KEY ou SENDER_EMAIL ausentes.");
-    return { success: false, error: "Configuração do servidor de e-mail incompleta." };
+    console.error(
+      "[BREVO_ERROR] Variáveis BREVO_API_KEY ou SENDER_EMAIL ausentes.",
+    );
+    return {
+      success: false,
+      error: "Configuração do servidor de e-mail incompleta.",
+    };
   }
 
   const safeClientName = escapeHtml(clientName);
@@ -84,13 +106,14 @@ export async function sendBookingConfirmationEmail(payload: BookingEmailPayload)
   const avatarUrl = getBarbershopAvatarUrl(barbershopId);
   const eventTitle = `${serviceName} — ${barbershopName}`;
   const eventDetails = `Reserva de serviço: ${serviceName}.\nCliente: ${clientName}.\nLocal: ${barbershopName}.\nEndereço: ${barbershopAddress}.`;
-  const { googleCalUrl, appleCalDataUrl, googleMapsUrl, appleMapsUrl } = generateHelpers(
-    date,
-    time,
-    eventTitle,
-    eventDetails,
-    `${barbershopName}, ${barbershopAddress}`,
-  );
+  const { googleCalUrl, appleCalDataUrl, googleMapsUrl, appleMapsUrl } =
+    generateHelpers(
+      date,
+      time,
+      eventTitle,
+      eventDetails,
+      `${barbershopName}, ${barbershopAddress}`,
+    );
 
   const avatarMarkup = avatarUrl
     ? `<img src="${avatarUrl}" alt="${safeBarbershopName}" width="64" height="64" style="display:block;width:64px;height:64px;border-radius:16px;object-fit:cover;border:1px solid #27272a;" />`
@@ -154,7 +177,11 @@ export async function sendBookingConfirmationEmail(payload: BookingEmailPayload)
   try {
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
-      headers: { accept: "application/json", "content-type": "application/json", "api-key": apiKey },
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        "api-key": apiKey,
+      },
       body: JSON.stringify({
         sender: { name: barbershopName, email: senderEmail },
         to: [{ email: to, name: clientName }],
@@ -162,14 +189,26 @@ export async function sendBookingConfirmationEmail(payload: BookingEmailPayload)
         htmlContent,
       }),
     });
-    const data = (await response.json()) as { messageId?: string; message?: string };
+    const data = (await response.json()) as {
+      messageId?: string;
+      message?: string;
+    };
     if (!response.ok) {
       console.error("[BREVO_API_ERROR]", data);
-      return { success: false, error: data.message || "Falha ao enviar e-mail via API Brevo." };
+      return {
+        success: false,
+        error: data.message || "Falha ao enviar e-mail via API Brevo.",
+      };
     }
     return { success: true, messageId: data.messageId };
   } catch (error) {
     console.error("[BREVO_FETCH_ERROR]", error);
-    return { success: false, error: error instanceof Error ? error.message : "Erro ao comunicar com a API do Brevo." };
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erro ao comunicar com a API do Brevo.",
+    };
   }
 }

@@ -10,9 +10,11 @@ export function useProfessionals(
   isFreePlan = false,
 ) {
   const [loadingProfessionals, setLoading] = useState<boolean>(false);
-  const [editingProfessional, setEditingProfessional] = useState<Professional | null>(null);
+  const [editingProfessional, setEditingProfessional] =
+    useState<Professional | null>(null);
   const [newProfessionalName, setNewProfessionalName] = useState<string>("");
-  const [newProfessionalCommission, setNewProfessionalCommission] = useState<number>(isFreePlan ? 100 : 100);
+  const [newProfessionalCommission, setNewProfessionalCommission] =
+    useState<number>(isFreePlan ? 100 : 100);
 
   const handleCreateProfessional = async (e?: React.SyntheticEvent) => {
     if (e && "preventDefault" in e) e.preventDefault();
@@ -56,15 +58,20 @@ export function useProfessionals(
     if (e && "preventDefault" in e) e.preventDefault();
     if (!editingProfessional) return;
 
-    const commission = isFreePlan ? 100 : editingProfessional.commission_percentage;
+    const commission = isFreePlan
+      ? 100
+      : editingProfessional.commission_percentage;
 
     setLoading(true);
     try {
-      const { error } = await professionalService.update(editingProfessional.id, {
-        name: editingProfessional.name.trim(),
-        active: editingProfessional.active,
-        commission_percentage: commission,
-      });
+      const { error } = await professionalService.update(
+        editingProfessional.id,
+        {
+          name: editingProfessional.name.trim(),
+          active: editingProfessional.active,
+          commission_percentage: commission,
+        },
+      );
 
       if (error) throw error;
 
@@ -88,7 +95,9 @@ export function useProfessionals(
       await onRefreshData();
     } catch (error) {
       console.error("[Delete Professional Hook Error]:", error);
-      toast.error("Não foi possível remover o barbeiro. Pode ter histórico ou marcações na agenda.");
+      toast.error(
+        "Não foi possível remover o barbeiro. Pode ter histórico ou marcações na agenda.",
+      );
     } finally {
       setLoading(false);
     }

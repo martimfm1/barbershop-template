@@ -10,7 +10,13 @@ function getBrevoConfig() {
 }
 
 function sanitizeSenderName(name: string): string {
-  return name.replace(/[<>\r\n]/g, " ").replace(/\s+/g, " ").trim().slice(0, 70) || "Silentra";
+  return (
+    name
+      .replace(/[<>\r\n]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 70) || "Silentra"
+  );
 }
 
 export async function sendBrevoEmail(input: {
@@ -21,23 +27,42 @@ export async function sendBrevoEmail(input: {
   senderName?: string;
 }): Promise<EmailSendResult> {
   if (!input.to || !input.subject || !input.htmlContent) {
-    return { success: false, error: "Email recipient, subject and content are required." };
+    return {
+      success: false,
+      error: "Email recipient, subject and content are required.",
+    };
   }
 
   try {
     const { apiKey, senderEmail } = getBrevoConfig();
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
-      headers: { accept: "application/json", "content-type": "application/json", "api-key": apiKey },
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        "api-key": apiKey,
+      },
       body: JSON.stringify({
-        sender: { name: sanitizeSenderName(input.senderName ?? "Silentra"), email: senderEmail },
-        to: [{ email: input.to, ...(input.toName ? { name: input.toName } : {}) }],
+        sender: {
+          name: sanitizeSenderName(input.senderName ?? "Silentra"),
+          email: senderEmail,
+        },
+        to: [
+          { email: input.to, ...(input.toName ? { name: input.toName } : {}) },
+        ],
         subject: input.subject,
         htmlContent: input.htmlContent,
       }),
     });
-    const data = (await response.json()) as { messageId?: string; message?: string };
-    if (!response.ok) return { success: false, error: data.message ?? "Brevo email request failed." };
+    const data = (await response.json()) as {
+      messageId?: string;
+      message?: string;
+    };
+    if (!response.ok)
+      return {
+        success: false,
+        error: data.message ?? "Brevo email request failed.",
+      };
     return { success: true, messageId: data.messageId };
   } catch (error) {
     console.error("[BREVO_EMAIL_ERROR]", error);

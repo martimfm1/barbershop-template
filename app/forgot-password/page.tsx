@@ -7,10 +7,25 @@ import { motion, AnimatePresence } from "framer-motion";
 import { StarfieldBackground } from "@/components/ui/starfield";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Field, FieldContent, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import {
+  Field,
+  FieldContent,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 import { Spinner } from "@/components/ui/spinner";
-import { CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SiteNavbar } from "@/components/site-navbar";
@@ -72,7 +87,9 @@ export default function ForgotPasswordPage() {
                     </Badge>
                   </div>
                   <CardTitle className="font-heading text-xl sm:text-2xl text-zinc-50 tracking-tight mt-1">
-                    {isSent ? "Verifica o teu email" : "Redefinir palavra-passe"}
+                    {isSent
+                      ? "Verifica o teu email"
+                      : "Redefinir palavra-passe"}
                   </CardTitle>
                   <CardDescription className="text-xs text-zinc-400 leading-relaxed">
                     {isSent
@@ -111,7 +128,10 @@ export default function ForgotPasswordPage() {
                         <Field>
                           <FieldGroup className="grid gap-1.5">
                             <FieldLabel>
-                              <Label htmlFor="reset-email" className="text-xs font-medium text-zinc-300">
+                              <Label
+                                htmlFor="reset-email"
+                                className="text-xs font-medium text-zinc-300"
+                              >
                                 Email
                               </Label>
                             </FieldLabel>
@@ -159,7 +179,8 @@ export default function ForgotPasswordPage() {
                             <Spinner className="size-4 text-zinc-950" />
                           ) : (
                             <span className="flex items-center justify-center gap-2">
-                              Enviar instruções <ArrowRight className="size-4" />
+                              Enviar instruções{" "}
+                              <ArrowRight className="size-4" />
                             </span>
                           )}
                         </Button>
@@ -185,7 +206,8 @@ export default function ForgotPasswordPage() {
                           <CheckCircle2 className="size-6" />
                         </div>
                         <p className="text-xs text-zinc-300">
-                          Não recebeste o email? Verifica o spam ou tenta novamente.
+                          Não recebeste o email? Verifica o spam ou tenta
+                          novamente.
                         </p>
                         <div className="w-full space-y-3 pt-2">
                           <Button
