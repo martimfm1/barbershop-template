@@ -11,6 +11,10 @@
 - Reforçada a hierarquia dos preços com o Pro como opção recomendada, contraste visual controlado e CTAs orientadas à ação.
 - Melhorada a comunicação de valor dos planos Free, Pro e Enterprise sem dark patterns.
 - Reforçada a leitura rápida dos benefícios através de espaçamento, agrupamento e contraste.
+- Melhorados os estados vazios de Clientes e Equipa para orientar diretamente para a próxima ação.
+- Harmonizado o catálogo de Serviços com cards menos arredondados, CTA principal único e copy orientada à configuração mínima necessária.
+- Simplificada a composição de Mensagens para reduzir decisões: escolher cliente, template, ajustar conteúdo e enviar.
+- Reforçado o destaque contextual da automação de aniversários sem competir com o envio manual.
 
 ### Definições — correções de gravação e avatar
 - Corrigido o fluxo de gravação das definições da barbearia através de um RPC `SECURITY DEFINER` tenant-scoped, permitindo aos proprietários e administradores guardar as alterações sem abrir o RLS.
