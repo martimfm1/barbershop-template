@@ -2,6 +2,22 @@
 
 ## Unreleased — 2026-08-13
 
+### Production Hardening
+- Criada a branch dedicada `production-hardening` para validação antes de merge na `main`.
+- Adicionado `/api/health` sem cache para health checks e smoke tests.
+- Reforçada a CI com `typecheck`, `lint`, build, smoke QA, contratos de planos e auditoria estática de segurança.
+- Adicionada auditoria de dependências de produção através de `pnpm qa:deps`.
+- Adicionado `.env.example` sem valores reais para documentar o contrato de ambiente.
+- Adicionada validação local de variáveis obrigatórias com `pnpm qa:env`.
+- Actualizada a checklist `docs/production-readiness.md` com gates P0/P1/P2 e critérios de release.
+- Reforçado o booking público para respeitar `professional_id` na deteção de conflitos e converter corridas de inserção PostgreSQL (`23505`) em HTTP 409.
+- Adicionado rate limiting distribuído ao booking público: 20 tentativas por 10 minutos por hash de IP + barbearia, sem persistir o IP em bruto.
+- Adicionado `RATE_LIMIT_SECRET` ao contrato de ambiente para proteger os identificadores do rate limiter.
+- Adicionada uma migration para buckets atómicos de rate limiting com locks transacionais na database.
+- Adicionada idempotência persistente aos webhooks Stripe através de um ledger de `event_id` único.
+- Mantido como blocker o fluxo público de reviews, que ainda necessita de prova server-side de uma marcação válida antes da publicação.
+- Mantido como requisito de release a aplicação das migrations e a execução dos testes E2E de isolamento multi-tenant, quotas e billing em staging.
+
 ### Hardening → UX/Conversion
 - Harmonizados os raios da UI base: controlos e botões usam formas mais retas e cards mantêm apenas uma camada de arredondamento maior para agrupamento visual.
 - Aumentados os targets base dos botões e controlos para melhorar a usabilidade em desktop e mobile.

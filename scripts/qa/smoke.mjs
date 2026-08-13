@@ -5,6 +5,7 @@ const baseUrl = (process.env.QA_BASE_URL || "http://127.0.0.1:3000").replace(/\/
 const routes = [
   "/",
   "/login",
+  "/api/health",
   "/dashboard",
   "/dashboard/agenda",
   "/dashboard/clientes",
@@ -39,21 +40,21 @@ async function checkRoute(route) {
   const location = response.headers.get("location");
   const allowedRedirect = expectedPrivateRedirects.has(route) && location;
 
-  assert(
-    response.status < 500,
-    `${route}: respondeu ${response.status}`,
-  );
+  assert(response.status < 500, `${route}: respondeu ${response.status}`);
 
   assert(
     response.status === 200 || allowedRedirect || (response.status >= 300 && response.status < 400),
     `${route}: estado inesperado ${response.status}${location ? ` -> ${location}` : ""}`,
   );
 
-  return {
-    route,
-    status: response.status,
-    location,
-  };
+  if (route === "/api/health") {
+    assert(response.status === 200, `/api/health: esperado 200, recebido ${response.status}`);
+    const payload = await response.json();
+    assert(payload?.ok === true, "/api/health: payload inválido");
+    assert(payload?.status === "healthy", "/api/health: status inválido");
+  }
+
+  return { route, status: response.status, location };
 }
 
 async function main() {
@@ -71,9 +72,7 @@ async function main() {
     }
   }
 
-  if (process.exitCode === 1) {
-    throw new Error("Smoke QA falhou.");
-  }
+  if (process.exitCode === 1) throw new Error("Smoke QA falhou.");
 
   console.log(`\n${results.length}/${routes.length} rotas verificadas.`);
 }

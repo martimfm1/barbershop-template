@@ -1,5 +1,7 @@
+import { createHmac } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { sendBookingConfirmationEmail } from "@/lib/brevo/brevo";
 import {
   isRecord,
@@ -23,6 +25,8 @@ type BookingRequestBody = {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BIRTH_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const PUBLIC_BOOKING_RATE_LIMIT = 20;
+const PUBLIC_BOOKING_RATE_WINDOW_SECONDS = 10 * 60;
 
 function isValidBirthDate(value: string): boolean {
   if (!BIRTH_DATE_PATTERN.test(value)) return false;
@@ -30,6 +34,40 @@ function isValidBirthDate(value: string): boolean {
   if (Number.isNaN(parsed.getTime())) return false;
   if (parsed > new Date()) return false;
   return parsed.getFullYear() >= 1900;
+}
+
+function getClientIp(request: Request): string {
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const real = request.headers.get("x-real-ip")?.trim();
+  return forwarded || real || "unknown";
+}
+
+function getRateLimitKey(request: Request, shopId: string): string {
+  const secret = process.env.RATE_LIMIT_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error("RATE_LIMIT_SECRET is not configured with sufficient entropy.");
+  }
+
+  return createHmac("sha256", secret)
+    .update(`public-booking:${shopId}:${getClientIp(request)}`)
+    .digest("hex");
+}
+
+async function enforcePublicBookingRateLimit(request: Request, shopId: string): Promise<boolean> {
+  const key = getRateLimitKey(request, shopId);
+  const admin = createAdminClient();
+  const { data: allowed, error } = await admin.rpc("consume_public_rate_limit", {
+    p_key: key,
+    p_limit: PUBLIC_BOOKING_RATE_LIMIT,
+    p_window_seconds: PUBLIC_BOOKING_RATE_WINDOW_SECONDS,
+  });
+
+  if (error) {
+    console.error("[API_BOOKING_RATE_LIMIT_ERROR]", error);
+    throw new Error("Public booking rate limiter unavailable.");
+  }
+
+  return allowed === true;
 }
 
 export async function POST(request: Request) {
@@ -81,6 +119,13 @@ export async function POST(request: Request) {
           error: "Confirma os dados, incluindo a data de nascimento, e escolhe uma data e hora válidas.",
         },
         { status: 400 },
+      );
+    }
+
+    if (!(await enforcePublicBookingRateLimit(request, shopId))) {
+      return NextResponse.json(
+        { success: false, error: "Demasiadas tentativas de marcação. Tenta novamente dentro de alguns minutos." },
+        { status: 429, headers: { "Retry-After": String(PUBLIC_BOOKING_RATE_WINDOW_SECONDS) } },
       );
     }
 
@@ -141,13 +186,18 @@ export async function POST(request: Request) {
     const serviceName = selectedService.name || "Serviço";
     const dateHourIso = `${bookingDate}T${bookingTime}:00`;
 
-    const { data: existingAppointment, error: conflictError } = await supabase
+    let conflictQuery = supabase
       .from("appointments")
       .select("id")
       .eq("barbershop_id", barbershopId)
       .eq("date_hour", dateHourIso)
-      .in("status", ["pending", "scheduled"])
-      .maybeSingle();
+      .in("status", ["pending", "scheduled"]);
+
+    conflictQuery = normalizedProfessionalId
+      ? conflictQuery.eq("professional_id", normalizedProfessionalId)
+      : conflictQuery.is("professional_id", null);
+
+    const { data: existingAppointment, error: conflictError } = await conflictQuery.maybeSingle();
 
     if (conflictError) {
       console.error("[API_BOOKING_CONFLICT_CHECK_ERROR]", conflictError);
@@ -181,6 +231,13 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError || !appointment) {
+      if (insertError?.code === "23505") {
+        return NextResponse.json(
+          { success: false, error: "Este horário acabou de ser reservado por outra pessoa." },
+          { status: 409 },
+        );
+      }
+
       console.error("[API_BOOKING_SUPABASE_ERROR]", insertError);
       return NextResponse.json(
         { success: false, error: "Não foi possível efetuar a marcação. Tenta novamente." },
