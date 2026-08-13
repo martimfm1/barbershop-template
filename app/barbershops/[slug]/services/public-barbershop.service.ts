@@ -60,7 +60,7 @@ export const publicBarbershopService = {
         return { data: null, error: { message: "Barbearia não encontrada." } };
       }
 
-      // The slug route is canonical. UUID fallback is handled by app/barbershops/[id].
+      // Public pages resolve exclusively by the canonical shops.slug.
       const { data: shop, error: shopError } = await supabase
         .from("shops")
         .select("*")

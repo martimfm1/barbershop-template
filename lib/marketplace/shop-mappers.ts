@@ -24,7 +24,7 @@ export function mapRecordToMarketplaceShopResponse(
     distanceKm: 0,
     openTime: relation?.opening_time?.substring(0, 5) || "09:00",
     closeTime: relation?.closing_time?.substring(0, 5) || "19:00",
-    slug: relation?.slug || null,
+    slug: record.slug,
     nextSlot: "15:00",
     rating: Number(record.rating ?? 0),
     reviewsCount: Number(record.reviews_count ?? 0),
