@@ -11,7 +11,7 @@
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 .animate-slide-in-left { animation: slideInLeft 0.8s cubic-bezier(0.34,1.56,0.64,1) forwards; } .animate-slide-in-right { animation: slideInRight 0.8s cubic-bezier(0.34,1.56,0.64,1) forwards; } .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; animation-delay: 0.3s; opacity: 0; }
 :root { --card: oklch(1 0 0); --card-foreground: oklch(0.141 0.005 285.823); --popover: oklch(1 0 0); --popover-foreground: oklch(0.141 0.005 285.823); --primary: oklch(0.21 0.006 285.885); --primary-foreground: oklch(0.985 0 0); --secondary: oklch(0.967 0.001 286.375); --secondary-foreground: oklch(0.21 0.006 285.885); --muted: oklch(0.967 0.001 286.375); --muted-foreground: oklch(0.552 0.016 285.938); --accent: oklch(0.21 0.006 285.885); --accent-foreground: oklch(0.985 0 0); --destructive: oklch(0.577 0.245 27.325); --border: oklch(0.92 0.004 286.32); --input: oklch(0.92 0.004 286.32); --ring: oklch(0.705 0.015 286.067); --background: oklch(1 0 0); --foreground: oklch(0.141 0.005 285.823); }
-.dark { --background: oklch(0.141 0.005 285.823); --foreground: oklch(0.985 0 0); --card: oklch(0.21 0.006 285.885); --card-foreground: oklch(0.985 0 0); --popover: oklch(0.21 0.006 285.885); --popover-foreground: oklch(0.985 0 0); --secondary: oklch(0.274 0.006 286.033); --secondary-foreground: oklch(0.985 0 0); --muted: oklch(0.274 0.006 286.033); --muted-foreground: oklch(0.705 0.015 286.067); --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%); --ring: oklch(0.552 0.016 285.938); }
+.dark { --background: oklch(0.141 0.005 285.823); --foreground: oklch(0.985 0 0); --card: oklch(0.21 0.006 285.885); --card-foreground: oklch(0.985 0 0); --popover: oklch(0.21 0.006 285.885); --popover-foreground: oklch(0.985 0 0); --secondary: oklch(0.274 0.006 286.033); --secondary-foreground: oklch(0.985 0 0); --muted: oklch(0.274 0.006 286.033); --muted-foreground: oklch(0.705 0.015 286.067); --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%); --ring: oklch(0.552 0.016 286.067); }
 @layer base { * { @apply border-border outline-ring/50; } body { @apply bg-background text-foreground; } html { @apply font-sans; } }
 ::selection { background: rgb(255 255 255 / 0.18); color: #fafafa; }
 input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.7; }
@@ -24,7 +24,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert
 .aceternity-beam { position:absolute; top:-12rem; height:52rem; width:1px; transform-origin:top; background:linear-gradient(to bottom,transparent,rgb(255 255 255 / 0.42),rgb(255 255 255 / 0.14),transparent); filter:blur(0.5px); animation:aceternity-beam-drift 9s ease-in-out infinite; }
 .aceternity-beam-one { left:16%; transform:rotate(32deg); } .aceternity-beam-two { left:50%; animation-delay:-3s; transform:rotate(20deg); } .aceternity-beam-three { right:18%; animation-delay:-5.8s; transform:rotate(-24deg); }
 @keyframes aceternity-beam-drift { 0%,100% { opacity:0.28; translate:0 0; } 50% { opacity:0.78; translate:0 5rem; } }
-.dashboard-page { min-width:0; overflow-x:clip; } .dashboard-page > * { min-width:0; } .dashboard-page-header { display:flex; align-items:flex-end; justify-content:space-between; gap:1rem; min-width:0; } .dashboard-card { min-width:0; overflow:hidden; box-shadow:0 18px 60px rgb(0 0 0 / 0.16); } .dashboard-page input,.dashboard-page textarea,.dashboard-page select,[role="dialog"] input,[role="dialog"] textarea { max-width:100%; } .dashboard-page button,[role="dialog"] button { min-height:44px; } .dashboard-page table { width:100%; }
+.dashboard-page { min-width:0; overflow-x:clip; } .dashboard-page > * { min-width:0; } .dashboard-page-header { display:flex; align-items:flex-end; justify-content:space-between; gap:1rem; min-width:0; } .dashboard-page-header > * { min-width:0; } .dashboard-card { min-width:0; overflow:hidden; box-shadow:0 18px 60px rgb(0 0 0 / 0.16); } .dashboard-page input,.dashboard-page textarea,.dashboard-page select,[role="dialog"] input,[role="dialog"] textarea { max-width:100%; } .dashboard-page button,[role="dialog"] button { min-height:44px; } .dashboard-page table { width:100%; }
 main.min-h-screen.bg-zinc-950 { min-width:0; overflow-x:clip; }
 main.min-h-screen.bg-zinc-950 input,main.min-h-screen.bg-zinc-950 textarea,main.min-h-screen.bg-zinc-950 select { max-width:100%; min-width:0; }
 main.min-h-screen.bg-zinc-950 button { min-height:44px; }
@@ -38,29 +38,34 @@ main.min-h-screen.bg-background.text-foreground.antialiased input { min-height:4
   main.min-h-screen.bg-background.text-foreground.antialiased { padding:0 !important; }
 }
 
-/* Settings: refine toggle presentation without changing their data contract. */
-#settings-booking .group\/switch {
-  flex: 0 0 auto;
+/* Silentra visual system: use shape to encode hierarchy, not decoration. */
+.silentra-surface { border: 1px solid rgb(255 255 255 / 0.10); background: rgb(255 255 255 / 0.025); }
+.silentra-surface-raised { border: 1px solid rgb(255 255 255 / 0.12); background: rgb(24 24 27 / 0.72); box-shadow: 0 18px 60px rgb(0 0 0 / 0.16); }
+.silentra-section { border-top: 1px solid rgb(255 255 255 / 0.08); padding-top: 1.5rem; }
+.silentra-control { min-height: 44px; border-radius: 0.5rem; }
+.silentra-action-primary { min-height: 44px; border-radius: 0.5rem; font-weight: 600; box-shadow: 0 8px 24px rgb(16 185 129 / 0.12); }
+.silentra-action-secondary { min-height: 44px; border-radius: 0.5rem; }
+.silentra-pill { border-radius: 9999px; }
+.silentra-focus { outline: none; }
+.silentra-focus:focus-visible { box-shadow: 0 0 0 3px rgb(52 211 153 / 0.18); border-color: rgb(52 211 153 / 0.55); }
+.silentra-cta { position: relative; overflow: hidden; isolation: isolate; }
+.silentra-cta::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(110deg, transparent 20%, rgb(255 255 255 / 0.10) 50%, transparent 80%); transform: translateX(-120%); transition: transform 520ms ease; }
+.silentra-cta:hover::after { transform: translateX(120%); }
+.silentra-empty { border: 1px dashed rgb(255 255 255 / 0.12); background: rgb(255 255 255 / 0.015); }
+
+/* Accessibility and cognitive-load safeguards. */
+:focus-visible { outline: 2px solid rgb(52 211 153 / 0.72); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
 }
-#settings-booking .group\/switch[data-disabled] {
-  margin-right: 3.5rem;
-}
-#settings-booking div:has(> .group\/switch[data-disabled]) > div:first-child > p:first-child {
-  font-size: 0;
-}
-#settings-booking div:has(> .group\/switch[data-disabled]) > div:first-child > p:first-child::after {
-  content: "Visibilidade no diretório";
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: rgb(244 244 245);
-}
-#settings-booking div:has(> .group\/switch[data-disabled]) > div:first-child > p:nth-child(2) {
-  font-size: 0;
-  color: rgb(113 113 122);
-}
-#settings-booking div:has(> .group\/switch[data-disabled]) > div:first-child > p:nth-child(2)::after {
-  content: "No plano Free, o perfil não aparece no diretório. Atualiza para o Pro para ativar esta opção.";
-  font-size: 0.75rem;
-  line-height: 1.25rem;
-  color: rgb(161 161 170);
+
+/* Remove the previous selector-hack typography override for directory visibility. */
+#settings-booking div:has(> .group\/switch[data-disabled]) > div:first-child > p:first-child,
+#settings-booking div:has(> .group\/switch[data-disabled]) > div:first-child > p:first-child::after,
+#settings-booking div:has(> .group\/switch[data-disabled]) > div:first-child > p:nth-child(2),
+#settings-booking div:has(> .group\/switch[data-disabled]) > div:first-child > p:nth-child(2)::after { font-size: inherit; }
+
+@media (max-width:639px) {
+  .silentra-action-primary,
+  .silentra-action-secondary { width: 100%; }
 }
