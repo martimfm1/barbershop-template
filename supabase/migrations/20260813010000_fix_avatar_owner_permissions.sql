@@ -1,6 +1,6 @@
--- Allow barbershop owners and admins to update the barbershop avatar metadata.
--- The previous hardening migration only allowed `admin`, which blocked owners
--- even though owners are allowed to manage the barbershop settings UI.
+-- Fix avatar metadata validation to match the existing `avatars` Storage bucket.
+-- Public URL shape:
+-- /storage/v1/object/public/avatars/avatar/{barbershop_id}/avatar.webp
 
 create or replace function public.set_barbershop_avatar_url(
   p_barbershop_id uuid,
@@ -30,7 +30,7 @@ begin
     raise exception 'avatar update not permitted';
   end if;
 
-  if p_avatar_url !~ ('/storage/v1/object/public/avatar/' || p_barbershop_id::text || '/avatar\\.webp($|[?])') then
+  if p_avatar_url !~ ('/storage/v1/object/public/avatars/avatar/' || p_barbershop_id::text || '/avatar\\.webp($|[?])') then
     raise exception 'invalid avatar url';
   end if;
 
