@@ -15,6 +15,15 @@ export interface MarketplaceProfessional {
   role?: string;
 }
 
+export interface BookingBlockedInterval {
+  id: string;
+  professionalId: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  reason: string;
+  allDay: boolean;
+}
+
 export interface BookingDrawerProps {
   shop: MarketplaceShop | null;
   isOpen: boolean;
@@ -35,6 +44,8 @@ export interface MarketplaceBookingResponse {
   services: MarketplaceService[];
   availableSlots: string[];
   isClosed: boolean;
+  closedDay?: boolean;
+  blockedIntervals?: BookingBlockedInterval[];
   professionals?: MarketplaceProfessional[];
 }
 
