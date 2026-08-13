@@ -148,7 +148,7 @@ function normalize(value: Partial<BarbershopConfig>): BarbershopConfig {
     lunch_end: value.lunch_end ?? "",
     closed_days: value.closed_days ?? "None",
     allow_online_bookings: value.allow_online_bookings ?? true,
-    auto_reminders: false,
+    auto_reminders: value.auto_reminders ?? false,
     is_public_in_directory: value.is_public_in_directory ?? true,
   };
 }
@@ -182,8 +182,8 @@ export default function SettingsPage() {
   const [initialConfig, setInitialConfig] = useState<BarbershopConfig | null>(
     null,
   );
-  const [avatarTimestamp, setAvatarTimestamp] = useState(Date.now());
-  const [bannerTimestamp, setBannerTimestamp] = useState(Date.now());
+  const [avatarTimestamp, setAvatarTimestamp] = useState(0);
+  const [bannerTimestamp, setBannerTimestamp] = useState(0);
   const [uploading, setUploading] = useState<"avatar" | "banner" | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -213,7 +213,10 @@ export default function SettingsPage() {
   }, [barbershopId]);
 
   useEffect(() => {
-    void fetchSettings();
+    const frame = window.requestAnimationFrame(() => {
+      void fetchSettings();
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [fetchSettings]);
   const dirty = useMemo(
     () => JSON.stringify(config) !== JSON.stringify(initialConfig),
@@ -258,14 +261,7 @@ export default function SettingsPage() {
 
   async function saveSettings() {
     if (!barbershopId || !dirty) return;
-    if (!config.name.trim() || !config.phone.trim() || !config.address.trim()) {
-      toast.error("Complete o nome, telefone e morada antes de guardar.");
-      setActiveSection(
-        !config.name.trim() || !config.phone.trim() ? "business" : "location",
-      );
-      return;
-    }
-    if (config.opening_time >= config.closing_time) {
+    if (config.opening_time && config.closing_time && config.opening_time >= config.closing_time) {
       toast.error(
         "O horário de fecho tem de ser posterior ao horário de abertura.",
       );
@@ -273,10 +269,9 @@ export default function SettingsPage() {
       return;
     }
     setSaving(true);
-    const payload: Partial<BarbershopConfig> = {
-      ...config,
-      auto_reminders: false,
-    };
+    const payload = Object.fromEntries(
+      Object.entries(config).filter(([key, value]) => initialConfig?.[key as keyof BarbershopConfig] !== value),
+    ) as Partial<BarbershopConfig>;
     if (!canManageDirectoryVisibility) delete payload.is_public_in_directory;
     const result = await barbershopService.updateConfig(barbershopId, payload);
     setSaving(false);
@@ -306,7 +301,8 @@ export default function SettingsPage() {
       quality: 0.85,
     });
     setUploading(null);
-    if (error) return toast.error("Não foi possível atualizar a imagem.");
+    if (error)
+      return toast.error(error.message || "Não foi possível atualizar a imagem.");
     if (type === "avatar") setAvatarTimestamp(Date.now());
     else setBannerTimestamp(Date.now());
     toast.success(
@@ -342,7 +338,7 @@ export default function SettingsPage() {
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-50">
       <div className="mx-auto max-w-7xl px-4 pb-28 pt-4 sm:px-6 lg:px-8">
-        <header className="sticky top-0 z-30 -mx-4 border-b border-white/10 bg-zinc-950/90 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:static lg:mb-2 lg:border-0 lg:bg-transparent lg:px-0 lg:py-6 lg:backdrop-blur-none">
+        <header className="py-3 sm:py-4 lg:mb-2 lg:py-6">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <Link
@@ -397,8 +393,8 @@ export default function SettingsPage() {
           )}
         </header>
 
-        <div className="mt-4 lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
-          <aside className="hidden lg:block">
+        <div className="mt-4 lg:grid lg:items-start lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
+          <aside className="hidden self-start lg:block">
             <div className="sticky top-6 space-y-3">
               <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-2">
                 <div className="mb-2 px-3 pb-2 pt-2 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-600">

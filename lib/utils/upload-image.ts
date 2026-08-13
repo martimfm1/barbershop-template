@@ -28,13 +28,13 @@ const SUPPORTED_IMAGE_TYPES = new Set([
 ]);
 
 const STORAGE_BUCKETS = {
-  avatar: "avatars",
+  avatar: "avatar",
   banner: "banner",
 } as const;
 
 /**
  * Validates, decodes and converts a user image to WebP before uploading it.
- * The logical `avatar` bucket maps to the existing Supabase `avatars` bucket.
+ * The logical `avatar` bucket maps to the existing Supabase `avatar` bucket.
  * Avatar metadata is updated through a protected tenant-owned RPC.
  */
 export async function processAndUploadImage({
@@ -123,8 +123,8 @@ export async function processAndUploadImage({
     }
 
     if (bucket === "avatar") {
-      const pathParts = webpPath.split("/");
-      const barbershopId = pathParts[0];
+      const avatarPath = /^([^/]+)\/avatar\.webp$/.exec(webpPath);
+      const barbershopId = avatarPath?.[1];
       if (!barbershopId) {
         return { data: null, error: new Error("Caminho do avatar inválido.") };
       }

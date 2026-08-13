@@ -3,7 +3,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { sendBookingConfirmationEmail } from "@/lib/brevo/brevo";
 
-const CONFIRM_ROLES = new Set(["owner", "admin", "manager", "receptionist", "staff"]);
+const CONFIRM_ROLES = new Set([
+  "owner",
+  "admin",
+  "manager",
+  "receptionist",
+  "staff",
+  "barber",
+]);
 
 export async function POST(
   request: Request,
