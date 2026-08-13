@@ -10,6 +10,11 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  NEXT_PUBLIC_SUPABASE_URL: https://ci.invalid.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key-placeholder
+  QA_BASE_URL: http://127.0.0.1:3000
+
 jobs:
   quality:
     name: Quality + Production Hardening
@@ -62,8 +67,6 @@ jobs:
           exit 1
 
       - name: Smoke QA
-        env:
-          QA_BASE_URL: http://127.0.0.1:3000
         run: pnpm qa:smoke
 
       - name: Plan contracts
