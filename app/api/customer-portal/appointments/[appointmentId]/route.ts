@@ -128,7 +128,8 @@ export async function PATCH(
     const openingTime = shop?.opening_time || "09:00";
     const closingTime = shop?.closing_time || "19:00";
     const start = timeToMinutes(slot);
-    const duration = Math.min(Math.max(Number(appointment.duration_minutes ?? appointment.services?.duration ?? 30), 1), 1440);
+    const service = Array.isArray(appointment.services) ? appointment.services[0] : appointment.services;
+    const duration = Math.min(Math.max(Number(appointment.duration_minutes ?? service?.duration ?? 30), 1), 1440);
     const end = start + duration;
     if (start < timeToMinutes(openingTime) || end > timeToMinutes(closingTime)) return jsonError("O novo horário fica fora do horário de funcionamento.", 409);
 
