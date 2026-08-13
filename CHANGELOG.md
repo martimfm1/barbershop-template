@@ -3,14 +3,13 @@
 ## Unreleased — 2026-08-13
 
 ### Marketplace — URLs canónicas de barbearias
-- A rota pública canónica passa a ser `/barbershops/[slug]`.
-- Adicionada validação e normalização de slugs na base de dados.
+- A rota pública usa uma única rota dinâmica: `/barbershops/[slug]`.
+- O slug é o identificador público e canónico da barbearia.
+- UUIDs antigos são aceites apenas como fallback interno na mesma rota e são resolvidos para o slug canónico.
 - Slugs passam a ser únicos sem distinção entre maiúsculas/minúsculas.
 - Slugs em falta ou duplicados são corrigidos de forma determinística durante a migration.
-- Adicionado `/barbershops/[id]` como rota de compatibilidade que redireciona para o slug canónico.
-- A pesquisa pública por detalhe passa a procurar exclusivamente pelo slug; o UUID deixa de ser usado como lookup normal.
-- O sitemap passa a gerar exclusivamente URLs com slug.
-- Os links do marketplace continuam a usar o slug e só recorrem ao ID quando não existir slug durante uma migração/estado legado.
+- O sitemap gera exclusivamente URLs com slug.
+- Os links do marketplace usam o slug e só recorrem ao ID quando não existir slug durante uma migração/estado legado.
 
 ### Definições — redesign UI/UX
 - Redesenhada a página `/dashboard/settings` como um centro de controlo profissional, organizado por secções de Negócio, Localização, Horários, Aparência, Marcações, Plano e Conta.
