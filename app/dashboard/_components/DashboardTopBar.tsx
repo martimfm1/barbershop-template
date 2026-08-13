@@ -5,14 +5,18 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Clock3 } from "lucide-react";
 
 export function DashboardTopBar() {
-  const [now, setNow] = useState(() => new Date());
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    const interval = window.setInterval(() => setNow(new Date()), 1000);
+    const update = () => setNow(new Date());
+    update();
+    const interval = window.setInterval(update, 1000);
     return () => window.clearInterval(interval);
   }, []);
 
-  const time = now.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
+  const time = now
+    ? now.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })
+    : "--:--";
 
   return (
     <header
@@ -31,10 +35,14 @@ export function DashboardTopBar() {
 
         <div
           className="flex min-h-10 shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-zinc-200"
-          aria-label={`Hora atual ${time}`}
+          aria-label={now ? `Hora atual ${time}` : "A carregar a hora atual"}
         >
           <Clock3 className="size-4 text-emerald-400" aria-hidden="true" />
-          <time className="font-mono text-sm font-medium tabular-nums" dateTime={now.toISOString()}>
+          <time
+            className="font-mono text-sm font-medium tabular-nums"
+            dateTime={now?.toISOString()}
+            suppressHydrationWarning
+          >
             {time}
           </time>
         </div>
