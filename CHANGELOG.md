@@ -2,6 +2,14 @@
 
 ## Unreleased — 2026-08-13
 
+### Database — shop slug hardening
+
+- Adicionada proteção server-side para garantir que novos registos em `public.shops` recebem automaticamente um slug quando um fluxo legado não o fornece.
+- O trigger `shops_ensure_slug_before_insert` reutiliza `normalize_shop_slug` e cria um sufixo curto baseado no UUID para evitar colisões.
+- Slugs fornecidos explicitamente continuam a ser normalizados, preservando o fluxo canónico existente.
+- A correção mantém `shops.slug` como `NOT NULL` e não remove a restrição de unicidade.
+- O onboarding atómico existente continua a gerar o slug explicitamente; o trigger funciona como proteção adicional para outros caminhos de criação.
+
 ### Booking — disponibilidade, folgas e bloqueios
 
 - Reforçada a API pública de disponibilidade para respeitar os dias de encerramento configurados na barbearia.
