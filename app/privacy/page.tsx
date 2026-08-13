@@ -2,11 +2,31 @@ import type { Metadata } from "next";
 import { Database, LockKeyhole, ShieldCheck } from "lucide-react";
 import { LegalDocumentPage } from "@/components/legal/legal-document-page";
 import { privacyPolicy } from "@/lib/legal/privacy-policy";
+import { CURRENT_LEGAL_UPDATE, currentPrivacyAddendum } from "@/lib/legal/current-legal-addendum";
 
 export const metadata: Metadata = {
   title: "Privacidade | Silentra for Barbers",
   description:
     "Política de privacidade da Silentra for Barbers, com dados recolhidos, finalidades, partilha, retenção e direitos.",
+};
+
+const currentPrivacyPolicy = {
+  pt: {
+    ...privacyPolicy.pt,
+    lastUpdated: CURRENT_LEGAL_UPDATE,
+    sections: [
+      ...privacyPolicy.pt.sections,
+      currentPrivacyAddendum.pt,
+    ],
+  },
+  en: {
+    ...privacyPolicy.en,
+    lastUpdated: "August 13, 2026",
+    sections: [
+      ...privacyPolicy.en.sections,
+      currentPrivacyAddendum.en,
+    ],
+  },
 };
 
 export default function PrivacyPage() {
@@ -21,7 +41,7 @@ export default function PrivacyPage() {
         pt: "Explicamos que dados recolhemos, porquê, durante quanto tempo os guardamos e como podes exercer os teus direitos.",
         en: "We explain what data we collect, why we collect it, how long we keep it, and how you can exercise your rights.",
       }}
-      documentByLocale={privacyPolicy}
+      documentByLocale={currentPrivacyPolicy}
       highlights={[
         {
           label: {
