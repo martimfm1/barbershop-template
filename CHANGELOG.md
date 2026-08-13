@@ -2,6 +2,16 @@
 
 ## Unreleased — 2026-08-13
 
+### Equipa — membros, códigos e permissões
+- As entradas através de código passam sempre a entrar como `barber`.
+- Removida da geração de códigos a escolha de funções administrativas; promoções e permissões passam a ser geridas pelo proprietário.
+- Adicionada a aba **Membros e permissões** em `/dashboard/equipa`.
+- O proprietário consegue alterar a função dos membros, ajustar permissões por área e remover membros.
+- A função `owner` é imutável e mantém acesso total à barbearia.
+- Os membros que entraram por código ficam identificados como tal na gestão da equipa.
+- Adicionados RPCs e API server-side para listar, atualizar e remover membros com validação por tenant.
+- Adicionadas permissões base para dashboard, agenda, clientes, serviços, equipa, mensagens, definições e faturação.
+
 ### Segurança — permissões e CRM
 - Adicionado o RPC `add_client_from_completed_appointment` com `SECURITY DEFINER`, validação de sessão, role e `barbershop_id`.
 - A criação de clientes a partir de marcações deixou de depender de inserts diretos na tabela `users` através do browser.
