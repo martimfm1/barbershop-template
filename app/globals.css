@@ -34,11 +34,7 @@ main.min-h-screen.bg-background.text-foreground.antialiased { min-width:0; overf
 main.min-h-screen.bg-background.text-foreground.antialiased > * { min-width:0; width:100%; }
 main.min-h-screen.bg-background.text-foreground.antialiased button,
 main.min-h-screen.bg-background.text-foreground.antialiased input { min-height:44px; }
-@media (max-width:639px) {
-  main.min-h-screen.bg-background.text-foreground.antialiased { padding:0 !important; }
-}
-
-/* Silentra visual system: use shape to encode hierarchy, not decoration. */
+@media (max-width:639px) { main.min-h-screen.bg-background.text-foreground.antialiased { padding:0 !important; } }
 .silentra-surface { border: 1px solid rgb(255 255 255 / 0.10); background: rgb(255 255 255 / 0.025); }
 .silentra-surface-raised { border: 1px solid rgb(255 255 255 / 0.12); background: rgb(24 24 27 / 0.72); box-shadow: 0 18px 60px rgb(0 0 0 / 0.16); }
 .silentra-section { border-top: 1px solid rgb(255 255 255 / 0.08); padding-top: 1.5rem; }
@@ -52,20 +48,39 @@ main.min-h-screen.bg-background.text-foreground.antialiased input { min-height:4
 .silentra-cta::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(110deg, transparent 20%, rgb(255 255 255 / 0.10) 50%, transparent 80%); transform: translateX(-120%); transition: transform 520ms ease; }
 .silentra-cta:hover::after { transform: translateX(120%); }
 .silentra-empty { border: 1px dashed rgb(255 255 255 / 0.12); background: rgb(255 255 255 / 0.015); }
-
-/* Accessibility and cognitive-load safeguards. */
 :focus-visible { outline: 2px solid rgb(52 211 153 / 0.72); outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
-}
-
-/* Remove the previous selector-hack typography override for directory visibility. */
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }
 #settings-booking div:has(> .group\/switch[data-disabled]) > div:first-child > p:first-child,
 #settings-booking div:has(> .group\/switch[data-disabled]) > div:first-child > p:first-child::after,
 #settings-booking div:has(> .group\/switch[data-disabled]) > div:first-child > p:nth-child(2),
 #settings-booking div:has(> .group\/switch[data-disabled]) > div:first-child > p:nth-child(2)::after { font-size: inherit; }
+@media (max-width:639px) { .silentra-action-primary,.silentra-action-secondary { width:100%; } }
 
+/* Hardening → UX/Conversion: Agenda */
+main.min-h-screen.bg-zinc-950.p-4.text-zinc-100 { padding-top: 4.5rem; }
+main.min-h-screen.bg-zinc-950.p-4.text-zinc-100 > div > header { gap: 1.25rem; }
+main.min-h-screen.bg-zinc-950.p-4.text-zinc-100 > div > header > div:last-child { align-items: stretch; }
+main.min-h-screen.bg-zinc-950.p-4.text-zinc-100 > div > header > div:last-child > button:first-child { box-shadow: 0 8px 26px rgb(16 185 129 / 0.10); }
+main.min-h-screen.bg-zinc-950.p-4.text-zinc-100 > div > header > div:last-child > a { min-width: max-content; }
+main.min-h-screen.bg-zinc-950.p-4.text-zinc-100 > div > section > div { border-radius: 0.75rem; }
+main.min-h-screen.bg-zinc-950.p-4.text-zinc-100 .border-dashed { border-style: dashed; }
+main.min-h-screen.bg-zinc-950.p-4.text-zinc-100 table thead th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: rgb(113 113 122); }
+main.min-h-screen.bg-zinc-950.p-4.text-zinc-100 table tbody tr { transition: background-color 160ms ease; }
+main.min-h-screen.bg-zinc-950.p-4.text-zinc-100 table tbody tr:hover { background: rgb(255 255 255 / 0.025); }
+main.min-h-screen.bg-zinc-950.p-4.text-zinc-100 table td { vertical-align: middle; }
 @media (max-width:639px) {
-  .silentra-action-primary,
-  .silentra-action-secondary { width: 100%; }
+  main.min-h-screen.bg-zinc-950.p-4.text-zinc-100 { padding: 4rem 1rem 1rem !important; }
+  main.min-h-screen.bg-zinc-950.p-4.text-zinc-100 > div > header > div:last-child { display:grid; grid-template-columns:1fr; }
+  main.min-h-screen.bg-zinc-950.p-4.text-zinc-100 > div > header > div:last-child > a { width:100%; }
+}
+
+/* Hardening → UX/Conversion: Dashboard */
+main.min-h-screen.bg-background.pb-5.pt-16.text-foreground .text-xs.uppercase { letter-spacing: 0.18em; }
+main.min-h-screen.bg-background.pb-5.pt-16.text-foreground .rounded-3xl { border-radius: 0.9rem; }
+main.min-h-screen.bg-background.pb-5.pt-16.text-foreground .rounded-2xl { border-radius: 0.7rem; }
+main.min-h-screen.bg-background.pb-5.pt-16.text-foreground a:focus-visible { outline-offset: 3px; }
+main.min-h-screen.bg-background.pb-5.pt-16.text-foreground [role="progressbar"] + * { min-width: 0; }
+@media (max-width:639px) {
+  main.min-h-screen.bg-background.pb-5.pt-16.text-foreground { padding-top: 4.25rem; }
+  main.min-h-screen.bg-background.pb-5.pt-16.text-foreground > div { padding-left: 1rem !important; padding-right: 1rem !important; }
 }
