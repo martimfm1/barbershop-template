@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Lock2 } from "lucide-react";
+import { Lock } from "lucide-react";
 import { Switch as SwitchPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
@@ -40,7 +40,7 @@ function Switch({
           size === "sm" && "size-4 data-checked:translate-x-4",
         )}
       >
-        {disabled && <Lock2 className="size-2.5 text-zinc-500" aria-hidden="true" />}
+        {disabled && <Lock className="size-2.5 text-zinc-500" aria-hidden="true" />}
       </SwitchPrimitive.Thumb>
       {disabled && (
         <span
