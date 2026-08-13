@@ -141,13 +141,18 @@ export async function POST(request: Request) {
     const serviceName = selectedService.name || "Serviço";
     const dateHourIso = `${bookingDate}T${bookingTime}:00`;
 
-    const { data: existingAppointment, error: conflictError } = await supabase
+    let conflictQuery = supabase
       .from("appointments")
       .select("id")
       .eq("barbershop_id", barbershopId)
       .eq("date_hour", dateHourIso)
-      .in("status", ["pending", "scheduled"])
-      .maybeSingle();
+      .in("status", ["pending", "scheduled"]);
+
+    conflictQuery = normalizedProfessionalId
+      ? conflictQuery.eq("professional_id", normalizedProfessionalId)
+      : conflictQuery.is("professional_id", null);
+
+    const { data: existingAppointment, error: conflictError } = await conflictQuery.maybeSingle();
 
     if (conflictError) {
       console.error("[API_BOOKING_CONFLICT_CHECK_ERROR]", conflictError);
@@ -181,6 +186,13 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError || !appointment) {
+      if (insertError?.code === "23505") {
+        return NextResponse.json(
+          { success: false, error: "Este horário acabou de ser reservado por outra pessoa." },
+          { status: 409 },
+        );
+      }
+
       console.error("[API_BOOKING_SUPABASE_ERROR]", insertError);
       return NextResponse.json(
         { success: false, error: "Não foi possível efetuar a marcação. Tenta novamente." },
