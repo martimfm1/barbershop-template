@@ -9,21 +9,75 @@ export class ModuleAuthorizationError extends Error {
   }
 }
 
+/**
+ * Module permission aliases map backend module names to the keys stored by the
+ * Team & Permissions UI. `barbershop_member_permissions` is canonical; the
+ * legacy `staff_permissions` table is only a fallback for members that do not
+ * yet have a canonical permission record.
+ */
 const PERMISSION_ALIASES: Record<string, readonly string[]> = {
+  appointments: ["agenda", "appointments"],
+  agenda: ["agenda", "appointments"],
+  clients: ["clients"],
+  services: ["services"],
   manage_professionals: ["team", "manage_professionals", "team_management", "manage_team", "professionals"],
+  team: ["team"],
   manage_messages: ["messages", "manage_messages", "send_messages"],
-};
-
-const ROLE_DEFAULT_PERMISSIONS: Record<string, readonly string[]> = {
-  manager: ["appointments", "clients", "services", "analytics", "messages", "manage_professionals", "team"],
-  barber: ["appointments", "clients", "services"],
-  receptionist: ["appointments", "clients", "messages"],
+  messages: ["messages", "manage_messages", "send_messages"],
+  marketing: ["marketing"],
+  loyalty: ["loyalty"],
+  automated_followups: ["automations", "automated_followups"],
+  automations: ["automations", "automated_followups"],
+  analytics: ["analytics", "dashboard"],
+  dashboard: ["dashboard"],
+  qr: ["qr"],
+  settings: ["settings"],
+  billing: ["billing"],
 };
 
 function jsonPermissionGranted(permissions: unknown, acceptedPermissions: readonly string[]) {
   if (!permissions || typeof permissions !== "object" || Array.isArray(permissions)) return false;
   const record = permissions as Record<string, unknown>;
   return acceptedPermissions.some((permission) => record[permission] === true);
+}
+
+async function hasMemberPermission(
+  admin: ReturnType<typeof createAdminClient>,
+  barbershopId: string,
+  userId: string,
+  acceptedPermissions: readonly string[],
+): Promise<boolean> {
+  const { data: memberGrant, error: memberPermissionError } = await admin
+    .from("barbershop_member_permissions")
+    .select("permissions")
+    .eq("barbershop_id", barbershopId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (memberPermissionError) {
+    console.error("[MODULE_MEMBER_PERMISSION_LOOKUP]", memberPermissionError);
+  }
+
+  // Once a canonical permission row exists, its values are authoritative.
+  if (memberGrant) return jsonPermissionGranted(memberGrant.permissions, acceptedPermissions);
+
+  // Compatibility fallback for legacy staff permission rows.
+  const { data: staffGrant, error: staffPermissionError } = await admin
+    .from("staff_permissions")
+    .select("allowed")
+    .eq("barbershop_id", barbershopId)
+    .eq("user_id", userId)
+    .in("permission", acceptedPermissions)
+    .eq("allowed", true)
+    .limit(1)
+    .maybeSingle();
+
+  if (staffPermissionError) {
+    console.error("[MODULE_STAFF_PERMISSION_LOOKUP]", staffPermissionError);
+    return false;
+  }
+
+  return Boolean(staffGrant?.allowed);
 }
 
 export async function requireModuleContext(feature: FeatureKey, permission?: string) {
@@ -47,46 +101,13 @@ export async function requireModuleContext(feature: FeatureKey, permission?: str
 
   const role = String(profile.role ?? "barber").toLowerCase();
 
-  if (permission && !["admin", "owner"].includes(role)) {
-    const rolePermissions = ROLE_DEFAULT_PERMISSIONS[role] ?? [];
+  // Owner is the tenant administrator and retains full access to the modules
+  // granted by the barbershop plan. Everyone else is controlled by the saved
+  // Team & Permissions switches.
+  if (permission && role !== "owner") {
     const acceptedPermissions = PERMISSION_ALIASES[permission] ?? [permission];
-    const roleAllows = acceptedPermissions.some((candidate) => rolePermissions.includes(candidate));
-
-    if (!roleAllows) {
-      let granted = false;
-      const { data: staffGrant, error: staffPermissionError } = await admin
-        .from("staff_permissions")
-        .select("allowed")
-        .eq("barbershop_id", profile.barbershop_id)
-        .eq("user_id", access.userId)
-        .in("permission", acceptedPermissions)
-        .eq("allowed", true)
-        .limit(1)
-        .maybeSingle();
-
-      if (staffPermissionError) {
-        console.error("[MODULE_STAFF_PERMISSION_LOOKUP]", staffPermissionError);
-      } else {
-        granted = Boolean(staffGrant?.allowed);
-      }
-
-      if (!granted) {
-        const { data: memberGrant, error: memberPermissionError } = await admin
-          .from("barbershop_member_permissions")
-          .select("permissions")
-          .eq("barbershop_id", profile.barbershop_id)
-          .eq("user_id", access.userId)
-          .maybeSingle();
-
-        if (memberPermissionError) {
-          console.error("[MODULE_MEMBER_PERMISSION_LOOKUP]", memberPermissionError);
-        } else {
-          granted = jsonPermissionGranted(memberGrant?.permissions, acceptedPermissions);
-        }
-      }
-
-      if (!granted) throw new ModuleAuthorizationError("PERMISSION_DENIED");
-    }
+    const granted = await hasMemberPermission(admin, profile.barbershop_id, access.userId, acceptedPermissions);
+    if (!granted) throw new ModuleAuthorizationError("PERMISSION_DENIED");
   }
 
   return {
