@@ -2,14 +2,19 @@
 
 ## Unreleased — 2026-08-15
 
-### Customer Booking Portal — manual appointments
+### Landing page — conversion-focused redesign
 
-- O `/my-bookings` passa a reconhecer marcações criadas manualmente na dashboard quando estão ligadas a um cliente cujo email corresponde ao email verificado do portal.
-- Novas marcações manuais criadas na dashboard passam a copiar o email do cliente para `appointments.manual_email`, mantendo compatibilidade com o modelo `client_id` existente.
-- Marcações antigas que não tenham `manual_email` continuam a ser encontradas através do `client_id` e do email do cliente.
-- Cancelar e reagendar já não dependem de `manual_email` estar preenchido; a autorização é determinada pelo email verificado e pela relação `client_id`.
-- Corrigido o cálculo de disponibilidade do reagendamento para não fazer comparação SQL direta com `professional_id = null`, evitando `APPOINTMENT_LOOKUP_FAILED` em marcações sem profissional associado.
-- A disponibilidade passa a carregar as marcações do tenant para o dia e filtra o profissional em server-side, mantendo os conflitos corretos para profissionais com ou sem associação.
+- Reestruturada a homepage `/` como uma página de produto orientada à conversão, em vez de uma sequência de demos isoladas.
+- Criado um hero com posicionamento imediato do Silentra para barbearias, proposta de valor clara e CTAs distintos para proprietários e clientes.
+- Adicionada demonstração visual do fluxo de reserva com serviço, duração, preço, disponibilidade e confirmação.
+- Criada uma camada de benefícios segmentada para cliente, equipa e negócio, reduzindo a necessidade de explicar o produto apenas através de funcionalidades.
+- Adicionada grelha de capacidades cobrindo agenda, equipa e permissões, QR/página pública, fidelização, campanhas/automação e estatísticas.
+- Adicionado percurso de onboarding em três passos: configurar, partilhar e centralizar a operação.
+- Reorganizada a apresentação dos planos Free, Pro e Enterprise com posicionamento por estágio do negócio e CTAs apropriadas.
+- Adicionado CTA final com dois caminhos: começar uma barbearia ou gerir uma marcação existente por email.
+- Removidas métricas e afirmações numéricas demonstrativas que podiam ser confundidas com resultados reais do produto.
+- Garantida adaptação responsiva para mobile, tablet e desktop, com touch targets e hierarquia de conteúdo consistentes.
+- Mantido o sistema de navegação e footer existentes para preservar os fluxos públicos atuais.
 
 ### Customer Booking Portal — production hardening
 
@@ -20,11 +25,13 @@
 - A sessão do portal usa token aleatório armazenado como hash e cookie `httpOnly`.
 - A listagem de marcações usa comparação exata do email normalizado em vez de `ILIKE`, evitando que caracteres wildcard possam expandir a consulta.
 - A listagem continua isolada do restante SaaS: uma sessão do portal só pode consultar marcações associadas ao email verificado.
+- O portal reconhece tanto `manual_email` como clientes ligados via `client_id`, permitindo incluir marcações criadas manualmente na dashboard.
+- Novos bookings manuais sincronizam o email do cliente para `manual_email` quando disponível.
 - Cancelamentos validam estado, janela mínima configurada pela barbearia e identidade da marcação; alterações concorrentes devolvem `409` em vez de aparentarem sucesso.
 - Reagendamentos passam a validar novamente server-side o estado, janela mínima, dia de folga, horário de funcionamento, pausa, `schedule_blocks`, duração do serviço e conflitos existentes.
 - Conflitos de corrida de atualização continuam a ser tratados como conflito de disponibilidade.
 - Adicionado endpoint de disponibilidade para o reagendamento, permitindo mostrar apenas horários realmente elegíveis no portal.
-- A disponibilidade do reagendamento considera o barbeiro atualmente associado à marcação.
+- A disponibilidade do reagendamento considera o barbeiro atualmente associado à marcação e suporta marcações sem profissional específico.
 - A UI deixou de usar `prompt()` para reagendamento e passou a usar calendário + grelha de horários responsiva.
 - A UI mobile do portal apresenta estados de carregamento, estados vazios, bloqueios, dias de folga e mensagens de erro de forma contextual.
 - O portal mostra claramente que o mesmo email pode ser usado em várias reservas e agrega essas marcações num único acesso.
@@ -60,9 +67,3 @@
 - O fluxo de reconciliação de barbeiros históricos continua a ignorar a quota durante o backfill, sem criar bypass para novos convites.
 - Novos convites continuam sujeitos à quota Free/Pro/Enterprise.
 - A quota passa a contar apenas profissionais ativos.
-
-### Production migration hardening
-
-- Adicionada migration `20260814235000_barbershop_billing_entitlements_and_team_permissions.sql` para migrar entitlements para o tenant e preencher permissões existentes.
-- Harmonizada `20260904000000_team_barber_professional_sync.sql` para não reintroduzir lógica de plano por utilizador.
-- Adicionada migration `20260815003000_harden_customer_booking_portal.sql` para tornar a verificação do código do portal atómica.
