@@ -64,6 +64,7 @@ export const en = {
     stats: "Stats",
     signIn: "Sign In",
     logout: "Logout",
+    manageBookings: "Manage bookings",
   },
   legal: {
     termsTitle: "Terms & Conditions",
