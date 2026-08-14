@@ -16,8 +16,6 @@ export async function GET() {
       date_hour,
       duration_minutes,
       status,
-      manual_name,
-      manual_phone,
       manual_email,
       cancellation_reason,
       cancelled_at,
@@ -26,9 +24,9 @@ export async function GET() {
       barbershop_id,
       services ( name, duration, price ),
       professionals ( name ),
-      barbershops ( name, address )
+      barbershops ( name, address, time_limit_cancellation_hours )
     `)
-    .ilike("manual_email", session.email)
+    .eq("manual_email", session.email)
     .order("date_hour", { ascending: true });
 
   if (error) {
@@ -36,6 +34,7 @@ export async function GET() {
     return NextResponse.json({ success: false, error: "Não foi possível carregar as marcações." }, { status: 503 });
   }
 
+  const now = Date.now();
   const appointments = (data ?? []).map((appointment: any) => ({
     id: appointment.id,
     dateHour: appointment.date_hour,
@@ -44,15 +43,22 @@ export async function GET() {
     serviceName: appointment.services?.name ?? "Serviço",
     servicePrice: Number(appointment.services?.price ?? 0),
     professionalName: appointment.professionals?.name ?? null,
+    professionalId: appointment.professional_id,
     barbershopId: appointment.barbershop_id,
     barbershopName: appointment.barbershops?.name ?? "Barbearia",
     barbershopAddress: appointment.barbershops?.address ?? null,
+    cancellationHours: Math.max(0, Number(appointment.barbershops?.time_limit_cancellation_hours ?? 24)),
     cancellationReason: appointment.cancellation_reason ?? null,
     cancelledAt: appointment.cancelled_at ?? null,
   }));
 
-  const upcoming = appointments.filter((item) => new Date(item.dateHour).getTime() >= Date.now() && ["pending", "scheduled"].includes(item.status));
+  const upcoming = appointments.filter((item) =>
+    new Date(item.dateHour).getTime() >= now && ["pending", "scheduled"].includes(item.status),
+  );
   const past = appointments.filter((item) => !upcoming.some((upcomingItem) => upcomingItem.id === item.id));
 
-  return NextResponse.json({ success: true, email: session.email, upcoming, past });
+  return NextResponse.json(
+    { success: true, email: session.email, upcoming, past },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }
