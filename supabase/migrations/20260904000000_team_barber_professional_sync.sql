@@ -14,7 +14,9 @@ set search_path = public
 as $$
 declare
   v_plan text := 'free';
+  v_limit integer := 1;
   v_count integer := 0;
+  v_is_activation boolean := false;
 begin
   if coalesce(current_setting('app.silentra_professional_sync', true), 'false') = 'true' then
     if coalesce(lower(current_setting('app.silentra_professional_sync_role', true)), '') = 'barber' then
@@ -26,16 +28,30 @@ begin
   select coalesce(public.get_effective_billing_plan_for_barbershop(new.barbershop_id), 'free')
     into v_plan;
 
-  if v_plan = 'free' then
-    if tg_op = 'INSERT' and new.active = true then
-      perform pg_advisory_xact_lock(hashtextextended(new.barbershop_id::text, 0));
-      select count(*)::integer into v_count
-      from public.professionals
-      where barbershop_id = new.barbershop_id and active = true;
-      if v_count >= 1 then
-        raise exception using errcode = 'P0001', message = 'PROFESSIONAL_LIMIT_REACHED';
-      end if;
+  v_limit := case v_plan
+    when 'free' then 1
+    when 'pro' then 5
+    when 'enterprise' then 2147483647
+    else 1
+  end;
+
+  v_is_activation := tg_op = 'INSERT'
+    or (tg_op = 'UPDATE' and old.active is distinct from new.active and new.active = true);
+
+  if v_is_activation then
+    perform pg_advisory_xact_lock(hashtextextended(new.barbershop_id::text, 0));
+    select count(*)::integer into v_count
+    from public.professionals
+    where barbershop_id = new.barbershop_id
+      and active = true
+      and id <> coalesce(new.id, '00000000-0000-0000-0000-000000000000'::uuid);
+
+    if v_count >= v_limit then
+      raise exception using errcode = 'P0001', message = 'PROFESSIONAL_LIMIT_REACHED';
     end if;
+  end if;
+
+  if v_plan = 'free' then
     new.commission_percentage := 100;
   end if;
 
