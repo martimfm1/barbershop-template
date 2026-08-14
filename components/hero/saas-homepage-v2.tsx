@@ -22,6 +22,13 @@ import {
 
 type ServiceName = "Corte + Barba" | "Corte" | "Barba";
 type DemoService = { name: ServiceName; duration: string; price: string };
+type Plan = {
+  name: "Free" | "Pro" | "Enterprise";
+  price: string;
+  subtitle: string;
+  recommended: boolean;
+  features: readonly string[];
+};
 
 const services: readonly DemoService[] = [
   { name: "Corte + Barba", duration: "45 min", price: "20 €" },
@@ -30,6 +37,12 @@ const services: readonly DemoService[] = [
 ];
 
 const slots = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30"] as const;
+
+const plans: readonly Plan[] = [
+  { name: "Free", price: "0 €", subtitle: "Para começar", recommended: false, features: ["Agendamentos ilimitados", "Clientes e serviços ilimitados", "Reservas online + QR", "1 barbeiro / localização"] },
+  { name: "Pro", price: "9,90 €", subtitle: "Para crescer", recommended: true, features: ["Até 5 barbeiros", "CRM e estatísticas avançadas", "Campanhas e automações", "Fidelização e seguimentos"] },
+  { name: "Enterprise", price: "A partir de 29,90 €", subtitle: "Para escalar", recommended: false, features: ["Barbeiros e localizações ilimitados", "Permissões e gestão global", "POS, stock e comissões", "Relatórios empresariais avançados"] },
+];
 
 const features = [
   { icon: CalendarDays, label: "Operação", title: "Agenda que respeita a realidade", text: "Serviços, duração, profissionais, folgas, pausas, bloqueios e conflitos são considerados no fluxo de marcação." },
@@ -41,12 +54,6 @@ const features = [
   { icon: BarChart3, label: "Decisão", title: "Estatísticas para gerir melhor", text: "A atividade da operação torna-se informação útil para acompanhar evolução e tomar decisões." },
   { icon: BellRing, label: "Relacionamento", title: "Clientes acompanhados", text: "Marcações, lembretes, seguimentos e gestão por email mantêm o cliente ligado à barbearia." },
   { icon: ShieldCheck, label: "Controlo", title: "Segurança no centro", text: "Isolamento por barbearia, permissões server-side e validações críticas protegem dados e operações." },
-] as const;
-
-const plans = [
-  { name: "Free", price: "0 €", subtitle: "Para começar", features: ["Agendamentos ilimitados", "Clientes e serviços ilimitados", "Reservas online + QR", "1 barbeiro / localização"] },
-  { name: "Pro", price: "9,90 €", subtitle: "Para crescer", recommended: true, features: ["Até 5 barbeiros", "CRM e estatísticas avançadas", "Campanhas e automações", "Fidelização e seguimentos"] },
-  { name: "Enterprise", price: "A partir de 29,90 €", subtitle: "Para escalar", features: ["Barbeiros e localizações ilimitados", "Permissões e gestão global", "POS, stock e comissões", "Relatórios empresariais avançados"] },
 ] as const;
 
 function SectionHeading({ eyebrow, title, text }: { eyebrow: string; title: string; text: string }) {
