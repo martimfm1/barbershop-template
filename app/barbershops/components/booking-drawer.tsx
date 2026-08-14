@@ -395,21 +395,20 @@ export function BookingDrawer({ shop, isOpen, onClose, onSuccess }: BookingDrawe
                 <div className="flex items-center justify-between gap-3 pt-2"><span className="text-zinc-500">Profissional</span><span className="text-right font-semibold">{selectedProfessional === "any" ? "Sem preferência" : selectedProfessional.name}</span></div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3 min-w-0">
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-zinc-400"><User className="size-3.5" /> Os teus dados</div>
-                <input value={customerName} onChange={(event) => setCustomerName(event.target.value)} autoComplete="name" placeholder="Nome completo *" className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20" />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <input value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} autoComplete="tel" inputMode="tel" placeholder="Telemóvel *" className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20" />
+                <input value={customerName} onChange={(event) => setCustomerName(event.target.value)} autoComplete="name" placeholder="Nome completo *" className="box-border h-12 w-full min-w-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20" />
+                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                  <input value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} autoComplete="tel" inputMode="tel" placeholder="Telemóvel *" className="box-border h-12 w-full min-w-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20" />
                   <div className="min-w-0">
-                    <input value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} autoComplete="email" inputMode="email" placeholder="Email *" className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20" />
+                    <input value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} autoComplete="email" inputMode="email" placeholder="Email *" className="box-border h-12 w-full min-w-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20" />
                     <p className="mt-1 text-[10px] leading-4 text-zinc-600">Podes usar o mesmo email em várias marcações.</p>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 sm:rounded-2xl">
-                  <label htmlFor="booking-birth-date" className="mb-1.5 flex items-center justify-between text-xs font-semibold text-zinc-200">
-                    <span>Data de nascimento <span className="text-white">*</span></span>
-                    <span className="font-normal text-zinc-500">Obrigatório</span>
+                <div className="min-w-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] p-3 sm:rounded-2xl">
+                  <label htmlFor="booking-birth-date" className="mb-1.5 block text-xs font-semibold text-zinc-200">
+                    Data de nascimento <span className="text-white">*</span>
                   </label>
                   <input
                     id="booking-birth-date"
@@ -420,9 +419,9 @@ export function BookingDrawer({ shop, isOpen, onClose, onSuccess }: BookingDrawe
                     onChange={(event) => setCustomerBirthDate(event.target.value)}
                     autoComplete="bday"
                     required
-                    className="h-12 w-full rounded-xl border border-white/10 bg-zinc-900 px-4 text-sm text-white outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20"
+                    className="box-border block h-12 w-full min-w-0 max-w-full appearance-none rounded-xl border border-white/10 bg-zinc-900 px-3 text-sm text-white outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 sm:px-4"
                   />
-                  <p className="mt-1.5 text-[11px] leading-5 text-zinc-500">Usamos esta informação para manter o registo do cliente correto caso decidas adicioná-lo à lista de clientes.</p>
+                  <p className="mt-1.5 text-[11px] leading-4 text-zinc-500">Usamos a tua data de nascimento apenas para questões de estatística.</p>
                 </div>
               </div>
             </div>
