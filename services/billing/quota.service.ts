@@ -3,16 +3,9 @@ import { getPlanLimit, isUnlimited, type PlanLimitKey } from "@/lib/billing/plan
 import { PLANS, type BillingPlan } from "@/lib/stripe/constants";
 import { SubscriptionService } from "./subscription.service";
 
-/**
- * Resources that are gated by quantitative plan limits.
- * Mirrors {@link PlanLimitKey} so the same vocabulary is used everywhere.
- */
+/** Resources that are gated by quantitative plan limits. */
 export type PlanResource = PlanLimitKey;
 
-/**
- * Structured error thrown when a tenant tries to exceed a plan limit.
- * Carries everything the frontend needs to render an upgrade prompt.
- */
 export class QuotaError extends Error {
   constructor(
     public readonly resource: PlanResource,
@@ -21,31 +14,21 @@ export class QuotaError extends Error {
     public readonly plan: BillingPlan,
     public readonly requiredPlan: BillingPlan,
   ) {
-    super(
-      `Limite atingido: ${resource} (${current}/${limit}) no plano ${plan}. Faz upgrade para ${requiredPlan}.`,
-    );
+    super(`Limite atingido: ${resource} (${current}/${limit}) no plano ${plan}. Faz upgrade para ${requiredPlan}.`);
     this.name = "QuotaError";
   }
 }
 
-/**
- * Returns the cheapest plan that would allow `count` units of a resource.
- * Used to tell the user which plan they need to upgrade to.
- */
 export function getRequiredPlanForResource(resource: PlanResource, count: number): BillingPlan {
   if (resource === "barbers") {
     if (count <= 1) return PLANS.FREE;
     if (count <= 5) return PLANS.PRO;
     return PLANS.ENTERPRISE;
   }
-  // locations: Free = 1, Pro = 1, Enterprise = unlimited
   return count <= 1 ? PLANS.FREE : PLANS.ENTERPRISE;
 }
 
-/**
- * Counts the current usage of a resource for a given barbershop/tenant.
- * Server-side only — never trusts a count sent by the client.
- */
+/** Counts active resources for the tenant. */
 export async function getResourceUsage(barbershopId: string, resource: PlanResource): Promise<number> {
   const admin = createAdminClient();
 
@@ -53,29 +36,26 @@ export async function getResourceUsage(barbershopId: string, resource: PlanResou
     const { count, error } = await admin
       .from("professionals")
       .select("id", { count: "exact", head: true })
-      .eq("barbershop_id", barbershopId);
+      .eq("barbershop_id", barbershopId)
+      .eq("active", true);
 
     if (error) throw new Error("Não foi possível contar os profissionais.");
     return count ?? 0;
   }
 
-  // locations are not yet modeled as a table; usage is always 0 until then.
   return 0;
 }
 
 /**
- * Resolves the tenant's plan, current usage and plan limit, then throws a
- * structured {@link QuotaError} when the limit is already reached.
- *
- * The plan is always resolved server-side from Stripe sync state — never
- * accepted from the client.
+ * Plan quotas are tenant-scoped. userId is retained for API compatibility but
+ * is intentionally not used to resolve the plan.
  */
 export async function assertWithinPlanLimit(
   barbershopId: string,
   resource: PlanResource,
-  userId: string,
+  _userId?: string,
 ): Promise<void> {
-  const plan = await SubscriptionService.getAccessPlan(userId);
+  const plan = await SubscriptionService.getAccessPlanForBarbershop(barbershopId);
   const limit = getPlanLimit(plan, resource);
   if (isUnlimited(limit)) return;
 
