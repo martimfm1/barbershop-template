@@ -2,6 +2,15 @@
 
 ## Unreleased — 2026-08-15
 
+### Customer Booking Portal — manual appointments
+
+- O `/my-bookings` passa a reconhecer marcações criadas manualmente na dashboard quando estão ligadas a um cliente cujo email corresponde ao email verificado do portal.
+- Novas marcações manuais criadas na dashboard passam a copiar o email do cliente para `appointments.manual_email`, mantendo compatibilidade com o modelo `client_id` existente.
+- Marcações antigas que não tenham `manual_email` continuam a ser encontradas através do `client_id` e do email do cliente.
+- Cancelar e reagendar já não dependem de `manual_email` estar preenchido; a autorização é determinada pelo email verificado e pela relação `client_id`.
+- Corrigido o cálculo de disponibilidade do reagendamento para não fazer comparação SQL direta com `professional_id = null`, evitando `APPOINTMENT_LOOKUP_FAILED` em marcações sem profissional associado.
+- A disponibilidade passa a carregar as marcações do tenant para o dia e filtra o profissional em server-side, mantendo os conflitos corretos para profissionais com ou sem associação.
+
 ### Customer Booking Portal — production hardening
 
 - O acesso a `/my-bookings` continua sem exigir conta: o cliente confirma o email através de um código de utilização única.
