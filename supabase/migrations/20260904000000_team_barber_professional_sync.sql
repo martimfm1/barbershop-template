@@ -26,9 +26,12 @@ begin
     order by p.active desc, p.created_at asc limit 1 for update;
 
     if v_professional_id is null then
-      select min(p.id) into v_professional_id from public.professionals p
+      select p.id into v_professional_id from public.professionals p
       where p.barbershop_id = p_barbershop_id and p.user_id is null
-        and lower(trim(p.name)) = lower(trim(v_name));
+        and lower(trim(p.name)) = lower(trim(v_name))
+      order by p.active desc, p.created_at asc
+      limit 1
+      for update;
       if v_professional_id is not null then
         update public.professionals set user_id = p_user_id, name = v_name, active = true where id = v_professional_id;
       else
