@@ -9,6 +9,7 @@ export async function POST(request: Request) {
   try {
     const { data: { user }, error } = await (await createClient()).auth.getUser();
     if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    await BillingService.assertBillingOwner(user.id);
     const { newPriceId } = await readJsonObject(request);
     if (typeof newPriceId !== "string") return NextResponse.json({ error: "newPriceId is required." }, { status: 400 });
     await BillingService.updatePlan(user.id, newPriceId);
