@@ -27,8 +27,14 @@ export function SiteNavbar() {
   const pathname = usePathname();
   const isDashboard = pathname === "/dashboard" || pathname.startsWith("/dashboard/");
 
+  const bookingManagementLink = {
+    label: t("nav.manageBookings", { defaultValue: "Gerir marcações" }),
+    href: "/my-bookings",
+  };
+
   const guestLinks = useMemo(() => [
     { label: t("nav.barbershops", { defaultValue: "Barbershops" }), href: "/barbershops" },
+    bookingManagementLink,
     { label: t("nav.howItWorks", { defaultValue: "How it works" }), href: "/#friction" },
     { label: t("nav.forBarbers", { defaultValue: "For barbers" }), href: "/registo" },
   ], [t]);
@@ -36,6 +42,7 @@ export function SiteNavbar() {
   const authenticatedLinks = useMemo(() => [
     { label: t("nav.dashboard", { defaultValue: "Dashboard" }), href: "/dashboard" },
     { label: t("nav.barbershops", { defaultValue: "Barbershops" }), href: "/barbershops" },
+    bookingManagementLink,
     { label: t("nav.settings", { defaultValue: "Settings" }), href: "/dashboard/settings" },
     { label: "Analytics", href: "/dashboard/analytics" },
     { label: t("nav.plans", { defaultValue: "Plans" }), href: "/plans" },
@@ -92,12 +99,17 @@ export function SiteNavbar() {
               <AnimatePresence>{dropdownOpen && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={NAVBAR_POPUP_TRANSITION} className="absolute right-0 mt-3 w-64 origin-top-right rounded-xl border border-white/10 bg-zinc-900/98 p-1.5 text-zinc-200 shadow-2xl backdrop-blur-lg">
                 <div className="px-3 py-2.5 text-xs text-zinc-400 border-b border-white/5 truncate font-medium"><span className="text-zinc-100 font-semibold">{firstName}</span><span className="mx-1.5 text-white/20">|</span><span className="text-zinc-400 font-normal">{user.email}</span></div>
                 <Link href="/dashboard" onClick={() => setDropdownOpen(false)} className="flex w-full items-center rounded-lg px-3 py-2.5 mt-1 text-sm transition-colors hover:bg-white/5 hover:text-white">Dashboard</Link>
+                <Link href="/barbershops" onClick={() => setDropdownOpen(false)} className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/5 hover:text-white">Barbershops</Link>
+                <Link href="/my-bookings" onClick={() => setDropdownOpen(false)} className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/5 hover:text-white">{bookingManagementLink.label}</Link>
                 <Link href="/dashboard/settings" onClick={() => setDropdownOpen(false)} className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/5 hover:text-white">Settings</Link>
                 <Link href="/dashboard/analytics" onClick={() => setDropdownOpen(false)} className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/5 hover:text-white">Analytics</Link>
                 <Link href="/plans" onClick={() => setDropdownOpen(false)} className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/5 hover:text-white">Plans</Link>
                 <button onClick={handleLogout} className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300 cursor-pointer font-medium">Logout</button>
               </motion.div>}</AnimatePresence>
-            </div> : <Button asChild variant="outline" className="border-white/15 bg-white/5 text-zinc-100 hover:border-white/30 hover:bg-white/10 text-xs sm:text-sm px-3 h-9 sm:h-10 sm:px-4"><Link href="/login">{t("nav.signIn", { defaultValue: "Sign In" })}</Link></Button>)}
+            </div> : <div className="flex items-center gap-2">
+              <Button asChild variant="ghost" className="hidden h-10 px-3 text-xs text-zinc-200 hover:bg-white/10 hover:text-white sm:inline-flex"><Link href="/my-bookings">{bookingManagementLink.label}</Link></Button>
+              <Button asChild variant="outline" className="border-white/15 bg-white/5 text-zinc-100 hover:border-white/30 hover:bg-white/10 text-xs sm:text-sm px-3 h-9 sm:h-10 sm:px-4"><Link href="/login">{t("nav.signIn", { defaultValue: "Sign In" })}</Link></Button>
+            </div>)}
             <Button type="button" variant="outline" size="icon-lg" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} onClick={() => setOpen((prev) => !prev)} className="relative z-110 size-10 cursor-pointer border border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10 hover:text-white active:scale-95"><MenuIcon open={open} className="size-5" /></Button>
           </div>
         </div>
