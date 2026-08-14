@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripeClient } from "@/lib/stripe/server";
 import { planForPrice, PLANS, PRICE_ID_TO_PLAN, TRIAL_PERIOD_DAYS } from "@/lib/stripe/constants";
 import { PLAN_ACCESS_STATUSES } from "@/lib/billing/plan-access";
-import { BillingError, type SubscriptionRecord } from "@/types/stripe";
+import { BillingError, type BillingPlan, type SubscriptionRecord } from "@/types/stripe";
 import { SubscriptionService } from "./subscription.service";
 
 const PENDING_INVOICE_TTL_MS = 10 * 60 * 1000;
@@ -21,6 +21,41 @@ function customerId(customer: string | Stripe.Customer | Stripe.DeletedCustomer)
 }
 
 export class BillingService {
+  /**
+   * Billing writes remain owner-only even though paid feature access is
+   * inherited by every member of the barbershop tenant.
+   */
+  static async assertBillingOwner(userId: string): Promise<void> {
+    const database = createAdminClient();
+    const { data, error } = await database
+      .from("users")
+      .select("id, role, barbershop_id")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error) {
+      throw new BillingError("Could not verify billing ownership.", "DB_READ_FAILED", { userId });
+    }
+
+    if (!data?.barbershop_id || String(data.role).toLowerCase() !== "owner") {
+      throw new BillingError("Only the barbershop owner can manage billing.", "SUBSCRIPTION_NOT_ACTIVE", { userId });
+    }
+
+    const { data: barbershop, error: barbershopError } = await database
+      .from("barbershops")
+      .select("id, created_by")
+      .eq("id", data.barbershop_id)
+      .maybeSingle();
+
+    if (barbershopError) {
+      throw new BillingError("Could not verify barbershop ownership.", "DB_READ_FAILED", { userId, barbershopId: data.barbershop_id });
+    }
+
+    if (!barbershop || barbershop.created_by !== userId) {
+      throw new BillingError("Only the barbershop owner can manage billing.", "SUBSCRIPTION_NOT_ACTIVE", { userId, barbershopId: data.barbershop_id });
+    }
+  }
+
   static async getOrCreateCustomer(userId: string, email: string): Promise<string> {
     const database = createAdminClient();
     const { data, error } = await database.from("customers").select("stripe_customer_id").eq("user_id", userId).maybeSingle();
@@ -83,9 +118,6 @@ export class BillingService {
 
     return invoices.data
       .filter((invoice) => {
-        // The billing UI represents draft/open invoices as "Pendente".
-        // Keep them visible for ten minutes, then stop returning them from the
-        // application without deleting or modifying the Stripe invoice itself.
         const isPending = invoice.status === null || invoice.status === "draft" || invoice.status === "open";
         return !isPending || now - invoice.created * 1000 <= PENDING_INVOICE_TTL_MS;
       })
