@@ -9,11 +9,13 @@ export async function GET() {
   try {
     const { data: { user }, error } = await (await createClient()).auth.getUser();
     if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const barbershopId = await SubscriptionService.getBarbershopIdForUser(user.id);
+    if (!barbershopId) return NextResponse.json({ subscription: null, plan: "free" });
     const [subscription, plan] = await Promise.all([
-      SubscriptionService.getForUser(user.id),
-      SubscriptionService.getAccessPlan(user.id),
+      SubscriptionService.getForBarbershop(barbershopId),
+      SubscriptionService.getAccessPlanForBarbershop(barbershopId),
     ]);
-    return NextResponse.json({ subscription, plan });
+    return NextResponse.json({ subscription, plan, barbershopId });
   } catch (error) {
     return billingErrorResponse(error);
   }
