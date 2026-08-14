@@ -60,7 +60,6 @@ export const publicBarbershopService = {
         return { data: null, error: { message: "Barbearia não encontrada." } };
       }
 
-      // Public pages resolve exclusively by the canonical shops.slug.
       const { data: shop, error: shopError } = await supabase
         .from("shops")
         .select("*")
@@ -148,17 +147,27 @@ export const publicBarbershopService = {
     rating: number;
     comment?: string;
   }) {
-    const { data, error } = await supabase
-      .from("reviews")
-      .insert({
-        barbershop_id: payload.barbershop_id,
-        client_name: payload.client_name.trim(),
-        rating: payload.rating,
-        comment: payload.comment?.trim() || null,
-      })
-      .select()
-      .single();
+    const { data, error } = await supabase.rpc("submit_public_review", {
+      p_shop_id: payload.barbershop_id,
+      p_client_name: payload.client_name,
+      p_rating: payload.rating,
+      p_comment: payload.comment ?? null,
+    });
 
-    return { data, error };
+    if (error) {
+      const messageMap: Record<string, string> = {
+        REVIEW_SHOP_REQUIRED: "Barbearia inválida.",
+        REVIEW_NAME_REQUIRED: "Introduz o teu nome.",
+        REVIEW_RATING_INVALID: "Seleciona uma classificação entre 1 e 5 estrelas.",
+        REVIEW_SHOP_NOT_AVAILABLE: "Esta barbearia não está disponível para avaliações.",
+      };
+      return {
+        data: null,
+        error: new Error(messageMap[error.message] || "Não foi possível enviar a avaliação."),
+      };
+    }
+
+    const review = Array.isArray(data) ? data[0] : data;
+    return { data: review as ReviewItem | null, error: null };
   },
 };
