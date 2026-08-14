@@ -23,19 +23,11 @@ begin
     return new;
   end if;
 
-  select case
-    when s.status in ('active', 'trialing') and s.plan in ('pro', 'enterprise') then s.plan::text
-    else 'free'
-  end
-  into v_plan
-  from public.subscriptions s
-  join public.users u on u.id = s.user_id
-  where u.barbershop_id = new.barbershop_id
-  order by case when s.status in ('active', 'trialing') then 0 else 1 end, s.updated_at desc
-  limit 1;
+  select coalesce(public.get_effective_billing_plan_for_barbershop(new.barbershop_id), 'free')
+    into v_plan;
 
   if v_plan = 'free' then
-    if tg_op = 'INSERT' then
+    if tg_op = 'INSERT' and new.active = true then
       perform pg_advisory_xact_lock(hashtextextended(new.barbershop_id::text, 0));
       select count(*)::integer into v_count
       from public.professionals
@@ -53,7 +45,7 @@ $$;
 
 drop trigger if exists trg_enforce_professional_plan_rules on public.professionals;
 create trigger trg_enforce_professional_plan_rules
-before insert or update of commission_percentage on public.professionals
+before insert or update of commission_percentage, active on public.professionals
 for each row execute function public.enforce_professional_plan_rules();
 
 create or replace function public.sync_barber_professional(p_user_id uuid, p_barbershop_id uuid, p_role text)
@@ -118,6 +110,8 @@ do $$
 declare
   v_user record;
 begin
+  -- Existing team barbers are historical data. Reconciliation must not fail
+  -- because the current plan quota is smaller than the historical count.
   for v_user in
     select id, barbershop_id, role from public.users
     where barbershop_id is not null and role = 'barber'
@@ -144,7 +138,11 @@ declare
   v_user uuid := auth.uid();
   v_hash text;
   v_invite public.barbershop_invite_codes%rowtype;
-  v_default_permissions jsonb := jsonb_build_object('dashboard', true, 'agenda', true, 'clients', true, 'services', false, 'team', false, 'messages', false, 'settings', false, 'billing', false);
+  v_default_permissions jsonb := jsonb_build_object(
+    'dashboard', true, 'agenda', true, 'clients', true, 'services', true,
+    'team', false, 'messages', false, 'marketing', false, 'loyalty', false,
+    'automations', false, 'analytics', false, 'qr', false, 'settings', false, 'billing', false
+  );
 begin
   if v_user is null then raise exception 'not_authenticated' using errcode = '42501'; end if;
   if nullif(trim(p_code), '') is null then raise exception 'invalid_code' using errcode = '22023'; end if;
@@ -193,18 +191,11 @@ begin
   if p_role not in ('admin','manager','barber','receptionist','staff') then raise exception 'invalid_role' using errcode = '22023'; end if;
 
   if p_role = 'barber' and v_old_role <> 'barber' then
-    lock table public.professionals in row exclusive mode;
-    select coalesce(s.plan, 'free') into v_plan
-    from public.barbershops b
-    left join public.users owner_user on owner_user.id = b.created_by
-    left join public.subscriptions s on s.user_id = owner_user.id
-    where b.id = v_shop limit 1;
-    v_plan := coalesce(v_plan, 'free');
-    v_limit := case v_plan when 'free' then 1 when 'pro' then 5 when 'enterprise' then 999999 else 1 end;
+    select coalesce(public.get_effective_billing_plan_for_barbershop(v_shop), 'free') into v_plan;
+    v_limit := case v_plan when 'free' then 1 when 'pro' then 5 when 'enterprise' then 2147483647 else 1 end;
     select count(*)::integer into v_active_count from public.professionals where barbershop_id = v_shop and active = true;
     if v_active_count >= v_limit then
-      raise exception 'quota_exceeded|barbers|%s|%s|%s|%s', v_active_count, v_limit, v_plan,
-        case v_plan when 'free' then 'pro' when 'pro' then 'enterprise' else 'enterprise' end using errcode = 'P0001';
+      raise exception using errcode = 'P0001', message = 'PROFESSIONAL_LIMIT_REACHED';
     end if;
   end if;
 
@@ -241,21 +232,19 @@ grant execute on function public.remove_barbershop_member(uuid) to authenticated
 create or replace function public.create_professional_with_quota(p_barbershop_id uuid, p_user_id uuid, p_name text, p_commission_percentage numeric default 50, p_active boolean default true)
 returns public.professionals
 language plpgsql security definer
+set search_path = public
 as $$
 declare v_plan text; v_count int; v_limit int; v_new public.professionals%rowtype;
 begin
   if not exists (select 1 from public.users where id = p_user_id and barbershop_id = p_barbershop_id) then
     raise exception 'forbidden: user is not a member of this barbershop' using errcode = 'P08001';
   end if;
-  select coalesce(s.plan, 'free') into v_plan
-  from public.users u left join public.subscriptions s on s.user_id = u.id
-  where u.id = p_user_id limit 1;
-  v_limit := case coalesce(v_plan,'free') when 'free' then 1 when 'pro' then 5 when 'enterprise' then 999999 else 1 end;
+  select coalesce(public.get_effective_billing_plan_for_barbershop(p_barbershop_id), 'free') into v_plan;
+  v_limit := case v_plan when 'free' then 1 when 'pro' then 5 when 'enterprise' then 2147483647 else 1 end;
   lock table public.professionals in row exclusive mode;
   select count(*)::int into v_count from public.professionals where barbershop_id = p_barbershop_id and active = true;
   if p_active and v_count >= v_limit then
-    raise exception 'quota_exceeded|barbers|%s|%s|%s|%s', v_count, v_limit, coalesce(v_plan,'free'),
-      case coalesce(v_plan,'free') when 'free' then 'pro' when 'pro' then 'enterprise' else 'enterprise' end using errcode = 'P0001';
+    raise exception 'PROFESSIONAL_LIMIT_REACHED' using errcode = 'P0001';
   end if;
   insert into public.professionals(barbershop_id,name,commission_percentage,active)
   values(p_barbershop_id,p_name,p_commission_percentage,p_active)
