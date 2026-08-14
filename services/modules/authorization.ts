@@ -14,13 +14,17 @@ const PERMISSION_ALIASES: Record<string, readonly string[]> = {
   manage_messages: ["messages", "manage_messages", "send_messages"],
 };
 
-// Roles provide safe defaults for common dashboard access. Explicit staff_permissions
-// can still grant additional permissions without weakening tenant isolation.
 const ROLE_DEFAULT_PERMISSIONS: Record<string, readonly string[]> = {
   manager: ["appointments", "clients", "services", "analytics", "messages", "manage_professionals", "team"],
   barber: ["appointments", "clients", "services"],
   receptionist: ["appointments", "clients", "messages"],
 };
+
+function jsonPermissionGranted(permissions: unknown, acceptedPermissions: readonly string[]) {
+  if (!permissions || typeof permissions !== "object" || Array.isArray(permissions)) return false;
+  const record = permissions as Record<string, unknown>;
+  return acceptedPermissions.some((permission) => record[permission] === true);
+}
 
 export async function requireModuleContext(feature: FeatureKey, permission?: string) {
   const access = await getAccessPlanForRequest();
@@ -49,7 +53,8 @@ export async function requireModuleContext(feature: FeatureKey, permission?: str
     const roleAllows = acceptedPermissions.some((candidate) => rolePermissions.includes(candidate));
 
     if (!roleAllows) {
-      const { data: grant, error: permissionError } = await admin
+      let granted = false;
+      const { data: staffGrant, error: staffPermissionError } = await admin
         .from("staff_permissions")
         .select("allowed")
         .eq("barbershop_id", profile.barbershop_id)
@@ -59,10 +64,28 @@ export async function requireModuleContext(feature: FeatureKey, permission?: str
         .limit(1)
         .maybeSingle();
 
-      if (permissionError || !grant?.allowed) {
-        if (permissionError) console.error("[MODULE_PERMISSION_LOOKUP]", permissionError);
-        throw new ModuleAuthorizationError("PERMISSION_DENIED");
+      if (staffPermissionError) {
+        console.error("[MODULE_STAFF_PERMISSION_LOOKUP]", staffPermissionError);
+      } else {
+        granted = Boolean(staffGrant?.allowed);
       }
+
+      if (!granted) {
+        const { data: memberGrant, error: memberPermissionError } = await admin
+          .from("barbershop_member_permissions")
+          .select("permissions")
+          .eq("barbershop_id", profile.barbershop_id)
+          .eq("user_id", access.userId)
+          .maybeSingle();
+
+        if (memberPermissionError) {
+          console.error("[MODULE_MEMBER_PERMISSION_LOOKUP]", memberPermissionError);
+        } else {
+          granted = jsonPermissionGranted(memberGrant?.permissions, acceptedPermissions);
+        }
+      }
+
+      if (!granted) throw new ModuleAuthorizationError("PERMISSION_DENIED");
     }
   }
 
