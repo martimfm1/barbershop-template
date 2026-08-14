@@ -37,6 +37,11 @@ const PERMISSION_LABELS: Record<string, string> = {
   services: "Serviços",
   team: "Equipa",
   messages: "Mensagens",
+  marketing: "Marketing",
+  loyalty: "Fidelização",
+  automations: "Automações",
+  analytics: "Estatísticas",
+  qr: "QR da barbearia",
   settings: "Definições",
   billing: "Faturação",
 };
@@ -111,7 +116,7 @@ export function TeamMembersManager() {
           </div>
           <div>
             <CardTitle className="text-lg font-semibold text-zinc-50">Membros e permissões</CardTitle>
-            <p className="mt-1 text-sm text-zinc-500">As pessoas que entram pelo código começam como barbeiros. O proprietário pode ajustar a função e o acesso de cada membro.</p>
+            <p className="mt-1 text-sm text-zinc-500">O plano pertence à barbearia. Estas permissões controlam o que cada membro pode utilizar dentro desse plano.</p>
           </div>
         </div>
       </CardHeader>
@@ -131,7 +136,7 @@ export function TeamMembersManager() {
                       <UserRoundCheck className="size-4 text-zinc-400" aria-hidden="true" />
                       <h3 className="font-semibold text-zinc-100">{member.name_complete || member.email || "Membro"}</h3>
                       <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[11px] text-zinc-400">{ROLE_LABELS[member.role]}</span>
-                      {isOwner && <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-400">Acesso total</span>}
+                      {isOwner && <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-400">Plano da barbearia</span>}
                       {member.joined_via_code && <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[11px] text-blue-400">Entrou por código</span>}
                     </div>
                     <p className="mt-1 text-xs text-zinc-500">{member.email || "Sem email"}{member.num_phone ? ` · ${member.num_phone}` : ""}</p>
@@ -152,13 +157,16 @@ export function TeamMembersManager() {
 
                 {!isOwner && (
                   <>
-                    <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                      {Object.entries(PERMISSION_LABELS).map(([key, label]) => (
-                        <label key={key} className="flex min-h-11 items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2.5 text-xs text-zinc-300">
-                          <span>{label}</span>
-                          <Switch checked={Boolean(member.permissions?.[key])} onCheckedChange={(checked) => setMembers((current) => current.map((item) => item.user_id === member.user_id ? { ...item, permissions: { ...item.permissions, [key]: checked } } : item))} aria-label={`Permissão: ${label}`} />
-                        </label>
-                      ))}
+                    <div className="mt-5 rounded-2xl border border-white/5 bg-black/10 p-3">
+                      <p className="px-1 pb-2 text-xs text-zinc-500">As funcionalidades disponíveis pelo plano continuam disponíveis para a barbearia. Estes interruptores definem apenas o acesso individual deste membro.</p>
+                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                        {Object.entries(PERMISSION_LABELS).map(([key, label]) => (
+                          <label key={key} className="flex min-h-11 items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2.5 text-xs text-zinc-300">
+                            <span>{label}</span>
+                            <Switch checked={Boolean(member.permissions?.[key])} onCheckedChange={(checked) => setMembers((current) => current.map((item) => item.user_id === member.user_id ? { ...item, permissions: { ...item.permissions, [key]: checked } } : item))} aria-label={`Permissão: ${label}`} />
+                          </label>
+                        ))}
+                      </div>
                     </div>
                     <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
                       <Button variant="outline" onClick={() => void remove(member)} disabled={savingId === member.user_id} className="min-h-11 border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/10 sm:w-auto">

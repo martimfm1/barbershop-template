@@ -2,7 +2,22 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { requireTenantAuthorization } from "@/services/modules/tenant-authorization";
 
-const TEAM_VIEW_ROLES = ["owner", "admin"] as const;
+const TEAM_VIEW_ROLES = ["owner", "admin", "manager"] as const;
+const DEFAULT_PERMISSIONS: Record<string, boolean> = {
+  dashboard: true,
+  agenda: true,
+  clients: true,
+  services: false,
+  team: false,
+  messages: false,
+  marketing: false,
+  loyalty: false,
+  automations: false,
+  analytics: false,
+  qr: false,
+  settings: false,
+  billing: false,
+};
 
 export async function GET(request: Request) {
   const tenant = await requireTenantAuthorization(request, TEAM_VIEW_ROLES);
@@ -11,6 +26,18 @@ export async function GET(request: Request) {
       { error: tenant.status === 401 ? "Nao autorizado" : "Sem permissao para ver a equipa." },
       { status: tenant.status },
     );
+  }
+
+  if (tenant.role !== "owner") {
+    const { data: grant } = await tenant.admin
+      .from("barbershop_member_permissions")
+      .select("permissions")
+      .eq("barbershop_id", tenant.barbershopId)
+      .eq("user_id", tenant.userId)
+      .maybeSingle();
+    if (!Boolean(grant?.permissions?.team)) {
+      return NextResponse.json({ error: "Sem permissao para ver a equipa." }, { status: 403 });
+    }
   }
 
   const [{ data: members, error: membersError }, { data: permissionRows, error: permissionsError }, { data: inviteRows, error: invitesError }] = await Promise.all([
@@ -36,15 +63,11 @@ export async function GET(request: Request) {
     }
   }
 
-  // Esta aba representa exclusivamente os barbeiros que foram adicionados à equipa através do fluxo de código.
-  // Owners/admins e utilizadores criados por outros fluxos continuam a existir no sistema, mas não aparecem nesta lista.
-  const teamBarbers = (members ?? []).filter(
-    (member) => member.role === "barber" && inviteByUser.has(member.id),
-  );
-
-  const orderedMembers = [...teamBarbers].sort((a, b) =>
-    (a.name_complete || a.email || "").localeCompare(b.name_complete || b.email || ""),
-  );
+  const orderedMembers = [...(members ?? [])].sort((a, b) => {
+    if (a.role === "owner" && b.role !== "owner") return -1;
+    if (a.role !== "owner" && b.role === "owner") return 1;
+    return (a.name_complete || a.email || "").localeCompare(b.name_complete || b.email || "");
+  });
 
   return NextResponse.json(
     {
@@ -54,9 +77,9 @@ export async function GET(request: Request) {
         email: member.email,
         num_phone: member.num_phone,
         role: member.role,
-        joined_via_code: true,
+        joined_via_code: inviteByUser.has(member.id),
         joined_at: inviteByUser.get(member.id) ?? null,
-        permissions: permissionsByUser.get(member.id) ?? {},
+        permissions: { ...DEFAULT_PERMISSIONS, ...(permissionsByUser.get(member.id) ?? {}) },
       })),
     },
     { headers: { "Cache-Control": "no-store" } },

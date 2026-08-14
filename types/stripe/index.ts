@@ -6,6 +6,7 @@ export type SubscriptionStatus = Stripe.Subscription.Status;
 export interface SubscriptionRecord {
   id: string;
   user_id: string;
+  barbershop_id: string | null;
   stripe_customer_id: string;
   stripe_subscription_id: string | null;
   stripe_price_id: string | null;
