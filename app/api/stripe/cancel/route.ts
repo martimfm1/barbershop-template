@@ -9,6 +9,7 @@ export async function POST() {
   try {
     const { data: { user }, error } = await (await createClient()).auth.getUser();
     if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    await BillingService.assertBillingOwner(user.id);
     await BillingService.cancelAtPeriodEnd(user.id);
     return NextResponse.json({ cancelAtPeriodEnd: true });
   } catch (error) {
