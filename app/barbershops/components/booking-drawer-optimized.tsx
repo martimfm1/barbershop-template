@@ -176,7 +176,27 @@ export function BookingDrawerOptimized({ shop, isOpen, onClose, onSuccess, selec
           )}
         </div>
 
-        <DrawerFooter className="shrink-0 border-t border-white/10 px-3 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-4"><div className="flex items-center gap-2 sm:justify-between sm:gap-3">{error ? <><DrawerClose asChild><Button variant="outline" className="min-h-11 flex-1">Fechar</Button></DrawerClose><Button className="min-h-11 flex-1" onClick={() => { setError(""); setStep(1); }}>Tentar de novo</Button></Button></> : step === 4 ? <Button onClick={onClose} className="min-h-11 w-full bg-white font-bold text-zinc-950">Concluir</Button> : <>{step === 1 ? <DrawerClose asChild><Button variant="ghost" className="min-h-11 flex-1 sm:flex-none">Cancelar</Button></DrawerClose> : <Button variant="outline" onClick={() => setStep((step - 1) as 1 | 2 | 3)} className="min-h-11 flex-1 sm:flex-none"><ChevronLeft className="mr-1.5 size-4" />Voltar</Button>}{step < 3 ? <Button disabled={step === 1 ? !stepOneReady || loading : !stepTwoReady || loading} onClick={() => setStep((step + 1) as 2 | 3)} className="min-h-11 flex-[1.4] bg-white font-bold text-zinc-950">Próximo<ChevronRight className="ml-1.5 size-4" /></Button> : <Button disabled={!selectedSlot || !name.trim() || !phone.trim() || !email.trim() || !birthDate || !validBirthDate(birthDate) || submitting} onClick={submit} className="min-h-11 flex-[1.4] bg-white font-bold text-zinc-950">{submitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Check className="mr-2 size-4" />}Confirmar (€{service ? Number(service.price ?? 0).toFixed(2) : "0.00"})</Button>}</>}</div></DrawerFooter>
+        <DrawerFooter className="shrink-0 border-t border-white/10 px-3 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-4">
+          <div className="flex items-center gap-2 sm:justify-between sm:gap-3">
+            {error ? (
+              <>
+                <DrawerClose asChild><Button variant="outline" className="min-h-11 flex-1">Fechar</Button></DrawerClose>
+                <Button className="min-h-11 flex-1" onClick={() => { setError(""); setStep(1); }}>Tentar de novo</Button>
+              </>
+            ) : step === 4 ? (
+              <Button onClick={onClose} className="min-h-11 w-full bg-white font-bold text-zinc-950">Concluir</Button>
+            ) : (
+              <>
+                {step === 1 ? <DrawerClose asChild><Button variant="ghost" className="min-h-11 flex-1 sm:flex-none">Cancelar</Button></DrawerClose> : <Button variant="outline" onClick={() => setStep((step - 1) as 1 | 2 | 3)} className="min-h-11 flex-1 sm:flex-none"><ChevronLeft className="mr-1.5 size-4" />Voltar</Button>}
+                {step < 3 ? (
+                  <Button disabled={step === 1 ? !stepOneReady || loading : !stepTwoReady || loading} onClick={() => setStep((step + 1) as 2 | 3)} className="min-h-11 flex-[1.4] bg-white font-bold text-zinc-950">Próximo<ChevronRight className="ml-1.5 size-4" /></Button>
+                ) : (
+                  <Button disabled={!selectedSlot || !name.trim() || !phone.trim() || !email.trim() || !birthDate || !validBirthDate(birthDate) || submitting} onClick={submit} className="min-h-11 flex-[1.4] bg-white font-bold text-zinc-950">{submitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Check className="mr-2 size-4" />}Confirmar (€{service ? Number(service.price ?? 0).toFixed(2) : "0.00"})</Button>
+                )}
+              </>
+            )}
+          </div>
+        </DrawerFooter>
       </DrawerContent>
     </Drawer>
   );
