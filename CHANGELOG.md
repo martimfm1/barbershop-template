@@ -1,6 +1,25 @@
 # Changelog
 
-## Unreleased — 2026-08-14
+## Unreleased — 2026-08-15
+
+### Customer Booking Portal — production hardening
+
+- O acesso a `/my-bookings` continua sem exigir conta: o cliente confirma o email através de um código de utilização única.
+- Pedidos de códigos são limitados por email + IP através do rate limiter distribuído existente.
+- As tentativas de confirmação são limitadas por email + IP e o consumo do código passou a ser atómico na base de dados, evitando corridas entre tentativas simultâneas.
+- Códigos continuam armazenados apenas como hash e expiram automaticamente.
+- A sessão do portal usa token aleatório armazenado como hash e cookie `httpOnly`.
+- A listagem de marcações usa comparação exata do email normalizado em vez de `ILIKE`, evitando que caracteres wildcard possam expandir a consulta.
+- A listagem continua isolada do restante SaaS: uma sessão do portal só pode consultar marcações associadas ao email verificado.
+- Cancelamentos validam estado, janela mínima configurada pela barbearia e identidade da marcação; alterações concorrentes devolvem `409` em vez de aparentarem sucesso.
+- Reagendamentos passam a validar novamente server-side o estado, janela mínima, dia de folga, horário de funcionamento, pausa, `schedule_blocks`, duração do serviço e conflitos existentes.
+- Conflitos de corrida de atualização continuam a ser tratados como conflito de disponibilidade.
+- Adicionado endpoint de disponibilidade para o reagendamento, permitindo mostrar apenas horários realmente elegíveis no portal.
+- A disponibilidade do reagendamento considera o barbeiro atualmente associado à marcação.
+- A UI deixou de usar `prompt()` para reagendamento e passou a usar calendário + grelha de horários responsiva.
+- A UI mobile do portal apresenta estados de carregamento, estados vazios, bloqueios, dias de folga e mensagens de erro de forma contextual.
+- O portal mostra claramente que o mesmo email pode ser usado em várias reservas e agrega essas marcações num único acesso.
+- O histórico mantém marcações concluídas/canceladas sem permitir ações indevidas sobre elas.
 
 ### Billing — tenant-scoped entitlements
 
@@ -37,4 +56,4 @@
 
 - Adicionada migration `20260814235000_barbershop_billing_entitlements_and_team_permissions.sql` para migrar entitlements para o tenant e preencher permissões existentes.
 - Harmonizada `20260904000000_team_barber_professional_sync.sql` para não reintroduzir lógica de plano por utilizador.
-
+- Adicionada migration `20260815003000_harden_customer_booking_portal.sql` para tornar a verificação do código do portal atómica.
