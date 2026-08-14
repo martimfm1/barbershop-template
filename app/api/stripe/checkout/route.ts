@@ -11,6 +11,7 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    await BillingService.assertBillingOwner(user.id);
 
     const body = await readJsonObject(request);
     if (typeof body.priceId !== "string" || body.priceId.length > 255) {
