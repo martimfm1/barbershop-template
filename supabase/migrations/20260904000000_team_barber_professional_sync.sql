@@ -143,6 +143,10 @@ declare
     'team', false, 'messages', false, 'marketing', false, 'loyalty', false,
     'automations', false, 'analytics', false, 'qr', false, 'settings', false, 'billing', false
   );
+  v_plan text := 'free';
+  v_limit integer := 1;
+  v_active_count integer := 0;
+  v_existing_professional boolean := false;
 begin
   if v_user is null then raise exception 'not_authenticated' using errcode = '42501'; end if;
   if nullif(trim(p_code), '') is null then raise exception 'invalid_code' using errcode = '22023'; end if;
@@ -154,6 +158,24 @@ begin
   order by created_at desc limit 1 for update;
 
   if not found then raise exception 'invalid_or_expired_code' using errcode = '22023'; end if;
+
+  select exists (
+    select 1 from public.professionals
+    where barbershop_id = v_invite.barbershop_id
+      and user_id = v_user
+  ) into v_existing_professional;
+
+  if not v_existing_professional then
+    perform pg_advisory_xact_lock(hashtextextended(v_invite.barbershop_id::text, 0));
+    select coalesce(public.get_effective_billing_plan_for_barbershop(v_invite.barbershop_id), 'free') into v_plan;
+    v_limit := case v_plan when 'free' then 1 when 'pro' then 5 when 'enterprise' then 2147483647 else 1 end;
+    select count(*)::integer into v_active_count
+    from public.professionals
+    where barbershop_id = v_invite.barbershop_id and active = true;
+    if v_active_count >= v_limit then
+      raise exception using errcode = 'P0001', message = 'PROFESSIONAL_LIMIT_REACHED';
+    end if;
+  end if;
 
   perform set_config('app.silentra_invite_join', 'true', true);
   update public.users set barbershop_id = v_invite.barbershop_id, role = 'barber' where id = v_user;
