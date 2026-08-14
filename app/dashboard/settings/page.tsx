@@ -393,9 +393,9 @@ export default function SettingsPage() {
           )}
         </header>
 
-        <div className="mt-4 lg:grid lg:items-start lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
-          <aside className="hidden self-start lg:block">
-            <div className="sticky top-6 space-y-3">
+        <div className="mt-4 lg:grid lg:items-start lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8 lg:h-[calc(100vh-8rem)]">
+          <aside className="hidden self-start lg:block lg:sticky lg:top-0 lg:max-h-full lg:overflow-y-auto">
+            <div className="space-y-3">
               <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-2">
                 <div className="mb-2 px-3 pb-2 pt-2 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-600">
                   Organização
@@ -453,7 +453,7 @@ export default function SettingsPage() {
             </div>
           </aside>
 
-          <div className="min-w-0">
+          <div className="min-w-0 lg:max-h-full lg:overflow-y-auto lg:pr-2">
             <div className="mb-4 flex gap-2 lg:hidden">
               <div className="relative min-w-0 flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-600" />
@@ -903,10 +903,10 @@ export default function SettingsPage() {
                   <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
                     <div className="min-w-0">
                       <p className="text-sm font-medium">
-                        Aparecer no diretório
+                        Mostrar ao público
                       </p>
-                      <p className="mt-1 text-xs leading-5 text-zinc-600">
-                        Disponível apenas nos planos compatíveis.
+                      <p className="mt-1 text-xs leading-5 text-zinc-600 pr-12">
+                        Disponível apenas nos planos Pro/Enterprise.
                       </p>
                     </div>
                     <Switch
