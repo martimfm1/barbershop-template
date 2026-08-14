@@ -48,16 +48,29 @@ async function getAuthorizedAppointment(appointmentId: string) {
       duration_minutes,
       status,
       manual_email,
+      client_id,
       professional_id,
       service_id,
       barbershops ( opening_time, closing_time, lunch_start, lunch_end, closed_days, time_limit_cancellation_hours ),
       services ( name, duration )
     `)
     .eq("id", appointmentId)
-    .eq("manual_email", session.email)
     .maybeSingle();
 
   if (error || !appointment) return { session, appointment: null, admin };
+
+  let ownsAppointment = appointment.manual_email?.trim().toLowerCase() === session.email;
+  if (!ownsAppointment && appointment.client_id) {
+    const { data: client, error: clientError } = await admin
+      .from("users")
+      .select("email")
+      .eq("id", appointment.client_id)
+      .maybeSingle();
+    if (clientError) throw new Error("CUSTOMER_LOOKUP_FAILED");
+    ownsAppointment = client?.email?.trim().toLowerCase() === session.email;
+  }
+
+  if (!ownsAppointment) return { session, appointment: null, admin };
   return { session, appointment, admin };
 }
 
@@ -93,20 +106,25 @@ async function getAvailability(admin: ReturnType<typeof createAdminClient>, appo
     .from("appointments")
     .select("id, date_hour, duration_minutes, professional_id")
     .eq("barbershop_id", appointment.barbershop_id)
-    .eq("professional_id", appointment.professional_id)
     .gte("date_hour", `${date}T00:00:00`)
     .lte("date_hour", `${date}T23:59:59`)
     .in("status", ["pending", "scheduled"])
     .neq("id", appointment.id);
-  if (appointmentsError) throw new Error("APPOINTMENT_LOOKUP_FAILED");
+  if (appointmentsError) {
+    console.error("[CUSTOMER_PORTAL_AVAILABILITY_APPOINTMENTS_ERROR]", appointmentsError);
+    throw new Error("APPOINTMENT_LOOKUP_FAILED");
+  }
 
-  const occupied = (existingAppointments ?? []).map((item: any) => {
-    const raw = String(item.date_hour || "");
-    const parts = raw.includes("T") ? raw.split("T") : raw.split(" ");
-    return parts[0] === date && parts[1]
-      ? { start: timeToMinutes(parts[1]), end: timeToMinutes(parts[1]) + Math.min(Math.max(Number(item.duration_minutes ?? 30), 1), 1440) }
-      : null;
-  }).filter(Boolean) as Array<{ start: number; end: number }>;
+  const occupied = (existingAppointments ?? [])
+    .filter((item: any) => item.professional_id === appointment.professional_id)
+    .map((item: any) => {
+      const raw = String(item.date_hour || "");
+      const parts = raw.includes("T") ? raw.split("T") : raw.split(" ");
+      return parts[0] === date && parts[1]
+        ? { start: timeToMinutes(parts[1]), end: timeToMinutes(parts[1]) + Math.min(Math.max(Number(item.duration_minutes ?? 30), 1), 1440) }
+        : null;
+    })
+    .filter(Boolean) as Array<{ start: number; end: number }>;
 
   const blockedIntervals = visibleBlocks.map((block: any) => ({
     startTime: block.start_time ? String(block.start_time).slice(0, 5) : null,
@@ -185,7 +203,6 @@ export async function DELETE(
       .from("appointments")
       .update({ status: "cancelled", cancelled_at: new Date().toISOString(), cancellation_reason: "Cancelamento pelo cliente através do portal" })
       .eq("id", appointment.id)
-      .eq("manual_email", session.email)
       .in("status", ["pending", "scheduled"])
       .select("id")
       .maybeSingle();
@@ -234,7 +251,9 @@ export async function PATCH(
 
     const availability = await getAvailability(admin, appointment, date);
     if (!availability.availableSlots.includes(slot)) {
-      const block = availability.blockedIntervals.find((item) => item.startTime && item.endTime && overlaps(timeToMinutes(slot), timeToMinutes(slot) + Math.max(Number(appointment.duration_minutes ?? 30), 1), timeToMinutes(item.startTime), timeToMinutes(item.endTime)));
+      const slotStart = timeToMinutes(slot);
+      const slotEnd = slotStart + Math.min(Math.max(Number(appointment.duration_minutes ?? 30), 1), 1440);
+      const block = availability.blockedIntervals.find((item) => item.startTime && item.endTime && overlaps(slotStart, slotEnd, timeToMinutes(item.startTime), timeToMinutes(item.endTime)));
       if (block) return jsonError(`${block.reason} (${block.startTime}–${block.endTime})`, 409);
       if (availability.closedDay) return jsonError("Este dia é de folga da barbearia.", 409);
       return jsonError("Este horário já não está disponível.", 409);
@@ -245,7 +264,6 @@ export async function PATCH(
       .from("appointments")
       .update({ date_hour: newDateHour })
       .eq("id", appointment.id)
-      .eq("manual_email", session.email)
       .in("status", ["pending", "scheduled"])
       .select("id, date_hour")
       .maybeSingle();
