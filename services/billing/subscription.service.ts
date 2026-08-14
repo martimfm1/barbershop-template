@@ -26,13 +26,36 @@ export class SubscriptionService {
   }
 
   static async getForBarbershop(barbershopId: string): Promise<SubscriptionRecord | null> {
-    const { data, error } = await createAdminClient()
+    const admin = createAdminClient();
+    const { data, error } = await admin
       .from("subscriptions")
       .select("*")
       .eq("barbershop_id", barbershopId)
       .maybeSingle();
     if (error) throw new BillingError("Could not load barbershop subscription.", "DB_READ_FAILED", { barbershopId });
-    return data as SubscriptionRecord | null;
+    if (data) return data as SubscriptionRecord;
+
+    // Compatibility for an existing subscription created before the tenant
+    // column was introduced. Link the owner's row lazily and permanently.
+    const { data: owner } = await admin
+      .from("users")
+      .select("id")
+      .eq("barbershop_id", barbershopId)
+      .eq("role", "owner")
+      .maybeSingle();
+    if (!owner?.id) return null;
+
+    const legacy = await this.getForUser(owner.id);
+    if (!legacy || legacy.barbershop_id) return legacy;
+
+    const { data: linked, error: linkError } = await admin
+      .from("subscriptions")
+      .update({ barbershop_id: barbershopId, updated_at: new Date().toISOString() })
+      .eq("id", legacy.id)
+      .select("*")
+      .maybeSingle();
+    if (linkError) throw new BillingError("Could not link subscription to barbershop.", "DB_WRITE_FAILED", { barbershopId, userId: owner.id });
+    return (linked ?? legacy) as SubscriptionRecord;
   }
 
   static async getBarbershopIdForUser(userId: string): Promise<string | null> {
