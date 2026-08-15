@@ -5,70 +5,97 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const PLANS = new Set(["free", "pro", "enterprise"]);
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function json(body: unknown, status = 200) {
+  return NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
+}
 
 export async function PATCH(request: Request) {
   try {
     const { admin, user } = await requirePlatformAdmin();
     const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
     const barbershopId = typeof body?.barbershopId === "string" ? body.barbershopId.trim() : "";
-    const plan = typeof body?.plan === "string" ? body.plan.toLowerCase() : "";
+    const plan = typeof body?.plan === "string" ? body.plan.trim().toLowerCase() : "";
     const reason = typeof body?.reason === "string" ? body.reason.trim().slice(0, 500) : null;
-    const expiresAt = body?.expiresAt === null || body?.expiresAt === "" ? null : typeof body?.expiresAt === "string" ? body.expiresAt : null;
+    const expiresAt = body?.expiresAt === null || body?.expiresAt === ""
+      ? null
+      : typeof body?.expiresAt === "string" ? body.expiresAt : null;
 
-    if (!barbershopId || !PLANS.has(plan)) return NextResponse.json({ error: "Barbearia e plano válidos são obrigatórios." }, { status: 400 });
-    if (expiresAt && Number.isNaN(Date.parse(expiresAt))) return NextResponse.json({ error: "A data de expiração é inválida." }, { status: 400 });
+    if (!UUID_RE.test(barbershopId) || !PLANS.has(plan)) {
+      return json({ ok: false, error: "Barbearia e plano válidos são obrigatórios." }, 400);
+    }
+    if (expiresAt && Number.isNaN(Date.parse(expiresAt))) {
+      return json({ ok: false, error: "A data de expiração é inválida." }, 400);
+    }
+    if (expiresAt && new Date(expiresAt).getTime() <= Date.now()) {
+      return json({ ok: false, error: "A data de expiração tem de ser futura." }, 400);
+    }
 
-    const { data: shop, error: shopError } = await admin.from("barbershops").select("id,name").eq("id", barbershopId).maybeSingle();
+    const { data: shop, error: shopError } = await admin
+      .from("barbershops")
+      .select("id,name")
+      .eq("id", barbershopId)
+      .maybeSingle();
     if (shopError) throw shopError;
-    if (!shop) return NextResponse.json({ error: "Barbearia não encontrada." }, { status: 404 });
+    if (!shop) return json({ ok: false, error: "Barbearia não encontrada." }, 404);
 
-    const { data, error } = await admin.rpc("set_barbershop_plan_assignment", {
+    const { data: assignment, error: assignmentError } = await admin.rpc("set_barbershop_plan_assignment", {
       p_barbershop_id: barbershopId,
       p_plan: plan,
       p_reason: reason,
       p_assigned_by: user.id,
       p_expires_at: expiresAt,
     });
-    if (error) throw error;
+    if (assignmentError) throw assignmentError;
 
-    await admin.from("audit_logs").insert({
+    const { error: auditError } = await admin.from("audit_logs").insert({
       action: "platform.plan_assignment.updated",
       entity_type: "barbershop",
       entity_id: barbershopId,
       metadata: { plan, reason, expires_at: expiresAt, shop_name: shop.name },
       created_at: new Date().toISOString(),
     });
+    if (auditError) console.error("[SILENTRA_ADMIN_PLAN_AUDIT]", auditError);
 
-    return NextResponse.json({ ok: true, assignment: data });
+    return json({ ok: true, assignment });
   } catch (error) {
-    if (error instanceof Error && error.name === "PlatformAdminError") return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (error instanceof Error && error.name === "PlatformAdminError") return json({ ok: false, error: "Not found" }, 404);
     console.error("[SILENTRA_ADMIN_PLAN_PATCH]", error);
-    return NextResponse.json({ error: "Não foi possível atribuir o plano." }, { status: 500 });
+    return json({ ok: false, error: "Não foi possível atribuir o plano." }, 500);
   }
 }
 
 export async function DELETE(request: Request) {
   try {
     const { admin, user } = await requirePlatformAdmin();
-    const url = new URL(request.url);
-    const barbershopId = url.searchParams.get("barbershopId")?.trim() || "";
-    if (!barbershopId) return NextResponse.json({ error: "barbershopId é obrigatório." }, { status: 400 });
+    const barbershopId = new URL(request.url).searchParams.get("barbershopId")?.trim() || "";
+    if (!UUID_RE.test(barbershopId)) return json({ ok: false, error: "barbershopId inválido." }, 400);
+
+    const { data: shop, error: shopError } = await admin
+      .from("barbershops")
+      .select("id,name")
+      .eq("id", barbershopId)
+      .maybeSingle();
+    if (shopError) throw shopError;
+    if (!shop) return json({ ok: false, error: "Barbearia não encontrada." }, 404);
 
     const { error } = await admin.rpc("clear_barbershop_plan_assignment", { p_barbershop_id: barbershopId });
     if (error) throw error;
 
-    await admin.from("audit_logs").insert({
+    const { error: auditError } = await admin.from("audit_logs").insert({
       action: "platform.plan_assignment.cleared",
       entity_type: "barbershop",
       entity_id: barbershopId,
-      metadata: { actor_user_id: user.id },
+      metadata: { actor_user_id: user.id, shop_name: shop.name },
       created_at: new Date().toISOString(),
     });
+    if (auditError) console.error("[SILENTRA_ADMIN_PLAN_AUDIT]", auditError);
 
-    return NextResponse.json({ ok: true });
+    return json({ ok: true });
   } catch (error) {
-    if (error instanceof Error && error.name === "PlatformAdminError") return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (error instanceof Error && error.name === "PlatformAdminError") return json({ ok: false, error: "Not found" }, 404);
     console.error("[SILENTRA_ADMIN_PLAN_DELETE]", error);
-    return NextResponse.json({ error: "Não foi possível remover a atribuição." }, { status: 500 });
+    return json({ ok: false, error: "Não foi possível remover a atribuição." }, 500);
   }
 }
