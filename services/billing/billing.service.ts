@@ -45,11 +45,31 @@ export class BillingService {
     return customer.id;
   }
 
+  /**
+   * A Pro trial is reserved for users who have never had a subscription record.
+   * This is checked server-side so an existing account cannot regain eligibility
+   * simply by being on the Free plan today.
+   */
+  static async isEligibleForProTrial(userId: string): Promise<boolean> {
+    const { data, error } = await createAdminClient()
+      .from("subscriptions")
+      .select("id")
+      .eq("user_id", userId)
+      .limit(1);
+
+    if (error) throw new BillingError("Could not verify trial eligibility.", "DB_READ_FAILED", { userId });
+    return data.length === 0;
+  }
+
   static async createCheckoutSession(input: CreateCheckoutInput): Promise<string> {
     const requestedPlan = planForPrice(input.priceId);
     if (!requestedPlan) throw new BillingError("The requested price is not available.", "INVALID_PRICE", { priceId: input.priceId });
     const existing = await SubscriptionService.getActiveForUser(input.userId);
     if (existing) throw new BillingError("An active paid subscription already exists; change the plan instead of creating another subscription.", "SUBSCRIPTION_NOT_ACTIVE", { userId: input.userId });
+
+    const isEligibleForProTrial = requestedPlan === PLANS.PRO
+      ? await this.isEligibleForProTrial(input.userId)
+      : false;
 
     const stripe = getStripeClient();
     let promotionCodeId: string | undefined;
@@ -77,12 +97,17 @@ export class BillingService {
       client_reference_id: input.userId,
       metadata: {
         user_id: input.userId,
-        offer: requestedPlan === PLANS.PRO ? "pro_trial" : "standard",
+        offer: isEligibleForProTrial ? "pro_trial" : requestedPlan === PLANS.PRO ? "pro_standard" : "standard",
+        trial_eligible: isEligibleForProTrial ? "true" : "false",
         ...(promotionCodeId ? { promotion_code_id: promotionCodeId } : {}),
       },
       subscription_data: {
-        metadata: { user_id: input.userId, ...(promotionCodeId ? { promotion_code_id: promotionCodeId } : {}) },
-        ...(requestedPlan === PLANS.PRO ? { trial_period_days: TRIAL_PERIOD_DAYS } : {}),
+        metadata: {
+          user_id: input.userId,
+          trial_eligible: isEligibleForProTrial ? "true" : "false",
+          ...(promotionCodeId ? { promotion_code_id: promotionCodeId } : {}),
+        },
+        ...(isEligibleForProTrial ? { trial_period_days: TRIAL_PERIOD_DAYS } : {}),
       },
       ...(promotionCodeId
         ? { discounts: [{ promotion_code: promotionCodeId }], allow_promotion_codes: false }
