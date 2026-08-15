@@ -10,6 +10,10 @@
 - Tornada `/dashboard/automations` editável: regras passam a suportar edição, ativação/desativação, remoção e uma ação real de email ou SMS configurada por regra.
 - Adicionado worker diário `/api/cron/automations` para executar regras `client_inactive`, guardar `automation_runs` e evitar duplicações por cliente/dia.
 - Adicionado dispatcher server-side `dispatchAppointmentAutomations()` para processar regras orientadas a eventos de booking com idempotência por appointment/regra e envio de email via Brevo.
+- Ligado o dispatcher a `booking_created` na criação pública de bookings e a confirmações manuais da dashboard.
+- Ligado o dispatcher a `booking_completed` quando um atendimento é concluído.
+- Ligado o dispatcher a `booking_cancelled` quando o cliente cancela pelo customer portal.
+- Os dispatches de automação são assíncronos e nunca bloqueiam o sucesso da operação principal.
 - Endurecida a API de campanhas com validação de datas, atualização/cancelamento/eliminação e respostas de erro com logging server-side.
 - Corrigido o caminho de resolução de billing tenant-scoped para não depender da inexistente coluna `subscriptions.barbershop_id`; a subscrição é resolvida através do owner da barbearia.
 - O plano administrativo da barbearia passa a ser utilizado pelo mesmo resolver de entitlements usado pelos módulos de campanhas, automações, fidelização e analytics.
