@@ -2,6 +2,21 @@
 
 ## Unreleased — 2026-08-15
 
+### Fidelização, automações, campanhas e analytics — production hardening
+
+- Transformada `/dashboard/loyalty` numa área de configuração real: ativação do programa, pontos por euro, pontos de boas-vindas e referências.
+- Adicionada gestão tenant-scoped de recompensas com criação, edição e eliminação através de APIs server-side.
+- Adicionadas validações de custos, tipos e valores de recompensa para impedir configurações inválidas.
+- Tornada `/dashboard/automations` editável: regras passam a suportar edição, ativação/desativação, remoção e uma ação real de email ou SMS configurada por regra.
+- Adicionado worker diário `/api/cron/automations` para executar regras `client_inactive`, guardar `automation_runs` e evitar duplicações por cliente/dia.
+- Agendado o worker de automações no Vercel.
+- Endurecida a API de campanhas com validação de datas, atualização/cancelamento/eliminação e respostas de erro com logging server-side.
+- Corrigido o caminho de resolução de billing tenant-scoped para não depender da inexistente coluna `subscriptions.barbershop_id`; a subscrição é resolvida através do owner da barbearia.
+- O plano administrativo da barbearia passa a ser utilizado pelo mesmo resolver de entitlements usado pelos módulos de campanhas, automações, fidelização e analytics.
+- Adicionado `/api/analytics/export` para exportar marcações e clientes em CSV; POS fica disponível no Enterprise.
+- Expandida a página `/dashboard/analytics` com secção de downloads operacionais para contabilidade, CRM e análise externa.
+- Ajustado o switch de `/dashboard/mensagens/birthdays` para um controlo responsivo, acessível e isolado visualmente de estilos globais.
+
 ### Internal administration — API reliability fixes
 
 - Corrigido o endpoint `/api/silentra-admin/shop`: removidas colunas opcionais/instáveis do `select` que podiam provocar `PGRST204` e bloquear todo o snapshot do tenant.
@@ -37,18 +52,3 @@
 - Adicionado endpoint interno de snapshot `/api/silentra-admin/shop`, protegido server-side e sem exposição de secrets.
 
 ### Internal administration — route compatibility fix
-
-- Corrigido o routing do Control Center interno: pastas App Router com prefixo `_` são tratadas pelo Next.js como private folders e não são expostas como rotas HTTP.
-- Adicionada uma rota pública não indexável `/silentra-admin`, mantendo a autorização exclusiva do platform admin no servidor.
-- Mantida a compatibilidade com `/_silentra-admin` através de rewrite interno para a rota funcional.
-- Adicionados endpoints HTTP funcionais em `/api/silentra-admin/*` e rewrite de compatibilidade para `/api/_silentra-admin/*`.
-- A autorização continua a ser validada em cada request por `requirePlatformAdmin()` e continua baseada em `SILENTRA_PLATFORM_ADMIN_USER_ID` e/ou `SILENTRA_PLATFORM_ADMIN_EMAIL`.
-
-### Production hardening — booking concurrency and Stripe webhook claims
-
-- A proteção final de overlap de appointments passa a tratar também marcações sem `professional_id` como uma lane de disponibilidade por barbearia.
-- A constraint PostgreSQL continua a ser a autoridade final para conflitos concorrentes; a API converte conflitos de overlap em HTTP `409`.
-- Adicionado estado de claim atómico para webhooks Stripe com estados `processing`, `processed` e `failed`.
-- Webhooks concorrentes para o mesmo `event_id` deixam de poder processar o evento simultaneamente.
-- Claims presos recuperam automaticamente após um lease curto, permitindo retry depois de um crash do worker.
-- Falhas de processamento ficam registadas no ledger para observabilidade e retry.
