@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckoutProvider, BillingAddressElement, PaymentElement, TaxIdElement, useCheckout } from "@stripe/react-stripe-js/checkout";
+import { CheckoutElementsProvider, BillingAddressElement, PaymentElement, TaxIdElement, useCheckout } from "@stripe/react-stripe-js/checkout";
 import { loadStripe } from "@stripe/stripe-js";
 import { ArrowLeft, Check, LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
 
@@ -132,7 +132,7 @@ export function CustomCheckout({ priceId, plan }: { priceId: string; plan: keyof
   const copy = PLAN_COPY[plan];
 
   return (
-    <CheckoutProvider stripe={stripePromise} options={{ clientSecret, appearance: { theme: "night", variables: { colorPrimary: "#34d399", colorBackground: "#09090b", colorText: "#f4f4f5", colorTextSecondary: "#a1a1aa", colorDanger: "#f87171", borderRadius: "12px", fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" } } }}>
+    <CheckoutElementsProvider stripe={stripePromise} options={{ clientSecret, elementsOptions: { appearance: { theme: "night", variables: { colorPrimary: "#34d399", colorBackground: "#09090b", colorText: "#f4f4f5", colorTextSecondary: "#a1a1aa", colorDanger: "#f87171", borderRadius: "12px", fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" } } } }}>
       <div className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-[0.78fr_1.22fr]">
         <aside className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5 shadow-[0_24px_90px_rgba(0,0,0,0.28)] sm:p-7 lg:sticky lg:top-6 lg:h-fit">
           <div className="flex size-10 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-200"><Sparkles className="size-4" /></div>
@@ -154,6 +154,6 @@ export function CustomCheckout({ priceId, plan }: { priceId: string; plan: keyof
           <CheckoutForm plan={plan} />
         </section>
       </div>
-    </CheckoutProvider>
+    </CheckoutElementsProvider>
   );
 }
