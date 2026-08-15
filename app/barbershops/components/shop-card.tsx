@@ -30,6 +30,7 @@ const formatDisplayPrice = (rawPrice: unknown): string => {
 
 export const ShopCard: React.FC<ShopCardProps> = ({ shop: rawShop, onNavigate, onOpenBooking }) => {
   const shop = rawShop as unknown as ExtendedBarbershopDetails | undefined;
+  const shopAsMarket = rawShop;
   const [avatarError, setAvatarError] = useState(false);
   const [bannerError, setBannerError] = useState(false);
   const barbershopId = shop?.barbershop_id || null;
@@ -51,7 +52,6 @@ export const ShopCard: React.FC<ShopCardProps> = ({ shop: rawShop, onNavigate, o
           {bannerUrl && !bannerError ? <Image src={bannerUrl} alt={`Banner ${shop.name || ""}`} fill sizes="(max-width: 640px) 100vw, 50vw" unoptimized onError={() => setBannerError(true)} className="object-cover opacity-50 transition-transform duration-500 sm:group-hover:scale-105" /> : <div className="h-full w-full bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900" />}
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
         </div>
-
         <div className="relative p-3.5 pb-4 sm:p-5 sm:pt-0">
           <div className="-mt-7 mb-3 flex items-end justify-between gap-2">
             <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-zinc-950 bg-zinc-900 text-zinc-300 shadow-xl">
@@ -63,7 +63,6 @@ export const ShopCard: React.FC<ShopCardProps> = ({ shop: rawShop, onNavigate, o
               <span className="text-[10px] font-normal text-zinc-500">({totalReviews})</span>
             </div>
           </div>
-
           <div className="space-y-2.5">
             <h3 className="truncate text-base font-extrabold text-white transition-colors sm:text-lg sm:group-hover:text-zinc-200">{shop.name}</h3>
             <div className="space-y-1.5 text-xs text-zinc-400">
@@ -75,7 +74,6 @@ export const ShopCard: React.FC<ShopCardProps> = ({ shop: rawShop, onNavigate, o
           </div>
         </div>
       </button>
-
       <div className="mt-auto grid grid-cols-[1fr_auto] items-end gap-3 border-t border-white/10 bg-zinc-950/50 p-3.5 sm:p-5">
         <div className="min-w-0"><span className="block text-[10px] font-medium uppercase tracking-wider text-zinc-500">A partir de</span><span className="text-base font-extrabold text-white sm:text-lg">{displayPrice}</span></div>
         <div className="flex shrink-0 gap-1.5 sm:gap-2">
