@@ -17,11 +17,15 @@ export async function POST(request: Request) {
     if (typeof body.priceId !== "string" || body.priceId.length > 255) {
       throw new BillingError("A valid price ID is required.", "INVALID_PRICE");
     }
+    if (body.promotionCode !== undefined && body.promotionCode !== null && (typeof body.promotionCode !== "string" || body.promotionCode.length > 100)) {
+      throw new BillingError("Código promocional inválido.", "INVALID_PRICE");
+    }
 
     const url = await BillingService.createCheckoutSession({
       userId: user.id,
       email: user.email,
       priceId: body.priceId,
+      promotionCode: typeof body.promotionCode === "string" ? body.promotionCode : null,
       successUrl: safeReturnUrl(body.successUrl, "/dashboard/billing?checkout=success"),
       cancelUrl: safeReturnUrl(body.cancelUrl, "/pricing"),
     });
