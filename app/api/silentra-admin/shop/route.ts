@@ -5,57 +5,100 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const ACTIVE_STATUSES = ["pending", "scheduled"] as const;
 
 export async function GET(request: Request) {
   try {
     const { admin } = await requirePlatformAdmin();
     const barbershopId = new URL(request.url).searchParams.get("barbershopId")?.trim() ?? "";
     if (!UUID_RE.test(barbershopId)) {
-      return NextResponse.json({ error: "barbershopId inválido." }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "barbershopId inválido." }, { status: 400, headers: { "Cache-Control": "no-store" } });
     }
 
-    const [{ data: shop, error: shopError }, { data: owner, error: ownerError }, { count: memberCount, error: memberError }, { count: todayCount, error: todayError }, { count: upcomingCount, error: upcomingError }, { count: completedCount, error: completedError }, { count: cancelledCount, error: cancelledError }, { data: assignment, error: assignmentError }, { data: subscription, error: subscriptionError }] = await Promise.all([
-      admin.from("barbershops").select("id,name,slug,created_at,address,phone,email,avatar_url,opening_hours,blocked_dates").eq("id", barbershopId).maybeSingle(),
-      admin.from("users").select("id,email,name_complete,role").eq("barbershop_id", barbershopId).eq("role", "owner").maybeSingle(),
+    const now = new Date();
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTomorrow = new Date(startOfToday);
+    startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+
+    const [shopResult, ownerResult, membersResult, todayResult, upcomingResult, completedResult, cancelledResult, assignmentResult, subscriptionsResult] = await Promise.all([
+      // Keep this query deliberately to the stable columns used by the admin UI.
+      // Some shop-specific optional columns have differed across migrations.
+      admin.from("barbershops").select("id,name,slug,created_at,address,phone,email").eq("id", barbershopId).maybeSingle(),
+      admin.from("users").select("id,email,name_complete,role").eq("barbershop_id", barbershopId).eq("role", "owner").order("created_at", { ascending: true }).limit(1).maybeSingle(),
       admin.from("users").select("id", { count: "exact", head: true }).eq("barbershop_id", barbershopId),
-      admin.from("appointments").select("id", { count: "exact", head: true }).eq("barbershop_id", barbershopId).gte("date_hour", new Date(new Date().setHours(0, 0, 0, 0)).toISOString()).lt("date_hour", new Date(new Date().setHours(24, 0, 0, 0)).toISOString()),
-      admin.from("appointments").select("id", { count: "exact", head: true }).eq("barbershop_id", barbershopId).in("status", ["pending", "scheduled"]).gte("date_hour", new Date().toISOString()),
+      admin.from("appointments").select("id", { count: "exact", head: true }).eq("barbershop_id", barbershopId).gte("date_hour", startOfToday.toISOString()).lt("date_hour", startOfTomorrow.toISOString()),
+      admin.from("appointments").select("id", { count: "exact", head: true }).eq("barbershop_id", barbershopId).in("status", ACTIVE_STATUSES).gte("date_hour", now.toISOString()),
       admin.from("appointments").select("id", { count: "exact", head: true }).eq("barbershop_id", barbershopId).eq("status", "completed"),
       admin.from("appointments").select("id", { count: "exact", head: true }).eq("barbershop_id", barbershopId).eq("status", "cancelled"),
       admin.from("barbershop_plan_assignments").select("plan,reason,assigned_at,expires_at,assigned_by").eq("barbershop_id", barbershopId).maybeSingle(),
-      admin.from("subscriptions").select("plan,plan_override,status,current_period_end,cancel_at_period_end,stripe_price_id").eq("barbershop_id", barbershopId).maybeSingle(),
+      admin.from("subscriptions").select("plan,plan_override,status,current_period_end,cancel_at_period_end,stripe_price_id,updated_at,created_at").eq("barbershop_id", barbershopId).order("updated_at", { ascending: false }).order("created_at", { ascending: false }).limit(1),
     ]);
 
-    for (const error of [shopError, ownerError, memberError, todayError, upcomingError, completedError, cancelledError, assignmentError, subscriptionError]) {
-      if (error) throw error;
+    const results = [
+      shopResult,
+      ownerResult,
+      membersResult,
+      todayResult,
+      upcomingResult,
+      completedResult,
+      cancelledResult,
+      assignmentResult,
+      subscriptionsResult,
+    ];
+    for (const result of results) {
+      if (result.error) throw result.error;
     }
-    if (!shop) return NextResponse.json({ error: "Barbearia não encontrada." }, { status: 404 });
 
-    const effectivePlan = assignment && (!assignment.expires_at || new Date(assignment.expires_at).getTime() > Date.now())
-      ? assignment.plan
-      : subscription?.plan_override ?? (["pro", "enterprise"].includes(subscription?.plan ?? "") && ["active", "trialing"].includes(subscription?.status ?? "") ? subscription?.plan : "free");
+    const shop = shopResult.data;
+    if (!shop) {
+      return NextResponse.json({ ok: false, error: "Barbearia não encontrada." }, { status: 404, headers: { "Cache-Control": "no-store" } });
+    }
+
+    const subscription = subscriptionsResult.data?.[0] ?? null;
+    const assignment = assignmentResult.data;
+    const assignmentActive = Boolean(assignment && (!assignment.expires_at || new Date(assignment.expires_at).getTime() > now.getTime()));
+    const subscriptionOverride = subscription?.plan_override && ["free", "pro", "enterprise"].includes(subscription.plan_override)
+      ? subscription.plan_override
+      : null;
+    const stripePlan = subscription?.plan && ["pro", "enterprise"].includes(subscription.plan) && ["active", "trialing"].includes(subscription.status)
+      ? subscription.plan
+      : null;
+    const effectivePlan = assignmentActive ? assignment!.plan : subscriptionOverride ?? stripePlan ?? "free";
+    const source = assignmentActive ? "admin" : subscriptionOverride ? "subscription_override" : stripePlan ? "stripe" : "free";
 
     return NextResponse.json({
       ok: true,
       shop,
-      owner: owner ?? null,
+      owner: ownerResult.data ?? null,
       plan: {
         effective: effectivePlan,
-        source: assignment && (!assignment.expires_at || new Date(assignment.expires_at).getTime() > Date.now()) ? "admin" : subscription?.plan_override ? "subscription_override" : subscription?.status ? "stripe" : "free",
-        assignment: assignment ?? null,
-        subscription: subscription ?? null,
+        source,
+        assignment: assignmentActive ? assignment : null,
+        subscription: subscription
+          ? {
+              status: subscription.status,
+              current_period_end: subscription.current_period_end,
+              cancel_at_period_end: subscription.cancel_at_period_end,
+              plan: subscription.plan,
+              plan_override: subscription.plan_override,
+              stripe_price_id: subscription.stripe_price_id,
+            }
+          : null,
       },
       metrics: {
-        members: memberCount ?? 0,
-        todayAppointments: todayCount ?? 0,
-        upcomingAppointments: upcomingCount ?? 0,
-        completedAppointments: completedCount ?? 0,
-        cancelledAppointments: cancelledCount ?? 0,
+        members: membersResult.count ?? 0,
+        todayAppointments: todayResult.count ?? 0,
+        upcomingAppointments: upcomingResult.count ?? 0,
+        completedAppointments: completedResult.count ?? 0,
+        cancelledAppointments: cancelledResult.count ?? 0,
       },
-    });
+    }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    if (error instanceof Error && error.name === "PlatformAdminError") return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (error instanceof Error && error.name === "PlatformAdminError") {
+      return NextResponse.json({ ok: false, error: "Not found" }, { status: 404, headers: { "Cache-Control": "no-store" } });
+    }
     console.error("[SILENTRA_ADMIN_SHOP]", error);
-    return NextResponse.json({ error: "Não foi possível carregar o tenant." }, { status: 500 });
+    return NextResponse.json({ ok: false, error: "Não foi possível carregar o tenant." }, { status: 500, headers: { "Cache-Control": "no-store" } });
   }
 }
