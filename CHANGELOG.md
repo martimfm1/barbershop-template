@@ -2,21 +2,26 @@
 
 ## Unreleased — 2026-08-15
 
+### Billing promotions and Pro trial
+
+- O trial de 14 dias do Barbers Pro fica disponível para todos os novos utilizadores elegíveis.
+- A elegibilidade do trial é validada server-side através do histórico de `subscriptions`; contas que já tiveram uma subscrição não recuperam o trial por regressarem ao Free.
+- A regra de trial é aplicada tanto no Checkout Session como no fluxo direto de criação de subscrição, evitando caminhos alternativos sem trial ou com trial indevido.
+- O Enterprise e restantes planos não recebem automaticamente o trial de Pro.
+- Os campos de Promotion Code passam a estar preparados para qualquer plano pago, não apenas o Pro.
+- Promotion Codes são validados diretamente na Stripe e aplicados server-side à compra; o browser nunca escolhe o ID interno do desconto.
+- O fluxo direto de criação de subscrição também aceita Promotion Codes.
+- O campo de código promocional limita a entrada a 100 caracteres e apresenta validação de erro proveniente da Stripe.
+
 ### Pro trial eligibility
 
-- O trial de 14 dias do Barbers Pro fica agora reservado a utilizadores que nunca tiveram uma subscrição registada.
-- A elegibilidade é validada server-side através do histórico de `subscriptions`, impedindo que uma conta antiga recupere o trial apenas por estar atualmente no Free.
 - A Checkout Session regista `offer` como `pro_trial` apenas para utilizadores elegíveis e `pro_standard` para contas existentes sem trial disponível.
-- O Enterprise e restantes planos não recebem este trial automaticamente.
 
 ### Stripe promotion codes
 
-- Adicionado campo de código promocional no cartão Barbers Pro antes do checkout.
-- Códigos promocionais são aceites apenas como texto fornecido pelo utilizador e limitados server-side a 100 caracteres.
-- A API de checkout valida o código diretamente na Stripe através dos Promotion Codes ativos.
-- Promotion Codes válidos são aplicados diretamente à Checkout Session; o browser não decide o desconto nem o identificador interno do Promotion Code.
+- Adicionado campo de código promocional no cartão de preços antes do checkout.
 - Quando nenhum código é fornecido, o checkout continua a disponibilizar o campo nativo de códigos promocionais da Stripe.
-- O Promotion Code utilizado é registado apenas em metadata técnica da Checkout Session/subscrição para diagnóstico, sem expor dados sensíveis.
+- O Promotion Code utilizado é registado apenas em metadata técnica da Checkout Session/subscrição para diagnóstico.
 
 ### Fidelização, automações, campanhas e analytics — production hardening
 
