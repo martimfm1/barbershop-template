@@ -9,24 +9,28 @@ export async function POST(request: Request) {
     const tenant = await requireTenantAuthorization(request, APPOINTMENT_WRITE_ROLES);
     if (!tenant.ok) {
       return NextResponse.json(
-        { error: tenant.status === 401 ? "NÃ£o autenticado." : "Sem permissÃ£o para criar marcaÃ§Ãµes." },
+        { error: tenant.status === 401 ? "Não autenticado." : "Sem permissão para criar marcações." },
         { status: tenant.status },
       );
     }
 
     const body: unknown = await request.json();
-    if (!isRecord(body)) return NextResponse.json({ error: "Pedido invÃ¡lido." }, { status: 400 });
-    const { shopId, serviceId, date, date_hour, clientName, clientPhone } = body;
+    if (!isRecord(body)) return NextResponse.json({ error: "Pedido inválido." }, { status: 400 });
 
-    if (
-      typeof shopId !== "string" || !UUID_PATTERN.test(shopId) ||
-      typeof serviceId !== "string" || !UUID_PATTERN.test(serviceId) ||
-      typeof date !== "string" || typeof date_hour !== "string"
-    ) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+    const shopId = typeof body.shopId === "string" ? body.shopId : "";
+    const serviceId = typeof body.serviceId === "string" ? body.serviceId : "";
+    const date = typeof body.date === "string" ? body.date : "";
+    const dateHour = typeof body.date_hour === "string" ? body.date_hour.trim() : "";
+    const clientName = typeof body.clientName === "string" ? body.clientName.trim() : "Cliente";
+    const clientPhone = typeof body.clientPhone === "string" ? body.clientPhone.trim() : "";
+    const clientEmail = typeof body.clientEmail === "string" ? body.clientEmail.trim().toLowerCase() : "";
+    const professionalId = typeof body.professionalId === "string" && body.professionalId ? body.professionalId : null;
+
+    if (!UUID_PATTERN.test(shopId) || !UUID_PATTERN.test(serviceId) || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}(:\d{2})?$/.test(dateHour)) {
+      return NextResponse.json({ error: "Dados da marcação inválidos." }, { status: 400 });
+    }
+    if (professionalId && !UUID_PATTERN.test(professionalId)) {
+      return NextResponse.json({ error: "Profissional inválido." }, { status: 400 });
     }
 
     const { admin, barbershopId } = tenant;
@@ -35,49 +39,53 @@ export async function POST(request: Request) {
       .select("barbershop_id")
       .eq("id", shopId)
       .eq("barbershop_id", barbershopId)
-      .single();
-
-    if (!shop) {
-      return NextResponse.json({ error: "Shop not found" }, { status: 404 });
-    }
+      .maybeSingle();
+    if (!shop) return NextResponse.json({ error: "Barbearia não encontrada." }, { status: 404 });
 
     const { data: service } = await admin
       .from("services")
-      .select("id")
+      .select("id,duration")
       .eq("id", serviceId)
       .eq("barbershop_id", barbershopId)
       .maybeSingle();
+    if (!service) return NextResponse.json({ error: "Serviço não encontrado." }, { status: 404 });
 
-    if (!service) return NextResponse.json({ error: "Service not found" }, { status: 404 });
-
-    const { data: appointment, error } = await admin
-      .from("appointments")
-      .insert({
-        barbershop_id: barbershopId,
-        service_id: serviceId,
-        date,
-        date_hour: `${date_hour}:00`,
-        client_name: clientName || "Cliente Marketplace",
-        client_phone: clientPhone || "",
-        status: "confirmed",
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("[APPOINTMENT_CREATE_ERROR]", error);
-      return NextResponse.json(
-        { error: "Failed to create appointment" },
-        { status: 500 }
-      );
+    if (professionalId) {
+      const { data: professional } = await admin
+        .from("professionals")
+        .select("id")
+        .eq("id", professionalId)
+        .eq("barbershop_id", barbershopId)
+        .eq("active", true)
+        .maybeSingle();
+      if (!professional) return NextResponse.json({ error: "Profissional não encontrado." }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, appointment });
+    const durationMinutes = Math.min(Math.max(Number(service.duration ?? 30), 1), 1440);
+    const { data: appointment, error } = await admin.rpc("create_booking_atomic", {
+      p_barbershop_id: barbershopId,
+      p_service_id: serviceId,
+      p_professional_id: professionalId,
+      p_date_hour: `${date}T${dateHour.slice(0, 5)}:00`,
+      p_duration_minutes: durationMinutes,
+      p_manual_name: clientName,
+      p_manual_phone: clientPhone,
+      p_manual_email: clientEmail || null,
+      p_manual_birth_date: null,
+      p_status: "scheduled",
+    });
+
+    if (error || !appointment) {
+      if (error?.code === "23P01" || error?.code === "23505" || error?.message?.includes("BOOKING_CONFLICT")) {
+        return NextResponse.json({ error: "Este horário já não está disponível." }, { status: 409 });
+      }
+      console.error("[APPOINTMENT_CREATE_ERROR]", error);
+      return NextResponse.json({ error: "Não foi possível criar a marcação." }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, appointment }, { status: 201 });
   } catch (error) {
     console.error("[APPOINTMENT_INTERNAL_ERROR]", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Erro interno ao criar a marcação." }, { status: 500 });
   }
 }
