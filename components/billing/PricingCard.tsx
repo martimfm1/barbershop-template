@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
-import { Check, Sparkles, Loader2, ArrowRight, Shield, Gift } from "lucide-react";
+import { useMemo, useState, useSyncExternalStore } from "react";
+import { Check, Sparkles, Loader2, ArrowRight, Shield, Gift, TicketPercent } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 
@@ -23,6 +23,7 @@ export interface PricingCardProps {
 export function PricingCard({ tier, title, price, priceId, description, features, popular = false, trialDays, onCheckout, onManagePortal }: PricingCardProps) {
   const isMounted = useSyncExternalStore(() => () => undefined, () => true, () => false);
   const { subscription, isAuthenticated, plan: currentPlan, loading, checkout, upgrade } = useSubscription();
+  const [promotionCode, setPromotionCode] = useState("");
   const isCurrentPlan = useMemo(() => isAuthenticated && currentPlan === tier, [currentPlan, isAuthenticated, tier]);
 
   const handleAction = async () => {
@@ -32,7 +33,8 @@ export function PricingCard({ tier, title, price, priceId, description, features
       if (isCurrentPlan) return;
       if (subscription?.status === "active") { if (onManagePortal) onManagePortal(); else await upgrade(); return; }
       if (tier === "free" || !priceId) { window.location.assign("/dashboard/billing"); return; }
-      if (onCheckout) onCheckout(priceId); else await checkout({ priceId });
+      if (onCheckout && !promotionCode.trim()) onCheckout(priceId);
+      else await checkout({ priceId, promotionCode: promotionCode.trim() || undefined });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível atualizar o plano.");
     }
@@ -73,7 +75,18 @@ export function PricingCard({ tier, title, price, priceId, description, features
         <div className="mt-7 space-y-3 border-t border-white/8 pt-6"><p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Inclui</p><ul className="space-y-3">{features.map((feature) => <li key={feature} className="flex items-start gap-3"><div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"><Check className="size-3" /></div><span className="text-sm leading-5 text-zinc-300">{feature}</span></li>)}</ul></div>
       </div>
 
-      <div className="mt-8 border-t border-white/8 pt-5"><button type="button" onClick={handleAction} disabled={buttonConfig.disabled || loading} className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-[background-color,border-color,box-shadow,transform] duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${buttonConfig.variant === "primary" ? "bg-emerald-400 text-zinc-950 shadow-[0_8px_24px_rgba(52,211,153,0.18)] hover:bg-emerald-300 hover:shadow-[0_10px_30px_rgba(52,211,153,0.24)]" : buttonConfig.variant === "secondary" ? "border border-white/10 bg-white/5 text-zinc-400" : "border border-white/15 bg-white/[0.04] text-zinc-100 hover:border-white/25 hover:bg-white/[0.08]"}`}>{loading ? <Loader2 className="size-4 animate-spin" /> : <><span>{buttonConfig.label}</span>{!buttonConfig.disabled && <ArrowRight className="size-4" />}</>}</button>{tier === "pro" && !isCurrentPlan ? <p className="mt-2 text-center text-[11px] text-zinc-600">14 dias grátis. A primeira cobrança ocorre depois do trial. Cancela quando quiseres.</p> : null}</div>
+      <div className="mt-8 border-t border-white/8 pt-5">
+        {tier === "pro" && isAuthenticated && !isCurrentPlan && !onCheckout ? (
+          <div className="mb-3 rounded-xl border border-white/10 bg-white/[0.025] p-3">
+            <label htmlFor={`promotion-code-${tier}`} className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-zinc-400"><TicketPercent className="size-3.5 text-emerald-300" />Código promocional</label>
+            <div className="flex gap-2">
+              <input id={`promotion-code-${tier}`} value={promotionCode} onChange={(event) => setPromotionCode(event.target.value.slice(0, 100))} maxLength={100} autoComplete="off" placeholder="Ex.: PRO10" className="min-w-0 flex-1 rounded-lg border border-white/10 bg-zinc-950 px-3 py-2.5 text-sm uppercase tracking-[0.04em] text-zinc-100 outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-zinc-600 focus:border-emerald-400/40 focus:ring-2 focus:ring-emerald-400/15" />
+              <button type="button" onClick={() => setPromotionCode("")} disabled={!promotionCode} className="rounded-lg border border-white/10 px-3 text-xs font-medium text-zinc-400 hover:bg-white/5 disabled:opacity-40">Limpar</button>
+            </div>
+            <p className="mt-1.5 text-[10px] leading-4 text-zinc-600">O código é validado pela Stripe quando iniciares o checkout.</p>
+          </div>
+        ) : null}
+        <button type="button" onClick={handleAction} disabled={buttonConfig.disabled || loading} className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-[background-color,border-color,box-shadow,transform] duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${buttonConfig.variant === "primary" ? "bg-emerald-400 text-zinc-950 shadow-[0_8px_24px_rgba(52,211,153,0.18)] hover:bg-emerald-300 hover:shadow-[0_10px_30px_rgba(52,211,153,0.24)]" : buttonConfig.variant === "secondary" ? "border border-white/10 bg-white/5 text-zinc-400" : "border border-white/15 bg-white/[0.04] text-zinc-100 hover:border-white/25 hover:bg-white/[0.08]"}`}>{loading ? <Loader2 className="size-4 animate-spin" /> : <><span>{buttonConfig.label}</span>{!buttonConfig.disabled && <ArrowRight className="size-4" />}</>}</button>{tier === "pro" && !isCurrentPlan ? <p className="mt-2 text-center text-[11px] text-zinc-600">14 dias grátis. A primeira cobrança ocorre depois do trial. Cancela quando quiseres.</p> : null}</div>
     </div>
   );
 }
