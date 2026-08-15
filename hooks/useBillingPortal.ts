@@ -24,10 +24,18 @@ export function useBillingPortal(subscription: SubscriptionData | null) {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["billing-payment-methods"] });
   const createSetupIntent = useMutation({ mutationFn: () => request<{ clientSecret: string }>("/api/stripe/setup-intent", { method: "POST" }) });
   const createSubscription = useMutation({
-    mutationFn: (priceId: string) => request<SubscriptionChangeResult>("/api/stripe/create-subscription", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ priceId }) }),
-    onSuccess: (result) => {
+    mutationFn: async (priceId: string): Promise<SubscriptionChangeResult> => {
+      const result = await request<{ url: string }>("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId, successUrl: `${window.location.origin}/dashboard/billing?checkout=success`, cancelUrl: `${window.location.origin}/dashboard/billing?checkout=cancelled` }),
+      });
+      if (!result.url) throw new Error("Stripe did not return a Checkout URL.");
+      window.location.assign(result.url);
+      return { subscriptionId: "pending", clientSecret: null, action: "created" };
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-subscription"] });
-      if (result.action === "changed") queryClient.invalidateQueries({ queryKey: ["billing-invoices"] });
     },
   });
   const paymentMethod = useMutation({ mutationFn: ({ action, paymentMethodId }: { action: "set_default" | "remove"; paymentMethodId: string }) => request("/api/stripe/payment-methods", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, paymentMethodId }) }), onSuccess: invalidate });
