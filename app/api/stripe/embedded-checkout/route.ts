@@ -9,8 +9,7 @@ import { BillingError } from "@/types/stripe";
 export const runtime = "nodejs";
 
 function safeOrigin(request: Request) {
-  const url = new URL(request.url);
-  return url.origin;
+  return new URL(request.url).origin;
 }
 
 export async function POST(request: Request) {
@@ -48,15 +47,12 @@ export async function POST(request: Request) {
     const session = await stripe.checkout.sessions.create({
       customer,
       mode: "subscription",
-      ui_mode: "embedded",
+      ui_mode: "custom",
       line_items: [{ price: priceId, quantity: 1 }],
-      return_url: `${origin}/dashboard/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/dashboard/billing?checkout=cancelled`,
+      return_url: `${origin}/checkout?priceId=${encodeURIComponent(priceId)}&checkout=return&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/checkout?priceId=${encodeURIComponent(priceId)}&checkout=cancelled`,
       client_reference_id: user.id,
       allow_promotion_codes: true,
-      branding_settings: {
-        display_name: "Silentra",
-      },
       metadata: {
         user_id: user.id,
         offer: trialEligible ? "pro_trial" : requestedPlan === PLANS.PRO ? "pro_standard" : "standard",
@@ -88,7 +84,7 @@ export async function POST(request: Request) {
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
-    console.error("[STRIPE_EMBEDDED_CHECKOUT_ERROR]", {
+    console.error("[STRIPE_CUSTOM_CHECKOUT_ERROR]", {
       name: error instanceof Error ? error.name : "UnknownError",
       message: error instanceof Error ? error.message : String(error),
       code: error instanceof BillingError ? error.code : undefined,
