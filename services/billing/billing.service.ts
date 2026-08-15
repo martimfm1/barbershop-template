@@ -90,7 +90,6 @@ export class BillingService {
       customer_update: {
         name: "auto",
         address: "auto",
-        phone: "auto",
       },
       phone_number_collection: { enabled: true },
       tax_id_collection: { enabled: true },
