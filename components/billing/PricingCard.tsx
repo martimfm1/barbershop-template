@@ -22,7 +22,7 @@ export interface PricingCardProps {
 
 export function PricingCard({ tier, title, price, priceId, description, features, popular = false, trialDays, onCheckout }: PricingCardProps) {
   const isMounted = useSyncExternalStore(() => () => undefined, () => true, () => false);
-  const { subscription, isAuthenticated, plan: currentPlan, loading, checkout, upgrade } = useSubscription();
+  const { subscription, isAuthenticated, plan: currentPlan, loading, upgrade } = useSubscription();
   const isCurrentPlan = useMemo(() => isAuthenticated && currentPlan === tier, [currentPlan, isAuthenticated, tier]);
 
   const handleAction = async () => {
@@ -33,7 +33,7 @@ export function PricingCard({ tier, title, price, priceId, description, features
       if (subscription?.status === "active") { await upgrade(); return; }
       if (tier === "free" || !priceId) { window.location.assign("/dashboard/billing"); return; }
       if (onCheckout) onCheckout(priceId);
-      else await checkout({ priceId });
+      else window.location.assign(`/dashboard/billing/checkout?priceId=${encodeURIComponent(priceId)}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível atualizar o plano.");
     }
