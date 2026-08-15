@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { loadStripe } from "@stripe/stripe-js";
-import { ArrowLeft, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "");
+import { ArrowLeft, ShieldCheck, Sparkles } from "lucide-react";
+import { getStripe } from "@/lib/stripe/client";
 
 export function EmbeddedStripeCheckout() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -20,6 +18,7 @@ export function EmbeddedStripeCheckout() {
       return;
     }
 
+    let cancelled = false;
     void fetch("/api/stripe/embedded-checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -32,39 +31,49 @@ export function EmbeddedStripeCheckout() {
       })
       .then(({ clientSecret: secret }) => {
         if (!secret) throw new Error("O Stripe não devolveu uma sessão de checkout válida.");
-        setClientSecret(secret);
+        if (!cancelled) setClientSecret(secret);
       })
-      .catch((cause) => setError(cause instanceof Error ? cause.message : "Não foi possível iniciar o checkout."))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    let checkout: { mount: (selector: string) => void; unmount: () => void } | null = null;
-    let cancelled = false;
-
-    if (!clientSecret) return;
-
-    void stripePromise.then(async (stripe) => {
-      if (!stripe || cancelled) return;
-      const embedded = await stripe.initEmbeddedCheckout({
-        fetchClientSecret: async () => clientSecret,
-        onComplete: () => {
-          window.location.assign("/dashboard/billing?checkout=success");
-        },
+      .catch((cause) => {
+        if (!cancelled) setError(cause instanceof Error ? cause.message : "Não foi possível iniciar o checkout.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
-      if (cancelled) {
-        embedded.destroy?.();
-        return;
-      }
-      checkout = embedded;
-      embedded.mount("#silentra-stripe-checkout");
-    }).catch((cause) => {
-      if (!cancelled) setError(cause instanceof Error ? cause.message : "Não foi possível carregar o checkout Stripe.");
-    });
 
     return () => {
       cancelled = true;
-      checkout?.unmount();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!clientSecret) return;
+
+    let cancelled = false;
+    let checkout: { mount: (selector: string) => void; destroy: () => void } | null = null;
+
+    void getStripe()
+      .then(async (stripe) => {
+        if (!stripe || cancelled) return;
+        const embedded = await stripe.initEmbeddedCheckout({
+          fetchClientSecret: async () => clientSecret,
+          onComplete: () => {
+            window.location.assign("/dashboard/billing?checkout=success");
+          },
+        });
+        if (cancelled) {
+          embedded.destroy();
+          return;
+        }
+        checkout = embedded;
+        embedded.mount("#silentra-stripe-checkout");
+      })
+      .catch((cause) => {
+        if (!cancelled) setError(cause instanceof Error ? cause.message : "Não foi possível carregar o checkout Stripe.");
+      });
+
+    return () => {
+      cancelled = true;
+      checkout?.destroy();
     };
   }, [clientSecret]);
 
