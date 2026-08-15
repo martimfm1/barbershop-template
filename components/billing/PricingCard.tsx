@@ -33,7 +33,7 @@ export function PricingCard({ tier, title, price, priceId, description, features
       if (subscription?.status === "active") { await upgrade(); return; }
       if (tier === "free" || !priceId) { window.location.assign("/dashboard/billing"); return; }
       if (onCheckout) onCheckout(priceId);
-      else window.location.assign(`/dashboard/billing/checkout?priceId=${encodeURIComponent(priceId)}`);
+      else window.location.assign(`/checkout?priceId=${encodeURIComponent(priceId)}&plan=${tier}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível atualizar o plano.");
     }
@@ -44,7 +44,7 @@ export function PricingCard({ tier, title, price, priceId, description, features
     if (!isAuthenticated) return { label: tier === "free" ? "Começar gratuitamente" : tier === "pro" && trialDays ? `Experimentar Pro ${trialDays} dias` : "Criar conta para começar", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
     if (isCurrentPlan) return { label: "Plano atual", disabled: true, variant: "secondary" as const };
     if (subscription?.status === "active") return { label: tier === "free" ? "Gerir subscrição" : "Alterar plano", disabled: false, variant: "outline" as const };
-    return { label: tier === "free" ? "Usar Plano Gratuito" : tier === "pro" && trialDays ? `Experimentar Pro ${trialDays} dias` : "Começar com o Pro", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
+    return { label: tier === "free" ? "Usar Plano Gratuito" : tier === "pro" && trialDays ? `Experimentar Pro ${trialDays} dias` : "Começar", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
   }, [isMounted, isCurrentPlan, isAuthenticated, subscription, popular, tier, trialDays]);
 
   const isActivePaidPlan = isCurrentPlan && (tier === "pro" || tier === "enterprise");
