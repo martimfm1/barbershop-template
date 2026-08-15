@@ -26,7 +26,8 @@ export async function GET(request: Request) {
     startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
 
     const [shopResult, ownerResult, membersResult, todayResult, upcomingResult, completedResult, cancelledResult, assignmentResult] = await Promise.all([
-      admin.from("barbershops").select("id,name,slug,created_at,address,phone,email").eq("id", barbershopId).maybeSingle(),
+      // `barbershops` does not contain an email column; the tenant's contact email is the owner's email.
+      admin.from("barbershops").select("id,name,slug,created_at,address,phone").eq("id", barbershopId).maybeSingle(),
       admin
         .from("users")
         .select("id,email,name_complete,role")
@@ -81,9 +82,6 @@ export async function GET(request: Request) {
     }
 
     const owner = ownerResult.data ?? null;
-
-    // subscriptions belongs to a user, not directly to a barbershop.
-    // The owner is the canonical billing identity for the tenant.
     let subscription: {
       plan: string | null;
       plan_override: string | null;
@@ -125,7 +123,10 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ok: true,
-        shop,
+        shop: {
+          ...shop,
+          email: owner?.email ?? null,
+        },
         owner,
         plan: {
           effective: effectivePlan,
