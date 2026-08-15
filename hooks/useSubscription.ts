@@ -74,8 +74,12 @@ export function useSubscription() {
   });
 
   const checkoutMutation = useMutation({
-    mutationFn: async ({ priceId, successUrl, cancelUrl }: { priceId: string; successUrl?: string; cancelUrl?: string }) => {
-      const res = await fetch("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ priceId, successUrl, cancelUrl }) });
+    mutationFn: async ({ priceId, successUrl, cancelUrl, promotionCode }: { priceId: string; successUrl?: string; cancelUrl?: string; promotionCode?: string }) => {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId, successUrl, cancelUrl, promotionCode: promotionCode?.trim() || undefined }),
+      });
       if (!res.ok) { const error = await res.json(); throw new Error(error.error || "Failed to initiate checkout."); }
       const data: { url: string } = await res.json();
       if (data.url) window.location.href = data.url;
