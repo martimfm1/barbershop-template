@@ -8,6 +8,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 
 type Plan = "free" | "pro" | "enterprise";
 
+type UserShop = { id: string; barbershop_id: string | null };
+type Subscription = { user_id: string; plan: string | null; plan_override: string | null; status: string; updated_at: string | null };
+
 export async function GET(request: Request) {
   try {
     const { admin } = await requirePlatformAdmin();
@@ -27,6 +30,7 @@ export async function GET(request: Request) {
       assignmentsCount,
       allShops,
       shops,
+      users,
       assignments,
       subscriptions,
     ] = await Promise.all([
@@ -45,20 +49,49 @@ export async function GET(request: Request) {
           ? admin.from("barbershops").select("id,name,slug,created_at").or(`name.ilike.%${query}%,slug.ilike.%${query}%`).eq("id", query).limit(30)
           : admin.from("barbershops").select("id,name,slug,created_at").or(`name.ilike.%${query}%,slug.ilike.%${query}%`).order("created_at", { ascending: false }).limit(30)
         : admin.from("barbershops").select("id,name,slug,created_at").order("created_at", { ascending: false }).limit(30),
+      admin.from("users").select("id,barbershop_id"),
       admin.from("barbershop_plan_assignments").select("barbershop_id,plan,expires_at").or(`expires_at.is.null,expires_at.gt.${now}`),
-      admin.from("subscriptions").select("barbershop_id,plan,plan_override,status,updated_at").not("barbershop_id", "is", null),
+      admin.from("subscriptions").select("user_id,plan,plan_override,status,updated_at").order("updated_at", { ascending: false }),
     ]);
 
-    for (const result of [shopsCount, usersCount, ownersCount, barbersCount, clientsCount, appointmentsCount, upcomingCount, activeSubscriptionsCount, assignmentsCount, allShops, shops, assignments, subscriptions]) {
+    for (const result of [
+      shopsCount,
+      usersCount,
+      ownersCount,
+      barbersCount,
+      clientsCount,
+      appointmentsCount,
+      upcomingCount,
+      activeSubscriptionsCount,
+      assignmentsCount,
+      allShops,
+      shops,
+      users,
+      assignments,
+      subscriptions,
+    ]) {
       if (result.error) throw result.error;
     }
 
+    const userShopById = new Map<string, string>(
+      ((users.data ?? []) as UserShop[])
+        .filter((user) => user.barbershop_id)
+        .map((user) => [user.id, user.barbershop_id as string]),
+    );
+
     const assignmentByShop = new Map((assignments.data ?? []).map((item) => [item.barbershop_id, item]));
-    const subscriptionByShop = new Map((subscriptions.data ?? []).map((item) => [item.barbershop_id, item]));
+    const subscriptionByShop = new Map<string, Subscription>();
+
+    for (const subscription of (subscriptions.data ?? []) as Subscription[]) {
+      const barbershopId = userShopById.get(subscription.user_id);
+      if (!barbershopId || subscriptionByShop.has(barbershopId)) continue;
+      subscriptionByShop.set(barbershopId, subscription);
+    }
 
     const effectivePlan = (shopId: string): Plan => {
       const assignment = assignmentByShop.get(shopId);
       if (assignment) return assignment.plan as Plan;
+
       const subscription = subscriptionByShop.get(shopId);
       if (subscription?.plan_override && ["free", "pro", "enterprise"].includes(subscription.plan_override)) {
         return subscription.plan_override as Plan;
@@ -69,10 +102,13 @@ export async function GET(request: Request) {
       return "free";
     };
 
-    const plans = (allShops.data ?? []).reduce((acc, shop) => {
-      acc[effectivePlan(shop.id)] += 1;
-      return acc;
-    }, { free: 0, pro: 0, enterprise: 0 });
+    const plans = (allShops.data ?? []).reduce(
+      (acc, shop) => {
+        acc[effectivePlan(shop.id)] += 1;
+        return acc;
+      },
+      { free: 0, pro: 0, enterprise: 0 },
+    );
 
     const rows = (shops.data ?? []).map((shop) => {
       const assignment = assignmentByShop.get(shop.id);
