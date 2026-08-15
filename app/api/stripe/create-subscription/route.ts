@@ -10,8 +10,10 @@ export async function POST(request: Request) {
     const { data: { user }, error } = await (await createClient()).auth.getUser();
     if (error || !user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     await BillingService.assertBillingOwner(user.id);
-    const { priceId } = await readJsonObject(request);
-    if (typeof priceId !== "string") return NextResponse.json({ error: "priceId is required." }, { status: 400 });
-    return NextResponse.json(await BillingService.createSubscription(user.id, user.email, priceId));
+    const body = await readJsonObject(request);
+    if (typeof body.priceId !== "string") return NextResponse.json({ error: "priceId is required." }, { status: 400 });
+    const promotionCode = typeof body.promotionCode === "string" ? body.promotionCode.trim() : undefined;
+    if (promotionCode && promotionCode.length > 100) return NextResponse.json({ error: "Promotion code is too long." }, { status: 400 });
+    return NextResponse.json(await BillingService.createSubscription(user.id, user.email, body.priceId, promotionCode));
   } catch (error) { return billingErrorResponse(error); }
 }
