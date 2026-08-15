@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
-import { Check, Sparkles, Loader2, ArrowRight, Shield, Gift, TicketPercent } from "lucide-react";
+import { useMemo, useSyncExternalStore } from "react";
+import { Check, Sparkles, Loader2, ArrowRight, Shield, Gift } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 
@@ -16,14 +16,13 @@ export interface PricingCardProps {
   features: readonly string[];
   popular?: boolean;
   trialDays?: number;
-  onCheckout?: (priceId: string, promotionCode?: string) => void;
+  onCheckout?: (priceId: string) => void;
   onManagePortal?: () => void;
 }
 
-export function PricingCard({ tier, title, price, priceId, description, features, popular = false, trialDays, onCheckout, onManagePortal }: PricingCardProps) {
+export function PricingCard({ tier, title, price, description, features, popular = false, trialDays, onCheckout }: PricingCardProps) {
   const isMounted = useSyncExternalStore(() => () => undefined, () => true, () => false);
   const { subscription, isAuthenticated, plan: currentPlan, loading, checkout, upgrade } = useSubscription();
-  const [promotionCode, setPromotionCode] = useState("");
   const isCurrentPlan = useMemo(() => isAuthenticated && currentPlan === tier, [currentPlan, isAuthenticated, tier]);
 
   const handleAction = async () => {
@@ -31,11 +30,10 @@ export function PricingCard({ tier, title, price, priceId, description, features
       if (!isMounted) return;
       if (!isAuthenticated) { window.location.assign("/registo"); return; }
       if (isCurrentPlan) return;
-      if (subscription?.status === "active") { if (onManagePortal) onManagePortal(); else await upgrade(); return; }
+      if (subscription?.status === "active") { await upgrade(); return; }
       if (tier === "free" || !priceId) { window.location.assign("/dashboard/billing"); return; }
-      const code = promotionCode.trim() || undefined;
-      if (onCheckout) onCheckout(priceId, code);
-      else await checkout({ priceId, promotionCode: code });
+      if (onCheckout) onCheckout(priceId);
+      else await checkout({ priceId });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível atualizar o plano.");
     }
@@ -50,7 +48,6 @@ export function PricingCard({ tier, title, price, priceId, description, features
   }, [isMounted, isCurrentPlan, isAuthenticated, subscription, popular, tier, trialDays]);
 
   const isActivePaidPlan = isCurrentPlan && (tier === "pro" || tier === "enterprise");
-  const showPromotionCode = tier !== "free" && isAuthenticated && !isCurrentPlan;
 
   return (
     <div className={`relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border p-6 transition-[border-color,background-color,box-shadow,transform] duration-200 sm:p-7 ${isActivePaidPlan ? "border-emerald-500/60 bg-zinc-900/95 shadow-[0_20px_70px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/30" : popular ? "-translate-y-1 border-emerald-500/40 bg-zinc-900/95 shadow-[0_24px_80px_rgba(16,185,129,0.14)] ring-1 ring-emerald-500/10" : "border-white/10 bg-zinc-900/70 shadow-[0_18px_60px_rgba(0,0,0,0.25)] hover:-translate-y-0.5 hover:border-white/20"}`}>
@@ -78,17 +75,7 @@ export function PricingCard({ tier, title, price, priceId, description, features
       </div>
 
       <div className="mt-8 border-t border-white/8 pt-5">
-        {showPromotionCode ? (
-          <div className="mb-3 rounded-xl border border-white/10 bg-white/[0.025] p-3">
-            <label htmlFor={`promotion-code-${tier}`} className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-zinc-400"><TicketPercent className="size-3.5 text-emerald-300" />Código promocional</label>
-            <div className="flex gap-2">
-              <input id={`promotion-code-${tier}`} value={promotionCode} onChange={(event) => setPromotionCode(event.target.value.slice(0, 100))} maxLength={100} autoComplete="off" placeholder="Ex.: PRO10" className="min-w-0 flex-1 rounded-lg border border-white/10 bg-zinc-950 px-3 py-2.5 text-sm uppercase tracking-[0.04em] text-zinc-100 outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-zinc-600 focus:border-emerald-400/40 focus:ring-2 focus:ring-emerald-400/15" />
-              <button type="button" onClick={() => setPromotionCode("")} disabled={!promotionCode} className="rounded-lg border border-white/10 px-3 text-xs font-medium text-zinc-400 hover:bg-white/5 disabled:opacity-40">Limpar</button>
-            </div>
-            <p className="mt-1.5 text-[10px] leading-4 text-zinc-600">O código será validado pela Stripe no checkout.</p>
-          </div>
-        ) : null}
-        <button type="button" onClick={handleAction} disabled={buttonConfig.disabled || loading} className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-[background-color,border-color,box-shadow,transform] duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${buttonConfig.variant === "primary" ? "bg-emerald-400 text-zinc-950 shadow-[0_8px_24px_rgba(52,211,153,0.18)] hover:bg-emerald-300 hover:shadow-[0_10px_30px_rgba(52,211,153,0.24)]" : buttonConfig.variant === "secondary" ? "border border-white/10 bg-white/5 text-zinc-400" : "border border-white/15 bg-white/[0.04] text-zinc-100 hover:border-white/25 hover:bg-white/[0.08]"}`}>{loading ? <Loader2 className="size-4 animate-spin" /> : <><span>{buttonConfig.label}</span>{!buttonConfig.disabled && <ArrowRight className="size-4" />}</>}</button>{tier === "pro" && !isCurrentPlan ? <p className="mt-2 text-center text-[11px] text-zinc-600">14 dias grátis para novos utilizadores. A primeira cobrança ocorre depois do trial.</p> : null}</div>
+        <button type="button" onClick={handleAction} disabled={buttonConfig.disabled || loading} className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-[background-color,border-color,box-shadow,transform] duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${buttonConfig.variant === "primary" ? "bg-emerald-400 text-zinc-950 shadow-[0_8px_24px_rgba(52,211,153,0.18)] hover:bg-emerald-300 hover:shadow-[0_10px_30px_rgba(52,211,153,0.24)]" : buttonConfig.variant === "secondary" ? "border border-white/10 bg-white/5 text-zinc-400" : "border border-white/15 bg-white/[0.04] text-zinc-100 hover:border-white/25 hover:bg-white/[0.08]"}`}>{loading ? <Loader2 className="size-4 animate-spin" /> : <><span>{buttonConfig.label}</span>{!buttonConfig.disabled && <ArrowRight className="size-4" />}</>}</button>{tier === "pro" && !isCurrentPlan ? <p className="mt-2 text-center text-[11px] text-zinc-600">14 dias grátis para novos utilizadores. Os códigos promocionais são aplicados no checkout.</p> : null}</div>
     </div>
   );
 }
