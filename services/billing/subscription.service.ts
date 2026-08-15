@@ -5,7 +5,9 @@ import { planForPrice, PLANS } from "@/lib/stripe/constants";
 import { PLAN_ACCESS_STATUSES, resolvePlan } from "@/lib/billing/plan-access";
 import { BillingError, type BillingPlan, type SubscriptionRecord } from "@/types/stripe";
 
-type SubscriptionRow = Pick<SubscriptionRecord, "user_id" | "barbershop_id" | "stripe_customer_id" | "stripe_subscription_id" | "stripe_price_id" | "plan" | "status" | "trial_end" | "current_period_end" | "cancel_at_period_end">;
+type SubscriptionRow = Pick<SubscriptionRecord, "user_id" | "stripe_customer_id" | "stripe_subscription_id" | "stripe_price_id" | "plan" | "status" | "trial_end" | "current_period_end" | "cancel_at_period_end"> & {
+  barbershop_id?: string | null;
+};
 
 function subscriptionPeriodEnd(subscription: Stripe.Subscription): number | null {
   return subscription.items.data[0]?.current_period_end ?? null;
@@ -20,19 +22,24 @@ export class SubscriptionService {
 
   static async getForBarbershop(barbershopId: string): Promise<SubscriptionRecord | null> {
     const admin = createAdminClient();
-    const { data, error } = await admin.from("subscriptions").select("*").eq("barbershop_id", barbershopId).maybeSingle();
-    if (error) throw new BillingError("Could not load barbershop subscription.", "DB_READ_FAILED", { barbershopId });
-    if (data) return data as SubscriptionRecord;
+    const { data: owner, error: ownerError } = await admin
+      .from("users")
+      .select("id")
+      .eq("barbershop_id", barbershopId)
+      .eq("role", "owner")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
 
-    const { data: owner } = await admin.from("users").select("id").eq("barbershop_id", barbershopId).eq("role", "owner").maybeSingle();
+    if (ownerError) throw new BillingError("Could not resolve barbershop owner.", "DB_READ_FAILED", { barbershopId });
     if (!owner?.id) return null;
 
-    const legacy = await this.getForUser(owner.id);
-    if (!legacy || legacy.barbershop_id) return legacy;
+    const subscription = await this.getForUser(owner.id);
+    if (!subscription) return null;
 
-    const { data: linked, error: linkError } = await admin.from("subscriptions").update({ barbershop_id: barbershopId, updated_at: new Date().toISOString() }).eq("id", legacy.id).select("*").maybeSingle();
-    if (linkError) throw new BillingError("Could not link subscription to barbershop.", "DB_WRITE_FAILED", { barbershopId, userId: owner.id });
-    return (linked ?? legacy) as SubscriptionRecord;
+    // Keep the legacy service contract compatible for callers that inspect the
+    // tenant association, while never querying a non-existent subscriptions.barbershop_id column.
+    return { ...subscription, barbershop_id: barbershopId } as SubscriptionRecord;
   }
 
   static async getBarbershopIdForUser(userId: string): Promise<string | null> {
@@ -66,13 +73,17 @@ export class SubscriptionService {
   static async getAccessPlanForBarbershop(barbershopId: string): Promise<BillingPlan> {
     const admin = createAdminClient();
 
-    const { data: assignment, error: assignmentError } = await admin.from("barbershop_plan_assignments").select("plan, expires_at").eq("barbershop_id", barbershopId).maybeSingle();
+    const { data: assignment, error: assignmentError } = await admin
+      .from("barbershop_plan_assignments")
+      .select("plan, expires_at")
+      .eq("barbershop_id", barbershopId)
+      .maybeSingle();
     if (assignmentError) throw new BillingError("Could not load barbershop plan assignment.", "DB_READ_FAILED", { barbershopId });
     if (assignment && (!assignment.expires_at || new Date(assignment.expires_at).getTime() > Date.now())) return assignment.plan as BillingPlan;
 
     const subscription = await this.getForBarbershop(barbershopId);
     if (!subscription) return PLANS.FREE;
-    if (subscription.plan_override) return subscription.plan_override;
+    if (subscription.plan_override) return subscription.plan_override as BillingPlan;
 
     if (subscription.stripe_subscription_id) {
       try {
@@ -92,7 +103,7 @@ export class SubscriptionService {
             }).eq("id", subscription.id);
             if (error) throw new BillingError("Could not reconcile subscription plan.", "DB_WRITE_FAILED", { barbershopId });
           }
-          return stripePlan;
+          return stripePlan as BillingPlan;
         }
 
         if (!stripeStatusAllowsAccess) return PLANS.FREE;
@@ -124,13 +135,11 @@ export class SubscriptionService {
     const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
     const priceId = subscription.items.data[0]?.price.id;
     const periodEnd = subscriptionPeriodEnd(subscription);
-    const barbershopId = await this.getBarbershopIdForUser(userId);
     if (!priceId || !periodEnd) throw new BillingError("Stripe subscription is missing a recurring price or period end.", "WEBHOOK_PROCESSING_FAILED", { subscriptionId: subscription.id });
 
     const plan = (PLAN_ACCESS_STATUSES as readonly string[]).includes(subscription.status) ? planForPrice(priceId) ?? PLANS.FREE : PLANS.FREE;
     const row: SubscriptionRow = {
       user_id: userId,
-      barbershop_id: barbershopId,
       stripe_customer_id: customerId,
       stripe_subscription_id: subscription.id,
       stripe_price_id: priceId,
@@ -142,7 +151,7 @@ export class SubscriptionService {
     };
 
     const { error } = await createAdminClient().from("subscriptions").upsert(row, { onConflict: "user_id" });
-    if (error) throw new BillingError("Could not persist subscription state.", "DB_WRITE_FAILED", { userId, barbershopId, subscriptionId: subscription.id });
+    if (error) throw new BillingError("Could not persist subscription state.", "DB_WRITE_FAILED", { userId, subscriptionId: subscription.id });
   }
 
   static async markCanceled(userId: string): Promise<void> {
