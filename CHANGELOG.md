@@ -2,6 +2,16 @@
 
 ## Unreleased — 2026-08-15
 
+### Billing — Pro trial promotion
+
+- Adicionada promoção de **14 dias grátis no Barbers Pro**.
+- O trial é aplicado server-side na criação de Checkout Stripe e apenas para preços associados ao plano Pro.
+- Enterprise deixou de receber trial automático pelo fluxo de Checkout.
+- Adicionado `offer: pro_trial` aos metadados do Checkout para facilitar análise e suporte.
+- `/plans` e os cartões de preços passaram a comunicar explicitamente os 14 dias de Pro.
+- O FAQ de planos passa a explicar a duração e o início da cobrança após o trial.
+- Mantido o preço normal do Pro após o período experimental.
+
 ### Fidelização, automações, campanhas e analytics — production hardening
 
 - Transformada `/dashboard/loyalty` numa área de configuração real: ativação do programa, pontos por euro, pontos de boas-vindas e referências.
