@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 import { ArrowLeft, ShieldCheck, Sparkles } from "lucide-react";
-import { getStripe } from "@/lib/stripe/client";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "");
 
 export function EmbeddedStripeCheckout() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -19,6 +22,7 @@ export function EmbeddedStripeCheckout() {
     }
 
     let cancelled = false;
+
     void fetch("/api/stripe/embedded-checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -30,8 +34,9 @@ export function EmbeddedStripeCheckout() {
         return body as { clientSecret?: string };
       })
       .then(({ clientSecret: secret }) => {
+        if (cancelled) return;
         if (!secret) throw new Error("O Stripe não devolveu uma sessão de checkout válida.");
-        if (!cancelled) setClientSecret(secret);
+        setClientSecret(secret);
       })
       .catch((cause) => {
         if (!cancelled) setError(cause instanceof Error ? cause.message : "Não foi possível iniciar o checkout.");
@@ -45,37 +50,18 @@ export function EmbeddedStripeCheckout() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!clientSecret) return;
-
-    let cancelled = false;
-    let checkout: { mount: (selector: string) => void; destroy: () => void } | null = null;
-
-    void getStripe()
-      .then(async (stripe) => {
-        if (!stripe || cancelled) return;
-        const embedded = await stripe.initEmbeddedCheckout({
-          fetchClientSecret: async () => clientSecret,
-          onComplete: () => {
-            window.location.assign("/dashboard/billing?checkout=success");
-          },
-        });
-        if (cancelled) {
-          embedded.destroy();
-          return;
-        }
-        checkout = embedded;
-        embedded.mount("#silentra-stripe-checkout");
-      })
-      .catch((cause) => {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : "Não foi possível carregar o checkout Stripe.");
-      });
-
-    return () => {
-      cancelled = true;
-      checkout?.destroy();
-    };
-  }, [clientSecret]);
+  const options = useMemo(
+    () =>
+      clientSecret
+        ? {
+            clientSecret,
+            onComplete: () => {
+              window.location.assign("/dashboard/billing?checkout=success");
+            },
+          }
+        : undefined,
+    [clientSecret],
+  );
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -96,15 +82,29 @@ export function EmbeddedStripeCheckout() {
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-300/80">Checkout Silentra</p>
             <h1 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-white sm:text-3xl">Finaliza a tua subscrição</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">O formulário e a validação do pagamento são geridos pela Stripe, enquanto a experiência fica integrada na Silentra. Os códigos promocionais aparecem diretamente no checkout.</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">O pagamento é processado pela Stripe, mas o checkout permanece integrado na Silentra. Os códigos promocionais e os dados de faturação aparecem diretamente no checkout.</p>
           </div>
         </div>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] shadow-[0_30px_100px_rgba(0,0,0,0.3)]">
         {loading ? <div className="flex min-h-[520px] items-center justify-center p-6 text-sm text-zinc-500">A preparar o checkout…</div> : null}
-        {error ? <div className="flex min-h-[420px] items-center justify-center p-6 text-center"><div className="max-w-md"><p className="text-sm font-semibold text-white">Não foi possível carregar o checkout</p><p className="mt-2 text-sm leading-6 text-zinc-500">{error}</p><Link href="/dashboard/billing" className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg bg-white px-4 text-sm font-semibold text-zinc-950">Voltar ao billing</Link></div></div> : null}
-        <div id="silentra-stripe-checkout" className={loading || error ? "hidden" : "min-h-[680px] bg-zinc-950"} />
+        {error ? (
+          <div className="flex min-h-[420px] items-center justify-center p-6 text-center">
+            <div className="max-w-md">
+              <p className="text-sm font-semibold text-white">Não foi possível carregar o checkout</p>
+              <p className="mt-2 text-sm leading-6 text-zinc-500">{error}</p>
+              <Link href="/dashboard/billing" className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg bg-white px-4 text-sm font-semibold text-zinc-950">Voltar ao billing</Link>
+            </div>
+          </div>
+        ) : null}
+        {options ? (
+          <EmbeddedCheckoutProvider stripe={stripePromise} options={options}>
+            <div className="min-h-[680px] bg-zinc-950">
+              <EmbeddedCheckout />
+            </div>
+          </EmbeddedCheckoutProvider>
+        ) : null}
       </div>
     </div>
   );
