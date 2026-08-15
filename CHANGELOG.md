@@ -2,6 +2,18 @@
 
 ## Unreleased — 2026-08-15
 
+### Public pages — mobile-first UI/UX harmonization
+
+- Reestruturado `/barbershops` com uma hierarquia visual orientada à descoberta: proposta de valor, pesquisa, localização, filtros, tags, resultados e mapa.
+- Melhorada a experiência mobile do diretório com filtros horizontais, touch targets consistentes, estados de loading/empty e resultados em grelha responsiva.
+- Mantida a ligação direta entre cards, página pública da barbearia e booking drawer.
+- Reestruturado `/plans` com uma introdução orientada à decisão, pricing, comparação completa, FAQ e CTA final.
+- A comunicação de planos passa a reforçar explicitamente que o entitlement pertence à barbearia e é partilhado pela equipa.
+- Reestruturado `/my-bookings` com fluxo mobile-first de email → código → marcações, cartões de reservas, histórico, cancelamento e reagendamento com disponibilidade real.
+- O reagendamento deixou de depender de `prompt()` e usa uma interface responsiva de data + horários disponíveis.
+- As três páginas passam a partilhar a mesma linguagem visual da homepage: tipografia, contraste, espaçamento, bordas, superfícies e CTAs.
+- Priorizada a leitura rápida em mobile e a expansão progressiva de conteúdo em tablet/desktop.
+
 ### Landing page — conversion-focused redesign
 
 - Reestruturada a homepage `/` como uma página de produto orientada à conversão, em vez de uma sequência de demos isoladas.
