@@ -2,6 +2,17 @@
 
 ## Unreleased — 2026-08-15
 
+### Production hardening — booking concurrency and Stripe webhook claims
+
+- A proteção final de overlap de appointments passa a tratar também marcações sem `professional_id` como uma lane de disponibilidade por barbearia, evitando dois bookings não atribuídos no mesmo intervalo.
+- A constraint PostgreSQL continua a ser a autoridade final para conflitos concorrentes; a API já converte `23P01` em HTTP `409`.
+- Adicionado estado de claim atómico para webhooks Stripe com estados `processing`, `processed` e `failed`.
+- Webhooks concorrentes para o mesmo `event_id` deixam de poder processar o evento simultaneamente.
+- Claims presos recuperam automaticamente após um lease curto, permitindo retry depois de um crash do worker.
+- Falhas de processamento ficam registadas no ledger para observabilidade e retry.
+- Mantida a validação de assinatura Stripe antes de tocar no ledger.
+- Estas alterações requerem `supabase db push --include-all` antes de produção e ainda precisam de evidência em staging.
+
 ### Public pages — mobile-first UI/UX harmonization
 
 - Reestruturado `/barbershops` com uma hierarquia visual orientada à descoberta: proposta de valor, pesquisa, localização, filtros, tags, resultados e mapa.
