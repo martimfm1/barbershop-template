@@ -1,11 +1,13 @@
-import { EmbeddedStripeCheckout } from "@/components/billing/embedded-stripe-checkout";
+import { redirect } from "next/navigation";
 
-export default function BillingCheckoutPage() {
-  return (
-    <main className="min-h-screen bg-zinc-950 px-4 py-6 text-zinc-50 sm:px-6 sm:py-10 lg:px-8">
-      <div className="mx-auto max-w-6xl">
-        <EmbeddedStripeCheckout />
-      </div>
-    </main>
-  );
+export default async function BillingCheckoutPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ priceId?: string; plan?: string }>;
+}) {
+  const params = await searchParams;
+  const query = new URLSearchParams();
+  if (params.priceId) query.set("priceId", params.priceId);
+  if (params.plan) query.set("plan", params.plan);
+  redirect(`/checkout${query.toString() ? `?${query.toString()}` : ""}`);
 }
