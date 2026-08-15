@@ -20,11 +20,12 @@ create index if not exists barbershop_plan_assignments_active_idx
 alter table public.barbershop_plan_assignments enable row level security;
 revoke all on public.barbershop_plan_assignments from anon, authenticated;
 
--- A single canonical database resolver for all entitlement checks.
--- An existing, non-expired administrative assignment always wins. If there is
--- no assignment, normal subscription/Stripe state remains authoritative.
+-- Keep the existing resolver signature as text. Earlier migrations already created
+-- this function with text return type, and PostgreSQL cannot change a function's
+-- return type with CREATE OR REPLACE FUNCTION. The application casts this value
+-- to BillingPlan where needed.
 create or replace function public.get_effective_billing_plan_for_barbershop(p_barbershop_id uuid)
-returns public.subscription_plan
+returns text
 language sql
 stable
 security definer
@@ -32,7 +33,7 @@ set search_path = public
 as $$
   select coalesce(
     (
-      select a.plan
+      select a.plan::text
       from public.barbershop_plan_assignments a
       where a.barbershop_id = p_barbershop_id
         and (a.expires_at is null or a.expires_at > now())
@@ -40,16 +41,16 @@ as $$
     ),
     (
       select case
-        when s.plan_override in ('pro', 'enterprise', 'free') then s.plan_override::public.subscription_plan
-        when s.plan in ('pro', 'enterprise') and s.status in ('active', 'trialing') then s.plan::public.subscription_plan
-        else 'free'::public.subscription_plan
+        when s.plan_override in ('pro', 'enterprise', 'free') then s.plan_override::text
+        when s.plan in ('pro', 'enterprise') and s.status in ('active', 'trialing') then s.plan::text
+        else 'free'::text
       end
       from public.subscriptions s
       where s.barbershop_id = p_barbershop_id
       order by s.updated_at desc, s.created_at desc
       limit 1
     ),
-    'free'::public.subscription_plan
+    'free'::text
   );
 $$;
 
