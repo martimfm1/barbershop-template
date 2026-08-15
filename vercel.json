@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/birthdays",
       "schedule": "5 0 * * *"
+    },
+    {
+      "path": "/api/cron/automations",
+      "schedule": "20 0 * * *"
     }
   ],
   "git": {
