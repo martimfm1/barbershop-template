@@ -150,7 +150,7 @@ export default function NotFound() {
             {/* Footer row */}
             <div className="mt-3 flex items-center justify-between px-1 sm:mt-4">
               <p className="text-[11px] text-zinc-600 font-mono tracking-wide">
-                barbers.  silentra.me · not found
+                barbers.silentra.me · not found
               </p>
               <div className="flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-zinc-700" />
