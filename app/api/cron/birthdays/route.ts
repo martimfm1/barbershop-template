@@ -62,24 +62,12 @@ export async function GET(request: Request) {
   }
 
   for (const automation of automations ?? []) {
-    const { data: owner } = await admin
-      .from("users")
-      .select("id, name_complete, email")
-      .eq("barbershop_id", automation.barbershop_id)
-      .in("role", ["owner", "admin"])
-      .not("email", "is", null)
-      .limit(1)
-      .maybeSingle();
-
-    if (!owner) {
-      skipped++;
-      continue;
-    }
-
+    // Billing access is tenant-scoped. The owner remains the Stripe billing
+    // owner, but birthday automation eligibility must follow the barbershop plan.
     const { data: subscription } = await admin
       .from("subscriptions")
       .select("plan, plan_override, status")
-      .eq("user_id", owner.id)
+      .eq("barbershop_id", automation.barbershop_id)
       .maybeSingle();
 
     if (!isPaidPlan(subscription)) {
@@ -92,6 +80,11 @@ export async function GET(request: Request) {
       .select("name, avatar_url")
       .eq("id", automation.barbershop_id)
       .maybeSingle();
+
+    if (!shop) {
+      skipped++;
+      continue;
+    }
 
     const { data: clients, error: clientError } = await admin
       .from("users")
@@ -124,7 +117,7 @@ export async function GET(request: Request) {
       }
 
       const name = client.name_complete?.trim() || "Cliente";
-      const shopName = shop?.name?.trim() || "A tua barbearia";
+      const shopName = shop.name?.trim() || "A tua barbearia";
       const bookingUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://silentra.me"}/barbearias/${automation.barbershop_id}`;
       const subject = renderTemplate(automation.subject, { nome: name, barbearia: shopName, booking_url: bookingUrl });
       const body = renderTemplate(automation.body, { nome: name, barbearia: shopName, booking_url: bookingUrl });
@@ -132,7 +125,7 @@ export async function GET(request: Request) {
         to: client.email as string,
         toName: name,
         subject,
-        htmlContent: wrapBirthdayEmail(body, shopName, shop?.avatar_url),
+        htmlContent: wrapBirthdayEmail(body, shopName, shop.avatar_url),
         senderName: shopName,
       });
 
