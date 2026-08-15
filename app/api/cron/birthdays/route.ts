@@ -33,11 +33,6 @@ function wrapBirthdayEmail(body: string, shopName: string, avatarUrl?: string | 
   return `<!doctype html><html lang="pt"><body style="margin:0;background:#09090b;font-family:Arial,Helvetica,sans-serif;color:#fafafa;"><div style="max-width:600px;margin:0 auto;padding:32px 18px;"><div style="border:1px solid #27272a;border-radius:20px;overflow:hidden;background:#0f0f12;"><div style="padding:24px;border-bottom:1px solid #27272a;"><div style="display:flex;align-items:center;gap:12px;">${avatar}<div><div style="font-size:15px;font-weight:700;color:#fafafa;">${safeName}</div><div style="font-size:12px;color:#71717a;margin-top:3px;">Comunicação</div></div></div></div><div style="padding:28px 24px;">${paragraphs}</div></div><p style="margin:16px 0 0;text-align:center;font-size:11px;color:#52525b;">Enviado através da Silentra</p></div></body></html>`;
 }
 
-function isPaidPlan(subscription: { plan?: string | null; plan_override?: string | null; status?: string | null } | null) {
-  const plan = subscription?.plan_override ?? subscription?.plan;
-  return (plan === "pro" || plan === "enterprise") && (subscription?.status === "active" || subscription?.status === "trialing");
-}
-
 export async function GET(request: Request) {
   const expectedSecret = process.env.CRON_SECRET;
   const authorization = request.headers.get("authorization");
@@ -66,13 +61,17 @@ export async function GET(request: Request) {
   }
 
   for (const automation of automations ?? []) {
-    const { data: subscription } = await admin
-      .from("subscriptions")
-      .select("plan, plan_override, status")
-      .eq("barbershop_id", automation.barbershop_id)
-      .maybeSingle();
+    const { data: effectivePlan, error: planError } = await admin.rpc("get_effective_billing_plan_for_barbershop", {
+      p_barbershop_id: automation.barbershop_id,
+    });
 
-    if (!isPaidPlan(subscription)) {
+    if (planError) {
+      console.error("[Birthday Cron] plan resolution failed", planError);
+      failed++;
+      continue;
+    }
+
+    if (effectivePlan !== "pro" && effectivePlan !== "enterprise") {
       skipped++;
       continue;
     }
