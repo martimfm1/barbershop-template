@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     await BillingService.assertBillingOwner(user.id);
 
     const body = await readJsonObject(request);
-    if (typeof body.priceId !== "string" || body.priceId.length > 255) {
+    if (typeof body.priceId !== "string" || body.priceId.length === 0 || body.priceId.length > 255) {
       throw new BillingError("A valid price ID is required.", "INVALID_PRICE");
     }
     if (body.promotionCode !== undefined && body.promotionCode !== null && (typeof body.promotionCode !== "string" || body.promotionCode.length > 100)) {
@@ -27,10 +27,17 @@ export async function POST(request: Request) {
       priceId: body.priceId,
       promotionCode: typeof body.promotionCode === "string" ? body.promotionCode : null,
       successUrl: safeReturnUrl(body.successUrl, "/dashboard/billing?checkout=success"),
-      cancelUrl: safeReturnUrl(body.cancelUrl, "/pricing"),
+      cancelUrl: safeReturnUrl(body.cancelUrl, "/plans"),
     });
-    return NextResponse.json({ url });
+
+    return NextResponse.json({ url }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
+    console.error("[STRIPE_CHECKOUT_ERROR]", {
+      name: error instanceof Error ? error.name : "UnknownError",
+      message: error instanceof Error ? error.message : String(error),
+      code: error instanceof BillingError ? error.code : undefined,
+      context: error instanceof BillingError ? error.context : undefined,
+    });
     return billingErrorResponse(error);
   }
 }
