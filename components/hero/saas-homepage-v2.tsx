@@ -65,7 +65,7 @@ const plans: readonly Plan[] = [
   },
   {
     name: "Enterprise",
-    price: "A partir de 29,90 €",
+    price: "29,90 €",
     subtitle: "Para escalar",
     recommended: false,
     features: [
@@ -508,7 +508,7 @@ export function SaaSHomepageV2() {
                 href="/registo"
                 className={`mt-7 inline-flex min-h-11 w-full items-center justify-center gap-2 text-sm font-semibold ${plan.recommended ? "bg-white text-zinc-950" : "border border-white/10 bg-white/[0.04] text-white"}`}
               >
-                {plan.name === "Enterprise" ? "Falar com a equipa" : "Começar"}
+                {plan.name === "Enterprise" ? "Começar" : "Começar"}
                 <ArrowRight className="size-4" />
               </Link>
             </article>
@@ -520,7 +520,7 @@ export function SaaSHomepageV2() {
             href="/plans"
             className="text-zinc-400 underline-offset-4 hover:underline"
           >
-            /plans
+            plans
           </Link>
           .
         </p>
