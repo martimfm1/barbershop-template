@@ -2,6 +2,16 @@
 
 ## Unreleased — 2026-08-15
 
+### Internal administration — API reliability fixes
+
+- Corrigido o endpoint `/api/silentra-admin/shop`: removidas colunas opcionais/instáveis do `select` que podiam provocar `PGRST204` e bloquear todo o snapshot do tenant.
+- O snapshot passa a selecionar apenas as colunas estáveis necessárias para a administração.
+- Subscrições do tenant passam a ser lidas de forma determinística pela mais recentemente atualizada, evitando falhas de `maybeSingle()` quando existem múltiplos registos históricos.
+- O cálculo do plano efetivo no snapshot passa a ignorar overrides administrativos expirados e a indicar corretamente a origem (`admin`, `subscription_override`, `stripe` ou `free`).
+- Corrigida a API de atribuição de planos com validação UUID, expiração futura, `Cache-Control: no-store` e tratamento de audit logs sem transformar uma mutação bem sucedida num falso erro HTTP.
+- O endpoint de remoção de plano valida a existência do tenant antes de chamar o RPC.
+- Adicionado `/api/silentra-admin/diagnostics`, protegido por `requirePlatformAdmin()`, para validar tabelas críticas, appointments, subscriptions, assignments e o RPC de resolução de plano diretamente a partir do Control Center.
+
 ### API production hardening
 
 - A criação pública e manual de appointments passa a usar `create_booking_atomic`, com lock transacional por barbearia e verificação final de conflitos dentro da mesma transação.
