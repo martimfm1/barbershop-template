@@ -25,7 +25,10 @@ function wrapBirthdayEmail(body: string, shopName: string, avatarUrl?: string | 
     ? `<img src="${escapeHtml(safeAvatar)}" alt="${safeName}" width="48" height="48" style="display:block;width:48px;height:48px;border-radius:14px;object-fit:cover;border:1px solid #27272a;" />`
     : `<div style="width:48px;height:48px;border-radius:14px;background:#18181b;border:1px solid #27272a;text-align:center;line-height:48px;font-size:20px;">🎂</div>`;
 
-  const paragraphs = body.split(/\n\s*\n/).map((paragraph) => `<p style="margin:0 0 16px;line-height:1.7;color:#d4d4d8;">${escapeHtml(paragraph).replaceAll("\n", "<br />")}</p>`).join("");
+  const paragraphs = body
+    .split(/\n\s*\n/)
+    .map((paragraph) => `<p style="margin:0 0 16px;line-height:1.7;color:#d4d4d8;">${escapeHtml(paragraph).replaceAll("\n", "<br />")}</p>`)
+    .join("");
 
   return `<!doctype html><html lang="pt"><body style="margin:0;background:#09090b;font-family:Arial,Helvetica,sans-serif;color:#fafafa;"><div style="max-width:600px;margin:0 auto;padding:32px 18px;"><div style="border:1px solid #27272a;border-radius:20px;overflow:hidden;background:#0f0f12;"><div style="padding:24px;border-bottom:1px solid #27272a;"><div style="display:flex;align-items:center;gap:12px;">${avatar}<div><div style="font-size:15px;font-weight:700;color:#fafafa;">${safeName}</div><div style="font-size:12px;color:#71717a;margin-top:3px;">Comunicação</div></div></div></div><div style="padding:28px 24px;">${paragraphs}</div></div><p style="margin:16px 0 0;text-align:center;font-size:11px;color:#52525b;">Enviado através da Silentra</p></div></body></html>`;
 }
@@ -44,8 +47,9 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient();
   const today = new Date();
-  const monthDay = `${String(today.getUTCMonth() + 1).padStart(2, "0")}-${String(today.getUTCDate()).padStart(2, "0")}`;
-  const birthdayDate = `${today.getUTCFullYear()}-${monthDay}`;
+  const month = today.getUTCMonth() + 1;
+  const day = today.getUTCDate();
+  const birthdayDate = `${today.getUTCFullYear()}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   let processed = 0;
   let sent = 0;
   let skipped = 0;
@@ -62,8 +66,6 @@ export async function GET(request: Request) {
   }
 
   for (const automation of automations ?? []) {
-    // Billing access is tenant-scoped. The owner remains the Stripe billing
-    // owner, but birthday automation eligibility must follow the barbershop plan.
     const { data: subscription } = await admin
       .from("subscriptions")
       .select("plan, plan_override, status")
@@ -75,29 +77,23 @@ export async function GET(request: Request) {
       continue;
     }
 
-    const { data: shop } = await admin
-      .from("barbershops")
-      .select("name, avatar_url")
-      .eq("id", automation.barbershop_id)
-      .maybeSingle();
-
-    if (!shop) {
-      skipped++;
-      continue;
-    }
-
-    const { data: clients, error: clientError } = await admin
-      .from("users")
-      .select("id, name_complete, email, birth_date")
-      .eq("barbershop_id", automation.barbershop_id)
-      .eq("role", "client")
-      .not("email", "is", null)
-      .not("birth_date", "is", null)
-      .like("birth_date", `____-${monthDay}`);
+    const [{ data: shop }, { data: clients, error: clientError }] = await Promise.all([
+      admin.from("barbershops").select("name, avatar_url, slug").eq("id", automation.barbershop_id).maybeSingle(),
+      admin.rpc("get_birthday_clients", {
+        p_barbershop_id: automation.barbershop_id,
+        p_month: month,
+        p_day: day,
+      }),
+    ]);
 
     if (clientError) {
       console.error("[Birthday Cron] client query failed", clientError);
       failed++;
+      continue;
+    }
+
+    if (!shop) {
+      skipped++;
       continue;
     }
 
@@ -118,7 +114,7 @@ export async function GET(request: Request) {
 
       const name = client.name_complete?.trim() || "Cliente";
       const shopName = shop.name?.trim() || "A tua barbearia";
-      const bookingUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://silentra.me"}/barbearias/${automation.barbershop_id}`;
+      const bookingUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://silentra.me"}/barbershops/${shop.slug ?? automation.barbershop_id}`;
       const subject = renderTemplate(automation.subject, { nome: name, barbearia: shopName, booking_url: bookingUrl });
       const body = renderTemplate(automation.body, { nome: name, barbearia: shopName, booking_url: bookingUrl });
       const result = await sendBrevoEmail({
