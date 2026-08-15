@@ -4,31 +4,33 @@ import { hasActivePaidSubscription } from "@/lib/billing/plan-access";
 export interface SubscriptionData {
   id: string;
   stripe_customer_id: string;
-  stripe_subscription_id: string;
-  stripe_price_id: string;
+  stripe_subscription_id: string | null;
+  stripe_price_id: string | null;
   status: "active" | "trialing" | "past_due" | "canceled" | "unpaid" | "incomplete";
   cancel_at_period_end: boolean;
-  current_period_start: string;
-  current_period_end: string;
+  current_period_start?: string | null;
+  current_period_end: string | null;
   plan: "free" | "pro" | "enterprise";
 }
 
 interface SubscriptionQueryResult {
   subscription: SubscriptionData | null;
   plan: "free" | "pro" | "enterprise";
+  planSource: "free" | "admin" | "subscription_override" | "stripe";
   isAuthenticated: boolean;
 }
 
 async function fetchSubscription(): Promise<SubscriptionQueryResult> {
   const res = await fetch("/api/stripe/subscription", { cache: "no-store" });
   if (!res.ok) {
-    if (res.status === 401) return { subscription: null, plan: "free", isAuthenticated: false };
+    if (res.status === 401) return { subscription: null, plan: "free", planSource: "free", isAuthenticated: false };
     throw new Error("Failed to fetch subscription data.");
   }
   const json = await res.json();
   return {
     subscription: json.subscription ?? null,
     plan: json.plan ?? "free",
+    planSource: json.planSource ?? "free",
     isAuthenticated: true,
   };
 }
@@ -47,10 +49,8 @@ export function useSubscription() {
 
   const isAuthenticated = data?.isAuthenticated ?? false;
   const plan = data?.plan ?? "free";
+  const planSource = data?.planSource ?? "free";
 
-  // /api/stripe/subscription resolves the effective plan from Stripe. Keep that
-  // value as the single source of truth for every billing UI consumer instead
-  // of allowing a stale local subscriptions.plan value to leak into the UI.
   const subscription = data?.subscription
     ? { ...data.subscription, plan }
     : null;
@@ -83,8 +83,9 @@ export function useSubscription() {
     },
   });
 
-  const isPro = plan === "pro" && hasActivePaidSubscription(subscription);
-  const isBusiness = plan === "enterprise" && hasActivePaidSubscription(subscription);
+  const isAdministrativePlan = planSource === "admin";
+  const isPro = plan === "pro" && (isAdministrativePlan || hasActivePaidSubscription(subscription));
+  const isBusiness = plan === "enterprise" && (isAdministrativePlan || hasActivePaidSubscription(subscription));
   const isTrial = subscription?.status === "trialing";
   const loading = isLoading || cancelMutation.isPending || resumeMutation.isPending || checkoutMutation.isPending;
 
@@ -92,6 +93,8 @@ export function useSubscription() {
     subscription,
     isAuthenticated,
     plan,
+    planSource,
+    isAdministrativePlan,
     isPro,
     isBusiness,
     isTrial,
