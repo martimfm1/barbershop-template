@@ -20,7 +20,7 @@ export interface PricingCardProps {
   onManagePortal?: () => void;
 }
 
-export function PricingCard({ tier, title, price, description, features, popular = false, trialDays, onCheckout }: PricingCardProps) {
+export function PricingCard({ tier, title, price, priceId, description, features, popular = false, trialDays, onCheckout }: PricingCardProps) {
   const isMounted = useSyncExternalStore(() => () => undefined, () => true, () => false);
   const { subscription, isAuthenticated, plan: currentPlan, loading, checkout, upgrade } = useSubscription();
   const isCurrentPlan = useMemo(() => isAuthenticated && currentPlan === tier, [currentPlan, isAuthenticated, tier]);
