@@ -129,7 +129,14 @@ export function MobileSearchFilterBar({
       {filtersOpen ? (
         <div id="mobile-marketplace-filters" className="mt-2 grid gap-2 rounded-xl border border-white/10 bg-black/20 p-2.5">
           <label className="sr-only" htmlFor="mobile-marketplace-date">Escolher data</label>
-          <input id="mobile-marketplace-date" type="date" min={new Date().toISOString().slice(0, 10)} value(/^\d{4}-\d{2}-\d{2}$/.test(activeDate) ? activeDate : "")} onChange={(event) => setActiveDate((event.target.value || "Today") as MarketplaceDateFilter)} className="min-h-11 w-full rounded-xl border border-white/10 bg-zinc-950 px-3 text-sm text-zinc-200 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20" />
+          <input
+            id="mobile-marketplace-date"
+            type="date"
+            min={new Date().toISOString().slice(0, 10)}
+            value={/^\d{4}-\d{2}-\d{2}$/.test(activeDate) ? activeDate : ""}
+            onChange={(event) => setActiveDate((event.target.value || "Today") as MarketplaceDateFilter)}
+            className="min-h-11 w-full rounded-xl border border-white/10 bg-zinc-950 px-3 text-sm text-zinc-200 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+          />
           <div className="grid grid-cols-3 gap-2">
             {FILTER_PILLS.map((pill) => (
               <button key={pill} type="button" onClick={() => handleFilterClick(pill)} disabled={pill === "Near Me" && isLocating} aria-pressed={activeFilter === pill} className={`min-h-11 rounded-xl border px-2 text-xs font-semibold ${activeFilter === pill ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200" : "border-white/10 bg-white/[0.03] text-zinc-400"}`}>
