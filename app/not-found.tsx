@@ -36,8 +36,10 @@ export default function NotFound() {
   }, []);
 
   return (
-    <div className="relative overflow-hidden bg-zinc-950 text-zinc-50 antialiased" style={{ minHeight: "100dvh" }}>
-
+    <div
+      className="relative overflow-hidden bg-zinc-950 text-zinc-50 antialiased"
+      style={{ minHeight: "100dvh" }}
+    >
       {/* Background — identical to landing */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_30%),radial-gradient(circle_at_top_right,rgba(34,197,94,0.08),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.05),transparent_22%)]" />
       <div
@@ -52,7 +54,11 @@ export default function NotFound() {
 
       <main
         className="relative mx-auto flex w-full max-w-2xl flex-col items-center justify-center px-4 sm:px-6"
-        style={{ minHeight: "100dvh", paddingTop: "5rem", paddingBottom: "2rem" }}
+        style={{
+          minHeight: "100dvh",
+          paddingTop: "5rem",
+          paddingBottom: "2rem",
+        }}
       >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -63,12 +69,14 @@ export default function NotFound() {
           {/* Outer card */}
           <div
             ref={cardRef}
-            style={{ transition: "transform 0.18s ease-out", willChange: "transform" }}
+            style={{
+              transition: "transform 0.18s ease-out",
+              willChange: "transform",
+            }}
             className="rounded-3xl border border-white/10 bg-zinc-900/60 p-3 shadow-[0_24px_100px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-4"
           >
             {/* Inner card */}
             <div className="rounded-2xl border border-white/10 bg-black/40 p-5 backdrop-blur-xl sm:p-8">
-
               {/* Status pill */}
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
@@ -93,7 +101,8 @@ export default function NotFound() {
                   className="font-semibold tracking-[-0.06em] leading-none select-none"
                   style={{
                     fontSize: "clamp(5rem, 22vw, 10rem)",
-                    background: "linear-gradient(135deg, #fafafa 0%, #52525b 100%)",
+                    background:
+                      "linear-gradient(135deg, #fafafa 0%, #52525b 100%)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                   }}
@@ -116,7 +125,8 @@ export default function NotFound() {
                   This page doesn't exist
                 </h2>
                 <p className="text-sm leading-6 text-zinc-400">
-                  The route you requested was not found. It may have been moved, deleted, or the URL may be incorrect.
+                  The route you requested was not found. It may have been moved,
+                  deleted, or the URL may be incorrect.
                 </p>
               </motion.div>
 
@@ -127,7 +137,6 @@ export default function NotFound() {
                 transition={{ duration: 0.5, delay: 0.32 }}
                 className="flex flex-col gap-2 sm:flex-row sm:gap-3"
               >
-
                 <Link
                   href="/"
                   className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-zinc-300 backdrop-blur-xl transition-colors hover:bg-white/10 hover:text-zinc-100 active:scale-[0.98] sm:w-auto sm:py-2.5"
@@ -136,13 +145,12 @@ export default function NotFound() {
                   Back to Home
                 </Link>
               </motion.div>
-
             </div>
 
             {/* Footer row */}
             <div className="mt-3 flex items-center justify-between px-1 sm:mt-4">
               <p className="text-[11px] text-zinc-600 font-mono tracking-wide">
-                silentra.io · not found
+                barbers.  silentra.me · not found
               </p>
               <div className="flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-zinc-700" />
@@ -151,7 +159,6 @@ export default function NotFound() {
               </div>
             </div>
           </div>
-
         </motion.div>
       </main>
     </div>
