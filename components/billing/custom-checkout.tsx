@@ -35,12 +35,7 @@ function CheckoutForm({ plan }: CheckoutFormProps) {
   const applyPromotion = async () => {
     setPromotionError(null);
     if (checkoutState.type !== "success" || !promotionCode.trim()) return;
-    const result = await checkoutState.checkout.loadActions();
-    if (result.type !== "success") {
-      setPromotionError(result.error.message);
-      return;
-    }
-    const response = await result.actions.applyPromotionCode(promotionCode.trim());
+    const response = await checkoutState.checkout.applyPromotionCode(promotionCode.trim());
     if (response.error) {
       setPromotionApplied(false);
       setPromotionError(response.error.message);
@@ -53,12 +48,11 @@ function CheckoutForm({ plan }: CheckoutFormProps) {
   const removePromotion = async () => {
     setPromotionError(null);
     if (checkoutState.type !== "success") return;
-    const result = await checkoutState.checkout.loadActions();
-    if (result.type !== "success") {
+    const result = await checkoutState.checkout.removePromotionCode();
+    if (result.error) {
       setPromotionError(result.error.message);
       return;
     }
-    await result.actions.removePromotionCode();
     setPromotionApplied(false);
   };
 
