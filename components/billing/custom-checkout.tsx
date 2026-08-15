@@ -79,7 +79,7 @@ function CheckoutForm({ plan }: CheckoutFormProps) {
     <form onSubmit={submit} className="space-y-5">
       <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
         <p className="mb-3 text-sm font-semibold text-white">Dados de faturação</p>
-        <BillingAddressElement options={{ display: "auto" }} />
+        <BillingAddressElement />
         <div className="mt-4 border-t border-white/8 pt-4">
           <TaxIdElement options={{}} />
         </div>
