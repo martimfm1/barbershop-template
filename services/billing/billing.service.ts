@@ -14,6 +14,7 @@ export interface CreateCheckoutInput {
   priceId: string;
   successUrl: string;
   cancelUrl: string;
+  promotionCode?: string | null;
 }
 
 function customerId(customer: string | Stripe.Customer | Stripe.DeletedCustomer): string {
@@ -49,20 +50,43 @@ export class BillingService {
     if (!requestedPlan) throw new BillingError("The requested price is not available.", "INVALID_PRICE", { priceId: input.priceId });
     const existing = await SubscriptionService.getActiveForUser(input.userId);
     if (existing) throw new BillingError("An active paid subscription already exists; change the plan instead of creating another subscription.", "SUBSCRIPTION_NOT_ACTIVE", { userId: input.userId });
+
+    const stripe = getStripeClient();
+    let promotionCodeId: string | undefined;
+    const normalizedPromotionCode = input.promotionCode?.trim();
+    if (normalizedPromotionCode) {
+      const promotionCodes = await stripe.promotionCodes.list({
+        code: normalizedPromotionCode,
+        active: true,
+        limit: 1,
+      });
+      const promotionCode = promotionCodes.data[0];
+      if (!promotionCode) {
+        throw new BillingError("O código promocional não é válido ou já não está ativo.", "INVALID_PRICE");
+      }
+      promotionCodeId = promotionCode.id;
+    }
+
     const customer = await this.getOrCreateCustomer(input.userId, input.email);
-    const session = await getStripeClient().checkout.sessions.create({
+    const session = await stripe.checkout.sessions.create({
       customer,
       mode: "subscription",
       line_items: [{ price: input.priceId, quantity: 1 }],
       success_url: input.successUrl,
       cancel_url: input.cancelUrl,
       client_reference_id: input.userId,
-      metadata: { user_id: input.userId, offer: requestedPlan === PLANS.PRO ? "pro_trial" : "standard" },
+      metadata: {
+        user_id: input.userId,
+        offer: requestedPlan === PLANS.PRO ? "pro_trial" : "standard",
+        ...(promotionCodeId ? { promotion_code_id: promotionCodeId } : {}),
+      },
       subscription_data: {
-        metadata: { user_id: input.userId },
+        metadata: { user_id: input.userId, ...(promotionCodeId ? { promotion_code_id: promotionCodeId } : {}) },
         ...(requestedPlan === PLANS.PRO ? { trial_period_days: TRIAL_PERIOD_DAYS } : {}),
       },
-      allow_promotion_codes: true,
+      ...(promotionCodeId
+        ? { discounts: [{ promotion_code: promotionCodeId }], allow_promotion_codes: false }
+        : { allow_promotion_codes: true }),
       billing_address_collection: "auto",
       tax_id_collection: { enabled: true },
     });
@@ -135,14 +159,7 @@ export class BillingService {
       await SubscriptionService.markCanceled(userId);
     }
     const customer = await this.getOrCreateCustomer(userId, email);
-    const subscription = await getStripeClient().subscriptions.create({
-      customer,
-      items: [{ price: priceId }],
-      payment_behavior: "default_incomplete",
-      payment_settings: { save_default_payment_method: "on_subscription" },
-      expand: ["latest_invoice.confirmation_secret", "latest_invoice.payment_intent"],
-      metadata: { user_id: userId },
-    });
+    const subscription = await getStripeClient().subscriptions.create({ customer, items: [{ price: priceId }], payment_behavior: "default_incomplete", payment_settings: { save_default_payment_method: "on_subscription" }, expand: ["latest_invoice.confirmation_secret", "latest_invoice.payment_intent"], metadata: { user_id: userId } });
     const stripe = getStripeClient();
     const invoice = typeof subscription.latest_invoice === "string" ? await stripe.invoices.retrieve(subscription.latest_invoice, { expand: ["confirmation_secret", "payment_intent"] }) : subscription.latest_invoice;
     const paymentIntent = (invoice as (Stripe.Invoice & { payment_intent?: string | Stripe.PaymentIntent }) | null)?.payment_intent;
