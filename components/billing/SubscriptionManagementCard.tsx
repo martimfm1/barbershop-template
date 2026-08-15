@@ -18,6 +18,8 @@ import {
 export function SubscriptionManagementCard() {
   const {
     subscription,
+    planSource,
+    isAdministrativePlan,
     isPro,
     isBusiness,
     isTrial,
@@ -29,7 +31,7 @@ export function SubscriptionManagementCard() {
 
   const [isConfirmingCancel, setIsConfirmingCancel] = useState(false);
 
-  const formatPeriodEnd = (dateString?: string) => {
+  const formatPeriodEnd = (dateString?: string | null) => {
     if (!dateString) return null;
     return new Date(dateString).toLocaleDateString("pt-PT", {
       day: "numeric",
@@ -73,16 +75,31 @@ export function SubscriptionManagementCard() {
     }
   };
 
+  const hasStripeSubscription = Boolean(subscription?.stripe_subscription_id);
+  const displaySource = isAdministrativePlan
+    ? "Plano atribuído pela administração da Silentra"
+    : planSource === "subscription_override"
+      ? "Plano administrativo da subscrição"
+      : hasStripeSubscription
+        ? "Subscrição Stripe"
+        : "Plano gratuito";
+
   return (
     <div className="w-full space-y-6">
       <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-900/80 p-6 backdrop-blur-xl sm:p-8">
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
           <div className="space-y-2">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-emerald-400">
                 <ShieldCheck className="size-3.5" />
                 Plano {getPlanName()}
               </span>
+
+              {isAdministrativePlan && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-0.5 text-xs text-sky-300">
+                  <ShieldCheck className="size-3" /> Atribuído pela Silentra
+                </span>
+              )}
 
               {isTrial && (
                 <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs text-amber-400">
@@ -90,7 +107,7 @@ export function SubscriptionManagementCard() {
                 </span>
               )}
 
-              {subscription?.cancel_at_period_end && (
+              {hasStripeSubscription && subscription?.cancel_at_period_end && (
                 <span className="inline-flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-xs text-red-400">
                   <AlertTriangle className="size-3" /> Cancela em breve
                 </span>
@@ -101,16 +118,19 @@ export function SubscriptionManagementCard() {
               Gestão da Subscrição
             </h2>
             <p className="text-xs text-zinc-400">
-              {subscription?.cancel_at_period_end
+              {isAdministrativePlan
+                ? "Este plano foi atribuído pela administração da Silentra e aplica-se a todos os membros da barbearia."
+                : subscription?.cancel_at_period_end
                 ? `A tua subscrição será cancelada a ${formatPeriodEnd(subscription.current_period_end)}.`
                 : subscription?.current_period_end
                 ? `Próxima renovação a ${formatPeriodEnd(subscription.current_period_end)}.`
                 : "Estás a utilizar a versão gratuita sem cobranças associadas."}
             </p>
+            <p className="text-[11px] text-zinc-600">Origem: {displaySource}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {subscription ? (
+            {hasStripeSubscription ? (
               <button
                 type="button"
                 onClick={handlePortalRedirect}
@@ -138,7 +158,7 @@ export function SubscriptionManagementCard() {
           </div>
         </div>
 
-        {subscription && (
+        {hasStripeSubscription && (
           <div className="mt-8 grid gap-4 border-t border-white/10 pt-6 sm:grid-cols-3">
             <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
               <div className="flex items-center gap-2 text-xs text-zinc-400">
@@ -196,10 +216,10 @@ export function SubscriptionManagementCard() {
           </div>
         )}
 
-        {subscription && (
+        {hasStripeSubscription && (
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/5 bg-zinc-950/40 p-4">
             <div className="text-xs text-zinc-400">
-              {subscription.cancel_at_period_end ? (
+              {subscription?.cancel_at_period_end ? (
                 <span className="flex items-center gap-2 text-amber-400">
                   <AlertTriangle className="size-4" />
                   Podes reativar a subscrição a qualquer momento antes do término do período.
@@ -210,7 +230,7 @@ export function SubscriptionManagementCard() {
             </div>
 
             <div>
-              {subscription.cancel_at_period_end ? (
+              {subscription?.cancel_at_period_end ? (
                 <button
                   type="button"
                   onClick={handleResume}
