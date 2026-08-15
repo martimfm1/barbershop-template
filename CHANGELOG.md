@@ -2,6 +2,22 @@
 
 ## Unreleased — 2026-08-15
 
+### Internal platform administration — Silentra Control Center
+
+- Adicionada uma rota interna não indexável em `/_silentra-admin`, sem qualquer entrada na navegação pública.
+- O acesso exige sessão Supabase válida e uma identidade explicitamente configurada através de `SILENTRA_PLATFORM_ADMIN_USER_ID` ou `SILENTRA_PLATFORM_ADMIN_EMAIL`; sem configuração o acesso falha fechado.
+- Criado helper server-side `requirePlatformAdmin()` e todas as APIs internas repetem a mesma autorização.
+- Adicionado overview operacional com contagem de barbearias, utilizadores, owners, barbeiros, clientes, appointments, appointments futuros, subscrições ativas e atribuições administrativas de plano.
+- Adicionado resumo global dos planos efetivos Free/Pro/Enterprise, considerando overrides administrativos e subscrições tenant-scoped.
+- Adicionada pesquisa interna de barbearias por nome, slug ou UUID.
+- Adicionado controlo de atribuição manual de plano por barbearia: Free, Pro ou Enterprise, motivo e expiração opcional.
+- A atribuição usa os RPCs administrativos existentes `set_barbershop_plan_assignment` e `clear_barbershop_plan_assignment`, mantendo Stripe separado do entitlement administrativo.
+- Alterações de plano feitas através do painel ficam registadas em `audit_logs`.
+- Adicionados quick checks para `GET /api/health` com status HTTP e latência.
+- Criado modo de diagnóstico que explica o modelo de autorização e deixa explícito que secrets não são enviados para o browser.
+- A página usa `robots: noindex,nofollow` e não foi adicionada a qualquer menu da aplicação.
+- O overview calcula os totais de planos sobre todos os tenants, enquanto a lista operacional permanece limitada às 30 barbearias mais recentes/resultantes da pesquisa.
+
 ### Production hardening — booking concurrency and Stripe webhook claims
 
 - A proteção final de overlap de appointments passa a tratar também marcações sem `professional_id` como uma lane de disponibilidade por barbearia, evitando dois bookings não atribuídos no mesmo intervalo.
@@ -78,15 +94,3 @@
 - `barbershop_member_permissions` passa a ser a fonte canónica para permissões individuais.
 - Removida a herança silenciosa de permissões por role na autorização de módulos: desligar uma permissão na aba **Membros e permissões** passa efetivamente a bloquear essa área no backend.
 - `staff_permissions` fica apenas como fallback de compatibilidade para membros sem registo canónico.
-- Expandido o mapa de permissões para Agenda, Clientes, Serviços, Equipa, Mensagens, Marketing, Fidelização, Automações, Estatísticas, QR, Definições e Faturação.
-- A API da equipa passa a devolver todos os membros reais do tenant, incluindo a informação de entrada por código, em vez de filtrar apenas barbeiros convidados por código.
-- A UI da equipa passou a mostrar as permissões correspondentes às áreas reais do SaaS e explica que o plano é da barbearia, enquanto os switches controlam acesso individual.
-- Alterações de role continuam a sincronizar o profissional associado e a respeitar a quota do plano da barbearia.
-
-### Professionals — tenant quotas
-
-- As quotas de profissionais passaram a usar exclusivamente o plano da `barbershop_id`.
-- Convites novos, promoção de membro para `barber`, criação de profissionais e triggers de base de dados usam a mesma quota tenant-scoped.
-- O fluxo de reconciliação de barbeiros históricos continua a ignorar a quota durante o backfill, sem criar bypass para novos convites.
-- Novos convites continuam sujeitos à quota Free/Pro/Enterprise.
-- A quota passa a contar apenas profissionais ativos.
