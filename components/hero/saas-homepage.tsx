@@ -47,7 +47,7 @@ const workflow = [
 const plans = [
   { name: "Free", price: "0 €", note: "Para começar", features: ["Agendamentos ilimitados", "Clientes e serviços ilimitados", "Reservas online + QR", "1 barbeiro / localização"], highlighted: false },
   { name: "Pro", price: "9,90 €", note: "Para crescer", features: ["Até 5 barbeiros", "CRM e estatísticas avançadas", "Campanhas e automações", "Fidelização e seguimentos"], highlighted: true },
-  { name: "Enterprise", price: "A partir de 29,90 €", note: "Para escalar", features: ["Barbeiros e localizações ilimitados", "Permissões e gestão global", "POS, stock e comissões", "Relatórios empresariais avançados"], highlighted: false },
+  { name: "Enterprise", price: "29,90 €", note: "Para escalar", features: ["Barbeiros e localizações ilimitados", "Permissões e gestão global", "POS, stock e comissões", "Relatórios empresariais avançados"], highlighted: false },
 ] as const;
 
 export function SaaSHomepage() {
