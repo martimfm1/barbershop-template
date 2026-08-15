@@ -19,6 +19,25 @@ const nextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      // Next.js treats app folders starting with `_` as private folders and
+      // excludes them from the route tree. Keep the intentionally obscure
+      // public URL while routing internally to normal route segments.
+      {
+        source: "/_silentra-admin",
+        destination: "/silentra-admin",
+      },
+      {
+        source: "/_silentra-admin/:path*",
+        destination: "/silentra-admin/:path*",
+      },
+      {
+        source: "/api/_silentra-admin/:path*",
+        destination: "/api/silentra-admin/:path*",
+      },
+    ];
+  },
   async headers() {
     return [
       {
