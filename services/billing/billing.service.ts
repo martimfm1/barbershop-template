@@ -21,39 +21,16 @@ function customerId(customer: string | Stripe.Customer | Stripe.DeletedCustomer)
 }
 
 export class BillingService {
-  /**
-   * Billing writes remain owner-only even though paid feature access is
-   * inherited by every member of the barbershop tenant.
-   */
   static async assertBillingOwner(userId: string): Promise<void> {
     const database = createAdminClient();
-    const { data, error } = await database
-      .from("users")
-      .select("id, role, barbershop_id")
-      .eq("id", userId)
-      .maybeSingle();
-
-    if (error) {
-      throw new BillingError("Could not verify billing ownership.", "DB_READ_FAILED", { userId });
-    }
-
+    const { data, error } = await database.from("users").select("id, role, barbershop_id").eq("id", userId).maybeSingle();
+    if (error) throw new BillingError("Could not verify billing ownership.", "DB_READ_FAILED", { userId });
     if (!data?.barbershop_id || String(data.role).toLowerCase() !== "owner") {
       throw new BillingError("Only the barbershop owner can manage billing.", "SUBSCRIPTION_NOT_ACTIVE", { userId });
     }
-
-    const { data: barbershop, error: barbershopError } = await database
-      .from("barbershops")
-      .select("id, created_by")
-      .eq("id", data.barbershop_id)
-      .maybeSingle();
-
-    if (barbershopError) {
-      throw new BillingError("Could not verify barbershop ownership.", "DB_READ_FAILED", { userId, barbershopId: data.barbershop_id });
-    }
-
-    if (!barbershop || barbershop.created_by !== userId) {
-      throw new BillingError("Only the barbershop owner can manage billing.", "SUBSCRIPTION_NOT_ACTIVE", { userId, barbershopId: data.barbershop_id });
-    }
+    const { data: barbershop, error: barbershopError } = await database.from("barbershops").select("id, created_by").eq("id", data.barbershop_id).maybeSingle();
+    if (barbershopError) throw new BillingError("Could not verify barbershop ownership.", "DB_READ_FAILED", { userId, barbershopId: data.barbershop_id });
+    if (!barbershop || barbershop.created_by !== userId) throw new BillingError("Only the barbershop owner can manage billing.", "SUBSCRIPTION_NOT_ACTIVE", { userId, barbershopId: data.barbershop_id });
   }
 
   static async getOrCreateCustomer(userId: string, email: string): Promise<string> {
@@ -61,22 +38,33 @@ export class BillingService {
     const { data, error } = await database.from("customers").select("stripe_customer_id").eq("user_id", userId).maybeSingle();
     if (error) throw new BillingError("Could not load customer mapping.", "DB_READ_FAILED", { userId });
     if (data?.stripe_customer_id) return data.stripe_customer_id;
-    const stripe = getStripeClient();
-    const customer = await stripe.customers.create({ email, metadata: { user_id: userId } }, { idempotencyKey: `customer:${userId}` });
+    const customer = await getStripeClient().customers.create({ email, metadata: { user_id: userId } }, { idempotencyKey: `customer:${userId}` });
     const { error: writeError } = await database.from("customers").upsert({ user_id: userId, stripe_customer_id: customer.id, email }, { onConflict: "user_id" });
     if (writeError) throw new BillingError("Could not persist customer mapping.", "DB_WRITE_FAILED", { userId, customerId: customer.id });
     return customer.id;
   }
 
   static async createCheckoutSession(input: CreateCheckoutInput): Promise<string> {
-    if (!planForPrice(input.priceId)) throw new BillingError("The requested price is not available.", "INVALID_PRICE", { priceId: input.priceId });
+    const requestedPlan = planForPrice(input.priceId);
+    if (!requestedPlan) throw new BillingError("The requested price is not available.", "INVALID_PRICE", { priceId: input.priceId });
     const existing = await SubscriptionService.getActiveForUser(input.userId);
     if (existing) throw new BillingError("An active paid subscription already exists; change the plan instead of creating another subscription.", "SUBSCRIPTION_NOT_ACTIVE", { userId: input.userId });
     const customer = await this.getOrCreateCustomer(input.userId, input.email);
     const session = await getStripeClient().checkout.sessions.create({
-      customer, mode: "subscription", line_items: [{ price: input.priceId, quantity: 1 }], success_url: input.successUrl, cancel_url: input.cancelUrl,
-      client_reference_id: input.userId, metadata: { user_id: input.userId }, subscription_data: { metadata: { user_id: input.userId }, trial_period_days: TRIAL_PERIOD_DAYS },
-      allow_promotion_codes: true, billing_address_collection: "auto", tax_id_collection: { enabled: true },
+      customer,
+      mode: "subscription",
+      line_items: [{ price: input.priceId, quantity: 1 }],
+      success_url: input.successUrl,
+      cancel_url: input.cancelUrl,
+      client_reference_id: input.userId,
+      metadata: { user_id: input.userId, offer: requestedPlan === PLANS.PRO ? "pro_trial" : "standard" },
+      subscription_data: {
+        metadata: { user_id: input.userId },
+        ...(requestedPlan === PLANS.PRO ? { trial_period_days: TRIAL_PERIOD_DAYS } : {}),
+      },
+      allow_promotion_codes: true,
+      billing_address_collection: "auto",
+      tax_id_collection: { enabled: true },
     });
     if (!session.url) throw new BillingError("Stripe did not return a Checkout URL.", "WEBHOOK_PROCESSING_FAILED");
     return session.url;
@@ -115,18 +103,15 @@ export class BillingService {
     const customer = await this.getCustomerId(userId);
     const invoices = await getStripeClient().invoices.list({ customer, limit: 12 });
     const now = Date.now();
-
-    return invoices.data
-      .filter((invoice) => {
-        const isPending = invoice.status === null || invoice.status === "draft" || invoice.status === "open";
-        return !isPending || now - invoice.created * 1000 <= PENDING_INVOICE_TTL_MS;
-      })
-      .map((invoice) => {
-        const price = invoice.lines.data.find((line) => line.subscription)?.pricing?.price_details?.price;
-        const priceId = typeof price === "string" ? price : price?.id;
-        const plan = priceId ? planForPrice(priceId) : undefined;
-        return { id: invoice.id, amount: invoice.amount_paid || invoice.amount_due, currency: invoice.currency.toUpperCase(), status: invoice.status, plan: plan === PLANS.ENTERPRISE ? "Barbers Enterprise" : plan === PLANS.PRO ? "Barbers Pro" : "Subscrição", date: new Date(invoice.created * 1000).toLocaleDateString("pt-PT", { day: "2-digit", month: "short", year: "numeric" }), invoice_pdf: invoice.invoice_pdf };
-      });
+    return invoices.data.filter((invoice) => {
+      const isPending = invoice.status === null || invoice.status === "draft" || invoice.status === "open";
+      return !isPending || now - invoice.created * 1000 <= PENDING_INVOICE_TTL_MS;
+    }).map((invoice) => {
+      const price = invoice.lines.data.find((line) => line.subscription)?.pricing?.price_details?.price;
+      const priceId = typeof price === "string" ? price : price?.id;
+      const plan = priceId ? planForPrice(priceId) : undefined;
+      return { id: invoice.id, amount: invoice.amount_paid || invoice.amount_due, currency: invoice.currency.toUpperCase(), status: invoice.status, plan: plan === PLANS.ENTERPRISE ? "Barbers Enterprise" : plan === PLANS.PRO ? "Barbers Pro" : "Subscrição", date: new Date(invoice.created * 1000).toLocaleDateString("pt-PT", { day: "2-digit", month: "short", year: "numeric" }), invoice_pdf: invoice.invoice_pdf };
+    });
   }
 
   static async createSetupIntent(userId: string, email: string): Promise<string> {
@@ -139,19 +124,16 @@ export class BillingService {
   static async createSubscription(userId: string, email: string, priceId: string): Promise<{ subscriptionId: string; clientSecret: string | null; action: "created" | "changed" }> {
     const requestedPlan = planForPrice(priceId);
     if (!requestedPlan || requestedPlan === PLANS.FREE) throw new BillingError("The requested price is not available.", "INVALID_PRICE", { priceId });
-
     const activeSubscription = await SubscriptionService.getActiveForUser(userId);
     if (activeSubscription?.stripe_subscription_id) {
       await this.updatePlan(userId, priceId);
       return { subscriptionId: activeSubscription.stripe_subscription_id, clientSecret: null, action: "changed" };
     }
-
     const existing = await SubscriptionService.getForUser(userId);
     if (existing?.stripe_subscription_id && existing.status === "incomplete") {
       await getStripeClient().subscriptions.cancel(existing.stripe_subscription_id);
       await SubscriptionService.markCanceled(userId);
     }
-
     const customer = await this.getOrCreateCustomer(userId, email);
     const subscription = await getStripeClient().subscriptions.create({
       customer,
@@ -162,9 +144,7 @@ export class BillingService {
       metadata: { user_id: userId },
     });
     const stripe = getStripeClient();
-    const invoice = typeof subscription.latest_invoice === "string"
-      ? await stripe.invoices.retrieve(subscription.latest_invoice, { expand: ["confirmation_secret", "payment_intent"] })
-      : subscription.latest_invoice;
+    const invoice = typeof subscription.latest_invoice === "string" ? await stripe.invoices.retrieve(subscription.latest_invoice, { expand: ["confirmation_secret", "payment_intent"] }) : subscription.latest_invoice;
     const paymentIntent = (invoice as (Stripe.Invoice & { payment_intent?: string | Stripe.PaymentIntent }) | null)?.payment_intent;
     const paymentIntentSecret = typeof paymentIntent === "string" ? undefined : paymentIntent?.client_secret;
     const clientSecret = invoice?.confirmation_secret?.client_secret ?? paymentIntentSecret;
@@ -175,8 +155,7 @@ export class BillingService {
 
   static async getPaymentMethods(userId: string) {
     let customer: string;
-    try { customer = await this.getCustomerId(userId); }
-    catch (error) { if (error instanceof BillingError && error.code === "CUSTOMER_NOT_FOUND") return []; throw error; }
+    try { customer = await this.getCustomerId(userId); } catch (error) { if (error instanceof BillingError && error.code === "CUSTOMER_NOT_FOUND") return []; throw error; }
     const stripe = getStripeClient();
     const [methods, stripeCustomer] = await Promise.all([stripe.paymentMethods.list({ customer, type: "card" }), stripe.customers.retrieve(customer)]);
     const defaultId = stripeCustomer.deleted ? undefined : typeof stripeCustomer.invoice_settings.default_payment_method === "string" ? stripeCustomer.invoice_settings.default_payment_method : stripeCustomer.invoice_settings.default_payment_method?.id;
