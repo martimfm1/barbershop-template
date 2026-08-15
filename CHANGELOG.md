@@ -2,6 +2,17 @@
 
 ## Unreleased — 2026-08-15
 
+### API production hardening
+
+- A criação pública e manual de appointments passa a usar `create_booking_atomic`, com lock transacional por barbearia e verificação final de conflitos dentro da mesma transação.
+- Bookings com profissional específico passam a respeitar também bookings globais (`professional_id = null`), evitando sobreposição sem profissional e por profissional.
+- A API pública de bookings mantém rate limit, validação de serviço/profissional e bloqueios de agenda antes da operação atómica.
+- A API de appointments da dashboard passa a usar o mesmo caminho atómico e devolve `409` para conflitos de concorrência.
+- A API de CRM clients passa a usar `requireModuleContext` e respeita a permissão canónica `clients` da equipa.
+- A API de mensagens passa a usar `requireModuleContext` e respeita a permissão canónica `messages`.
+- O envio de email manual passa a utilizar `BREVO_FROM_EMAIL` e `BREVO_FROM_NAME`, alinhado com o ambiente de produção documentado.
+- Adicionado `scripts/qa/api-audit.mjs` e `qa:api` ao quality gate para detetar handlers privados sem um guard server-side reconhecível.
+
 ### Internal administration — production control center
 
 - Evoluído o painel interno para um Control Center orientado a operações de produção, mantendo-o fora da navegação pública e protegido por `requirePlatformAdmin()`.
@@ -14,7 +25,6 @@
 - Melhorada a leitura mobile com navegação por tabs horizontal e cartões responsivos.
 - Separada a UI de produção do componente legado do painel interno para reduzir risco de manutenção.
 - Adicionado endpoint interno de snapshot `/api/silentra-admin/shop`, protegido server-side e sem exposição de secrets.
-- Nenhuma migration nova é necessária para estas alterações de UI/API.
 
 ### Internal administration — route compatibility fix
 
@@ -26,8 +36,8 @@
 
 ### Production hardening — booking concurrency and Stripe webhook claims
 
-- A proteção final de overlap de appointments passa a tratar também marcações sem `professional_id` como uma lane de disponibilidade por barbearia, evitando dois bookings não atribuídos no mesmo intervalo.
-- A constraint PostgreSQL continua a ser a autoridade final para conflitos concorrentes; a API já converte `23P01` em HTTP `409`.
+- A proteção final de overlap de appointments passa a tratar também marcações sem `professional_id` como uma lane de disponibilidade por barbearia.
+- A constraint PostgreSQL continua a ser a autoridade final para conflitos concorrentes; a API converte conflitos de overlap em HTTP `409`.
 - Adicionado estado de claim atómico para webhooks Stripe com estados `processing`, `processed` e `failed`.
 - Webhooks concorrentes para o mesmo `event_id` deixam de poder processar o evento simultaneamente.
 - Claims presos recuperam automaticamente após um lease curto, permitindo retry depois de um crash do worker.
