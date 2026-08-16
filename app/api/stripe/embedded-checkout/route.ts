@@ -44,10 +44,11 @@ export async function POST(request: Request) {
     const session = await stripe.checkout.sessions.create({
       customer,
       mode: "subscription",
-      ui_mode: "custom",
+      // Stripe's current Checkout Elements integration uses the `elements`
+      // UI mode for a fully custom page backed by Checkout Sessions.
+      ui_mode: "elements",
       line_items: [{ price: priceId, quantity: 1 }],
       return_url: `${origin}/checkout?priceId=${encodeURIComponent(priceId)}&checkout=return&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/checkout?priceId=${encodeURIComponent(priceId)}&checkout=cancelled`,
       client_reference_id: user.id,
       allow_promotion_codes: true,
       metadata: {
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
     });
 
     if (!session.client_secret) {
-      throw new BillingError("Stripe did not return an embedded Checkout client secret.", "WEBHOOK_PROCESSING_FAILED");
+      throw new BillingError("Stripe did not return a Checkout Elements client secret.", "WEBHOOK_PROCESSING_FAILED");
     }
 
     return NextResponse.json(
