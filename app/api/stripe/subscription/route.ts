@@ -30,11 +30,12 @@ export async function GET(request: Request) {
     if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: { "Cache-Control": "no-store" } });
 
     const database = createAdminClient();
-    const { data: userRow, error: userError } = await database.from("users").select("barbershop_id").eq("id", user.id).maybeSingle();
+    const { data: userRow, error: userError } = await database.from("users").select("barbershop_id, role").eq("id", user.id).maybeSingle();
     if (userError) throw new BillingError("Could not resolve SaaS account.", "DB_READ_FAILED", { userId: user.id });
 
     const barbershopId = userRow?.barbershop_id ?? null;
-    if (!barbershopId) return NextResponse.json({ subscription: null, plan: "free", planSource: "free", barbershopId: null }, { headers: { "Cache-Control": "no-store" } });
+    const isBillingOwner = String(userRow?.role ?? "").toLowerCase() === "owner";
+    if (!barbershopId) return NextResponse.json({ subscription: null, plan: "free", planSource: "free", barbershopId: null, isBillingOwner }, { headers: { "Cache-Control": "no-store" } });
 
     const { searchParams } = new URL(request.url);
     const checkoutSessionId = searchParams.get("session_id")?.trim() || null;
@@ -61,7 +62,7 @@ export async function GET(request: Request) {
     const hasActiveAssignment = Boolean(assignment && (!assignment.expires_at || new Date(assignment.expires_at).getTime() > Date.now()));
     const planSource = hasActiveAssignment ? "admin" : subscription?.plan_override ? "subscription_override" : plan !== "free" ? "stripe" : "free";
 
-    return NextResponse.json({ subscription, plan, planSource, barbershopId }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ subscription, plan, planSource, barbershopId, isBillingOwner }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return billingErrorResponse(error);
   }
