@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckoutElementsProvider, BillingAddressElement, PaymentElement, TaxIdElement, useCheckout } from "@stripe/react-stripe-js/checkout";
 import { loadStripe } from "@stripe/stripe-js";
@@ -116,14 +116,50 @@ function CheckoutForm({ plan }: CheckoutFormProps) {
 }
 
 export function CustomCheckout({ priceId, plan }: { priceId: string; plan: keyof typeof PLAN_COPY }) {
-  const clientSecret = useMemo(() => fetch("/api/stripe/embedded-checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ priceId }) }).then(async (response) => {
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(body.error || "Não foi possível iniciar o checkout.");
-    if (!body.clientSecret) throw new Error("O Stripe não devolveu uma sessão de checkout válida.");
-    return body.clientSecret as string;
-  }), [priceId]);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [initializationError, setInitializationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const initialize = async () => {
+      try {
+        setInitializationError(null);
+        setClientSecret(null);
+        const response = await fetch("/api/stripe/embedded-checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ priceId }),
+          cache: "no-store",
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(body.error || "Não foi possível iniciar o checkout.");
+        if (!body.clientSecret) throw new Error("O Stripe não devolveu uma sessão de checkout válida.");
+        if (!cancelled) setClientSecret(body.clientSecret as string);
+      } catch (error) {
+        if (!cancelled) setInitializationError(error instanceof Error ? error.message : "Não foi possível iniciar o checkout.");
+      }
+    };
+
+    void initialize();
+    return () => {
+      cancelled = true;
+    };
+  }, [priceId]);
 
   const copy = PLAN_COPY[plan];
+
+  if (initializationError) {
+    return (
+      <div className="mx-auto max-w-3xl rounded-2xl border border-red-400/20 bg-red-400/[0.04] p-6 text-sm text-red-200">
+        {initializationError}
+      </div>
+    );
+  }
+
+  if (!clientSecret) {
+    return <div className="mx-auto flex min-h-[520px] max-w-3xl items-center justify-center text-sm text-zinc-500">A preparar o checkout seguro…</div>;
+  }
 
   return (
     <CheckoutElementsProvider stripe={stripePromise} options={{ clientSecret, elementsOptions: { appearance: { theme: "night", variables: { colorPrimary: "#34d399", colorBackground: "#09090b", colorText: "#f4f4f5", colorTextSecondary: "#a1a1aa", colorDanger: "#f87171", borderRadius: "12px", fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" } } } }}>
