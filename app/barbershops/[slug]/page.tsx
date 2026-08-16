@@ -109,7 +109,8 @@ export default async function BarbershopPage({ params }: BarbershopPageProps) {
     permanentRedirect(getResolvedProfileUrl(profile));
   }
 
-  logPublicProfile("info", "render", slug, { loyaltyEnabled: profile.plan === "pro" || profile.plan === "enterprise" });
+  const loyaltyEnabled = profile.plan === "pro" || profile.plan === "enterprise";
+  logPublicProfile("info", "render", slug, { loyaltyEnabled });
 
   const canonicalUrl = absoluteUrl(getResolvedProfileUrl(profile));
   const image = profile.og_image_url || profile.cover_url || profile.avatar_url || null;
@@ -117,7 +118,7 @@ export default async function BarbershopPage({ params }: BarbershopPageProps) {
   return (
     <>
       <PublicBusinessJsonLd name={profile.name} url={canonicalUrl} address={profile.address} city={profile.city} phone={profile.phone} image={image} />
-      <BarbershopPublicPage profile={profile} />
+      <BarbershopPublicPage slug={profile.slug} loyaltyEnabled={loyaltyEnabled} />
     </>
   );
 }
