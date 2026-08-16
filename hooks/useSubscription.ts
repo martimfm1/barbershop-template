@@ -98,7 +98,7 @@ export function useSubscription() {
     loading,
     cancel: cancelMutation.mutateAsync,
     resume: resumeMutation.mutateAsync,
-    upgrade: async () => { window.location.assign("/dashboard/billing"); },
+    upgrade: async () => { window.location.assign("/plans"); },
     checkout: async ({ priceId, plan: requestedPlan = "pro" }: { priceId: string; plan?: "pro" | "enterprise" }) => {
       window.location.assign(`/checkout?priceId=${encodeURIComponent(priceId)}&plan=${requestedPlan}`);
     },

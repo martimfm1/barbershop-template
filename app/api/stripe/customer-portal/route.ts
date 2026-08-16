@@ -6,7 +6,7 @@ import { billingErrorResponse } from "@/services/billing/http";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const supabase = await createClient();
     const {
@@ -18,7 +18,7 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: { "Cache-Control": "no-store" } });
     }
 
-    const url = await BarbershopStripeService.createCustomerPortal(user.id);
+    const url = await BarbershopStripeService.createCustomerPortal(user.id, request.url);
     if (!url) return NextResponse.json({ error: "A Stripe não devolveu um URL válido para o Customer Portal." }, { status: 502, headers: { "Cache-Control": "no-store" } });
 
     return NextResponse.json({ url }, { headers: { "Cache-Control": "no-store" } });

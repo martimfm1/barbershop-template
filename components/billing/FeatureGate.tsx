@@ -31,7 +31,7 @@ export function useFeatureGate() {
     const requiredPlan = FEATURE_MIN_PLAN[feature] ?? "pro";
     toast(`Esta funcionalidade requer o plano ${PLAN_LABEL[requiredPlan]}.`, {
       description: "Faz upgrade para desbloquear esta funcionalidade.",
-      action: { label: "Ver planos", onClick: () => router.push("/dashboard/billing") },
+      action: { label: "Ver planos", onClick: () => router.push("/plans") },
     });
     return false;
   };

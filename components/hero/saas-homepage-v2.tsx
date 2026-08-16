@@ -157,10 +157,7 @@ export function SaaSHomepageV2() {
   const [selectedService, setSelectedService] = useState<ServiceName>(services[0].name);
   const [selectedSlot, setSelectedSlot] = useState<string | null>("10:00");
   const service = useMemo(() => services.find((item) => item.name === selectedService) ?? services[0], [selectedService]);
-  const { isAuthenticated, loading: authLoading } = useSubscription();
-
-  const pricingHref = isAuthenticated ? "/plans" : "/registo";
-  const pricingLabel = isAuthenticated ? "Mudar para este plano" : "Criar conta para começar";
+  const { isAuthenticated, loading: authLoading, plan: currentPlan } = useSubscription();
 
   return (
     <main className="relative mt-24 overflow-hidden">
@@ -209,17 +206,42 @@ export function SaaSHomepageV2() {
       <section className="mx-auto max-w-7xl px-4 pb-18 sm:px-6 sm:pb-24 lg:px-8">
         <SectionHeading eyebrow="Planos" title="Começa simples e cresce sem trocar de sistema." text="O plano é definido pela barbearia e acompanha toda a equipa. Escolhe pela fase do negócio, não pela quantidade de logins." />
         <div className="mt-10 grid gap-3 lg:grid-cols-3">
-          {plans.map((plan) => <article key={plan.name} className={`relative border p-5 sm:p-6 ${plan.recommended ? "border-emerald-400/30 bg-emerald-400/[0.055]" : "border-white/10 bg-zinc-900/35"}`}>
-            {plan.recommended ? <span className="absolute right-4 top-4 border border-emerald-400/20 bg-emerald-400/[0.08] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200">Mais escolhido</span> : null}
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">{plan.subtitle}</p>
-            <h3 className="mt-3 text-xl font-semibold text-white">{plan.name}</h3>
-            <p className="mt-5 text-3xl font-semibold tracking-tight text-white">{plan.price}<span className="text-sm font-normal text-zinc-500">{plan.name === "Free" ? "" : " / mês"}</span></p>
-            {plan.name === "Pro" ? <p className="mt-2 text-xs font-semibold text-emerald-300/90">14 dias grátis para novos utilizadores.</p> : null}
-            <ul className="mt-6 space-y-3">{plan.features.map((feature) => <li key={feature} className="flex gap-2 text-sm text-zinc-300"><Check className="mt-0.5 size-4 shrink-0 text-emerald-300" />{feature}</li>)}</ul>
-            <Link href={pricingHref} aria-disabled={authLoading} className={`mt-7 inline-flex min-h-11 w-full items-center justify-center gap-2 text-sm font-semibold ${plan.recommended ? "bg-white text-zinc-950" : "border border-white/10 bg-white/[0.04] text-white"} ${authLoading ? "pointer-events-none opacity-60" : ""}`}>
-              {authLoading ? "A carregar…" : pricingLabel}<ArrowRight className="size-4" />
-            </Link>
-          </article>)}
+          {plans.map((planItem) => {
+            const tierKey = planItem.name.toLowerCase() as "free" | "pro" | "enterprise";
+            const isCurrentPlan = isAuthenticated && currentPlan === tierKey;
+            
+            let label = "Mudar para este plano";
+            let href = "/plans";
+            let isDisabled = false;
+
+            if (!isAuthenticated) {
+              href = "/registo";
+              label = tierKey === "free" ? "Começar gratuitamente" : "Criar conta para começar";
+            } else if (isCurrentPlan) {
+              label = "Plano atual";
+              isDisabled = true;
+            }
+
+            return (
+              <article key={planItem.name} className={`relative border p-5 sm:p-6 ${planItem.recommended ? "border-emerald-400/30 bg-emerald-400/[0.055]" : "border-white/10 bg-zinc-900/35"}`}>
+                {planItem.recommended ? <span className="absolute right-4 top-4 border border-emerald-400/20 bg-emerald-400/[0.08] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200">Mais escolhido</span> : null}
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-500">{planItem.subtitle}</p>
+                <h3 className="mt-3 text-xl font-semibold text-white">{planItem.name}</h3>
+                <p className="mt-5 text-3xl font-semibold tracking-tight text-white">{planItem.price}<span className="text-sm font-normal text-zinc-500">{planItem.name === "Free" ? "" : " / mês"}</span></p>
+                {planItem.name === "Pro" ? <p className="mt-2 text-xs font-semibold text-emerald-300/90">14 dias grátis para novos utilizadores.</p> : null}
+                <ul className="mt-6 space-y-3">{planItem.features.map((feature) => <li key={feature} className="flex gap-2 text-sm text-zinc-300"><Check className="mt-0.5 size-4 shrink-0 text-emerald-300" />{feature}</li>)}</ul>
+                {isDisabled ? (
+                  <button type="button" disabled className="mt-7 inline-flex min-h-11 w-full cursor-not-allowed items-center justify-center gap-2 border border-white/10 bg-white/5 text-sm font-semibold text-zinc-400 opacity-60">
+                    {label}
+                  </button>
+                ) : (
+                  <Link href={href} aria-disabled={authLoading} className={`mt-7 inline-flex min-h-11 w-full items-center justify-center gap-2 text-sm font-semibold ${planItem.recommended ? "bg-white text-zinc-950 hover:bg-emerald-300" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/10"} ${authLoading ? "pointer-events-none opacity-60" : ""}`}>
+                    {authLoading ? "A carregar…" : label}<ArrowRight className="size-4" />
+                  </Link>
+                )}
+              </article>
+            );
+          })}
         </div>
         <p className="mt-5 text-xs text-zinc-600">Os limites e funcionalidades completos estão disponíveis em <Link href="/plans" className="text-zinc-400 underline-offset-4 hover:underline">plans</Link>.</p>
       </section>

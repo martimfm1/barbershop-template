@@ -92,8 +92,18 @@ export async function POST(request: Request) {
     }
 
     const canTrial = requestedPlan === PLANS.PRO && !existing;
-    const origin = process.env.NEXT_PUBLIC_APP_URL?.trim() || new URL(request.url).origin;
-    const returnUrl = `${new URL(origin).origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`;
+    let appOrigin = process.env.NEXT_PUBLIC_APP_URL?.trim();
+    if (!appOrigin) {
+      try {
+        appOrigin = new URL(request.url).origin;
+      } catch {
+        appOrigin = "https://barbers.silentra.me";
+      }
+    }
+    if (!appOrigin.startsWith("http://") && !appOrigin.startsWith("https://")) {
+      appOrigin = `https://${appOrigin}`;
+    }
+    const returnUrl = `${appOrigin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`;
     const bucket = Math.floor(Date.now() / CHECKOUT_IDEMPOTENCY_BUCKET_MS);
 
     const session = await getStripeClient().checkout.sessions.create(

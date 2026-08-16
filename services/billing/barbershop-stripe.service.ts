@@ -229,8 +229,12 @@ export class BarbershopStripeService {
 
     const customer = await this.getOrCreateCustomer(userId);
     const canTrial = requestedPlan === PLANS.PRO && !existing;
-    const origin = process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
-    const returnUrl = `${new URL(origin).origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`;
+    let appOrigin = process.env.NEXT_PUBLIC_APP_URL?.trim();
+    if (!appOrigin) appOrigin = "https://barbers.silentra.me";
+    if (!appOrigin.startsWith("http://") && !appOrigin.startsWith("https://")) {
+      appOrigin = `https://${appOrigin}`;
+    }
+    const returnUrl = `${appOrigin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`;
     const bucket = Math.floor(Date.now() / CHECKOUT_IDEMPOTENCY_BUCKET_MS);
 
     const stripe = getStripeClient();
@@ -273,14 +277,26 @@ export class BarbershopStripeService {
     return { clientSecret: session.client_secret, sessionId: session.id };
   }
 
-  static async createCustomerPortal(userId: string): Promise<string> {
+  static async createCustomerPortal(userId: string, requestUrl?: string): Promise<string> {
     const tenant = await this.getTenantContext(userId);
     const customer = await this.getOrCreateCustomer(userId);
-    const origin = process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
+    let origin = process.env.NEXT_PUBLIC_APP_URL?.trim();
+    if (!origin && requestUrl) {
+      try {
+        origin = new URL(requestUrl).origin;
+      } catch {
+        // ignore fallback
+      }
+    }
+    if (!origin) origin = "https://barbers.silentra.me";
+    if (!origin.startsWith("http://") && !origin.startsWith("https://")) {
+      origin = `https://${origin}`;
+    }
+    const returnUrl = `${origin}/dashboard/billing`;
     const configuration = process.env.STRIPE_BILLING_PORTAL_CONFIGURATION_ID?.trim();
     const session = await getStripeClient().billingPortal.sessions.create({
       customer,
-      return_url: `${new URL(origin).origin}/dashboard/billing`,
+      return_url: returnUrl,
       ...(configuration ? { configuration } : {}),
     });
     return session.url;

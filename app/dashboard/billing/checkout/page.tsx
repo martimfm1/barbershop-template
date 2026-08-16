@@ -9,5 +9,6 @@ export default async function BillingCheckoutPage({
   const query = new URLSearchParams();
   if (params.priceId) query.set("priceId", params.priceId);
   if (params.plan) query.set("plan", params.plan);
-  redirect(`/checkout${query.toString() ? `?${query.toString()}` : ""}`);
+  redirect(`/plans${query.toString() ? `?${query.toString()}` : ""}`);
 }
+

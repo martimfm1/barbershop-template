@@ -22,8 +22,10 @@ function formatAmount(amount: number, currency: string) {
 }
 
 export function BillingHub() {
-  const { subscription, plan, planSource, isAdministrativePlan, isTrial, loading, cancel } = useSubscription();
+  const { subscription, plan, planSource, isAdministrativePlan, isTrial, loading, cancel, resume } = useSubscription();
   const [cancelling, setCancelling] = useState(false);
+  const [resuming, setResuming] = useState(false);
+  const [openingPortal, setOpeningPortal] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
 
@@ -73,6 +75,35 @@ export function BillingHub() {
     }
   };
 
+  const handleResume = async () => {
+    try {
+      setResuming(true);
+      await resume();
+      toast.success("Subscrição retomada com sucesso.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível retomar a subscrição.");
+    } finally {
+      setResuming(false);
+    }
+  };
+
+  const handleOpenCustomerPortal = async () => {
+    try {
+      setOpeningPortal(true);
+      const response = await fetch("/api/stripe/customer-portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || typeof body.url !== "string") throw new Error(body.error || "Não foi possível abrir a gestão de faturação.");
+      window.location.assign(body.url);
+    } catch (error) {
+      setOpeningPortal(false);
+      toast.error(error instanceof Error ? error.message : "Não foi possível abrir o Customer Portal.");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <section className="rounded-3xl border border-white/10 bg-zinc-900/70 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.2)] sm:p-7">
@@ -99,8 +130,24 @@ export function BillingHub() {
           <p className="text-xs text-zinc-500">Origem: {isAdministrativePlan ? "Administração Silentra" : planSource === "stripe" ? "Stripe" : "Plano gratuito"}</p>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Link href="/plans" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-zinc-100 transition hover:bg-white/[0.07]">Comparar planos <ArrowRight className="size-4" /></Link>
+            {hasSubscription && !isAdministrativePlan && (
+              <button
+                type="button"
+                onClick={() => void handleOpenCustomerPortal()}
+                disabled={openingPortal || loading}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-zinc-200 transition hover:bg-white/[0.08] disabled:cursor-wait disabled:opacity-60"
+              >
+                {openingPortal ? <Loader2 className="size-4 animate-spin" /> : null}
+                Gerir faturação na Stripe
+              </button>
+            )}
             {active && !isAdministrativePlan && !subscription?.cancel_at_period_end && <button type="button" onClick={() => void handleCancel()} disabled={cancelling || loading} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-400/20 bg-red-400/[0.06] px-4 text-sm font-semibold text-red-200 transition hover:bg-red-400/10 disabled:cursor-wait disabled:opacity-60">{cancelling ? <Loader2 className="size-4 animate-spin" /> : <XCircle className="size-4" />}Cancelar subscrição</button>}
-            {subscription?.cancel_at_period_end && <span className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] px-4 text-sm font-medium text-amber-200"><CalendarDays className="size-4" /> Termina em {nextRenewal}</span>}
+            {subscription?.cancel_at_period_end && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] px-4 text-sm font-medium text-amber-200"><CalendarDays className="size-4" /> Cancelamento agendado ({nextRenewal})</span>
+                <button type="button" onClick={() => void handleResume()} disabled={resuming || loading} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] px-4 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-400/10 disabled:cursor-wait disabled:opacity-60">{resuming ? <Loader2 className="size-4 animate-spin" /> : null}Retomar subscrição</button>
+              </div>
+            )}
           </div>
         </div>
       </section>

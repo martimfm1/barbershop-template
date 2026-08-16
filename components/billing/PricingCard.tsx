@@ -57,7 +57,10 @@ export function PricingCard({ tier, title, price, priceId, description, features
 
   const buttonConfig = useMemo(() => {
     if (!isMounted) return { label: "A carregar…", disabled: true, variant: popular ? ("primary" as const) : ("outline" as const) };
-    if (!isAuthenticated) return { label: "Criar conta para começar", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
+    if (!isAuthenticated) {
+      const label = tier === "free" ? "Começar gratuitamente" : "Criar conta para começar";
+      return { label, disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
+    }
     if (isCurrentPlan) return { label: "Plano atual", disabled: true, variant: "secondary" as const };
     if (!isBillingOwner) return { label: "Apenas o proprietário", disabled: true, variant: "outline" as const };
     if (destination === "plans") return { label: "Mudar para este plano", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };

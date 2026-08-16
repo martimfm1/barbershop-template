@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { CustomCheckout } from "@/components/billing/custom-checkout";
 
 export const dynamic = "force-dynamic";
@@ -7,6 +9,12 @@ export default async function CheckoutPage({
 }: {
   searchParams: Promise<{ priceId?: string; plan?: string; checkout?: string; session_id?: string }>;
 }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/registo");
+  }
+
   const params = await searchParams;
   const priceId = params.priceId?.trim() ?? "";
   const plan = params.plan === "enterprise" ? "enterprise" : "pro";
