@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getPublicProfileBySlug } from "@/lib/barbershops/public-profile";
 import { sendCustomerPortalCodeEmail } from "@/lib/brevo/customer-booking-portal";
 import { requireTenantAuthorization } from "@/lib/security/tenant-guard";
+import { consumePublicRateLimit } from "@/lib/security/public-rate-limit";
 import {
   generateLoyaltyCode,
   hashLoyaltyValue,
@@ -11,6 +12,9 @@ import {
 } from "@/lib/loyalty/session";
 
 export const runtime = "nodejs";
+
+const EMAIL_RATE_LIMIT = 3;
+const EMAIL_RATE_WINDOW_SECONDS = 15 * 60;
 
 export async function POST(request: Request) {
   try {
@@ -24,41 +28,58 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "A fidelização não está disponível para esta barbearia." }, { status: 404 });
     }
 
-    // OTP delivery is the authentication step; this guard validates the public tenant boundary.
     await requireTenantAuthorization({ barbershopId: profile.barbershop_id, allowPublicTenant: true });
 
-    const admin = createAdminClient();
-    const cutoff = new Date(Date.now() - 60_000).toISOString();
-    const { count } = await admin
-      .from("loyalty_verifications")
-      .select("id", { count: "exact", head: true })
-      .eq("barbershop_id", profile.barbershop_id)
-      .eq("email", email)
-      .gte("requested_at", cutoff);
+    const allowed = await consumePublicRateLimit(
+      request,
+      "loyalty-otp-request",
+      `${profile.barbershop_id}:${email}`,
+      EMAIL_RATE_LIMIT,
+      EMAIL_RATE_WINDOW_SECONDS,
+    );
 
-    if ((count ?? 0) >= 1) {
-      return NextResponse.json({ success: true });
+    if (!allowed) {
+      return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
     }
 
+    const admin = createAdminClient();
     const code = generateLoyaltyCode();
-    await admin
+    const expiresAt = loyaltyCodeExpiry();
+    const codeHash = hashLoyaltyValue(code);
+
+    const { error: cleanupError } = await admin
       .from("loyalty_verifications")
       .delete()
       .eq("barbershop_id", profile.barbershop_id)
       .eq("email", email)
       .is("consumed_at", null);
 
+    if (cleanupError) throw cleanupError;
+
     const { error: insertError } = await admin.from("loyalty_verifications").insert({
       barbershop_id: profile.barbershop_id,
       email,
-      code_hash: hashLoyaltyValue(code),
-      expires_at: loyaltyCodeExpiry(),
+      code_hash: codeHash,
+      expires_at: expiresAt,
     });
 
-    if (insertError) return NextResponse.json({ error: "Não foi possível iniciar a autenticação." }, { status: 503 });
+    if (insertError) throw insertError;
 
-    await sendCustomerPortalCodeEmail(email, code);
-    return NextResponse.json({ success: true });
+    try {
+      await sendCustomerPortalCodeEmail(email, code);
+    } catch (emailError) {
+      await admin
+        .from("loyalty_verifications")
+        .delete()
+        .eq("barbershop_id", profile.barbershop_id)
+        .eq("email", email)
+        .eq("code_hash", codeHash)
+        .is("consumed_at", null);
+      console.error("[LOYALTY_OTP_EMAIL_ERROR]", emailError);
+      return NextResponse.json({ error: "Não foi possível enviar o código." }, { status: 503 });
+    }
+
+    return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Não foi possível enviar o código." }, { status: 503 });
   }
