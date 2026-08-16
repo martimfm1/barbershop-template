@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { UUID_PATTERN } from "@/lib/validation";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getPublicProfileById, getPublicProfileByRedirect, getPublicProfileBySlug, isValidPublicProfileSlug } from "@/lib/barbershops/public-profile";
 import BarbershopPublicPage from "./public-barbershop-page";
 import type { PublicProfileRecord } from "@/lib/barbershops/public-profile";
+import type { BarbershopPublicDetails } from "./services/public-barbershop.service";
 
 interface BarbershopPageProps {
   params: Promise<{ slug: string }>;
@@ -71,6 +73,51 @@ function getResolvedProfileUrl(profile: PublicProfileRecord): string {
   return `/barbershops/${encodeURIComponent(profile.slug)}`;
 }
 
+async function getInitialPublicDetails(profile: PublicProfileRecord): Promise<BarbershopPublicDetails> {
+  const database = createAdminClient();
+  const barbershopId = profile.barbershop_id ?? profile.id;
+
+  const [{ data: services }, { data: reviews }, { data: barbershop }] = await Promise.all([
+    database
+      .from("services")
+      .select("id, name, price, duration, popular")
+      .eq("barbershop_id", barbershopId)
+      .order("popular", { ascending: false })
+      .order("name", { ascending: true }),
+    database
+      .from("reviews")
+      .select("id, client_name, rating, comment, created_at")
+      .eq("barbershop_id", profile.id)
+      .order("created_at", { ascending: false }),
+    database
+      .from("barbershops")
+      .select("opening_time, closing_time, lunch_start, lunch_end, closed_days")
+      .eq("id", barbershopId)
+      .maybeSingle(),
+  ]);
+
+  const reviewItems = reviews ?? [];
+  const ratingAverage = reviewItems.length
+    ? Number((reviewItems.reduce((total, review) => total + Number(review.rating || 0), 0) / reviewItems.length).toFixed(1))
+    : 0;
+
+  return {
+    ...profile,
+    services: (services ?? []).map((service) => ({
+      ...service,
+      popular: profile.plan !== "free" && service.popular === true,
+    })),
+    reviews: reviewItems,
+    rating: ratingAverage,
+    reviewsCount: reviewItems.length,
+    opening_time: barbershop?.opening_time ?? null,
+    closing_time: barbershop?.closing_time ?? null,
+    lunch_start: barbershop?.lunch_start ?? null,
+    lunch_end: barbershop?.lunch_end ?? null,
+    closed_days: barbershop?.closed_days ?? null,
+  };
+}
+
 export default async function BarbershopPage({ params }: BarbershopPageProps) {
   const { slug } = await params;
   logPublicProfile("info", "request", slug, { isUuid: UUID_PATTERN.test(slug) });
@@ -112,13 +159,14 @@ export default async function BarbershopPage({ params }: BarbershopPageProps) {
   const loyaltyEnabled = profile.plan === "pro" || profile.plan === "enterprise";
   logPublicProfile("info", "render", slug, { loyaltyEnabled });
 
+  const initialData = await getInitialPublicDetails(profile);
   const canonicalUrl = absoluteUrl(getResolvedProfileUrl(profile));
   const image = profile.og_image_url || profile.cover_url || profile.avatar_url || null;
 
   return (
     <>
       <PublicBusinessJsonLd name={profile.name} url={canonicalUrl} address={profile.address} city={profile.city} phone={profile.phone} image={image} />
-      <BarbershopPublicPage slug={profile.slug} loyaltyEnabled={loyaltyEnabled} />
+      <BarbershopPublicPage slug={profile.slug} loyaltyEnabled={loyaltyEnabled} initialData={initialData} />
     </>
   );
 }
