@@ -91,7 +91,7 @@ export async function GET() {
       (!assignment.expires_at || new Date(assignment.expires_at).getTime() > Date.now()),
     );
 
-    const plan: BillingPlan = hasActiveAssignment
+    const plan: BillingPlan = hasActiveAssignment && assignment
       ? (assignment.plan as BillingPlan)
       : subscription?.plan_override && subscription.plan_override !== PLANS.FREE
         ? subscription.plan_override
