@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { CustomerPortalEmailError, sendCustomerPortalCodeEmail } from "@/lib/brevo/customer-booking-portal";
+import { LoyaltyEmailDeliveryError, sendLoyaltyCodeEmail } from "@/lib/brevo/loyalty";
 import { requireTenantAuthorization } from "@/lib/security/tenant-guard";
 import { consumePublicRateLimit } from "@/lib/security/public-rate-limit";
 import { getLoyaltyTenantBySlug } from "@/lib/loyalty/public-tenant";
@@ -45,6 +45,16 @@ export async function POST(request: Request) {
     const expiresAt = loyaltyCodeExpiry();
     const codeHash = hashLoyaltyValue(code);
 
+    const { data: barbershop, error: barbershopError } = await admin
+      .from("barbershops")
+      .select("name")
+      .eq("id", tenant.barbershopId)
+      .maybeSingle();
+    if (barbershopError) {
+      logOtp("barbershop_lookup_failed", { code: barbershopError.code ?? "UNKNOWN" });
+      return NextResponse.json({ error: "Não foi possível preparar o envio." }, { status: 503 });
+    }
+
     const { error: cleanupError } = await admin.from("loyalty_verifications").delete().eq("barbershop_id", tenant.barbershopId).eq("email", email).is("consumed_at", null);
     if (cleanupError) {
       logOtp("verification_cleanup_failed", { code: cleanupError.code ?? "UNKNOWN" });
@@ -58,10 +68,10 @@ export async function POST(request: Request) {
     }
 
     try {
-      await sendCustomerPortalCodeEmail(email, code);
+      await sendLoyaltyCodeEmail(email, code, barbershop?.name ?? "esta barbearia");
     } catch (emailError) {
       await admin.from("loyalty_verifications").delete().eq("barbershop_id", tenant.barbershopId).eq("email", email).eq("code_hash", codeHash).is("consumed_at", null);
-      if (emailError instanceof CustomerPortalEmailError) {
+      if (emailError instanceof LoyaltyEmailDeliveryError) {
         logOtp("email_delivery_failed", { status: emailError.status ?? 0 });
       } else {
         logOtp("email_delivery_failed", { status: 0 });
