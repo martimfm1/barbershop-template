@@ -50,10 +50,7 @@ export function useSubscription() {
   const isAuthenticated = data?.isAuthenticated ?? false;
   const plan = data?.plan ?? "free";
   const planSource = data?.planSource ?? "free";
-
-  const subscription = data?.subscription
-    ? { ...data.subscription, plan }
-    : null;
+  const subscription = data?.subscription ? { ...data.subscription, plan } : null;
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
@@ -73,25 +70,11 @@ export function useSubscription() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["user-subscription"] }); },
   });
 
-  const checkoutMutation = useMutation({
-    mutationFn: async ({ priceId, successUrl, cancelUrl, promotionCode }: { priceId: string; successUrl?: string; cancelUrl?: string; promotionCode?: string }) => {
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, successUrl, cancelUrl, promotionCode: promotionCode?.trim() || undefined }),
-      });
-      if (!res.ok) { const error = await res.json(); throw new Error(error.error || "Failed to initiate checkout."); }
-      const data: { url: string } = await res.json();
-      if (data.url) window.location.href = data.url;
-      return data;
-    },
-  });
-
   const isAdministrativePlan = planSource === "admin";
   const isPro = plan === "pro" && (isAdministrativePlan || hasActivePaidSubscription(subscription));
   const isBusiness = plan === "enterprise" && (isAdministrativePlan || hasActivePaidSubscription(subscription));
   const isTrial = subscription?.status === "trialing";
-  const loading = isLoading || cancelMutation.isPending || resumeMutation.isPending || checkoutMutation.isPending;
+  const loading = isLoading || cancelMutation.isPending || resumeMutation.isPending;
 
   return {
     subscription,
@@ -106,6 +89,8 @@ export function useSubscription() {
     cancel: cancelMutation.mutateAsync,
     resume: resumeMutation.mutateAsync,
     upgrade: async () => { window.location.assign("/dashboard/billing"); },
-    checkout: checkoutMutation.mutateAsync,
+    checkout: async ({ priceId, plan: requestedPlan = "pro" }: { priceId: string; plan?: "pro" | "enterprise" }) => {
+      window.location.assign(`/checkout?priceId=${encodeURIComponent(priceId)}&plan=${requestedPlan}`);
+    },
   };
 }
