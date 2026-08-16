@@ -40,8 +40,6 @@ export async function POST(request: Request) {
     const customer = await BillingService.getOrCreateCustomer(user.id, user.email);
     const origin = new URL(request.url).origin;
     const stripe = getStripeClient();
-    // The key identifies one checkout attempt, not just user + price. Reusing the
-    // latter causes Stripe to reject a legitimate retry when any session parameter changes.
     const idempotencyKey = `checkout-elements:${user.id}:${checkoutAttemptId}`;
 
     const session = await stripe.checkout.sessions.create({
@@ -49,7 +47,7 @@ export async function POST(request: Request) {
       mode: "subscription",
       ui_mode: "elements",
       line_items: [{ price: priceId, quantity: 1 }],
-      return_url: `${origin}/dashboard/billing?checkout=return&session_id={CHECKOUT_SESSION_ID}`,
+      return_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       client_reference_id: user.id,
       allow_promotion_codes: true,
       metadata: {
