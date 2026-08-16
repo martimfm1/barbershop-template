@@ -340,7 +340,33 @@ export class BarbershopStripeService {
       ? planForPrice(priceId) ?? PLANS.FREE
       : PLANS.FREE;
 
-    const existing = await this.getSubscriptionForBarbershop(barbershopId);
+    const database = createAdminClient();
+    const { data: owner } = await database.from("users").select("email").eq("id", ownerUserId).maybeSingle();
+    const billingEmail = owner?.email ?? null;
+
+    // 1. Ensure customer mapping exists FIRST (prevents foreign key constraint failure on subscriptions)
+    const { error: customerError } = await database.from("customers").upsert({
+      user_id: ownerUserId,
+      stripe_customer_id: customer,
+      email: billingEmail,
+    }, { onConflict: "user_id" });
+    if (customerError) {
+      console.error("[SYNC_FROM_STRIPE_CUSTOMER_UPSERT_ERROR]", customerError);
+    }
+
+    // 2. Ensure barbershop billing account exists SECOND
+    const { error: billingAccountError } = await database.from("barbershop_billing_accounts").upsert({
+      barbershop_id: barbershopId,
+      billing_owner_user_id: ownerUserId,
+      stripe_customer_id: customer,
+      billing_email: billingEmail,
+      ...(subscription.status === "trialing" ? { trial_started_at: new Date().toISOString() } : {}),
+    }, { onConflict: "barbershop_id" });
+    if (billingAccountError) {
+      console.error("[SYNC_FROM_STRIPE_BILLING_ACCOUNT_UPSERT_ERROR]", billingAccountError);
+    }
+
+    // 3. Upsert subscriptions table THIRD (persists stripe_subscription_id to Supabase)
     const payload = {
       user_id: ownerUserId,
       barbershop_id: barbershopId,
@@ -352,34 +378,17 @@ export class BarbershopStripeService {
       trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
       current_period_end: new Date(periodEnd * 1000).toISOString(),
       cancel_at_period_end: subscription.cancel_at_period_end,
+      updated_at: new Date().toISOString(),
     };
 
-    const database = createAdminClient();
+    const existing = await this.getSubscriptionForBarbershop(barbershopId);
     const write = existing
       ? await database.from("subscriptions").update(payload).eq("id", existing.id)
       : await database.from("subscriptions").upsert(payload, { onConflict: "barbershop_id" });
 
-    if (write.error) throw new BillingError("Could not persist subscription state.", "DB_WRITE_FAILED", { barbershopId, subscriptionId: subscription.id });
-
-    const { data: owner } = await database.from("users").select("email").eq("id", ownerUserId).maybeSingle();
-    const billingEmail = owner?.email ?? null;
-
-    const { error: billingAccountError } = await database.from("barbershop_billing_accounts").upsert({
-      barbershop_id: barbershopId,
-      billing_owner_user_id: ownerUserId,
-      stripe_customer_id: customer,
-      billing_email: billingEmail,
-      ...(subscription.status === "trialing" ? { trial_started_at: new Date().toISOString() } : {}),
-    }, { onConflict: "barbershop_id" });
-    if (billingAccountError) throw new BillingError("Could not persist Stripe billing account mapping.", "DB_WRITE_FAILED", { barbershopId, customer });
-
-    if (billingEmail) {
-      const { error: customerMappingError } = await database.from("customers").upsert({
-        user_id: ownerUserId,
-        stripe_customer_id: customer,
-        email: billingEmail,
-      }, { onConflict: "user_id" });
-      if (customerMappingError) throw new BillingError("Could not persist Stripe customer mapping.", "DB_WRITE_FAILED", { userId: ownerUserId, customer });
+    if (write.error) {
+      console.error("[SYNC_FROM_STRIPE_SUBSCRIPTIONS_WRITE_ERROR]", write.error);
+      throw new BillingError("Could not persist subscription state.", "DB_WRITE_FAILED", { barbershopId, subscriptionId: subscription.id, cause: write.error });
     }
   }
 

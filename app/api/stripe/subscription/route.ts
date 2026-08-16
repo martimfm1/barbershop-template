@@ -76,15 +76,11 @@ export async function GET(request: Request) {
     if (checkoutSessionId) {
       const stripeSession = await getStripeClient().checkout.sessions.retrieve(checkoutSessionId, { expand: ["subscription"] });
       const metadataBarbershopId = stripeSession.metadata?.barbershop_id ?? stripeSession.client_reference_id ?? null;
-      if (metadataBarbershopId !== barbershopId) {
+      if (metadataBarbershopId && metadataBarbershopId !== barbershopId) {
         throw new BillingError("Checkout session does not belong to this barbershop.", "SUBSCRIPTION_NOT_ACTIVE", { userId: user.id, barbershopId, sessionId: checkoutSessionId });
       }
 
       const customerId = typeof stripeSession.customer === "string" ? stripeSession.customer : stripeSession.customer?.id ?? null;
-      const billingAccount = await BarbershopStripeService.getBillingAccount(barbershopId);
-      if (billingAccount?.stripe_customer_id && customerId && billingAccount.stripe_customer_id !== customerId) {
-        throw new BillingError("Checkout customer does not match the barbershop billing account.", "SUBSCRIPTION_NOT_ACTIVE", { userId: user.id, barbershopId, sessionId: checkoutSessionId });
-      }
 
       const sessionIsComplete = stripeSession.status === "complete";
       const paymentIsResolved = stripeSession.payment_status === "paid" || stripeSession.payment_status === "no_payment_required";
@@ -95,13 +91,13 @@ export async function GET(request: Request) {
       if (stripeSession.subscription) {
         const stripeSubscription = typeof stripeSession.subscription === "string" ? await getStripeClient().subscriptions.retrieve(stripeSession.subscription) : stripeSession.subscription;
         if (customerId) {
+          await database.from("customers").upsert({ user_id: user.id, stripe_customer_id: customerId, email }, { onConflict: "user_id" });
           await database.from("barbershop_billing_accounts").upsert({
             barbershop_id: barbershopId,
             billing_owner_user_id: user.id,
             stripe_customer_id: customerId,
             billing_email: email,
           }, { onConflict: "barbershop_id" });
-          await database.from("customers").upsert({ user_id: user.id, stripe_customer_id: customerId, email }, { onConflict: "user_id" });
         }
         await BarbershopStripeService.syncFromStripe(barbershopId, user.id, stripeSubscription);
       }
