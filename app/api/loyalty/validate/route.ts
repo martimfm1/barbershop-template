@@ -1,31 +1,49 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { getPublicProfileBySlug } from "@/lib/barbershops/public-profile";
 import { hashLoyaltyToken } from "@/lib/loyalty/session";
+import { requireModuleContext, moduleErrorResponse } from "@/services/modules/authorization";
+import { getPublicProfileBySlug } from "@/lib/barbershops/public-profile";
+import { consumePublicRateLimit } from "@/lib/security/public-rate-limit";
 
 export const runtime = "nodejs";
 
+const VALIDATION_RATE_LIMIT = 40;
+const VALIDATION_RATE_WINDOW_SECONDS = 60;
+
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
-
+    const context = await requireModuleContext("loyalty", "loyalty");
     const body = (await request.json().catch(() => ({}))) as { identifier?: unknown; slug?: unknown };
     const identifier = typeof body.identifier === "string" ? body.identifier.trim() : "";
     const slug = typeof body.slug === "string" ? body.slug.trim().toLowerCase() : "";
-    if (!identifier || identifier.length > 256 || !slug) return NextResponse.json({ error: "Código inválido." }, { status: 400 });
+    if (!identifier || identifier.length > 256 || !slug) {
+      return NextResponse.json({ error: "Código inválido." }, { status: 400 });
+    }
 
     const profile = await getPublicProfileBySlug(slug);
-    if (!profile?.barbershop_id || !["pro", "enterprise"].includes(profile.plan)) return NextResponse.json({ error: "Fidelização indisponível." }, { status: 404 });
+    if (!profile?.barbershop_id || !["pro", "enterprise"].includes(profile.plan)) {
+      return NextResponse.json({ error: "Fidelização indisponível." }, { status: 404 });
+    }
 
-    const admin = createAdminClient();
+    if (profile.barbershop_id !== context.barbershopId) {
+      return NextResponse.json({ error: "Este voucher pertence a outra barbearia." }, { status: 403 });
+    }
+
+    const allowed = await consumePublicRateLimit(
+      request,
+      "loyalty-redemption-validation",
+      context.barbershopId,
+      VALIDATION_RATE_LIMIT,
+      VALIDATION_RATE_WINDOW_SECONDS,
+    );
+    if (!allowed) {
+      return NextResponse.json({ error: "Demasiadas tentativas. Tenta novamente dentro de um minuto." }, { status: 429 });
+    }
+
     const hash = hashLoyaltyToken(identifier);
-    const { data, error } = await admin.rpc("validate_loyalty_redemption", {
-      p_barbershop_id: profile.barbershop_id,
+    const { data, error } = await context.admin.rpc("validate_loyalty_redemption", {
+      p_barbershop_id: context.barbershopId,
       p_identifier_hash: hash,
-      p_staff_user_id: user.id,
+      p_staff_user_id: context.userId,
     });
 
     if (error) {
@@ -41,11 +59,11 @@ export async function POST(request: Request) {
     const result = Array.isArray(data) ? data[0] : data;
     if (!result?.redemption_id) return NextResponse.json({ error: "Resgate inválido." }, { status: 409 });
 
-    await admin.from("audit_logs").insert({
+    await context.admin.from("audit_logs").insert({
       action: "loyalty_redemption_validated",
       entity_type: "loyalty_redemption",
       entity_id: result.redemption_id,
-      metadata: { barbershop_id: profile.barbershop_id, staff_user_id: user.id },
+      metadata: { barbershop_id: context.barbershopId, staff_user_id: context.userId },
     });
 
     return NextResponse.json({
@@ -57,7 +75,9 @@ export async function POST(request: Request) {
         memberEmail: result.member_email,
       },
     }, { headers: { "Cache-Control": "no-store" } });
-  } catch {
+  } catch (error) {
+    const response = moduleErrorResponse(error);
+    if (response) return NextResponse.json(response.body, { status: response.status });
     return NextResponse.json({ error: "Não foi possível validar o resgate." }, { status: 503 });
   }
 }
