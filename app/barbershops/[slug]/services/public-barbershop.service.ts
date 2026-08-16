@@ -52,6 +52,42 @@ interface RawService {
   popular: boolean | null;
 }
 
+interface BarbershopRow {
+  id: string;
+  name: string;
+  slug: string | null;
+  phone: string | null;
+  address: string | null;
+  opening_time: string | null;
+  closing_time: string | null;
+  lunch_start: string | null;
+  lunch_end: string | null;
+  closed_days: string | null;
+  is_public_in_directory: boolean | null;
+}
+
+interface ShopRow {
+  id: string;
+  barbershop_id: string | null;
+  name: string | null;
+  slug: string | null;
+  custom_slug?: string | null;
+  city: string | null;
+  address: string | null;
+  phone: string | null;
+  opening_time: string | null;
+  closing_time: string | null;
+  lunch_start: string | null;
+  lunch_end: string | null;
+  tags: string[] | null;
+  popular_service_id: string | null;
+  rating: number | null;
+  reviews_count: number | null;
+  avatar_url: string | null;
+  cover_url: string | null;
+  off_days?: number[] | null;
+}
+
 export const publicBarbershopService = {
   async getBarbershopData(slug: string) {
     try {
@@ -60,94 +96,74 @@ export const publicBarbershopService = {
         return { data: null, error: { message: "Barbearia não encontrada." } };
       }
 
-      let shop: any = null;
-      let shopError: any = null;
-
-      const bySlug = await supabase
-        .from("shops")
-        .select("*")
+      const { data: barbershop, error: barbershopError } = await supabase
+        .from("barbershops")
+        .select("id, name, slug, phone, address, opening_time, closing_time, lunch_start, lunch_end, closed_days, is_public_in_directory")
         .eq("slug", cleanSlug)
         .maybeSingle();
 
-      shop = bySlug.data;
-      shopError = bySlug.error;
-
-      if (!shop && !shopError) {
-        const byCustomSlug = await supabase
-          .from("shops")
-          .select("*")
-          .eq("custom_slug", cleanSlug)
-          .maybeSingle();
-        shop = byCustomSlug.data;
-        shopError = byCustomSlug.error;
-      }
-
-      if (shopError || !shop) {
+      if (barbershopError || !barbershop) {
         return { data: null, error: { message: "Barbearia não encontrada." } };
       }
 
-      let barberShopData: any = null;
-      if (shop.barbershop_id) {
-        const { data: bData } = await supabase
-          .from("barbershops")
-          .select("name, address, opening_time, closing_time, phone, is_public_in_directory")
-          .eq("id", shop.barbershop_id)
-          .maybeSingle();
-        barberShopData = bData;
-      }
-
-      if (barberShopData?.is_public_in_directory === false) {
+      if (barbershop.is_public_in_directory === false) {
         return { data: null, error: { message: "Barbearia não encontrada." } };
       }
 
-      let servicesQuery = supabase
+      const { data: shop } = await supabase
+        .from("shops")
+        .select("*")
+        .eq("barbershop_id", barbershop.id)
+        .maybeSingle();
+
+      const shopRow = (shop as ShopRow | null) ?? null;
+
+      const { data: servicesRaw } = await supabase
         .from("services")
-        .select("id, name, price, duration, popular");
-
-      if (shop.barbershop_id) {
-        servicesQuery = servicesQuery.eq("barbershop_id", shop.barbershop_id);
-      } else {
-        servicesQuery = servicesQuery.eq("barbershop_id", shop.id);
-      }
-
-      const { data: servicesRaw } = await servicesQuery;
+        .select("id, name, price, duration, popular")
+        .eq("barbershop_id", barbershop.id);
 
       const servicesFormatted: ServiceItem[] = ((servicesRaw as RawService[]) ?? []).map((srv) => ({
         ...srv,
-        popular: shop.popular_service_id ? srv.id === shop.popular_service_id : Boolean(srv.popular),
+        popular: shopRow?.popular_service_id ? srv.id === shopRow.popular_service_id : Boolean(srv.popular),
       }));
 
       const { data: reviews } = await supabase
         .from("reviews")
         .select("id, client_name, rating, comment, created_at")
-        .eq("barbershop_id", shop.id)
+        .eq("barbershop_id", shopRow?.id ?? barbershop.id)
         .order("created_at", { ascending: false });
 
-      const totalReviews = reviews?.length ?? 0;
+      const normalizedReviews = reviews ?? [];
+      const totalReviews = normalizedReviews.length;
       const ratingAvg = totalReviews > 0
-        ? Number(((reviews ?? []).reduce((acc: number, r: any) => acc + r.rating, 0) / totalReviews).toFixed(1))
-        : 0;
+        ? Number((normalizedReviews.reduce((acc, review) => acc + review.rating, 0) / totalReviews).toFixed(1))
+        : Number(shopRow?.rating ?? 0);
 
-      const canonicalSlug = String(shop.custom_slug || shop.slug || cleanSlug);
+      const canonicalSlug = cleanSlug;
       const formattedShop: BarbershopPublicDetails = {
-        ...shop,
-        id: shop.id,
-        name: shop.name || barberShopData?.name || "Barbearia",
+        id: shopRow?.id ?? barbershop.id,
+        barbershop_id: barbershop.id,
+        name: shopRow?.name?.trim() || barbershop.name,
         slug: canonicalSlug,
-        city: shop.city || "",
-        address: shop.address || barberShopData?.address || "",
-        phone: shop.phone || barberShopData?.phone || "",
-        popular_service_id: shop.popular_service_id || null,
-        opening_time: shop.opening_time || barberShopData?.opening_time || "09:00",
-        closing_time: shop.closing_time || barberShopData?.closing_time || "19:00",
-        lunch_start: shop.lunch_start || null,
-        lunch_end: shop.lunch_end || null,
-        off_days: shop.off_days || [],
+        city: shopRow?.city || "",
+        address: shopRow?.address || barbershop.address || "",
+        phone: shopRow?.phone || barbershop.phone || "",
+        popular_service_id: shopRow?.popular_service_id || null,
+        opening_time: shopRow?.opening_time || barbershop.opening_time || "09:00",
+        closing_time: shopRow?.closing_time || barbershop.closing_time || "19:00",
+        lunch_start: shopRow?.lunch_start || barbershop.lunch_start || undefined,
+        lunch_end: shopRow?.lunch_end || barbershop.lunch_end || undefined,
+        closed_days: barbershop.closed_days || null,
+        off_days: shopRow?.off_days || [],
         rating_avg: ratingAvg,
         total_reviews: totalReviews,
-        tags: shop.tags || [],
+        rating: ratingAvg,
+        tags: shopRow?.tags || [],
+        avatar_url: shopRow?.avatar_url || null,
+        cover_url: shopRow?.cover_url || null,
         services: servicesFormatted,
-        reviews: reviews || [],
+        reviews: normalizedReviews,
       };
 
       return { data: formattedShop, error: null };
