@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireModuleFeature } from "@/services/billing/module-guard";
 import { getModuleFeature } from "@/services/modules/module-config";
+import { requireTenantAuthorization } from "@/lib/security/tenant-guard";
 
 const MODULES = [
   "crm", "analytics", "reminders", "followups", "marketing", "segments", "loyalty",
@@ -30,11 +31,27 @@ export async function GET(request: Request) {
       );
     }
 
+    try {
+      await requireTenantAuthorization();
+    } catch {
+      return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+    }
+
     return NextResponse.json({ module: requested, feature, enabled: true, plan: access.plan });
   }
 
-  const result: Record<string, boolean> = {};
   let plan: string | null = null;
+  try {
+    const tenant = await requireTenantAuthorization();
+    void tenant;
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "UNAUTHORIZED" },
+      { status: 401 },
+    );
+  }
+
+  const result: Record<string, boolean> = {};
 
   for (const moduleName of MODULES) {
     const feature = getModuleFeature(moduleName);
