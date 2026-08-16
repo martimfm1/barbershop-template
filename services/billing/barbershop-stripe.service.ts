@@ -394,5 +394,20 @@ export class BarbershopStripeService {
     return { barbershopId: user.barbershop_id, ownerUserId: user.id };
   }
 
-  static async processWebhookEvent(event: Stripe.Event): Promise<void> { /* existing webhook handling remains below */ }
+  static async processWebhookEvent(event: Stripe.Event): Promise<void> {
+    if (!["customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted"].includes(event.type)) return;
+
+    const subscription = event.data.object as Stripe.Subscription;
+    const mapping = await this.findBarbershopByCustomerId(stripeCustomerId(subscription.customer));
+    if (!mapping) throw new BillingError("Webhook customer mapping was not found.", "WEBHOOK_PROCESSING_FAILED", { eventId: event.id, customer: stripeCustomerId(subscription.customer) });
+
+    if (event.type === "customer.subscription.deleted") {
+      const database = createAdminClient();
+      const { error } = await database.from("subscriptions").update({ plan: PLANS.FREE, status: "canceled", cancel_at_period_end: false }).eq("barbershop_id", mapping.barbershopId);
+      if (error) throw new BillingError("Could not persist canceled subscription.", "DB_WRITE_FAILED", { barbershopId: mapping.barbershopId, eventId: event.id });
+      return;
+    }
+
+    await this.syncFromStripe(mapping.barbershopId, mapping.ownerUserId, subscription);
+  }
 }
