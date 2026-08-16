@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { sendBookingConfirmationEmail } from "@/lib/brevo/brevo";
 import { requireTenantAuthorization, tenantAuthorizationResponse } from "@/lib/security/tenant-guard";
 import { UUID_PATTERN } from "@/lib/validation";
@@ -13,18 +15,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Marcação inválida." }, { status: 400 });
     }
 
-    const { data: authData } = await (await import("@/lib/supabase/server")).createClient()
-      .then((client) => client.auth.getUser());
-    if (!authData.user) {
-      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
-    }
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
 
-    const { createAdminClient } = await import("@/lib/supabase/admin");
     const admin = createAdminClient();
     const { data: userProfile } = await admin
       .from("users")
       .select("barbershop_id")
-      .eq("id", authData.user.id)
+      .eq("id", user.id)
       .maybeSingle();
     if (!userProfile?.barbershop_id) return NextResponse.json({ error: "Não autorizado." }, { status: 403 });
 
