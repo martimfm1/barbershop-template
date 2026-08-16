@@ -22,7 +22,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { admin, userId, barbershopId } = await requireModuleContext("loyalty", "loyalty");
+    const { admin, barbershopId } = await requireModuleContext("loyalty", "loyalty");
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
     const name = typeof body.name === "string" ? body.name.trim().slice(0, 120) : "";
     const serviceId = uuid(body.serviceId);
