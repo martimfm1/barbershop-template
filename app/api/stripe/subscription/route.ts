@@ -11,10 +11,9 @@ export async function GET() {
     if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: { "Cache-Control": "no-store" } });
     const barbershopId = await SubscriptionService.getBarbershopIdForUser(user.id);
     if (!barbershopId) return NextResponse.json({ subscription: null, plan: "free", planSource: "free", barbershopId: null }, { headers: { "Cache-Control": "no-store" } });
-    const [subscription, plan] = await Promise.all([
-      SubscriptionService.getForBarbershop(barbershopId),
-      SubscriptionService.getAccessPlanForBarbershop(barbershopId),
-    ]);
+
+    const plan = await SubscriptionService.getAccessPlanForBarbershop(barbershopId);
+    const subscription = await SubscriptionService.getForBarbershop(barbershopId);
 
     const hasAdminAssignment = plan !== "free" && !subscription?.stripe_subscription_id && !subscription?.plan_override;
     const planSource = hasAdminAssignment ? "admin" : subscription?.plan_override ? "subscription_override" : plan !== "free" ? "stripe" : "free";
