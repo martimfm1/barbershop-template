@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireModuleFeature } from "@/services/billing/module-guard";
 import { getModuleFeature } from "@/services/modules/module-config";
-import { requireTenantAuthorization } from "@/lib/security/tenant-guard";
+import { requireTenantAuthorization, tenantAuthorizationResponse } from "@/lib/security/tenant-guard";
 
 const MODULES = [
   "crm", "analytics", "reminders", "followups", "marketing", "segments", "loyalty",
@@ -10,6 +10,14 @@ const MODULES = [
 ] as const;
 
 export async function GET(request: Request) {
+  try {
+    await requireTenantAuthorization();
+  } catch (error) {
+    const response = tenantAuthorizationResponse(error);
+    if (response) return response;
+    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  }
+
   const url = new URL(request.url);
   const requested = url.searchParams.get("module");
 
@@ -25,32 +33,13 @@ export async function GET(request: Request) {
     if (!access.ok) {
       const error = access.status === 403 && "error" in access ? access.error : "UNAUTHORIZED";
       const plan = "plan" in access && access.plan ? access.plan : undefined;
-      return NextResponse.json(
-        { error, feature, plan },
-        { status: access.status },
-      );
-    }
-
-    try {
-      await requireTenantAuthorization();
-    } catch {
-      return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+      return NextResponse.json({ error, feature, plan }, { status: access.status });
     }
 
     return NextResponse.json({ module: requested, feature, enabled: true, plan: access.plan });
   }
 
   let plan: string | null = null;
-  try {
-    const tenant = await requireTenantAuthorization();
-    void tenant;
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "UNAUTHORIZED" },
-      { status: 401 },
-    );
-  }
-
   const result: Record<string, boolean> = {};
 
   for (const moduleName of MODULES) {
@@ -62,5 +51,5 @@ export async function GET(request: Request) {
     else if ("plan" in access && access.plan) plan = access.plan;
   }
 
-  return NextResponse.json({ plan, modules: result });
+  return NextResponse.json({ plan, modules: result }, { headers: { "Cache-Control": "no-store" } });
 }
