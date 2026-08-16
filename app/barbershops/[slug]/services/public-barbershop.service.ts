@@ -60,11 +60,27 @@ export const publicBarbershopService = {
         return { data: null, error: { message: "Barbearia não encontrada." } };
       }
 
-      const { data: shop, error: shopError } = await supabase
+      let shop: any = null;
+      let shopError: any = null;
+
+      const bySlug = await supabase
         .from("shops")
         .select("*")
-        .ilike("slug", cleanSlug)
+        .eq("slug", cleanSlug)
         .maybeSingle();
+
+      shop = bySlug.data;
+      shopError = bySlug.error;
+
+      if (!shop && !shopError) {
+        const byCustomSlug = await supabase
+          .from("shops")
+          .select("*")
+          .eq("custom_slug", cleanSlug)
+          .maybeSingle();
+        shop = byCustomSlug.data;
+        shopError = byCustomSlug.error;
+      }
 
       if (shopError || !shop) {
         return { data: null, error: { message: "Barbearia não encontrada." } };
@@ -112,7 +128,7 @@ export const publicBarbershopService = {
         ? Number(((reviews ?? []).reduce((acc: number, r: any) => acc + r.rating, 0) / totalReviews).toFixed(1))
         : 0;
 
-      const canonicalSlug = String(shop.slug || cleanSlug);
+      const canonicalSlug = String(shop.custom_slug || shop.slug || cleanSlug);
       const formattedShop: BarbershopPublicDetails = {
         ...shop,
         id: shop.id,
