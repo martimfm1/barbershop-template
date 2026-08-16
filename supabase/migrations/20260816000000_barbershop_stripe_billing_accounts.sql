@@ -25,7 +25,7 @@ where s.user_id = u.id
   and u.barbershop_id is not null;
 
 -- Migrate the best-known legacy Stripe customer for each tenant.
--- Prefer the customer already attached to a subscription, then the owner's legacy customer.
+-- Prefer a customer already attached to a subscription; billing ownership stays with the tenant owner.
 insert into public.barbershop_billing_accounts (
   barbershop_id,
   billing_owner_user_id,
@@ -34,9 +34,26 @@ insert into public.barbershop_billing_accounts (
 )
 select distinct on (u.barbershop_id)
   u.barbershop_id,
-  first_value(case when s.stripe_customer_id is not null then u.id else u.id end) over (partition by u.barbershop_id order by case when s.stripe_subscription_id is not null then 0 else 1 end, case when lower(coalesce(u.role, '')) = 'owner' then 0 else 1 end, s.updated_at desc nulls last, c.updated_at desc nulls last),
+  (
+    select ou.id
+    from public.users ou
+    where ou.barbershop_id = u.barbershop_id
+      and lower(coalesce(ou.role, '')) = 'owner'
+    order by ou.created_at asc nulls last
+    limit 1
+  ),
   coalesce(s.stripe_customer_id, c.stripe_customer_id),
-  coalesce(c.email, (select au.email from auth.users au where au.id = u.id))
+  coalesce(c.email, (
+    select au.email from auth.users au
+    where au.id = (
+      select ou2.id
+      from public.users ou2
+      where ou2.barbershop_id = u.barbershop_id
+        and lower(coalesce(ou2.role, '')) = 'owner'
+      order by ou2.created_at asc nulls last
+      limit 1
+    )
+  ))
 from public.users u
 left join public.subscriptions s on s.user_id = u.id
 left join public.customers c on c.user_id = u.id
