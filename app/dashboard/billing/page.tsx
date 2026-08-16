@@ -9,8 +9,19 @@ import { BillingHub } from "@/components/billing/BillingHub";
 export default function BillingPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("checkout") === "success") window.location.replace("/checkout/success");
-    if (params.get("checkout") === "error") window.location.replace("/checkout/error");
+    const checkout = params.get("checkout");
+    const sessionId = params.get("session_id");
+
+    if (checkout === "return" && sessionId) {
+      void fetch(`/api/stripe/subscription?session_id=${encodeURIComponent(sessionId)}`, { cache: "no-store" }).finally(() => {
+        window.history.replaceState({}, "", "/dashboard/billing");
+        window.dispatchEvent(new Event("popstate"));
+      });
+      return;
+    }
+
+    if (checkout === "success") window.location.replace("/checkout/success");
+    if (checkout === "error") window.location.replace("/checkout/error");
   }, []);
 
   return (
