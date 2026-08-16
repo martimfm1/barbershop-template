@@ -32,11 +32,12 @@ async function recoverLatestStripeSubscription(barbershopId: string, userId: str
       }, { onConflict: "barbershop_id" });
       if (error) throw new BillingError("Could not recover the Stripe billing account.", "DB_WRITE_FAILED", { barbershopId, customerId: matchingCustomer.id });
 
-      await database.from("customers").upsert({
+      const { error: customerError } = await database.from("customers").upsert({
         user_id: userId,
         stripe_customer_id: matchingCustomer.id,
         email,
       }, { onConflict: "user_id" });
+      if (customerError) throw new BillingError("Could not persist the Stripe customer mapping.", "DB_WRITE_FAILED", { userId, customerId: matchingCustomer.id });
 
       account = await BarbershopStripeService.getBillingAccount(barbershopId);
     }
@@ -69,7 +70,12 @@ export async function GET(request: Request) {
     const barbershopId = userRow?.barbershop_id ?? null;
     const isBillingOwner = String(userRow?.role ?? "").toLowerCase() === "owner";
     const email = String(userRow?.email ?? user.email ?? "").trim().toLowerCase();
-    if (!barbershopId) return NextResponse.json({ subscription: null, plan: "free", planSource: "free", barbershopId: null, isBillingOwner, stripeSubscriptionId: null }, { headers: { "Cache-Control": "no-store" } });
+    if (!barbershopId) {
+      return NextResponse.json(
+        { subscription: null, plan: "free", planSource: "free", barbershopId: null, isBillingOwner, stripeSubscriptionId: null },
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    }
 
     const { searchParams } = new URL(request.url);
     const checkoutSessionId = searchParams.get("session_id")?.trim() || null;
@@ -81,38 +87,42 @@ export async function GET(request: Request) {
       }
 
       const customerId = typeof stripeSession.customer === "string" ? stripeSession.customer : stripeSession.customer?.id ?? null;
-
       const sessionIsComplete = stripeSession.status === "complete";
       const paymentIsResolved = stripeSession.payment_status === "paid" || stripeSession.payment_status === "no_payment_required";
       if (!sessionIsComplete || !paymentIsResolved) {
-        return NextResponse.json({ subscription: null, plan: "free", planSource: "free", barbershopId, isBillingOwner, checkoutPending: true, stripeSubscriptionId: null }, { headers: { "Cache-Control": "no-store" } });
+        return NextResponse.json(
+          { subscription: null, plan: "free", planSource: "free", barbershopId, isBillingOwner, checkoutPending: true, stripeSubscriptionId: null },
+          { headers: { "Cache-Control": "no-store" } },
+        );
       }
 
       if (stripeSession.subscription) {
-        const stripeSubscription = typeof stripeSession.subscription === "string" ? await getStripeClient().subscriptions.retrieve(stripeSession.subscription) : stripeSession.subscription;
+        const stripeSubscription = typeof stripeSession.subscription === "string"
+          ? await getStripeClient().subscriptions.retrieve(stripeSession.subscription)
+          : stripeSession.subscription;
+
         if (customerId) {
-<<<<<<< HEAD
-          await database.from("customers").upsert({ user_id: user.id, stripe_customer_id: customerId, email }, { onConflict: "user_id" });
-          await database.from("barbershop_billing_accounts").upsert({
-=======
           const { error: billingAccountError } = await database.from("barbershop_billing_accounts").upsert({
->>>>>>> fe00f74916bd075d3114ea29922625bfdf9f4fe2
             barbershop_id: barbershopId,
             billing_owner_user_id: user.id,
             stripe_customer_id: customerId,
             billing_email: email,
           }, { onConflict: "barbershop_id" });
-<<<<<<< HEAD
-=======
-          if (billingAccountError) throw new BillingError("Could not persist the Stripe billing account.", "DB_WRITE_FAILED", { barbershopId, customerId });
+          if (billingAccountError) {
+            throw new BillingError("Could not persist the Stripe billing account.", "DB_WRITE_FAILED", { barbershopId, customerId });
+          }
 
-          const { error: customerError } = await database.from("customers").upsert({ user_id: user.id, stripe_customer_id: customerId, email }, { onConflict: "user_id" });
-          if (customerError) throw new BillingError("Could not persist the Stripe customer mapping.", "DB_WRITE_FAILED", { userId: user.id, customerId });
->>>>>>> fe00f74916bd075d3114ea29922625bfdf9f4fe2
+          const { error: customerError } = await database.from("customers").upsert({
+            user_id: user.id,
+            stripe_customer_id: customerId,
+            email,
+          }, { onConflict: "user_id" });
+          if (customerError) {
+            throw new BillingError("Could not persist the Stripe customer mapping.", "DB_WRITE_FAILED", { userId: user.id, customerId });
+          }
         }
 
-        // The success page is the fallback synchronization path in case the Stripe webhook
-        // has not reached us yet. syncFromStripe performs the authoritative server-side upsert.
+        // Fallback synchronization path for the success page when the Stripe webhook is delayed.
         await BarbershopStripeService.syncFromStripe(barbershopId, user.id, stripeSubscription);
 
         const { data: persistedSubscription, error: subscriptionError } = await database
@@ -141,17 +151,35 @@ export async function GET(request: Request) {
       }
     }
 
-    let subscription = await BarbershopStripeService.reconcileSubscription(barbershopId, await BarbershopStripeService.getSubscriptionForBarbershop(barbershopId));
+    let subscription = await BarbershopStripeService.reconcileSubscription(
+      barbershopId,
+      await BarbershopStripeService.getSubscriptionForBarbershop(barbershopId),
+    );
+
     if (!subscription) {
       await recoverLatestStripeSubscription(barbershopId, user.id, email);
-      subscription = await BarbershopStripeService.reconcileSubscription(barbershopId, await BarbershopStripeService.getSubscriptionForBarbershop(barbershopId));
+      subscription = await BarbershopStripeService.reconcileSubscription(
+        barbershopId,
+        await BarbershopStripeService.getSubscriptionForBarbershop(barbershopId),
+      );
     }
 
     const plan = await BarbershopStripeService.getEffectivePlan(user.id);
-    const { data: assignment, error: assignmentError } = await database.from("barbershop_plan_assignments").select("plan, expires_at").eq("barbershop_id", barbershopId).maybeSingle();
+    const { data: assignment, error: assignmentError } = await database
+      .from("barbershop_plan_assignments")
+      .select("plan, expires_at")
+      .eq("barbershop_id", barbershopId)
+      .maybeSingle();
     if (assignmentError) throw new BillingError("Could not load barbershop plan assignment.", "DB_READ_FAILED", { barbershopId });
+
     const hasActiveAssignment = Boolean(assignment && (!assignment.expires_at || new Date(assignment.expires_at).getTime() > Date.now()));
-    const planSource = hasActiveAssignment ? "admin" : subscription?.plan_override ? "subscription_override" : plan !== "free" ? "stripe" : "free";
+    const planSource = hasActiveAssignment
+      ? "admin"
+      : subscription?.plan_override
+        ? "subscription_override"
+        : plan !== "free"
+          ? "stripe"
+          : "free";
 
     return NextResponse.json({
       subscription,
