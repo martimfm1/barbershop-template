@@ -13,6 +13,22 @@ function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status, headers: { "Cache-Control": "no-store" } });
 }
 
+function cleanText(value: unknown, max: number): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized ? normalized.slice(0, max) : null;
+}
+
+function isValidHttpsUrl(value: string | null): boolean {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -52,15 +68,17 @@ export async function PATCH(request: Request) {
 
     const tenant = await BarbershopStripeService.getTenantContext(user.id);
     const plan = await BarbershopStripeService.getEffectivePlan(user.id);
-    if (!planSupportsCustomSlug(plan)) {
-      return jsonError("O link personalizado está disponível a partir do plano Pro.", 403);
-    }
+    const canCustomizeSlug = planSupportsCustomSlug(plan);
+    const canCustomizeEnterprise = plan === "enterprise";
+    if (!canCustomizeSlug) return jsonError("A personalização da presença online está disponível a partir do plano Pro.", 403);
 
-    const body = (await request.json().catch(() => ({}))) as { slug?: unknown };
-    const rawSlug = typeof body.slug === "string" ? body.slug : "";
-    const slug = normalizePublicProfileSlug(rawSlug);
-    const validationError = validatePublicProfileSlug(slug);
-    if (validationError) return jsonError(validationError, 400);
+    const body = (await request.json().catch(() => ({}))) as {
+      slug?: unknown;
+      seoTitle?: unknown;
+      seoDescription?: unknown;
+      ogImageUrl?: unknown;
+      themeConfig?: unknown;
+    };
 
     const database = createAdminClient();
     const { data: currentShop, error: currentError } = await database
@@ -72,41 +90,68 @@ export async function PATCH(request: Request) {
     if (currentError) throw new BillingError("Não foi possível carregar a página pública.", "DB_READ_FAILED");
     if (!currentShop) return jsonError("A barbearia ainda não tem uma página pública configurada.", 404);
 
-    const { data: conflictingShop } = await database
+    const updates: Record<string, unknown> = {
+      public_profile_updated_at: new Date().toISOString(),
+    };
+
+    if (typeof body.slug === "string") {
+      const rawSlug = body.slug;
+      const slug = normalizePublicProfileSlug(rawSlug);
+      const validationError = validatePublicProfileSlug(slug);
+      if (validationError) return jsonError(validationError, 400);
+
+      const { data: conflictingShop } = await database
+        .from("shops")
+        .select("id")
+        .or(`slug.eq.${slug},custom_slug.eq.${slug}`)
+        .neq("id", currentShop.id)
+        .maybeSingle();
+
+      if (conflictingShop) return jsonError("Este link já está a ser utilizado por outra barbearia.", 409);
+
+      if (currentShop.slug && currentShop.slug !== slug) {
+        const { error: redirectError } = await database.from("shop_slug_redirects").upsert(
+          { shop_id: currentShop.id, old_slug: currentShop.slug },
+          { onConflict: "shop_id,old_slug" },
+        );
+        if (redirectError) throw new BillingError("Não foi possível preservar o URL antigo.", "DB_WRITE_FAILED");
+      }
+
+      updates.slug = slug;
+      updates.custom_slug = slug;
+    }
+
+    if (canCustomizeEnterprise) {
+      if (body.seoTitle !== undefined) updates.seo_title = cleanText(body.seoTitle, 60);
+      if (body.seoDescription !== undefined) updates.seo_description = cleanText(body.seoDescription, 160);
+      if (body.ogImageUrl !== undefined) {
+        const value = cleanText(body.ogImageUrl, 2048);
+        if (value && !isValidHttpsUrl(value)) return jsonError("A imagem OG tem de usar um URL HTTPS válido.", 400);
+        updates.og_image_url = value;
+      }
+      if (body.themeConfig !== undefined) {
+        if (!body.themeConfig || typeof body.themeConfig !== "object" || Array.isArray(body.themeConfig)) {
+          return jsonError("Configuração visual inválida.", 400);
+        }
+        const serialized = JSON.stringify(body.themeConfig);
+        if (serialized.length > 5000) return jsonError("A configuração visual excede o limite permitido.", 400);
+        updates.theme_config = body.themeConfig;
+      }
+    }
+
+    const { data: updated, error: updateError } = await database
       .from("shops")
-      .select("id")
-      .or(`slug.eq.${slug},custom_slug.eq.${slug}`)
-      .neq("id", currentShop.id)
+      .update(updates)
+      .eq("id", currentShop.id)
+      .eq("barbershop_id", tenant.barbershopId)
+      .select("id, slug, custom_slug, public_profile_enabled, seo_title, seo_description, og_image_url, theme_config")
       .maybeSingle();
 
-    if (conflictingShop) return jsonError("Este link já está a ser utilizado por outra barbearia.", 409);
+    if (updateError || !updated) throw new BillingError("Não foi possível guardar a presença online.", "DB_WRITE_FAILED");
 
-    if (currentShop.slug === slug && currentShop.custom_slug === slug) {
-      return NextResponse.json({ success: true, slug }, { headers: { "Cache-Control": "no-store" } });
-    }
-
-    if (currentShop.slug && currentShop.slug !== slug) {
-      await database.from("shop_slug_redirects").upsert(
-        { shop_id: currentShop.id, old_slug: currentShop.slug },
-        { onConflict: "shop_id,old_slug" },
-      );
-    }
-
-    const { error: updateError } = await database
-      .from("shops")
-      .update({
-        slug,
-        custom_slug: slug,
-        public_profile_updated_at: new Date().toISOString(),
-      })
-      .eq("id", currentShop.id)
-      .eq("barbershop_id", tenant.barbershopId);
-
-    if (updateError) throw new BillingError("Não foi possível guardar o link personalizado.", "DB_WRITE_FAILED");
-
-    return NextResponse.json({ success: true, slug }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ success: true, data: updated }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     if (error instanceof BillingError) return jsonError(error.message, 400);
-    return jsonError("Não foi possível atualizar o link da barbearia.", 500);
+    return jsonError("Não foi possível atualizar a presença online.", 500);
   }
 }
