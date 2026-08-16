@@ -12,11 +12,8 @@ export const dynamic = "force-dynamic";
 async function markWebhookFailed(eventId: string, error: unknown) {
   const database = createAdminClient();
   const message = error instanceof Error ? error.message : "UNKNOWN";
-  const { error: markError } = await database.rpc("fail_stripe_webhook_event", {
-    p_event_id: eventId,
-    p_error: message,
-  });
-  if (markError) console.error("billing.webhook_ledger_fail_mark_failed", { eventId, error: markError });
+  const { error: markError } = await database.rpc("fail_stripe_webhook_event", { p_event_id: eventId, p_error: message });
+  if (markError) console.error("billing.webhook_ledger_fail_mark_failed", markError.name ?? "unknown");
 }
 
 async function hydrateBillingMappingFromMetadata(metadata: Stripe.Metadata | null | undefined) {
@@ -36,11 +33,21 @@ async function hydrateBillingMappingFromMetadata(metadata: Stripe.Metadata | nul
       .eq("role", "owner")
       .limit(1)
       .maybeSingle();
-    if (error) throw new BillingError("Could not resolve barbershop billing owner.", "DB_READ_FAILED", { barbershopId });
+    if (error) throw new BillingError("Could not resolve barbershop billing owner.", "DB_READ_FAILED");
     ownerUserId = owner?.id ?? null;
   }
 
-  if (!ownerUserId) throw new BillingError("Could not resolve barbershop billing owner.", "WEBHOOK_PROCESSING_FAILED", { barbershopId });
+  if (!ownerUserId) throw new BillingError("Could not resolve barbershop billing owner.", "WEBHOOK_PROCESSING_FAILED");
+
+  const { data: owner, error: ownerError } = await database
+    .from("users")
+    .select("id, barbershop_id, role")
+    .eq("id", ownerUserId)
+    .maybeSingle();
+  if (ownerError) throw new BillingError("Could not resolve billing owner.", "DB_READ_FAILED");
+  if (!owner || owner.barbershop_id !== barbershopId || String(owner.role ?? "").toLowerCase() !== "owner") {
+    throw new BillingError("Invalid billing owner for barbershop.", "WEBHOOK_PROCESSING_FAILED");
+  }
 
   let resolvedCustomerId = customerId;
   if (!resolvedCustomerId) {
@@ -49,21 +56,12 @@ async function hydrateBillingMappingFromMetadata(metadata: Stripe.Metadata | nul
       .select("stripe_customer_id")
       .eq("barbershop_id", barbershopId)
       .maybeSingle();
-    if (error) throw new BillingError("Could not load barbershop Stripe mapping.", "DB_READ_FAILED", { barbershopId });
+    if (error) throw new BillingError("Could not load barbershop Stripe mapping.", "DB_READ_FAILED");
     resolvedCustomerId = account?.stripe_customer_id ?? null;
   }
 
   if (resolvedCustomerId) {
-    await database.from("barbershop_billing_accounts").upsert({
-      barbershop_id: barbershopId,
-      billing_owner_user_id: ownerUserId,
-      stripe_customer_id: resolvedCustomerId,
-    }, { onConflict: "barbershop_id" });
-
-    await database.from("customers").upsert({
-      user_id: ownerUserId,
-      stripe_customer_id: resolvedCustomerId,
-    }, { onConflict: "user_id" });
+    await BarbershopStripeService.findBarbershopByCustomerId(resolvedCustomerId);
   }
 
   return { barbershopId, ownerUserId, customerId: resolvedCustomerId };
@@ -71,19 +69,12 @@ async function hydrateBillingMappingFromMetadata(metadata: Stripe.Metadata | nul
 
 async function processCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   if (!session.subscription) return;
-
   const stripeSubscription = typeof session.subscription === "string"
     ? await getStripeClient().subscriptions.retrieve(session.subscription)
     : session.subscription;
-
   const metadata = session.metadata ?? stripeSubscription.metadata ?? {};
   const mapping = await hydrateBillingMappingFromMetadata(metadata);
-  if (!mapping) {
-    throw new BillingError("Checkout session does not contain the barbershop billing mapping.", "WEBHOOK_PROCESSING_FAILED", {
-      sessionId: session.id,
-    });
-  }
-
+  if (!mapping) throw new BillingError("Checkout session does not contain the barbershop billing mapping.", "WEBHOOK_PROCESSING_FAILED");
   await BarbershopStripeService.syncFromStripe(mapping.barbershopId, mapping.ownerUserId, stripeSubscription);
 }
 
@@ -95,8 +86,7 @@ export async function POST(request: Request) {
   let event: Stripe.Event;
   try {
     event = getStripeClient().webhooks.constructEvent(await request.text(), signature, webhookSecret);
-  } catch (error) {
-    console.warn("billing.webhook_rejected", { error: error instanceof Error ? error.name : "unknown" });
+  } catch {
     return billingErrorResponse(new BillingError("Webhook signature verification failed.", "WEBHOOK_VERIFICATION_FAILED"));
   }
 
@@ -117,16 +107,6 @@ export async function POST(request: Request) {
       if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
         await processCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
       } else if (["customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted"].includes(event.type)) {
-        const subscription = event.data.object as Stripe.Subscription;
-        const mapping = await hydrateBillingMappingFromMetadata(subscription.metadata);
-        if (!mapping) {
-          throw new BillingError("Webhook customer mapping was not found.", "WEBHOOK_PROCESSING_FAILED", {
-            eventId: event.id,
-            customer: typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id,
-          });
-        }
-        await BarbershopStripeService.processWebhookEvent(event);
-      } else {
         await BarbershopStripeService.processWebhookEvent(event);
       }
     } catch (error) {
@@ -136,11 +116,10 @@ export async function POST(request: Request) {
 
     const { error: completeError } = await database.rpc("complete_stripe_webhook_event", { p_event_id: event.id });
     if (completeError) return billingErrorResponse(new BillingError("Webhook acknowledgement could not be persisted.", "WEBHOOK_PROCESSING_FAILED"));
-
     return NextResponse.json({ received: true });
   } catch (error) {
     if (error instanceof BillingError) return billingErrorResponse(error);
-    console.error("billing.webhook_processing_failed", { error: error instanceof Error ? error.name : "unknown", eventId: event.id, eventType: event.type });
+    console.error("billing.webhook_processing_failed", error instanceof Error ? error.name : "unknown");
     return billingErrorResponse(new BillingError("Webhook processing failed.", "WEBHOOK_PROCESSING_FAILED"));
   }
 }
