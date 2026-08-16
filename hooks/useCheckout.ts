@@ -2,31 +2,16 @@ import { useMutation } from "@tanstack/react-query";
 
 export interface UseCheckoutParams {
   priceId: string;
+  plan?: "pro" | "enterprise";
   successUrl?: string;
   cancelUrl?: string;
 }
 
 export function useCheckout() {
   const checkoutMutation = useMutation({
-    mutationFn: async ({ priceId, successUrl, cancelUrl }: UseCheckoutParams) => {
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, successUrl, cancelUrl }),
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to create checkout session.");
-      }
-
-      const data: { url: string } = await res.json();
-
-      if (data.url) {
-        window.location.href = data.url;
-      }
-
-      return data;
+    mutationFn: async ({ priceId, plan = "pro" }: UseCheckoutParams) => {
+      window.location.assign(`/checkout?priceId=${encodeURIComponent(priceId)}&plan=${plan}`);
+      return { url: `/checkout?priceId=${encodeURIComponent(priceId)}&plan=${plan}` };
     },
   });
 
