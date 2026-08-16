@@ -1,11 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { ArrowLeft, CreditCard, ReceiptText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BillingHub } from "@/components/billing/BillingHub";
 
 export default function BillingPage() {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") === "success") window.location.replace("/checkout/success");
+    if (params.get("checkout") === "error") window.location.replace("/checkout/error");
+  }, []);
+
   return (
     <main className="dashboard-page min-h-screen bg-zinc-950 px-4 pb-20 pt-24 text-white sm:px-6 lg:px-8 lg:pt-10">
       <div className="mx-auto max-w-7xl space-y-7">
