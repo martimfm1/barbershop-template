@@ -22,20 +22,42 @@ export interface PricingCardProps {
 
 export function PricingCard({ tier, title, price, priceId, description, features, popular = false, trialDays, onCheckout }: PricingCardProps) {
   const isMounted = useSyncExternalStore(() => () => undefined, () => true, () => false);
-  const { subscription, isAuthenticated, plan: currentPlan, loading, upgrade } = useSubscription();
+  const { subscription, isAuthenticated, plan: currentPlan, loading } = useSubscription();
   const isCurrentPlan = useMemo(() => isAuthenticated && currentPlan === tier, [currentPlan, isAuthenticated, tier]);
+  const hasActivePaidSubscription = Boolean(subscription && (subscription.status === "active" || subscription.status === "trialing"));
 
   const handleAction = async () => {
     try {
       if (!isMounted) return;
-      if (!isAuthenticated) { window.location.assign("/registo"); return; }
+      if (!isAuthenticated) {
+        window.location.assign("/registo");
+        return;
+      }
       if (isCurrentPlan) return;
-      if (subscription?.status === "active") { await upgrade(); return; }
-      if (tier === "free" || !priceId) { window.location.assign("/dashboard/billing"); return; }
-      if (onCheckout) onCheckout(priceId);
-      else window.location.assign(`/checkout?priceId=${encodeURIComponent(priceId)}&plan=${tier}`);
+
+      if (tier === "free") {
+        window.location.assign("/dashboard/billing");
+        return;
+      }
+
+      if (hasActivePaidSubscription) {
+        window.location.assign("/dashboard/billing");
+        return;
+      }
+
+      if (!priceId) {
+        toast.error("Este plano ainda não está disponível para checkout.");
+        return;
+      }
+
+      if (onCheckout) {
+        onCheckout(priceId);
+        return;
+      }
+
+      window.location.assign(`/checkout?priceId=${encodeURIComponent(priceId)}&plan=${tier}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível atualizar o plano.");
+      toast.error(error instanceof Error ? error.message : "Não foi possível iniciar o checkout.");
     }
   };
 
@@ -43,9 +65,11 @@ export function PricingCard({ tier, title, price, priceId, description, features
     if (!isMounted) return { label: "A carregar…", disabled: true, variant: popular ? ("primary" as const) : ("outline" as const) };
     if (!isAuthenticated) return { label: tier === "free" ? "Começar gratuitamente" : tier === "pro" && trialDays ? `Experimentar Pro ${trialDays} dias` : "Criar conta para começar", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
     if (isCurrentPlan) return { label: "Plano atual", disabled: true, variant: "secondary" as const };
-    if (subscription?.status === "active") return { label: tier === "free" ? "Gerir subscrição" : "Alterar plano", disabled: false, variant: "outline" as const };
-    return { label: tier === "free" ? "Usar Plano Gratuito" : tier === "pro" && trialDays ? `Experimentar Pro ${trialDays} dias` : "Começar", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
-  }, [isMounted, isCurrentPlan, isAuthenticated, subscription, popular, tier, trialDays]);
+    if (tier === "free") return { label: "Ver faturação", disabled: false, variant: "outline" as const };
+    if (hasActivePaidSubscription) return { label: "Gerir subscrição", disabled: false, variant: "outline" as const };
+    if (!priceId) return { label: "Indisponível", disabled: true, variant: "outline" as const };
+    return { label: tier === "pro" && trialDays ? `Começar checkout · ${trialDays} dias grátis` : "Começar checkout", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
+  }, [isMounted, isCurrentPlan, isAuthenticated, popular, tier, trialDays, priceId, hasActivePaidSubscription]);
 
   const isActivePaidPlan = isCurrentPlan && (tier === "pro" || tier === "enterprise");
 
