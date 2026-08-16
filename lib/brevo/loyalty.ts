@@ -66,7 +66,7 @@ export async function sendLoyaltyRedemptionEmail(input: LoyaltyRedemptionEmailIn
 
           <div style="text-align:center;margin-top:24px;">
             <div style="font-size:12px;color:#a1a1aa;margin-bottom:12px;">O QR Code está anexado a este email</div>
-            <div style="display:inline-block;background:#fff;border-radius:18px;padding:14px;color:#111;font-size:13px;font-weight:700;">Anexo: silenctra-voucher-qr.png</div>
+            <div style="display:inline-block;background:#fff;border-radius:18px;padding:14px;color:#111;font-size:13px;font-weight:700;">Anexo: silentra-voucher-qr.png</div>
           </div>
 
           <div style="margin-top:22px;text-align:center;">
