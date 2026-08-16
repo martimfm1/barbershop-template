@@ -21,7 +21,13 @@ interface SubscriptionQueryResult {
 }
 
 async function fetchSubscription(): Promise<SubscriptionQueryResult> {
-  const res = await fetch("/api/stripe/subscription", { cache: "no-store" });
+  const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const checkoutSessionId = searchParams?.get("session_id")?.trim();
+  const endpoint = checkoutSessionId
+    ? `/api/stripe/subscription?session_id=${encodeURIComponent(checkoutSessionId)}`
+    : "/api/stripe/subscription";
+
+  const res = await fetch(endpoint, { cache: "no-store" });
   if (!res.ok) {
     if (res.status === 401) return { subscription: null, plan: "free", planSource: "free", isAuthenticated: false };
     throw new Error("Failed to fetch subscription data.");
