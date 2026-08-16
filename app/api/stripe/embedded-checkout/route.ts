@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripeClient } from "@/lib/stripe/server";
 import { planForPrice, PLANS, TRIAL_PERIOD_DAYS } from "@/lib/stripe/constants";
 import { BillingService } from "@/services/billing/billing.service";
+import { SubscriptionService } from "@/services/billing/subscription.service";
 import { BillingError } from "@/types/stripe";
 
 export const runtime = "nodejs";
@@ -27,16 +27,33 @@ export async function POST(request: Request) {
       throw new BillingError("The requested price is not available.", "INVALID_PRICE", { priceId });
     }
 
-    const database = createAdminClient();
-    const { data: existing, error: existingError } = await database
-      .from("subscriptions")
-      .select("id")
-      .eq("user_id", user.id)
-      .in("status", ["active", "trialing", "past_due", "incomplete"])
-      .limit(1);
-    if (existingError) throw new BillingError("Could not verify the current subscription.", "DB_READ_FAILED", { userId: user.id });
-    if (existing?.length) {
-      throw new BillingError("An active or pending subscription already exists. Manage the existing subscription instead.", "SUBSCRIPTION_NOT_ACTIVE", { userId: user.id });
+    const existing = await SubscriptionService.getForUser(user.id);
+    if (existing?.stripe_subscription_id) {
+      try {
+        const stripeSubscription = await getStripeClient().subscriptions.retrieve(existing.stripe_subscription_id);
+        await SubscriptionService.syncFromStripe(user.id, stripeSubscription);
+        const blockingStatuses = ["active", "trialing", "past_due", "unpaid", "incomplete"] as const;
+        if (blockingStatuses.includes(stripeSubscription.status as typeof blockingStatuses[number])) {
+          throw new BillingError(
+            "An active or pending subscription already exists. Manage the existing subscription instead.",
+            "SUBSCRIPTION_NOT_ACTIVE",
+            { userId: user.id, stripeStatus: stripeSubscription.status, subscriptionId: stripeSubscription.id },
+          );
+        }
+      } catch (error) {
+        if (error instanceof BillingError) throw error;
+        console.warn("[STRIPE_CUSTOM_CHECKOUT_RECONCILIATION_FAILED]", {
+          userId: user.id,
+          subscriptionId: existing.stripe_subscription_id,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    } else if (existing && ["active", "trialing", "past_due", "unpaid", "incomplete"].includes(existing.status)) {
+      throw new BillingError(
+        "An active or pending subscription already exists. Manage the existing subscription instead.",
+        "SUBSCRIPTION_NOT_ACTIVE",
+        { userId: user.id, status: existing.status },
+      );
     }
 
     const trialEligible = requestedPlan === PLANS.PRO && (await BillingService.isEligibleForProTrial(user.id));
