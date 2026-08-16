@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { getPublicProfileBySlug } from "@/lib/barbershops/public-profile";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { generateLoyaltyToken, getLoyaltySession, hashLoyaltyToken } from "@/lib/loyalty/session";
+import { getLoyaltySession, hashLoyaltyToken, generateLoyaltyToken } from "@/lib/loyalty/session";
+import { sendLoyaltyRedemptionEmail } from "@/lib/brevo/loyalty";
 import { randomBytes } from "node:crypto";
 
 export const runtime = "nodejs";
+
+const REDEMPTION_TTL_MS = 60 * 60 * 1000;
 
 function generateHumanCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -32,6 +35,8 @@ export async function POST(request: Request) {
     if (!session) return errorResponse("Sessão expirada. Confirma novamente o teu email.", 401);
 
     const admin = createAdminClient();
+    await admin.rpc("expire_loyalty_redemptions");
+
     const { data: member, error: memberError } = await admin
       .from("loyalty_members")
       .select("id, email, name, points_balance, status")
@@ -39,14 +44,28 @@ export async function POST(request: Request) {
       .eq("email", session.email)
       .eq("status", "active")
       .maybeSingle();
+
     if (memberError) return errorResponse("Não foi possível carregar a adesão.", 503);
     if (!member) return errorResponse("Não tens uma adesão ativa nesta barbearia.", 409);
+
+    const { data: existingRedemption } = await admin
+      .from("loyalty_redemptions")
+      .select("id")
+      .eq("member_id", member.id)
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
+      .limit(1)
+      .maybeSingle();
+
+    if (existingRedemption) {
+      return errorResponse("Já tens uma recompensa reservada. Utiliza-a antes de criar outro resgate.", 409);
+    }
 
     const token = generateLoyaltyToken();
     const code = generateHumanCode();
     const tokenHash = hashLoyaltyToken(token);
     const codeHash = hashLoyaltyToken(code);
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + REDEMPTION_TTL_MS).toISOString();
 
     const { data: redemption, error } = await admin.rpc("redeem_loyalty_reward", {
       p_member_id: member.id,
@@ -69,8 +88,37 @@ export async function POST(request: Request) {
     const result = Array.isArray(redemption) ? redemption[0] : redemption;
     if (!result?.redemption_id) return errorResponse("Não foi possível criar o resgate.", 503);
 
+    const { data: reward } = await admin
+      .from("loyalty_rewards")
+      .select("id, name, description, points_cost, reward_type, reward_value")
+      .eq("id", rewardId)
+      .eq("barbershop_id", profile.barbershop_id)
+      .maybeSingle();
+
+    if (!reward) return errorResponse("O resgate foi criado, mas não foi possível carregar os detalhes da recompensa.", 503);
+
+    let emailSent = false;
+    try {
+      await sendLoyaltyRedemptionEmail({
+        email: member.email,
+        customerName: member.name,
+        barbershopName: profile.name,
+        rewardName: reward.name,
+        rewardDescription: reward.description,
+        pointsCost: Number(result.points_cost),
+        remainingPoints: Number(result.points_balance),
+        code,
+        qrPayload: token,
+        expiresAt,
+      });
+      emailSent = true;
+    } catch (emailError) {
+      console.error("[LOYALTY_REDEMPTION_EMAIL_ERROR]", emailError);
+    }
+
     return NextResponse.json({
       success: true,
+      emailSent,
       redemption: {
         id: result.redemption_id,
         pointsCost: result.points_cost,
