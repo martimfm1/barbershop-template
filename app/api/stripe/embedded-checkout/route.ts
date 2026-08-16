@@ -27,32 +27,12 @@ export async function POST(request: Request) {
       throw new BillingError("The requested price is not available.", "INVALID_PRICE", { priceId });
     }
 
-    const existing = await SubscriptionService.getForUser(user.id);
-    if (existing?.stripe_subscription_id) {
-      try {
-        const stripeSubscription = await getStripeClient().subscriptions.retrieve(existing.stripe_subscription_id);
-        await SubscriptionService.syncFromStripe(user.id, stripeSubscription);
-        const blockingStatuses = ["active", "trialing", "past_due", "unpaid", "incomplete"] as const;
-        if (blockingStatuses.includes(stripeSubscription.status as typeof blockingStatuses[number])) {
-          throw new BillingError(
-            "An active or pending subscription already exists. Manage the existing subscription instead.",
-            "SUBSCRIPTION_NOT_ACTIVE",
-            { userId: user.id, stripeStatus: stripeSubscription.status, subscriptionId: stripeSubscription.id },
-          );
-        }
-      } catch (error) {
-        if (error instanceof BillingError) throw error;
-        console.warn("[STRIPE_CUSTOM_CHECKOUT_RECONCILIATION_FAILED]", {
-          userId: user.id,
-          subscriptionId: existing.stripe_subscription_id,
-          message: error instanceof Error ? error.message : String(error),
-        });
-      }
-    } else if (existing && ["active", "trialing", "past_due", "unpaid", "incomplete"].includes(existing.status)) {
+    const activeSubscription = await SubscriptionService.getActiveForUser(user.id);
+    if (activeSubscription) {
       throw new BillingError(
         "An active or pending subscription already exists. Manage the existing subscription instead.",
         "SUBSCRIPTION_NOT_ACTIVE",
-        { userId: user.id, status: existing.status },
+        { userId: user.id, stripeStatus: activeSubscription.status, subscriptionId: activeSubscription.stripe_subscription_id },
       );
     }
 
