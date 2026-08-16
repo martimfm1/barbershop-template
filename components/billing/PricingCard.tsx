@@ -80,7 +80,7 @@ export function PricingCard({ tier, title, price, priceId, description, features
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-xl font-semibold tracking-tight text-zinc-50">{title}</h3>
               {popular && <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300"><Sparkles className="size-3" /> Recomendado</span>}
-              {tier === "pro" && trialDays ? <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-200"><Gift className="size-3" /> {trialDays} dias grátis</span> : null}
+              {tier === "pro" && trialDays ? <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-200"><Gift className="size-3" /> 1 mês grátis</span> : null}
             </div>
             <p className="mt-2 max-w-sm text-sm leading-6 text-zinc-400">{description}</p>
           </div>
@@ -88,7 +88,7 @@ export function PricingCard({ tier, title, price, priceId, description, features
         </div>
 
         <div className="mt-6 flex items-baseline gap-1"><span className="text-4xl font-semibold tracking-tight text-zinc-50">{price}</span>{tier !== "free" && <span className="text-xs text-zinc-500">/mês</span>}</div>
-        {tier === "pro" && trialDays ? <p className="mt-2 text-xs font-semibold text-emerald-300/90">Experimenta todas as funcionalidades Pro durante {trialDays} dias.</p> : null}
+        {tier === "pro" && trialDays ? <p className="mt-2 text-xs font-semibold text-emerald-300/90">1 mês de Pro grátis para novos membros com o código TRIALPRO.</p> : null}
         {tier === "pro" && !trialDays ? <p className="mt-2 text-xs font-medium text-emerald-300/90">Para crescer sem aumentar a complexidade.</p> : null}
         {tier === "free" && <p className="mt-2 text-xs text-zinc-500">Sem cartão. Começa hoje e atualiza quando precisares.</p>}
         {tier === "enterprise" && <p className="mt-2 text-xs text-zinc-500">Para equipas e operações com várias localizações.</p>}
@@ -97,7 +97,7 @@ export function PricingCard({ tier, title, price, priceId, description, features
       </div>
 
       <div className="mt-8 border-t border-white/8 pt-5">
-        <button type="button" onClick={handleAction} disabled={buttonConfig.disabled || loading} className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-[background-color,border-color,box-shadow,transform] duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${buttonConfig.variant === "primary" ? "bg-emerald-400 text-zinc-950 shadow-[0_8px_24px_rgba(52,211,153,0.18)] hover:bg-emerald-300 hover:shadow-[0_10px_30px_rgba(52,211,153,0.24)]" : buttonConfig.variant === "secondary" ? "border border-white/10 bg-white/5 text-zinc-400" : "border border-white/15 bg-white/[0.04] text-zinc-100 hover:border-white/25 hover:bg-white/[0.08]"}`}>{loading ? <Loader2 className="size-4 animate-spin" /> : <><span>{buttonConfig.label}</span>{!buttonConfig.disabled && <ArrowRight className="size-4" />}</>}</button>{tier === "pro" && !isCurrentPlan ? <p className="mt-2 text-center text-[11px] text-zinc-600">14 dias grátis para novos utilizadores. Os códigos promocionais são aplicados no checkout.</p> : null}</div>
+        <button type="button" onClick={handleAction} disabled={buttonConfig.disabled || loading} className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-[background-color,border-color,box-shadow,transform] duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${buttonConfig.variant === "primary" ? "bg-emerald-400 text-zinc-950 shadow-[0_8px_24px_rgba(52,211,153,0.18)] hover:bg-emerald-300 hover:shadow-[0_10px_30px_rgba(52,211,153,0.24)]" : buttonConfig.variant === "secondary" ? "border border-white/10 bg-white/5 text-zinc-400" : "border border-white/15 bg-white/[0.04] text-zinc-100 hover:border-white/25 hover:bg-white/[0.08]"}`}>{loading ? <Loader2 className="size-4 animate-spin" /> : <><span>{buttonConfig.label}</span>{!buttonConfig.disabled && <ArrowRight className="size-4" />}</>}</button>{tier === "pro" && !isCurrentPlan ? <p className="mt-2 text-center text-[11px] text-zinc-600">1 mês grátis para novos utilizadores elegíveis com TRIALPRO. Depois aplica-se o preço normal.</p> : null}</div>
     </div>
   );
 }
