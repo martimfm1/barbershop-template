@@ -58,21 +58,33 @@ export async function GET() {
     let currency: string | null = session.currency?.toUpperCase() ?? null;
 
     if (promotionCodeId) {
-      const promotionCode = await getStripeClient().promotionCodes.retrieve(promotionCodeId, { expand: ["coupon"] });
+      const promotionCode = await getStripeClient().promotionCodes.retrieve(
+        promotionCodeId,
+        { expand: ["promotion.coupon"] },
+      );
+
       code = promotionCode.code;
 
-      const coupon = promotionCode.coupon;
-      if (typeof coupon === "string") {
-        const resolvedCoupon = await getStripeClient().coupons.retrieve(coupon);
-        if (!resolvedCoupon.deleted) {
-          percentOff = resolvedCoupon.percent_off ?? null;
-          amountOff = resolvedCoupon.amount_off ?? null;
-          currency = resolvedCoupon.currency?.toUpperCase() ?? currency;
+      const promotion = promotionCode.promotion;
+      if (promotion && promotion.type === "coupon") {
+        const coupon = promotion.coupon;
+
+        if (coupon) {
+          const couponId = typeof coupon === "string" ? coupon : coupon.id;
+
+          if (typeof coupon === "string") {
+            const resolvedCoupon = await getStripeClient().coupons.retrieve(couponId);
+            if (!resolvedCoupon.deleted) {
+              percentOff = resolvedCoupon.percent_off ?? null;
+              amountOff = resolvedCoupon.amount_off ?? null;
+              currency = resolvedCoupon.currency?.toUpperCase() ?? currency;
+            }
+          } else if (!coupon.deleted) {
+            percentOff = coupon.percent_off ?? null;
+            amountOff = coupon.amount_off ?? null;
+            currency = coupon.currency?.toUpperCase() ?? currency;
+          }
         }
-      } else if (!coupon.deleted) {
-        percentOff = coupon.percent_off ?? null;
-        amountOff = coupon.amount_off ?? null;
-        currency = coupon.currency?.toUpperCase() ?? currency;
       }
     }
 
