@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { BarbershopStripeService } from "@/services/billing/barbershop-stripe.service";
 import { getStripeClient } from "@/lib/stripe/server";
 import { planForPrice, PLANS, TRIAL_PERIOD_DAYS } from "@/lib/stripe/constants";
@@ -10,6 +11,46 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const CHECKOUT_IDEMPOTENCY_BUCKET_MS = 10 * 60 * 1000;
+
+async function recoverBillingCustomer(userId: string, barbershopId: string, email: string): Promise<string> {
+  const database = createAdminClient();
+  const customer = await getStripeClient().customers.create(
+    {
+      email,
+      metadata: {
+        app: "silentra-for-barbers",
+        barbershop_id: barbershopId,
+        billing_owner_user_id: userId,
+        recovery: "true",
+      },
+    },
+    {
+      idempotencyKey: `barbershop-customer-recovery:${barbershopId}:${Date.now()}`,
+    },
+  );
+
+  const { error: billingAccountError } = await database
+    .from("barbershop_billing_accounts")
+    .upsert(
+      {
+        barbershop_id: barbershopId,
+        billing_owner_user_id: userId,
+        stripe_customer_id: customer.id,
+        billing_email: email,
+      },
+      { onConflict: "barbershop_id" },
+    );
+
+  if (billingAccountError) {
+    throw new BillingError(
+      "Could not persist the recovered Stripe billing account.",
+      "DB_WRITE_FAILED",
+      { barbershopId, customerId: customer.id },
+    );
+  }
+
+  return customer.id;
+}
 
 export async function POST(request: Request) {
   try {
@@ -42,7 +83,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const customer = await BarbershopStripeService.getOrCreateCustomer(user.id);
+    let customer: string;
+    try {
+      customer = await BarbershopStripeService.getOrCreateCustomer(user.id);
+    } catch (error) {
+      if (!(error instanceof BillingError) || error.code !== "CUSTOMER_NOT_FOUND") throw error;
+      customer = await recoverBillingCustomer(user.id, tenant.barbershopId, tenant.email);
+    }
+
     const canTrial = requestedPlan === PLANS.PRO && !existing;
     const origin = process.env.NEXT_PUBLIC_APP_URL?.trim() || new URL(request.url).origin;
     const returnUrl = `${new URL(origin).origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`;
