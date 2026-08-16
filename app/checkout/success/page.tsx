@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, Building2, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowRight, BadgePercent, Building2, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 
 type Payload = {
   success?: boolean;
@@ -12,6 +12,14 @@ type Payload = {
   currentPeriodEnd?: string | null;
   error?: string;
   barbershopName?: string | null;
+  promotion?: {
+    applied: boolean;
+    code: string | null;
+    discountAmount: number;
+    currency: string | null;
+    percentOff: number | null;
+    amountOff: number | null;
+  } | null;
 };
 
 const PLAN_NAMES = {
@@ -24,6 +32,15 @@ function formatDate(value?: string | null) {
   return value
     ? new Date(value).toLocaleDateString("pt-PT", { day: "2-digit", month: "long", year: "numeric" })
     : null;
+}
+
+function formatMoney(amountInCents: number, currency: string | null) {
+  if (!currency || !Number.isFinite(amountInCents)) return null;
+  return new Intl.NumberFormat("pt-PT", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 2,
+  }).format(amountInCents / 100);
 }
 
 export default function CheckoutSuccessPage() {
@@ -51,13 +68,15 @@ export default function CheckoutSuccessPage() {
             ? `/api/stripe/subscription?session_id=${encodeURIComponent(sessionId)}`
             : "/api/stripe/subscription";
 
-          const [subscriptionResponse, summaryResponse] = await Promise.all([
+          const [subscriptionResponse, summaryResponse, promotionResponse] = await Promise.all([
             fetch(subscriptionEndpoint, { cache: "no-store" }),
             fetch("/api/stripe/billing-summary", { cache: "no-store" }),
+            fetch("/api/stripe/checkout-promotion", { cache: "no-store" }),
           ]);
 
           const subscriptionBody = await subscriptionResponse.json().catch(() => ({}));
           const summaryBody = await summaryResponse.json().catch(() => ({}));
+          const promotionBody = await promotionResponse.json().catch(() => ({}));
 
           if (subscriptionResponse.ok) {
             const subscription = subscriptionBody.subscription;
@@ -79,6 +98,7 @@ export default function CheckoutSuccessPage() {
                   trialEnd: subscription.trial_end ?? null,
                   currentPeriodEnd: subscription.current_period_end ?? null,
                   barbershopName: summaryBody.barbershopName ?? null,
+                  promotion: promotionBody.applied ? promotionBody : null,
                 });
                 setLoading(false);
               }
@@ -144,6 +164,12 @@ export default function CheckoutSuccessPage() {
   const trialEnd = formatDate(payload.trialEnd);
   const periodEnd = formatDate(payload.currentPeriodEnd);
   const barbershopName = payload.barbershopName?.trim() || "Barbearia";
+  const promotionAmount = payload.promotion ? formatMoney(payload.promotion.discountAmount, payload.promotion.currency) : null;
+  const promotionLabel = payload.promotion?.percentOff != null
+    ? `${payload.promotion.percentOff}% de desconto`
+    : promotionAmount
+      ? `${promotionAmount} de desconto`
+      : "Desconto aplicado";
 
   return (
     <main className="min-h-screen bg-zinc-950 px-4 py-12 text-white sm:px-6">
@@ -166,6 +192,22 @@ export default function CheckoutSuccessPage() {
               <p className="mt-2 text-lg font-semibold text-white">{barbershopName}</p>
             </div>
           </div>
+
+          {payload.promotion?.applied ? (
+            <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-200">
+                  <BadgePercent className="size-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-[0.15em] text-emerald-300/80">Código promocional ativo</p>
+                  <p className="mt-1 text-base font-semibold text-white">{payload.promotion.code || "Código aplicado"}</p>
+                  <p className="mt-1 text-sm text-emerald-100">{promotionLabel}</p>
+                  {promotionAmount ? <p className="mt-1 text-xs text-zinc-400">Poupança aplicada: <strong className="text-zinc-200">{promotionAmount}</strong></p> : null}
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           {trialEnd ? <div className="mt-4 rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.04] p-4 text-sm text-emerald-100">Trial ativo até <strong>{trialEnd}</strong>.</div> : null}
           {periodEnd && !trialEnd ? <p className="mt-4 text-xs text-zinc-500">Período atual até {periodEnd}.</p> : null}
