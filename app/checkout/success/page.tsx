@@ -34,16 +34,45 @@ export default function CheckoutSuccessPage() {
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
-      if (!sessionId) {
-        setState({ loading: false, payload: { error: "Não foi encontrada uma sessão de checkout válida." } });
-        return;
-      }
       try {
-        const response = await fetch(`/api/stripe/checkout/success?session_id=${encodeURIComponent(sessionId)}`, { cache: "no-store" });
-        const payload = (await response.json().catch(() => ({}))) as SuccessPayload;
-        if (!cancelled) setState({ loading: false, payload: response.ok ? payload : { error: payload.error || "Não foi possível confirmar a compra." } });
+        if (sessionId) {
+          const response = await fetch(`/api/stripe/checkout/success?session_id=${encodeURIComponent(sessionId)}`, { cache: "no-store" });
+          const payload = (await response.json().catch(() => ({}))) as SuccessPayload;
+          if (!cancelled) setState({ loading: false, payload: response.ok ? payload : { error: payload.error || "Não foi possível confirmar a compra." } });
+          return;
+        }
+
+        // Fallback for successful custom-checkout confirmations that complete without a redirect.
+        // The subscription endpoint is already reconciled against Stripe and is the local source of truth for the UI.
+        const response = await fetch("/api/stripe/subscription", { cache: "no-store" });
+        const payload = (await response.json().catch(() => ({}))) as {
+          plan?: "free" | "pro" | "enterprise";
+          subscription?: {
+            status?: string;
+            current_period_end?: string | null;
+            trial_end?: string | null;
+          } | null;
+        };
+        const plan = payload.plan;
+        const subscription = payload.subscription;
+        const isConfirmed = Boolean(plan && (plan === "pro" || plan === "enterprise") && subscription && ["active", "trialing"].includes(subscription.status ?? ""));
+
+        if (!cancelled) {
+          setState({
+            loading: false,
+            payload: isConfirmed
+              ? {
+                  success: true,
+                  plan,
+                  status: subscription?.status,
+                  trialEnd: subscription?.trial_end ?? null,
+                  currentPeriodEnd: subscription?.current_period_end ?? null,
+                }
+              : { error: "Não foi encontrada uma sessão de checkout válida e a subscrição ainda não está confirmada." },
+          });
+        }
       } catch (error) {
-        if (!cancelled) setState({ loading: false, payload: { error: error instanceof Error ? error.message : "Não foi possível confirmar a compra." } });
+        if (!cancelled) setState({ loading: false, payload: { error: error instanceof Error ? error.message : "Não foi possível confirmar a subscrição." } });
       }
     };
     void run();
