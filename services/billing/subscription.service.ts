@@ -15,8 +15,7 @@ function subscriptionPeriodEnd(subscription: Stripe.Subscription): number | null
 
 function stripePlanForSubscription(subscription: Stripe.Subscription): BillingPlan {
   const priceId = subscription.items.data[0]?.price.id;
-  const plan = priceId ? planForPrice(priceId) : undefined;
-  return plan ?? PLANS.FREE;
+  return planForPrice(priceId ?? "") ?? PLANS.FREE;
 }
 
 function isStripeMissingResource(error: unknown): boolean {
@@ -72,7 +71,6 @@ export class SubscriptionService {
       const access = (PLAN_ACCESS_STATUSES as readonly string[]).includes(stripeSubscription.status) && stripePlan !== PLANS.FREE;
       const nextPlan = access ? stripePlan : PLANS.FREE;
       const periodEnd = subscriptionPeriodEnd(stripeSubscription);
-
       const updates = {
         plan: nextPlan,
         stripe_customer_id: typeof stripeSubscription.customer === "string" ? stripeSubscription.customer : stripeSubscription.customer.id,
@@ -112,24 +110,26 @@ export class SubscriptionService {
   }
 
   static async getActiveForUser(userId: string): Promise<SubscriptionRecord | null> {
-    const subscription = await this.reconcileStripeSubscription(userId, await this.getForUser(userId));
-    if (!subscription) return null;
-    if (subscription.plan_override && subscription.plan_override !== PLANS.FREE) return subscription;
-    if (subscription.plan === PLANS.FREE) return null;
-    return (PLAN_ACCESS_STATUSES as readonly string[]).includes(subscription.status) ? subscription : null;
+    const subscription = await this.getForUser(userId);
+    const reconciled = await this.reconcileStripeSubscription(userId, subscription);
+    if (!reconciled) return null;
+    if (reconciled.plan_override && reconciled.plan_override !== PLANS.FREE) return reconciled;
+    if (reconciled.plan === PLANS.FREE) return null;
+    return (PLAN_ACCESS_STATUSES as readonly string[]).includes(reconciled.status) ? reconciled : null;
   }
 
   static async getActiveForBarbershop(barbershopId: string): Promise<SubscriptionRecord | null> {
-    const subscription = await this.reconcileStripeSubscription((await this.getForBarbershop(barbershopId))?.user_id ?? "", await this.getForBarbershop(barbershopId));
+    const subscription = await this.getForBarbershop(barbershopId);
     if (!subscription) return null;
-    if (subscription.plan_override && subscription.plan_override !== PLANS.FREE) return subscription;
-    if (subscription.plan === PLANS.FREE) return null;
-    return (PLAN_ACCESS_STATUSES as readonly string[]).includes(subscription.status) ? subscription : null;
+    const reconciled = await this.reconcileStripeSubscription(subscription.user_id, subscription);
+    if (!reconciled) return null;
+    if (reconciled.plan_override && reconciled.plan_override !== PLANS.FREE) return reconciled;
+    if (reconciled.plan === PLANS.FREE) return null;
+    return (PLAN_ACCESS_STATUSES as readonly string[]).includes(reconciled.status) ? reconciled : null;
   }
 
   static async getAccessPlanForBarbershop(barbershopId: string): Promise<BillingPlan> {
     const admin = createAdminClient();
-
     const { data: assignment, error: assignmentError } = await admin
       .from("barbershop_plan_assignments")
       .select("plan, expires_at")
