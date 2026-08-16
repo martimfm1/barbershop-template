@@ -2,18 +2,16 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CheckCircle2, ArrowRight, Building2, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowRight, Building2, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 
-type SuccessPayload = {
+type Payload = {
   success?: boolean;
-  status?: "pending" | string;
   plan?: "free" | "pro" | "enterprise";
-  statusLabel?: string;
-  barbershopId?: string | null;
-  barbershopName?: string | null;
+  status?: string;
   trialEnd?: string | null;
   currentPeriodEnd?: string | null;
   error?: string;
+  barbershopName?: string | null;
 };
 
 const PLAN_NAMES = {
@@ -22,138 +20,89 @@ const PLAN_NAMES = {
   enterprise: "Barbers Enterprise",
 } as const;
 
-function formatDate(value: string | null | undefined) {
-  if (!value) return null;
-  return new Date(value).toLocaleDateString("pt-PT", { day: "2-digit", month: "long", year: "numeric" });
+function formatDate(value?: string | null) {
+  return value
+    ? new Date(value).toLocaleDateString("pt-PT", { day: "2-digit", month: "long", year: "numeric" })
+    : null;
 }
 
 export default function CheckoutSuccessPage() {
-  const [state, setState] = useState<{ loading: boolean; payload: SuccessPayload | null }>({ loading: true, payload: null });
-  const sessionId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("session_id") : null;
+  const [loading, setLoading] = useState(true);
+  const [payload, setPayload] = useState<Payload | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
-
     const run = async () => {
-      let lastError = "Não foi possível confirmar a subscrição.";
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get("session_id")?.trim() || null;
 
       for (let attempt = 0; attempt < 6 && !cancelled; attempt += 1) {
         try {
-          // Embedded Checkout does not expose the Checkout Session ID in onComplete.
-          // Sync the latest Stripe subscription server-side before reading the final state.
           if (!sessionId) {
-            try {
-              const syncResponse = await fetch("/api/stripe/checkout-complete", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                cache: "no-store",
-              });
-              const syncPayload = (await syncResponse.json().catch(() => ({}))) as {
-                stripeSubscriptionId?: string | null;
-                error?: string;
-              };
-
-              if (!syncResponse.ok) {
-                lastError = syncPayload.error || lastError;
-                console.warn("[CHECKOUT_SUCCESS_SYNC_RETRY]", {
-                  attempt,
-                  status: syncResponse.status,
-                  error: syncPayload.error ?? null,
-                });
-              } else {
-                console.info("[CHECKOUT_SUCCESS_SYNC]", {
-                  attempt,
-                  stripeSubscriptionId: syncPayload.stripeSubscriptionId ?? null,
-                });
-              }
-            } catch (syncError) {
-              lastError = syncError instanceof Error ? syncError.message : lastError;
-              console.warn("[CHECKOUT_SUCCESS_SYNC_NETWORK_ERROR]", { attempt, error: syncError });
-            }
+            await fetch("/api/stripe/checkout-complete", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              cache: "no-store",
+            }).catch(() => undefined);
           }
 
-          const endpoint = sessionId
+          const subscriptionEndpoint = sessionId
             ? `/api/stripe/subscription?session_id=${encodeURIComponent(sessionId)}`
             : "/api/stripe/subscription";
 
-          const response = await fetch(endpoint, { cache: "no-store" });
-          const payload = (await response.json().catch(() => ({}))) as {
-            plan?: "free" | "pro" | "enterprise";
-            subscription?: {
-              stripe_subscription_id?: string | null;
-              status?: string;
-              current_period_end?: string | null;
-              trial_end?: string | null;
-            } | null;
-            stripeSubscriptionId?: string | null;
-            error?: string;
-          };
+          const [subscriptionResponse, summaryResponse] = await Promise.all([
+            fetch(subscriptionEndpoint, { cache: "no-store" }),
+            fetch("/api/stripe/billing-summary", { cache: "no-store" }),
+          ]);
 
-          if (!response.ok) {
-            lastError = payload.error || lastError;
-            if (attempt < 5) {
-              await sleep(1200);
-              continue;
-            }
-            break;
-          }
+          const subscriptionBody = await subscriptionResponse.json().catch(() => ({}));
+          const summaryBody = await summaryResponse.json().catch(() => ({}));
 
-          const plan = payload.plan;
-          const subscription = payload.subscription;
-          const stripeSubscriptionId = payload.stripeSubscriptionId ?? subscription?.stripe_subscription_id ?? null;
-          const isConfirmed = Boolean(
-            stripeSubscriptionId &&
-            plan &&
-            (plan === "pro" || plan === "enterprise") &&
-            subscription &&
-            ["active", "trialing"].includes(subscription.status ?? ""),
-          );
+          if (subscriptionResponse.ok) {
+            const subscription = subscriptionBody.subscription;
+            const plan = subscriptionBody.plan as Payload["plan"];
+            const stripeSubscriptionId = subscriptionBody.stripeSubscriptionId ?? subscription?.stripe_subscription_id ?? null;
+            const active = Boolean(
+              stripeSubscriptionId &&
+              (plan === "pro" || plan === "enterprise") &&
+              subscription &&
+              ["active", "trialing"].includes(subscription.status),
+            );
 
-          if (isConfirmed) {
-            if (!cancelled) {
-              setState({
-                loading: false,
-                payload: {
+            if (active) {
+              if (!cancelled) {
+                setPayload({
                   success: true,
                   plan,
-                  status: subscription?.status,
-                  trialEnd: subscription?.trial_end ?? null,
-                  currentPeriodEnd: subscription?.current_period_end ?? null,
-                },
-              });
+                  status: subscription.status,
+                  trialEnd: subscription.trial_end ?? null,
+                  currentPeriodEnd: subscription.current_period_end ?? null,
+                  barbershopName: summaryBody.barbershopName ?? null,
+                });
+                setLoading(false);
+              }
+              return;
             }
-            return;
           }
 
-          const isPending = Boolean(subscription && ["incomplete", "past_due", "unpaid"].includes(subscription.status ?? ""));
-          lastError = isPending
-            ? "A Stripe ainda está a concluir a subscrição."
-            : lastError;
-
           if (attempt < 5) {
-            await sleep(1200);
+            await new Promise((resolve) => window.setTimeout(resolve, 1000));
             continue;
           }
 
           if (!cancelled) {
-            setState({
-              loading: false,
-              payload: isPending
-                ? { status: "pending", plan, error: lastError }
-                : { error: lastError },
-            });
+            setPayload({ error: subscriptionBody.error || "A subscrição ainda não está disponível para confirmação." });
+            setLoading(false);
           }
         } catch (error) {
-          lastError = error instanceof Error ? error.message : lastError;
-          console.warn("[CHECKOUT_SUCCESS_RETRY]", { attempt, error });
           if (attempt < 5) {
-            await sleep(1200);
+            await new Promise((resolve) => window.setTimeout(resolve, 1000));
             continue;
           }
           if (!cancelled) {
-            setState({ loading: false, payload: { error: lastError } });
+            setPayload({ error: error instanceof Error ? error.message : "Não foi possível confirmar a subscrição." });
+            setLoading(false);
           }
         }
       }
@@ -161,23 +110,72 @@ export default function CheckoutSuccessPage() {
 
     void run();
     return () => { cancelled = true; };
-  }, [sessionId]);
+  }, []);
 
-  if (state.loading) {
-    return <main className="grid min-h-screen place-items-center bg-zinc-950 px-4 text-white"><div className="text-center"><div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-200"><Loader2 className="size-5 animate-spin" /></div><h1 className="mt-5 text-xl font-semibold">A confirmar a tua subscrição…</h1><p className="mt-2 text-sm text-zinc-500">Estamos a sincronizar o pagamento, a conta Stripe e o plano da tua barbearia.</p></div></main>;
+  if (loading) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-zinc-950 px-4 text-white">
+        <div className="text-center">
+          <div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-200">
+            <Loader2 className="size-5 animate-spin" />
+          </div>
+          <h1 className="mt-5 text-xl font-semibold">A confirmar a tua subscrição…</h1>
+          <p className="mt-2 text-sm text-zinc-500">Estamos a sincronizar Stripe e Supabase.</p>
+        </div>
+      </main>
+    );
   }
 
-  if (state.payload?.status === "pending") {
-    return <main className="grid min-h-screen place-items-center bg-zinc-950 px-4 text-white"><div className="w-full max-w-lg rounded-3xl border border-amber-400/20 bg-zinc-900/80 p-7 text-center"><div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-amber-400/20 bg-amber-400/10 text-amber-200"><Loader2 className="size-5 animate-spin" /></div><h1 className="mt-5 text-2xl font-semibold">Pagamento em processamento</h1><p className="mt-2 text-sm leading-6 text-zinc-400">A subscrição já chegou à Silentra, mas a Stripe ainda não a colocou num estado ativo. Volta ao billing para acompanhar o estado.</p><Link href="/dashboard/billing" className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-zinc-950">Abrir billing <ArrowRight className="size-4" /></Link></div></main>;
+  if (!payload?.success) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-zinc-950 px-4 text-white">
+        <div className="w-full max-w-lg rounded-3xl border border-red-400/20 bg-zinc-900/80 p-7 text-center">
+          <h1 className="text-2xl font-semibold">Não foi possível confirmar a subscrição</h1>
+          <p className="mt-3 text-sm leading-6 text-zinc-400">{payload?.error || "Não foi possível concluir a sincronização."}</p>
+          <Link href="/dashboard/billing" className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-zinc-950">
+            Ir para billing <ArrowRight className="size-4" />
+          </Link>
+        </div>
+      </main>
+    );
   }
 
-  if (!state.payload?.success || state.payload.error) {
-    return <main className="grid min-h-screen place-items-center bg-zinc-950 px-4 text-white"><div className="w-full max-w-lg rounded-3xl border border-red-400/20 bg-zinc-900/80 p-7 text-center"><h1 className="text-2xl font-semibold">Não foi possível confirmar a subscrição</h1><p className="mt-3 text-sm leading-6 text-zinc-400">{state.payload?.error || "A compra pode ter sido concluída, mas não conseguimos sincronizar o plano."}</p><div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center"><Link href="/dashboard/billing" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-zinc-950">Ir para billing</Link><Link href="/plans" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 px-5 text-sm font-semibold text-zinc-100">Voltar aos planos</Link></div></div></main>;
-  }
+  const planName = payload.plan ? PLAN_NAMES[payload.plan] : "A tua subscrição";
+  const trialEnd = formatDate(payload.trialEnd);
+  const periodEnd = formatDate(payload.currentPeriodEnd);
+  const barbershopName = payload.barbershopName?.trim() || "Barbearia";
 
-  const planName = state.payload.plan ? PLAN_NAMES[state.payload.plan] : "A tua subscrição";
-  const trialEnd = formatDate(state.payload.trialEnd);
-  const periodEnd = formatDate(state.payload.currentPeriodEnd);
+  return (
+    <main className="min-h-screen bg-zinc-950 px-4 py-12 text-white sm:px-6">
+      <div className="mx-auto max-w-3xl">
+        <div className="rounded-[2rem] border border-emerald-400/15 bg-zinc-900/80 p-7 shadow-[0_30px_100px_rgba(0,0,0,0.3)] sm:p-10">
+          <div className="flex size-14 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-200">
+            <CheckCircle2 className="size-7" />
+          </div>
+          <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-300/80">Subscrição confirmada</p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.05em] sm:text-5xl">Tudo certo. O teu plano está ativo.</h1>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-400 sm:text-base">A subscrição Stripe foi sincronizada e ficou associada à tua barbearia.</p>
 
-  return <main className="min-h-screen bg-zinc-950 px-4 py-12 text-white sm:px-6"><div className="mx-auto max-w-3xl"><div className="rounded-[2rem] border border-emerald-400/15 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.12),transparent_36%),rgba(24,24,27,0.84)] p-7 shadow-[0_30px_100px_rgba(0,0,0,0.3)] sm:p-10"><div className="flex size-14 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-200"><CheckCircle2 className="size-7" /></div><p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-300/80">Subscrição confirmada</p><h1 className="mt-3 text-3xl font-semibold tracking-[-0.05em] sm:text-5xl">Tudo certo. O teu plano está ativo.</h1><p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-400 sm:text-base">A subscrição Stripe foi sincronizada e ficou associada à tua barbearia. Toda a equipa elegível passa a usar as funcionalidades do plano.</p><div className="mt-8 grid gap-3 sm:grid-cols-2"><div className="rounded-2xl border border-white/8 bg-black/20 p-4"><div className="flex items-center gap-2 text-zinc-500"><ShieldCheck className="size-4 text-emerald-300" /><span className="text-xs uppercase tracking-[0.12em]">Plano</span></div><p className="mt-2 text-lg font-semibold text-white">{planName}</p></div><div className="rounded-2xl border border-white/8 bg-black/20 p-4"><div className="flex items-center gap-2 text-zinc-500"><Building2 className="size-4 text-emerald-300" /><span className="text-xs uppercase tracking-[0.12em]">Barbearia</span></div><p className="mt-2 text-lg font-semibold text-white">Barbearia associada</p></div></div>{trialEnd ? <div className="mt-4 rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.04] p-4 text-sm text-emerald-100">Trial Pro ativo até <strong>{trialEnd}</strong>. Depois inicia-se a cobrança normal, salvo cancelamento.</div> : null}{periodEnd && !trialEnd ? <p className="mt-4 text-xs text-zinc-500">Período atual até {periodEnd}.</p> : null}<div className="mt-8 flex flex-col gap-2 sm:flex-row"><Link href="/dashboard" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-400 px-5 text-sm font-semibold text-zinc-950">Ir para dashboard <ArrowRight className="size-4" /></Link><Link href="/dashboard/billing" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-5 text-sm font-semibold text-zinc-100">Ver faturação</Link></div></div></div></main>;
+          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+              <div className="flex items-center gap-2 text-zinc-500"><ShieldCheck className="size-4 text-emerald-300" /><span className="text-xs uppercase tracking-[0.12em]">Plano</span></div>
+              <p className="mt-2 text-lg font-semibold text-white">{planName}</p>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+              <div className="flex items-center gap-2 text-zinc-500"><Building2 className="size-4 text-emerald-300" /><span className="text-xs uppercase tracking-[0.12em]">Barbearia</span></div>
+              <p className="mt-2 text-lg font-semibold text-white">{barbershopName}</p>
+            </div>
+          </div>
+
+          {trialEnd ? <div className="mt-4 rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.04] p-4 text-sm text-emerald-100">Trial ativo até <strong>{trialEnd}</strong>.</div> : null}
+          {periodEnd && !trialEnd ? <p className="mt-4 text-xs text-zinc-500">Período atual até {periodEnd}.</p> : null}
+
+          <div className="mt-8 flex flex-col gap-2 sm:flex-row">
+            <Link href="/dashboard" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-400 px-5 text-sm font-semibold text-zinc-950">Ir para dashboard <ArrowRight className="size-4" /></Link>
+            <Link href="/dashboard/billing" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-5 text-sm font-semibold text-zinc-100">Ver faturação</Link>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
 }
