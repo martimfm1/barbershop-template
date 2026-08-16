@@ -3,6 +3,13 @@ import { supabase, listRecords } from "@/lib/db";
 
 const SITE_URL = "https://barbers.silentra.me";
 
+type ShopSitemapEntry = {
+  url: string;
+  lastModified: Date;
+  changeFrequency: "weekly";
+  priority: number;
+};
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -28,20 +35,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     if (!error && shops) {
       const seen = new Set<string>();
-      dynamicShopRoutes = shops
-        .filter((shop) => Boolean(shop.slug) && shop.public_profile_enabled !== false)
-        .map((shop) => {
-          const slug = shop.slug as string;
-          if (seen.has(slug)) return null;
-          seen.add(slug);
-          return {
-            url: `${SITE_URL}/barbershops/${encodeURIComponent(slug)}`,
-            lastModified: shop.updated_at ? new Date(shop.updated_at) : now,
-            changeFrequency: "weekly" as const,
-            priority: 0.8,
-          };
-        })
-        .filter((item): item is MetadataRoute.Sitemap[number] => item !== null);
+      const shopEntries: ShopSitemapEntry[] = [];
+
+      for (const shop of shops) {
+        if (!shop.slug || shop.public_profile_enabled === false) continue;
+
+        const slug = shop.slug.trim();
+        if (!slug || seen.has(slug)) continue;
+        seen.add(slug);
+
+        const parsedLastModified = shop.updated_at ? new Date(shop.updated_at) : now;
+        shopEntries.push({
+          url: `${SITE_URL}/barbershops/${encodeURIComponent(slug)}`,
+          lastModified: Number.isNaN(parsedLastModified.getTime()) ? now : parsedLastModified,
+          changeFrequency: "weekly",
+          priority: 0.8,
+        });
+      }
+
+      dynamicShopRoutes = shopEntries;
     }
   } catch {
     // Sitemap generation should remain best-effort; private application routes are excluded.
