@@ -17,30 +17,25 @@ export interface PricingCardProps {
   popular?: boolean;
   trialDays?: number;
   onCheckout?: (priceId: string) => void;
-  onManagePortal?: () => void;
 }
 
 export function PricingCard({ tier, title, price, priceId, description, features, popular = false, trialDays, onCheckout }: PricingCardProps) {
   const isMounted = useSyncExternalStore(() => () => undefined, () => true, () => false);
-  const { subscription, isAuthenticated, plan: currentPlan, loading } = useSubscription();
+  const { isAuthenticated, plan: currentPlan, loading } = useSubscription();
   const isCurrentPlan = useMemo(() => isAuthenticated && currentPlan === tier, [currentPlan, isAuthenticated, tier]);
-  const hasActivePaidSubscription = Boolean(subscription && (subscription.status === "active" || subscription.status === "trialing"));
 
   const handleAction = async () => {
     try {
-      if (!isMounted) return;
+      if (!isMounted || loading) return;
+
       if (!isAuthenticated) {
         window.location.assign("/registo");
         return;
       }
+
       if (isCurrentPlan) return;
 
       if (tier === "free") {
-        window.location.assign("/dashboard/billing");
-        return;
-      }
-
-      if (hasActivePaidSubscription) {
         window.location.assign("/dashboard/billing");
         return;
       }
@@ -63,13 +58,12 @@ export function PricingCard({ tier, title, price, priceId, description, features
 
   const buttonConfig = useMemo(() => {
     if (!isMounted) return { label: "A carregar…", disabled: true, variant: popular ? ("primary" as const) : ("outline" as const) };
-    if (!isAuthenticated) return { label: tier === "free" ? "Começar gratuitamente" : tier === "pro" && trialDays ? `Experimentar Pro ${trialDays} dias` : "Criar conta para começar", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
+    if (!isAuthenticated) return { label: "Criar conta para começar", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
     if (isCurrentPlan) return { label: "Plano atual", disabled: true, variant: "secondary" as const };
-    if (tier === "free") return { label: "Ver faturação", disabled: false, variant: "outline" as const };
-    if (hasActivePaidSubscription) return { label: "Gerir subscrição", disabled: false, variant: "outline" as const };
+    if (tier === "free") return { label: "Usar plano gratuito", disabled: false, variant: "outline" as const };
     if (!priceId) return { label: "Indisponível", disabled: true, variant: "outline" as const };
-    return { label: tier === "pro" && trialDays ? `Começar checkout · ${trialDays} dias grátis` : "Começar checkout", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
-  }, [isMounted, isCurrentPlan, isAuthenticated, popular, tier, trialDays, priceId, hasActivePaidSubscription]);
+    return { label: "Mudar para este plano", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
+  }, [isMounted, isCurrentPlan, isAuthenticated, popular, tier, priceId]);
 
   const isActivePaidPlan = isCurrentPlan && (tier === "pro" || tier === "enterprise");
 
