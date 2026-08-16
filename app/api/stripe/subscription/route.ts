@@ -1,11 +1,45 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripeClient } from "@/lib/stripe/server";
 import { SubscriptionService } from "@/services/billing/subscription.service";
 import { BillingError } from "@/types/stripe";
 import { billingErrorResponse } from "@/services/billing/http";
 
 export const dynamic = "force-dynamic";
+
+async function recoverLatestStripeSubscription(barbershopId: string): Promise<void> {
+  const admin = createAdminClient();
+  const { data: owner, error: ownerError } = await admin
+    .from("users")
+    .select("id")
+    .eq("barbershop_id", barbershopId)
+    .eq("role", "owner")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (ownerError || !owner?.id) return;
+
+  const { data: customer, error: customerError } = await admin
+    .from("customers")
+    .select("stripe_customer_id")
+    .eq("user_id", owner.id)
+    .maybeSingle();
+
+  if (customerError || !customer?.stripe_customer_id) return;
+
+  const stripeSubscriptions = await getStripeClient().subscriptions.list({
+    customer: customer.stripe_customer_id,
+    status: "all",
+    limit: 10,
+  });
+
+  const latest = [...stripeSubscriptions.data].sort((a, b) => b.created - a.created)[0];
+  if (!latest) return;
+
+  await SubscriptionService.syncFromStripe(owner.id, latest);
+}
 
 export async function GET(request: Request) {
   try {
@@ -38,6 +72,13 @@ export async function GET(request: Request) {
 
     const barbershopId = await SubscriptionService.getBarbershopIdForUser(user.id);
     if (!barbershopId) return NextResponse.json({ subscription: null, plan: "free", planSource: "free", barbershopId: null }, { headers: { "Cache-Control": "no-store" } });
+
+    // Recover purchases even when the webhook was delayed/missed and the local
+    // subscriptions row was never created. Stripe remains the source of truth.
+    const localSubscription = await SubscriptionService.getForBarbershop(barbershopId);
+    if (!localSubscription) {
+      await recoverLatestStripeSubscription(barbershopId);
+    }
 
     const plan = await SubscriptionService.getAccessPlanForBarbershop(barbershopId);
     const subscription = await SubscriptionService.getForBarbershop(barbershopId);
