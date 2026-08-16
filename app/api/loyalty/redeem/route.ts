@@ -3,6 +3,7 @@ import { getPublicProfileBySlug } from "@/lib/barbershops/public-profile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLoyaltySession, hashLoyaltyToken, generateLoyaltyToken } from "@/lib/loyalty/session";
 import { sendLoyaltyRedemptionEmail } from "@/lib/brevo/loyalty";
+import { requireTenantAuthorization } from "@/lib/security/tenant-guard";
 import { randomBytes } from "node:crypto";
 
 export const runtime = "nodejs";
@@ -30,6 +31,9 @@ export async function POST(request: Request) {
 
     const profile = await getPublicProfileBySlug(slug);
     if (!profile?.barbershop_id || !["pro", "enterprise"].includes(profile.plan)) return errorResponse("Fidelização indisponível.", 404);
+
+    // Tenant validation is intentionally public here; the loyalty session below authenticates the member.
+    await requireTenantAuthorization({ barbershopId: profile.barbershop_id, allowPublicTenant: true });
 
     const session = await getLoyaltySession(profile.barbershop_id);
     if (!session) return errorResponse("Sessão expirada. Confirma novamente o teu email.", 401);
