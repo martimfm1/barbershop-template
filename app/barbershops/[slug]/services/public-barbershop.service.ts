@@ -88,6 +88,26 @@ interface ShopRow {
   off_days?: number[] | null;
 }
 
+async function loadBarbershopById(id: string): Promise<BarbershopRow | null> {
+  const { data, error } = await supabase
+    .from("barbershops")
+    .select("id, name, slug, phone, address, opening_time, closing_time, lunch_start, lunch_end, closed_days, is_public_in_directory")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as BarbershopRow;
+}
+
+async function loadShopByBarbershopId(barbershopId: string): Promise<ShopRow | null> {
+  const { data } = await supabase
+    .from("shops")
+    .select("*")
+    .eq("barbershop_id", barbershopId)
+    .maybeSingle();
+  return (data as ShopRow | null) ?? null;
+}
+
 export const publicBarbershopService = {
   async getBarbershopData(slug: string) {
     try {
@@ -96,27 +116,35 @@ export const publicBarbershopService = {
         return { data: null, error: { message: "Barbearia não encontrada." } };
       }
 
-      const { data: barbershop, error: barbershopError } = await supabase
+      let barbershop: BarbershopRow | null = null;
+      let resolvedCustomSlug = false;
+
+      const { data: baseBarbershop, error: baseError } = await supabase
         .from("barbershops")
         .select("id, name, slug, phone, address, opening_time, closing_time, lunch_start, lunch_end, closed_days, is_public_in_directory")
         .eq("slug", cleanSlug)
         .maybeSingle();
 
-      if (barbershopError || !barbershop) {
+      if (!baseError && baseBarbershop) {
+        barbershop = baseBarbershop as BarbershopRow;
+      } else {
+        const { data: customShop, error: customError } = await supabase
+          .from("shops")
+          .select("barbershop_id, custom_slug")
+          .eq("custom_slug", cleanSlug)
+          .maybeSingle();
+
+        if (!customError && customShop?.barbershop_id) {
+          barbershop = await loadBarbershopById(customShop.barbershop_id);
+          resolvedCustomSlug = Boolean(barbershop);
+        }
+      }
+
+      if (!barbershop || barbershop.is_public_in_directory === false) {
         return { data: null, error: { message: "Barbearia não encontrada." } };
       }
 
-      if (barbershop.is_public_in_directory === false) {
-        return { data: null, error: { message: "Barbearia não encontrada." } };
-      }
-
-      const { data: shop } = await supabase
-        .from("shops")
-        .select("*")
-        .eq("barbershop_id", barbershop.id)
-        .maybeSingle();
-
-      const shopRow = (shop as ShopRow | null) ?? null;
+      const shopRow = await loadShopByBarbershopId(barbershop.id);
 
       const { data: servicesRaw } = await supabase
         .from("services")
@@ -140,12 +168,11 @@ export const publicBarbershopService = {
         ? Number((normalizedReviews.reduce((acc, review) => acc + review.rating, 0) / totalReviews).toFixed(1))
         : Number(shopRow?.rating ?? 0);
 
-      const canonicalSlug = cleanSlug;
       const formattedShop: BarbershopPublicDetails = {
         id: shopRow?.id ?? barbershop.id,
         barbershop_id: barbershop.id,
         name: shopRow?.name?.trim() || barbershop.name,
-        slug: canonicalSlug,
+        slug: resolvedCustomSlug ? cleanSlug : cleanSlug,
         city: shopRow?.city || "",
         address: shopRow?.address || barbershop.address || "",
         phone: shopRow?.phone || barbershop.phone || "",
