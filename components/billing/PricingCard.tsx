@@ -6,6 +6,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 
 export type PlanTier = "free" | "pro" | "enterprise";
+export type PricingDestination = "plans" | "checkout";
 
 export interface PricingCardProps {
   tier: PlanTier;
@@ -16,10 +17,10 @@ export interface PricingCardProps {
   features: readonly string[];
   popular?: boolean;
   trialDays?: number;
-  onCheckout?: (priceId: string) => void;
+  destination?: PricingDestination;
 }
 
-export function PricingCard({ tier, title, price, priceId, description, features, popular = false, trialDays, onCheckout }: PricingCardProps) {
+export function PricingCard({ tier, title, price, priceId, description, features, popular = false, trialDays, destination = "checkout" }: PricingCardProps) {
   const isMounted = useSyncExternalStore(() => () => undefined, () => true, () => false);
   const { isAuthenticated, plan: currentPlan, loading } = useSubscription();
   const isCurrentPlan = useMemo(() => isAuthenticated && currentPlan === tier, [currentPlan, isAuthenticated, tier]);
@@ -27,32 +28,26 @@ export function PricingCard({ tier, title, price, priceId, description, features
   const handleAction = async () => {
     try {
       if (!isMounted || loading) return;
-
       if (!isAuthenticated) {
         window.location.assign("/registo");
         return;
       }
-
       if (isCurrentPlan) return;
-
-      if (tier === "free") {
-        window.location.assign("/dashboard/billing");
+      if (destination === "plans") {
+        window.location.assign("/plans");
         return;
       }
-
+      if (tier === "free") {
+        window.location.assign("/plans");
+        return;
+      }
       if (!priceId) {
         toast.error("Este plano ainda não está disponível para checkout.");
         return;
       }
-
-      if (onCheckout) {
-        onCheckout(priceId);
-        return;
-      }
-
       window.location.assign(`/checkout?priceId=${encodeURIComponent(priceId)}&plan=${tier}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível iniciar o checkout.");
+      toast.error(error instanceof Error ? error.message : "Não foi possível iniciar o próximo passo.");
     }
   };
 
@@ -60,10 +55,11 @@ export function PricingCard({ tier, title, price, priceId, description, features
     if (!isMounted) return { label: "A carregar…", disabled: true, variant: popular ? ("primary" as const) : ("outline" as const) };
     if (!isAuthenticated) return { label: "Criar conta para começar", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
     if (isCurrentPlan) return { label: "Plano atual", disabled: true, variant: "secondary" as const };
-    if (tier === "free") return { label: "Usar plano gratuito", disabled: false, variant: "outline" as const };
+    if (destination === "plans") return { label: "Mudar para este plano", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
+    if (tier === "free") return { label: "Ver planos", disabled: false, variant: "outline" as const };
     if (!priceId) return { label: "Indisponível", disabled: true, variant: "outline" as const };
     return { label: "Mudar para este plano", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
-  }, [isMounted, isCurrentPlan, isAuthenticated, popular, tier, priceId]);
+  }, [destination, isMounted, isCurrentPlan, isAuthenticated, popular, tier, priceId]);
 
   const isActivePaidPlan = isCurrentPlan && (tier === "pro" || tier === "enterprise");
 
