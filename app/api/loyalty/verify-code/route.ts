@@ -1,20 +1,11 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getPublicProfileBySlug } from "@/lib/barbershops/public-profile";
+import { getLoyaltySession, generateLoyaltyToken, hashLoyaltyToken, hashLoyaltyValue, loyaltySessionExpiry, normalizeLoyaltyEmail, setLoyaltyCookie } from "@/lib/loyalty/session";
 import { requireTenantAuthorization } from "@/lib/security/tenant-guard";
 import { consumePublicRateLimit } from "@/lib/security/public-rate-limit";
-import {
-  generateLoyaltyToken,
-  getLoyaltySession,
-  hashLoyaltyToken,
-  hashLoyaltyValue,
-  loyaltySessionExpiry,
-  normalizeLoyaltyEmail,
-  setLoyaltyCookie,
-} from "@/lib/loyalty/session";
+import { getLoyaltyTenantBySlug } from "@/lib/loyalty/public-tenant";
 
 export const runtime = "nodejs";
-
 const VERIFY_RATE_LIMIT = 12;
 const VERIFY_RATE_WINDOW_SECONDS = 15 * 60;
 
@@ -25,105 +16,45 @@ export async function POST(request: Request) {
     const email = normalizeLoyaltyEmail(body.email);
     const code = typeof body.code === "string" ? body.code.trim() : "";
     const name = typeof body.name === "string" ? body.name.trim().slice(0, 120) : null;
-    if (!slug || !email || !/^\d{6}$/.test(code)) {
-      return NextResponse.json({ error: "Email ou código inválido." }, { status: 400 });
-    }
+    if (!slug || !email || !/^\d{6}$/.test(code)) return NextResponse.json({ error: "Email ou código inválido." }, { status: 400 });
 
-    const profile = await getPublicProfileBySlug(slug);
-    if (!profile?.barbershop_id || !["pro", "enterprise"].includes(profile.plan)) {
-      return NextResponse.json({ error: "A fidelização não está disponível." }, { status: 404 });
-    }
+    const tenant = await getLoyaltyTenantBySlug(slug);
+    if (!tenant) return NextResponse.json({ error: "A fidelização não está disponível." }, { status: 404 });
 
-    await requireTenantAuthorization({ barbershopId: profile.barbershop_id, allowPublicTenant: true });
+    await requireTenantAuthorization({ barbershopId: tenant.barbershopId, allowPublicTenant: true });
 
-    const allowed = await consumePublicRateLimit(
-      request,
-      "loyalty-otp-verify",
-      `${profile.barbershop_id}:${email}`,
-      VERIFY_RATE_LIMIT,
-      VERIFY_RATE_WINDOW_SECONDS,
-    );
-    if (!allowed) {
-      return NextResponse.json({ error: "Demasiadas tentativas. Pede um novo código mais tarde." }, { status: 429 });
-    }
+    const allowed = await consumePublicRateLimit(request, "loyalty-otp-verify", `${tenant.barbershopId}:${email}`, VERIFY_RATE_LIMIT, VERIFY_RATE_WINDOW_SECONDS);
+    if (!allowed) return NextResponse.json({ error: "Demasiadas tentativas. Pede um novo código mais tarde." }, { status: 429 });
 
     const admin = createAdminClient();
-    const { data: verification } = await admin
-      .from("loyalty_verifications")
-      .select("id, code_hash, attempts")
-      .eq("barbershop_id", profile.barbershop_id)
-      .eq("email", email)
-      .is("consumed_at", null)
-      .gt("expires_at", new Date().toISOString())
-      .order("requested_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const { data: verification } = await admin.from("loyalty_verifications").select("id").eq("barbershop_id", tenant.barbershopId).eq("email", email).is("consumed_at", null).gt("expires_at", new Date().toISOString()).order("requested_at", { ascending: false }).limit(1).maybeSingle();
+    if (!verification) return NextResponse.json({ error: "Código inválido ou expirado." }, { status: 401 });
 
-    if (!verification) {
-      return NextResponse.json({ error: "Código inválido ou expirado." }, { status: 401 });
-    }
+    const verificationResult = await admin.rpc("consume_loyalty_verification", { p_verification_id: verification.id, p_code_hash: hashLoyaltyValue(code) });
+    if (verificationResult.error) return NextResponse.json({ error: "Não foi possível validar o código." }, { status: 503 });
+    if (verificationResult.data === "LOYALTY_VERIFICATION_LOCKED") return NextResponse.json({ error: "Demasiadas tentativas. Pede um novo código." }, { status: 429 });
+    if (verificationResult.data !== "LOYALTY_VERIFICATION_OK") return NextResponse.json({ error: "Código inválido ou expirado." }, { status: 401 });
 
-    const verificationResult = await admin.rpc("consume_loyalty_verification", {
-      p_verification_id: verification.id,
-      p_code_hash: hashLoyaltyValue(code),
-    });
-
-    if (verificationResult.error) {
-      return NextResponse.json({ error: "Não foi possível validar o código." }, { status: 503 });
-    }
-
-    if (verificationResult.data === "LOYALTY_VERIFICATION_LOCKED") {
-      return NextResponse.json({ error: "Demasiadas tentativas. Pede um novo código." }, { status: 429 });
-    }
-
-    if (verificationResult.data !== "LOYALTY_VERIFICATION_OK") {
-      return NextResponse.json({ error: "Código inválido ou expirado." }, { status: 401 });
-    }
-
-    const { error: joinError } = await admin.rpc("join_loyalty_program", {
-      p_barbershop_id: profile.barbershop_id,
-      p_email: email,
-      p_name: name,
-    });
-
+    const { error: joinError } = await admin.rpc("join_loyalty_program", { p_barbershop_id: tenant.barbershopId, p_email: email, p_name: name });
     if (joinError) {
       const codeMap: Record<string, { message: string; status: number }> = {
         LOYALTY_ALREADY_ENROLLED: { message: "Já tens uma adesão ativa noutra barbearia. Só podes participar num programa de cada vez.", status: 409 },
         LOYALTY_PROGRAM_UNAVAILABLE: { message: "O programa de fidelização está temporariamente indisponível.", status: 409 },
       };
       const mapped = codeMap[joinError.message];
-      if (mapped) return NextResponse.json({ error: mapped.message }, { status: mapped.status });
-      return NextResponse.json({ error: "Não foi possível concluir a adesão ao programa." }, { status: 503 });
+      return mapped ? NextResponse.json({ error: mapped.message }, { status: mapped.status }) : NextResponse.json({ error: "Não foi possível concluir a adesão ao programa." }, { status: 503 });
     }
 
-    // A successful enrollment makes previous loyalty sessions invalid, enforcing
-    // the single-active-program rule across all barbershops.
-    await admin
-      .from("loyalty_sessions")
-      .delete()
-      .eq("email", email)
-      .neq("barbershop_id", profile.barbershop_id);
+    await admin.from("loyalty_sessions").delete().eq("email", email).neq("barbershop_id", tenant.barbershopId);
 
     const token = generateLoyaltyToken();
     const expiresAt = loyaltySessionExpiry();
-    const { error: sessionError } = await admin.from("loyalty_sessions").insert({
-      barbershop_id: profile.barbershop_id,
-      email,
-      token_hash: hashLoyaltyToken(token),
-      expires_at: expiresAt,
-    });
-
-    if (sessionError) {
-      return NextResponse.json({ error: "Não foi possível iniciar a sessão." }, { status: 503 });
-    }
+    const { error: sessionError } = await admin.from("loyalty_sessions").insert({ barbershop_id: tenant.barbershopId, email, token_hash: hashLoyaltyToken(token), expires_at: expiresAt });
+    if (sessionError) return NextResponse.json({ error: "Não foi possível iniciar a sessão." }, { status: 503 });
 
     await setLoyaltyCookie(token, expiresAt);
-
-    const session = await getLoyaltySession(profile.barbershop_id);
-    return NextResponse.json(
-      { success: true, email: session?.email ?? email },
-      { headers: { "Cache-Control": "no-store" } },
-    );
+    const session = await getLoyaltySession(tenant.barbershopId);
+    return NextResponse.json({ success: true, email: session?.email ?? email }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Não foi possível verificar o código." }, { status: 503 });
   }
