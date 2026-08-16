@@ -15,10 +15,11 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json().catch(() => ({}))) as { slug?: unknown; email?: unknown; code?: unknown };
+    const body = (await request.json().catch(() => ({}))) as { slug?: unknown; email?: unknown; code?: unknown; name?: unknown };
     const slug = typeof body.slug === "string" ? body.slug.trim().toLowerCase() : "";
     const email = normalizeLoyaltyEmail(body.email);
     const code = typeof body.code === "string" ? body.code.trim() : "";
+    const name = typeof body.name === "string" ? body.name.trim().slice(0, 120) : null;
     if (!slug || !email || !/^\d{6}$/.test(code)) return NextResponse.json({ error: "Email ou código inválido." }, { status: 400 });
 
     const profile = await getPublicProfileBySlug(slug);
@@ -44,10 +45,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Código inválido ou expirado." }, { status: 401 });
     }
 
-    await admin.from("loyalty_members").upsert(
-      { barbershop_id: profile.barbershop_id, email, updated_at: new Date().toISOString() },
-      { onConflict: "barbershop_id,email" },
-    );
+    const { error: joinError } = await admin.rpc("join_loyalty_program", {
+      p_barbershop_id: profile.barbershop_id,
+      p_email: email,
+      p_name: name,
+    });
+
+    if (joinError) {
+      const codeMap: Record<string, { message: string; status: number }> = {
+        LOYALTY_ALREADY_ENROLLED: { message: "Já tens uma adesão ativa noutra barbearia. Só podes participar num programa de cada vez.", status: 409 },
+        LOYALTY_PROGRAM_UNAVAILABLE: { message: "O programa de fidelização está temporariamente indisponível.", status: 409 },
+      };
+      const mapped = codeMap[joinError.message];
+      if (mapped) return NextResponse.json({ error: mapped.message }, { status: mapped.status });
+      return NextResponse.json({ error: "Não foi possível concluir a adesão ao programa." }, { status: 503 });
+    }
 
     const token = generateLoyaltyToken();
     const expiresAt = loyaltySessionExpiry();
