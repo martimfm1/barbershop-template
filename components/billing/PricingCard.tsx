@@ -20,10 +20,13 @@ export interface PricingCardProps {
   destination?: PricingDestination;
 }
 
+const PLAN_RANK: Record<PlanTier, number> = { free: 0, pro: 1, enterprise: 2 };
+
 export function PricingCard({ tier, title, price, priceId, description, features, popular = false, trialDays, destination = "checkout" }: PricingCardProps) {
   const isMounted = useSyncExternalStore(() => () => undefined, () => true, () => false);
   const { isAuthenticated, isBillingOwner, plan: currentPlan, loading } = useSubscription();
   const isCurrentPlan = useMemo(() => isAuthenticated && currentPlan === tier, [currentPlan, isAuthenticated, tier]);
+  const isUpgrade = isAuthenticated && Boolean(currentPlan) && PLAN_RANK[tier] > PLAN_RANK[currentPlan as PlanTier];
 
   const handleAction = async () => {
     try {
@@ -49,9 +52,22 @@ export function PricingCard({ tier, title, price, priceId, description, features
         toast.error("Este plano ainda não está disponível para checkout.");
         return;
       }
+
+      if (isUpgrade) {
+        const response = await fetch("/api/stripe/update-plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ newPriceId: priceId }),
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(body.error || "Não foi possível atualizar o plano.");
+        window.location.assign("/dashboard/billing?plan=updated");
+        return;
+      }
+
       window.location.assign(`/checkout?priceId=${encodeURIComponent(priceId)}&plan=${tier}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível iniciar o próximo passo.");
+      toast.error(error instanceof Error ? error.message : "Não foi possível concluir a alteração do plano.");
     }
   };
 
@@ -66,8 +82,8 @@ export function PricingCard({ tier, title, price, priceId, description, features
     if (destination === "plans") return { label: "Mudar para este plano", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
     if (tier === "free") return { label: "Mudar para este plano", disabled: false, variant: "outline" as const };
     if (!priceId) return { label: "Indisponível", disabled: true, variant: "outline" as const };
-    return { label: "Mudar para este plano", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
-  }, [destination, isMounted, isCurrentPlan, isAuthenticated, isBillingOwner, popular, tier, priceId]);
+    return { label: isUpgrade ? "Fazer upgrade" : "Mudar para este plano", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
+  }, [destination, isMounted, isCurrentPlan, isAuthenticated, isBillingOwner, isUpgrade, popular, tier, priceId]);
 
   const isActivePaidPlan = isCurrentPlan && (tier === "pro" || tier === "enterprise");
 
@@ -76,7 +92,7 @@ export function PricingCard({ tier, title, price, priceId, description, features
       {popular && <div className="absolute inset-x-0 top-0 h-0.5 bg-emerald-400" aria-hidden="true" />}
       <div>
         <div className="flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-xl font-semibold tracking-tight text-zinc-50">{title}</h3>
               {popular && <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300"><Sparkles className="size-3" /> Recomendado</span>}
