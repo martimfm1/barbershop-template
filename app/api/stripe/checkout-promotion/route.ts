@@ -60,8 +60,16 @@ export async function GET() {
     if (promotionCodeId) {
       const promotionCode = await getStripeClient().promotionCodes.retrieve(promotionCodeId, { expand: ["coupon"] });
       code = promotionCode.code;
+
       const coupon = promotionCode.coupon;
-      if (typeof coupon !== "string" && !coupon.deleted) {
+      if (typeof coupon === "string") {
+        const resolvedCoupon = await getStripeClient().coupons.retrieve(coupon);
+        if (!resolvedCoupon.deleted) {
+          percentOff = resolvedCoupon.percent_off ?? null;
+          amountOff = resolvedCoupon.amount_off ?? null;
+          currency = resolvedCoupon.currency?.toUpperCase() ?? currency;
+        }
+      } else if (!coupon.deleted) {
         percentOff = coupon.percent_off ?? null;
         amountOff = coupon.amount_off ?? null;
         currency = coupon.currency?.toUpperCase() ?? currency;
