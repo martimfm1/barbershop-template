@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/drawer";
 import { useLanguage } from "@/context/LanguageContext";
 import { termsAndConditions } from "@/lib/legal/terms-and-conditions";
+import { CURRENT_LEGAL_UPDATE, currentTermsAddendum } from "@/lib/legal/current-legal-addendum";
 
 type TermsDrawerProps = {
   trigger: React.ReactNode;
@@ -18,6 +19,11 @@ type TermsDrawerProps = {
 export function TermsDrawer({ trigger }: TermsDrawerProps) {
   const { locale, t } = useLanguage();
   const terms = termsAndConditions[locale];
+  const updatedTerms = {
+    ...terms,
+    lastUpdated: locale === "pt" ? CURRENT_LEGAL_UPDATE : "August 16, 2026",
+    sections: [...terms.sections, currentTermsAddendum[locale]],
+  };
 
   return (
     <Drawer>
@@ -30,15 +36,15 @@ export function TermsDrawer({ trigger }: TermsDrawerProps) {
           <DrawerDescription className="text-xs text-zinc-400">
             {t("legal.termsLastUpdated", {
               defaultValue: "Last updated: {date}",
-              date: terms.lastUpdated,
+              date: updatedTerms.lastUpdated,
             })}
           </DrawerDescription>
         </DrawerHeader>
 
         <div className="scrollbar-thin max-h-[min(60vh,32rem)] space-y-5 overflow-y-auto px-5 pb-8 text-xs leading-relaxed text-zinc-400">
-          <p>{terms.intro}</p>
+          <p>{updatedTerms.intro}</p>
 
-          {terms.sections.map((section) => (
+          {updatedTerms.sections.map((section) => (
             <section key={section.title} className="space-y-2">
               <h3 className="text-sm font-semibold text-zinc-200">
                 {section.title}
