@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPublicProfileBySlug } from "@/lib/barbershops/public-profile";
 import { sendCustomerPortalCodeEmail } from "@/lib/brevo/customer-booking-portal";
+import { requireTenantAuthorization } from "@/lib/security/tenant-guard";
 import {
   generateLoyaltyCode,
   hashLoyaltyValue,
@@ -22,6 +23,9 @@ export async function POST(request: Request) {
     if (!profile || !profile.barbershop_id || !["pro", "enterprise"].includes(profile.plan)) {
       return NextResponse.json({ error: "A fidelização não está disponível para esta barbearia." }, { status: 404 });
     }
+
+    // OTP delivery is the authentication step; this guard validates the public tenant boundary.
+    await requireTenantAuthorization({ barbershopId: profile.barbershop_id, allowPublicTenant: true });
 
     const admin = createAdminClient();
     const cutoff = new Date(Date.now() - 60_000).toISOString();
