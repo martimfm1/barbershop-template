@@ -45,15 +45,25 @@ order by
   c.updated_at desc
 on conflict (barbershop_id) do nothing;
 
-create index if not exists subscriptions_barbershop_idx
-  on public.subscriptions (barbershop_id);
-
--- Keep one active/trialing subscription per tenant. Historical canceled rows may coexist.
-create unique index if not exists subscriptions_one_live_per_barbershop_idx
-  on public.subscriptions (barbershop_id)
+-- A tenant has exactly one canonical subscription record. Stripe remains the
+-- source of truth; historical invoices remain available in Stripe itself.
+with ranked as (
+  select
+    id,
+    row_number() over (
+      partition by barbershop_id
+      order by updated_at desc, created_at desc, id desc
+    ) as rn
+  from public.subscriptions
   where barbershop_id is not null
-    and stripe_subscription_id is not null
-    and status in ('active', 'trialing', 'past_due', 'incomplete', 'unpaid');
+)
+delete from public.subscriptions s
+using ranked r
+where s.id = r.id
+  and r.rn > 1;
+
+create unique index if not exists subscriptions_one_per_barbershop_idx
+  on public.subscriptions (barbershop_id);
 
 alter table public.barbershop_billing_accounts enable row level security;
 
