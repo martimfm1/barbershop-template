@@ -1,23 +1,36 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { Gift, Loader2, Mail, Sparkles, Star } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import QRCode from "qrcode";
+import { Copy, Gift, Loader2, Mail, ShieldCheck, Sparkles, Star, X } from "lucide-react";
+import { toast } from "sonner";
 
-type Reward = { id: string; name: string; description: string | null; points_required: number };
+type Reward = { id: string; name: string; description: string | null; points_cost: number; reward_type: string; reward_value: number | null };
 type Member = { email: string; name: string | null; points_balance: number };
-
+type Redemption = { id: string; reward_id: string; points_spent: number; status: string; expires_at: string; created_at: string; validated_at: string | null };
 type Props = { slug: string; shopName: string };
+type ActiveRedemption = { id: string; code: string; token: string; qrPayload: string; pointsCost: number; pointsBalance: number; expiresAt: string; qrDataUrl: string };
+
+function formatRemaining(expiresAt: string): string {
+  const seconds = Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000));
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+}
 
 export default function LoyaltyStore({ slug, shopName }: Props) {
   const [authenticated, setAuthenticated] = useState(false);
   const [member, setMember] = useState<Member | null>(null);
   const [rewards, setRewards] = useState<Reward[]>([]);
+  const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"email" | "code">("email");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
+  const [activeRedemption, setActiveRedemption] = useState<ActiveRedemption | null>(null);
+  const [countdown, setCountdown] = useState("");
 
   async function load() {
     setLoading(true);
@@ -28,6 +41,7 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
       setAuthenticated(Boolean(data.authenticated));
       setMember(data.member ?? null);
       setRewards(Array.isArray(data.rewards) ? data.rewards : []);
+      setRedemptions(Array.isArray(data.redemptions) ? data.redemptions : []);
       if (data.email) setEmail(data.email);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível carregar a fidelização.");
@@ -38,24 +52,26 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
 
   useEffect(() => { void load(); }, [slug]);
 
+  useEffect(() => {
+    if (!activeRedemption) return;
+    const update = () => setCountdown(formatRemaining(activeRedemption.expiresAt));
+    update();
+    const interval = window.setInterval(update, 1000);
+    return () => window.clearInterval(interval);
+  }, [activeRedemption]);
+
   async function requestCode(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      const response = await fetch("/api/loyalty/request-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, email }),
-      });
+      const response = await fetch("/api/loyalty/request-code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug, email }) });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Não foi possível enviar o código.");
       setStep("code");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível enviar o código.");
-    } finally {
-      setBusy(false);
-    }
+      toast.success("Código enviado. Verifica o teu email.");
+    } catch (err) { setError(err instanceof Error ? err.message : "Não foi possível enviar o código."); }
+    finally { setBusy(false); }
   }
 
   async function verifyCode(event: FormEvent) {
@@ -63,24 +79,44 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
     setBusy(true);
     setError(null);
     try {
-      const response = await fetch("/api/loyalty/verify-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, email, code }),
-      });
+      const response = await fetch("/api/loyalty/verify-code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug, email, code }) });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Código inválido.");
       setCode("");
       await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Código inválido.");
-    } finally {
-      setBusy(false);
-    }
+    } catch (err) { setError(err instanceof Error ? err.message : "Código inválido."); }
+    finally { setBusy(false); }
+  }
+
+  const points = member?.points_balance ?? 0;
+  const activePending = useMemo(() => redemptions.find((item) => item.status === "pending" && new Date(item.expires_at).getTime() > Date.now()), [redemptions]);
+
+  async function redeem() {
+    if (!selectedReward || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/loyalty/redeem", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug, rewardId: selectedReward.id }) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Não foi possível resgatar a recompensa.");
+      const redemption = data.redemption;
+      const qrDataUrl = await QRCode.toDataURL(redemption.qrPayload, { width: 720, margin: 2, errorCorrectionLevel: "M" });
+      setActiveRedemption({ ...redemption, qrDataUrl });
+      setSelectedReward(null);
+      await load();
+      toast.success("Recompensa reservada. Mostra o código na barbearia.");
+    } catch (err) { setError(err instanceof Error ? err.message : "Não foi possível resgatar a recompensa."); }
+    finally { setBusy(false); }
+  }
+
+  async function copyCode() {
+    if (!activeRedemption) return;
+    await navigator.clipboard.writeText(activeRedemption.code);
+    toast.success("Código copiado.");
   }
 
   if (loading) return <div className="grid min-h-64 place-items-center rounded-3xl border border-white/10 bg-white/[0.025]"><Loader2 className="size-5 animate-spin text-emerald-300" /></div>;
-  if (error && !member) return <div className="rounded-2xl border border-red-400/20 bg-red-400/[0.04] p-5 text-sm text-red-200">{error}</div>;
+  if (error && !member && authenticated) return <div className="rounded-2xl border border-red-400/20 bg-red-400/[0.04] p-5 text-sm text-red-200">{error}</div>;
 
   if (!authenticated) {
     return (
@@ -88,16 +124,16 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
         <div className="flex size-11 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-200"><Star className="size-5" /></div>
         {step === "email" ? (
           <form onSubmit={requestCode} className="mt-6 space-y-4">
-            <div><h2 className="text-xl font-semibold">Entrar na fidelização</h2><p className="mt-1 text-sm leading-6 text-zinc-500">Usa o email que costumas dar à {shopName}.</p></div>
-            <label className="block"><span className="sr-only">Email</span><div className="flex items-center rounded-xl border border-white/10 bg-black/20 px-3"><Mail className="size-4 text-zinc-500"/><input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nome@email.com" className="h-12 min-w-0 flex-1 bg-transparent px-3 text-sm text-white outline-none placeholder:text-zinc-600"/></div></label>
+            <div><h2 className="text-xl font-semibold">Entrar na fidelização</h2><p className="mt-1 text-sm leading-6 text-zinc-500">Usa o email que costumas dar à {shopName}. Não precisas de password.</p></div>
+            <label className="block"><span className="sr-only">Email</span><div className="flex items-center rounded-xl border border-white/10 bg-black/20 px-3"><Mail className="size-4 text-zinc-500"/><input required autoComplete="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nome@email.com" className="h-12 min-w-0 flex-1 bg-transparent px-3 text-sm text-white outline-none placeholder:text-zinc-600"/></div></label>
             <button disabled={busy} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 text-sm font-semibold text-zinc-950 disabled:opacity-50">{busy ? <Loader2 className="size-4 animate-spin" /> : null}{busy ? "A enviar…" : "Enviar código"}</button>
           </form>
         ) : (
           <form onSubmit={verifyCode} className="mt-6 space-y-4">
             <div><h2 className="text-xl font-semibold">Confirma o teu email</h2><p className="mt-1 text-sm leading-6 text-zinc-500">Enviámos um código de 6 dígitos para {email}.</p></div>
-            <input required inputMode="numeric" value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" className="h-14 w-full rounded-xl border border-white/10 bg-black/20 text-center text-2xl tracking-[0.35em] text-white outline-none"/>
+            <input required autoFocus autoComplete="one-time-code" inputMode="numeric" value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" className="h-14 w-full rounded-xl border border-white/10 bg-black/20 text-center text-2xl tracking-[0.35em] text-white outline-none"/>
             {error ? <p className="text-xs text-red-300">{error}</p> : null}
-            <button disabled={busy || code.length !== 6} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 text-sm font-semibold text-zinc-950 disabled:opacity-50">{busy ? <Loader2 className="size-4 animate-spin" /> : null}{busy ? "A confirmar…" : "Confirmar acesso"}</button>
+            <button disabled={busy || code.length !== 6} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 text-sm font-semibold text-zinc-950 disabled:opacity-50">{busy ? <Loader2 className="size-4 animate-spin" /> : null}{busy ? "A confirmar…" : "Entrar na fidelização"}</button>
             <button type="button" onClick={() => { setStep("email"); setCode(""); }} className="w-full text-xs text-zinc-500">Usar outro email</button>
           </form>
         )}
@@ -105,22 +141,61 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
     );
   }
 
-  const points = member?.points_balance ?? 0;
-
   return (
     <div className="space-y-5">
       <section className="rounded-3xl border border-emerald-400/15 bg-gradient-to-br from-emerald-400/[0.10] to-white/[0.02] p-5 sm:p-7">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">{shopName}</p>
         <div className="mt-4 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="text-sm text-zinc-400">Saldo atual</p><p className="mt-1 text-4xl font-semibold tracking-tight text-white">{points} <span className="text-base font-medium text-emerald-300">pontos</span></p></div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs text-zinc-400"><Sparkles className="size-3.5 text-emerald-300" /> Conta associada a {member?.email}</div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs text-zinc-400"><Sparkles className="size-3.5 text-emerald-300" /> Programa ativo</div>
         </div>
       </section>
 
+      {error ? <div className="rounded-2xl border border-red-400/20 bg-red-400/[0.04] p-4 text-sm text-red-200">{error}</div> : null}
+
+      {activePending && !activeRedemption ? (
+        <section className="rounded-2xl border border-amber-400/15 bg-amber-400/[0.05] p-4 text-sm text-amber-100">
+          Já tens uma recompensa reservada. Apresenta o código que recebeste na barbearia antes de criares outro resgate.
+        </section>
+      ) : null}
+
       <section>
-        <div className="mb-3 flex items-end justify-between gap-4"><div><h2 className="text-xl font-semibold">Recompensas</h2><p className="mt-1 text-sm text-zinc-500">Usa os teus pontos para desbloquear benefícios.</p></div></div>
-        {rewards.length === 0 ? <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center text-sm text-zinc-500">Ainda não existem recompensas configuradas.</div> : <div className="grid gap-3 sm:grid-cols-2">{rewards.map((reward) => <article key={reward.id} className="rounded-2xl border border-white/10 bg-white/[0.025] p-5"><div className="flex size-10 items-center justify-center rounded-xl border border-emerald-400/15 bg-emerald-400/10 text-emerald-200"><Gift className="size-5" /></div><h3 className="mt-4 font-semibold text-white">{reward.name}</h3><p className="mt-1 text-sm leading-6 text-zinc-500">{reward.description || "Recompensa de fidelização."}</p><p className="mt-5 text-sm font-semibold text-emerald-300">{reward.points_required} pontos</p></article>)}</div>}
+        <div className="mb-3"><h2 className="text-xl font-semibold">Recompensas</h2><p className="mt-1 text-sm text-zinc-500">Escolhe uma recompensa que consigas desbloquear agora.</p></div>
+        {rewards.length === 0 ? <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center text-sm text-zinc-500">Ainda não existem recompensas configuradas.</div> : <div className="grid gap-3 sm:grid-cols-2">{rewards.map((reward) => {
+          const canRedeem = points >= reward.points_cost && !activePending && !activeRedemption;
+          return <article key={reward.id} className="rounded-2xl border border-white/10 bg-white/[0.025] p-5 shadow-lg">
+            <div className="flex items-start justify-between gap-3"><div className="flex size-10 items-center justify-center rounded-xl border border-emerald-400/15 bg-emerald-400/10 text-emerald-200"><Gift className="size-5" /></div><span className="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">{reward.points_cost} pts</span></div>
+            <h3 className="mt-4 font-semibold text-white">{reward.name}</h3>
+            <p className="mt-1 text-sm leading-6 text-zinc-500">{reward.description || "Recompensa de fidelização."}</p>
+            <button type="button" disabled={!canRedeem} onClick={() => setSelectedReward(reward)} className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-semibold text-zinc-950 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-zinc-600">{points >= reward.points_cost ? "Resgatar recompensa" : `Faltam ${reward.points_cost - points} pontos`}</button>
+          </article>;
+        })}</div>}
       </section>
+
+      {redemptions.length > 0 ? <section><h2 className="mb-3 text-xl font-semibold">Os teus resgates</h2><div className="space-y-2">{redemptions.map((item) => <div key={item.id} className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4"><div><p className="text-sm font-medium text-zinc-200">{rewards.find((reward) => reward.id === item.reward_id)?.name ?? "Recompensa"}</p><p className="mt-1 text-xs text-zinc-500">{item.points_spent} pontos · {item.status === "fulfilled" ? "Utilizada" : item.status === "pending" ? "Por utilizar" : "Expirada"}</p></div><span className="text-xs text-zinc-600">{new Date(item.created_at).toLocaleDateString("pt-PT")}</span></div>)}</div></section> : null}
+
+      {selectedReward ? (
+        <div className="fixed inset-0 z-50 flex items-end bg-black/70 p-3 backdrop-blur-sm sm:items-center sm:justify-center" role="dialog" aria-modal="true">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-zinc-900 p-5 shadow-2xl sm:p-6">
+            <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">Confirmar resgate</p><h3 className="mt-2 text-xl font-semibold">{selectedReward.name}</h3></div><button type="button" onClick={() => setSelectedReward(null)} className="flex size-10 items-center justify-center rounded-full bg-white/5 text-zinc-400" aria-label="Fechar"><X className="size-4" /></button></div>
+            <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4"><div className="flex items-center justify-between text-sm"><span className="text-zinc-500">Custo</span><strong>{selectedReward.points_cost} pontos</strong></div><div className="mt-2 flex items-center justify-between text-sm"><span className="text-zinc-500">Saldo depois</span><strong>{points - selectedReward.points_cost} pontos</strong></div></div>
+            <p className="mt-4 text-sm leading-6 text-zinc-400">Ao confirmar, os pontos são debitados imediatamente e recebes um código de utilização único válido por 15 minutos.</p>
+            <button type="button" onClick={() => void redeem()} disabled={busy} className="mt-5 h-12 w-full rounded-xl bg-emerald-400 text-sm font-semibold text-zinc-950 disabled:opacity-50">{busy ? "A criar recompensa…" : "Confirmar resgate"}</button>
+          </div>
+        </div>
+      ) : null}
+
+      {activeRedemption ? (
+        <div className="fixed inset-0 z-50 flex items-end bg-black/80 p-3 backdrop-blur-md sm:items-center sm:justify-center" role="dialog" aria-modal="true">
+          <div className="w-full max-w-md rounded-3xl border border-emerald-400/20 bg-zinc-900 p-5 shadow-2xl sm:p-7">
+            <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">Recompensa pronta</p><h3 className="mt-2 text-2xl font-semibold">Mostra este QR na barbearia</h3></div><button type="button" onClick={() => setActiveRedemption(null)} className="flex size-10 items-center justify-center rounded-full bg-white/5 text-zinc-400" aria-label="Fechar"><X className="size-4" /></button></div>
+            <div className="mt-5 flex justify-center rounded-3xl bg-white p-4"><img src={activeRedemption.qrDataUrl} alt="Código QR da recompensa" className="size-64 max-w-full" /></div>
+            <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4 text-center"><p className="text-xs text-zinc-500">Código alternativo</p><p className="mt-2 text-2xl font-bold tracking-[0.18em] text-white">{activeRedemption.code}</p><button type="button" onClick={() => void copyCode()} className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-3 text-xs text-zinc-300"><Copy className="size-3.5" />Copiar código</button></div>
+            <div className="mt-4 flex items-center gap-2 rounded-2xl bg-emerald-400/[0.06] p-3 text-xs text-emerald-100"><ShieldCheck className="size-4 shrink-0 text-emerald-300" /><span>Expira em {countdown}. Só poderá ser validado uma vez nesta barbearia.</span></div>
+            <p className="mt-4 text-center text-xs text-zinc-600">Mantém este ecrã aberto até a recompensa ser validada.</p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
