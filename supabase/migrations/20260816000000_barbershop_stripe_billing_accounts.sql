@@ -25,6 +25,7 @@ where s.user_id = u.id
   and u.barbershop_id is not null;
 
 -- Migrate the best-known legacy Stripe customer for each tenant.
+-- Prefer the customer already attached to a subscription, then the owner's legacy customer.
 insert into public.barbershop_billing_accounts (
   barbershop_id,
   billing_owner_user_id,
@@ -33,20 +34,24 @@ insert into public.barbershop_billing_accounts (
 )
 select distinct on (u.barbershop_id)
   u.barbershop_id,
-  u.id,
-  c.stripe_customer_id,
-  c.email
+  first_value(case when s.stripe_customer_id is not null then u.id else u.id end) over (partition by u.barbershop_id order by case when s.stripe_subscription_id is not null then 0 else 1 end, case when lower(coalesce(u.role, '')) = 'owner' then 0 else 1 end, s.updated_at desc nulls last, c.updated_at desc nulls last),
+  coalesce(s.stripe_customer_id, c.stripe_customer_id),
+  coalesce(c.email, (select au.email from auth.users au where au.id = u.id))
 from public.users u
-join public.customers c on c.user_id = u.id
+left join public.subscriptions s on s.user_id = u.id
+left join public.customers c on c.user_id = u.id
 where u.barbershop_id is not null
+  and coalesce(s.stripe_customer_id, c.stripe_customer_id) is not null
 order by
   u.barbershop_id,
+  case when s.stripe_subscription_id is not null then 0 else 1 end,
   case when lower(coalesce(u.role, '')) = 'owner' then 0 else 1 end,
-  c.updated_at desc
+  s.updated_at desc nulls last,
+  c.updated_at desc nulls last
 on conflict (barbershop_id) do nothing;
 
--- A tenant has exactly one canonical subscription record. Stripe remains the
--- source of truth; historical invoices remain available in Stripe itself.
+-- A tenant has exactly one canonical subscription record. Historical invoice history
+-- remains in Stripe, while the local table acts as a current-state read model.
 with ranked as (
   select
     id,
