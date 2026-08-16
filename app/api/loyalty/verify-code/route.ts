@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPublicProfileBySlug } from "@/lib/barbershops/public-profile";
+import { requireTenantAuthorization } from "@/lib/security/tenant-guard";
 import {
   generateLoyaltyToken,
   getLoyaltySession,
@@ -24,6 +25,9 @@ export async function POST(request: Request) {
 
     const profile = await getPublicProfileBySlug(slug);
     if (!profile?.barbershop_id || !["pro", "enterprise"].includes(profile.plan)) return NextResponse.json({ error: "A fidelização não está disponível." }, { status: 404 });
+
+    // OTP verification is the authentication step; this guard validates the public tenant boundary.
+    await requireTenantAuthorization({ barbershopId: profile.barbershop_id, allowPublicTenant: true });
 
     const admin = createAdminClient();
     const { data: verification } = await admin
