@@ -39,6 +39,7 @@ export async function sendLoyaltyRedemptionEmail(input: LoyaltyRedemptionEmailIn
   const safeReward = escapeHtml(input.rewardName);
   const safeDescription = escapeHtml(input.rewardDescription || "Recompensa de fidelização");
   const safeCode = escapeHtml(input.code);
+  const safeToken = escapeHtml(input.qrPayload);
   const expiresAt = new Date(input.expiresAt);
   const expiryLabel = new Intl.DateTimeFormat("pt-PT", {
     dateStyle: "medium",
@@ -64,10 +65,8 @@ export async function sendLoyaltyRedemptionEmail(input: LoyaltyRedemptionEmailIn
           </div>
 
           <div style="text-align:center;margin-top:24px;">
-            <div style="font-size:12px;color:#a1a1aa;margin-bottom:12px;">Mostra este QR na barbearia</div>
-            <div style="display:inline-block;background:#fff;border-radius:18px;padding:16px;">
-              <img src="cid:loyalty-qrcode" width="260" height="260" alt="QR Code do voucher de fidelização" style="display:block;width:260px;height:260px;" />
-            </div>
+            <div style="font-size:12px;color:#a1a1aa;margin-bottom:12px;">O QR Code está anexado a este email</div>
+            <div style="display:inline-block;background:#fff;border-radius:18px;padding:14px;color:#111;font-size:13px;font-weight:700;">Anexo: silenctra-voucher-qr.png</div>
           </div>
 
           <div style="margin-top:22px;text-align:center;">
@@ -75,12 +74,17 @@ export async function sendLoyaltyRedemptionEmail(input: LoyaltyRedemptionEmailIn
             <div style="font-size:28px;font-weight:800;letter-spacing:6px;color:#fff;margin-top:8px;">${safeCode}</div>
           </div>
 
-          <div style="margin-top:24px;border:1px solid #7f1d1d;background:#2a0f12;border-radius:12px;padding:14px;">
-            <div style="font-size:13px;font-weight:700;color:#fecaca;">Válido durante 1 hora</div>
-            <div style="font-size:12px;line-height:1.5;color:#fca5a5;margin-top:4px;">Este voucher expira em ${escapeHtml(expiryLabel)}. Depois dessa hora, o QR e o código deixam de poder ser utilizados.</div>
+          <div style="margin-top:20px;border:1px solid #27272a;background:#0b0b0d;border-radius:12px;padding:14px;">
+            <div style="font-size:11px;color:#71717a;text-transform:uppercase;letter-spacing:1px;">Token do voucher</div>
+            <div style="font-size:12px;line-height:1.5;color:#d4d4d8;margin-top:6px;word-break:break-all;">${safeToken}</div>
           </div>
 
-          <p style="font-size:12px;line-height:1.6;color:#71717a;margin:22px 0 0;">Não partilhes este QR ou código com outras pessoas. O voucher é de utilização única e é validado diretamente pela equipa da barbearia.</p>
+          <div style="margin-top:24px;border:1px solid #7f1d1d;background:#2a0f12;border-radius:12px;padding:14px;">
+            <div style="font-size:13px;font-weight:700;color:#fecaca;">Válido durante 1 hora</div>
+            <div style="font-size:12px;line-height:1.5;color:#fca5a5;margin-top:4px;">Este voucher expira em ${escapeHtml(expiryLabel)}. Depois dessa hora, o QR, o token e o código deixam de poder ser utilizados.</div>
+          </div>
+
+          <p style="font-size:12px;line-height:1.6;color:#71717a;margin:22px 0 0;">Não partilhes este QR, token ou código. O voucher é de utilização única e é validado diretamente pela equipa da barbearia.</p>
         </div>
       </div>
     </div>`;
@@ -94,15 +98,13 @@ export async function sendLoyaltyRedemptionEmail(input: LoyaltyRedemptionEmailIn
     },
     body: JSON.stringify({
       sender: { name: "Silentra", email: senderEmail },
-      to: [{ email: input.email }],
+      to: [{ email: input.email, name: input.customerName?.trim() || undefined }],
       subject: `Voucher de fidelização — ${input.rewardName} — ${input.barbershopName}`,
       htmlContent,
       attachment: [
         {
           name: "silentra-voucher-qr.png",
           content: qrBuffer.toString("base64"),
-          contentType: "image/png",
-          contentId: "loyalty-qrcode",
         },
       ],
     }),
