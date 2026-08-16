@@ -60,7 +60,7 @@ function CheckoutForm({ plan }: CheckoutFormProps) {
     event.preventDefault();
     if (checkoutState.type !== "success") return;
     setSubmitting(true);
-    const result = await checkoutState.checkout.confirm();
+    const result = await checkoutState.checkout.confirm({ redirect: "if_required" });
     if (result.type === "error") {
       setPromotionError(result.error.message);
       setSubmitting(false);
@@ -75,8 +75,25 @@ function CheckoutForm({ plan }: CheckoutFormProps) {
     return <div className="rounded-2xl border border-red-400/20 bg-red-400/[0.04] p-5 text-sm text-red-200">{checkoutState.error.message}</div>;
   }
 
+  const totalAmount = checkoutState.checkout.total.total.minorUnitsAmount;
+  const currency = checkoutState.checkout.currency.toUpperCase();
+  const isZeroTotal = totalAmount === 0;
+  const formattedTotal = new Intl.NumberFormat("pt-PT", { style: "currency", currency }).format(totalAmount / 100);
+
   return (
     <form onSubmit={submit} className="space-y-5">
+      <div className="rounded-xl border border-emerald-400/15 bg-emerald-400/[0.04] p-4">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-white">Total de hoje</p>
+            <p className="mt-1 text-xs text-zinc-500">
+              {isZeroTotal ? "Nada a pagar hoje. O preço normal começa no fim do trial, se aplicável." : "Valor calculado pela Stripe e atualizado com impostos e descontos."}
+            </p>
+          </div>
+          <p className="shrink-0 text-2xl font-semibold tracking-tight text-white">{formattedTotal}</p>
+        </div>
+      </div>
+
       <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
         <p className="mb-3 text-sm font-semibold text-white">Dados de faturação</p>
         <BillingAddressElement />
@@ -109,7 +126,7 @@ function CheckoutForm({ plan }: CheckoutFormProps) {
 
       <button type="submit" disabled={submitting} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-5 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-300 disabled:cursor-wait disabled:opacity-60">
         <LockKeyhole className="size-4" />
-        {submitting ? "A confirmar…" : plan === "pro" ? "Começar com o Pro" : "Subscrever Enterprise"}
+        {submitting ? "A confirmar…" : isZeroTotal ? "Começar trial" : plan === "pro" ? "Começar com o Pro" : "Subscrever Enterprise"}
       </button>
     </form>
   );
@@ -121,7 +138,6 @@ export function CustomCheckout({ priceId, plan }: { priceId: string; plan: keyof
 
   useEffect(() => {
     let cancelled = false;
-
     const initialize = async () => {
       try {
         setInitializationError(null);
@@ -140,7 +156,6 @@ export function CustomCheckout({ priceId, plan }: { priceId: string; plan: keyof
         if (!cancelled) setInitializationError(error instanceof Error ? error.message : "Não foi possível iniciar o checkout.");
       }
     };
-
     void initialize();
     return () => {
       cancelled = true;
@@ -150,11 +165,7 @@ export function CustomCheckout({ priceId, plan }: { priceId: string; plan: keyof
   const copy = PLAN_COPY[plan];
 
   if (initializationError) {
-    return (
-      <div className="mx-auto max-w-3xl rounded-2xl border border-red-400/20 bg-red-400/[0.04] p-6 text-sm text-red-200">
-        {initializationError}
-      </div>
-    );
+    return <div className="mx-auto max-w-3xl rounded-2xl border border-red-400/20 bg-red-400/[0.04] p-6 text-sm text-red-200">{initializationError}</div>;
   }
 
   if (!clientSecret) {
@@ -162,7 +173,7 @@ export function CustomCheckout({ priceId, plan }: { priceId: string; plan: keyof
   }
 
   return (
-    <CheckoutElementsProvider stripe={stripePromise} options={{ clientSecret, elementsOptions: { appearance: { theme: "night", variables: { colorPrimary: "#34d399", colorBackground: "#09090b", colorText: "#f4f4f5", colorTextSecondary: "#a1a1aa", colorDanger: "#f87171", borderRadius: "12px", fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" } } } }}>
+    <CheckoutElementsProvider stripe={stripePromise} options={{ clientSecret, elementsOptions: { loader: "auto", appearance: { theme: "night", variables: { colorPrimary: "#34d399", colorBackground: "#09090b", colorText: "#f4f4f5", colorTextSecondary: "#a1a1aa", colorDanger: "#f87171", borderRadius: "12px", fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" } } } }}>
       <div className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-[0.78fr_1.22fr]">
         <aside className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5 shadow-[0_24px_90px_rgba(0,0,0,0.28)] sm:p-7 lg:sticky lg:top-6 lg:h-fit">
           <div className="flex size-10 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-200"><Sparkles className="size-4" /></div>
