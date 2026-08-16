@@ -7,6 +7,16 @@ function date(value: string | null, fallback: Date) { const parsed = value ? new
 function start(value: Date) { const d = new Date(value); d.setHours(0,0,0,0); return d; }
 function end(value: Date) { const d = new Date(value); d.setHours(23,59,59,999); return d; }
 
+type RowRecord = Record<string, unknown>;
+
+function relationRecord(value: unknown): RowRecord | null {
+  if (Array.isArray(value)) {
+    const first = value[0];
+    return first && typeof first === "object" ? first as RowRecord : null;
+  }
+  return value && typeof value === "object" ? value as RowRecord : null;
+}
+
 export async function GET(request: Request) {
   try {
     const { admin, barbershopId, plan } = await requireModuleContext("advanced_analytics", "analytics");
@@ -28,7 +38,26 @@ export async function GET(request: Request) {
       const { data, error } = await admin.from("appointments").select("id,date_hour,status,manual_name,manual_email,manual_phone,value_products,payment_method,service:services(name,price),professional:professionals(name)").eq("barbershop_id", barbershopId).gte("date_hour", from.toISOString()).lte("date_hour", to.toISOString()).order("date_hour", { ascending: true }).limit(20000);
       if (error) throw error;
       const rows = data ?? [];
-      const lines = [["id","date_hour","status","client","email","phone","service","service_price","products","payment_method","professional"], ...rows.map((row: any) => [row.id,row.date_hour,row.status,row.manual_name,row.manual_email,row.manual_phone,row.service?.name,row.service?.price,row.value_products,row.payment_method,row.professional?.name])].map((row) => row.map(csvEscape).join(","));
+      const lines = [
+        ["id","date_hour","status","client","email","phone","service","service_price","products","payment_method","professional"],
+        ...rows.map((row: RowRecord) => {
+          const service = relationRecord(row.service);
+          const professional = relationRecord(row.professional);
+          return [
+            row.id,
+            row.date_hour,
+            row.status,
+            row.manual_name,
+            row.manual_email,
+            row.manual_phone,
+            service?.name,
+            service?.price,
+            row.value_products,
+            row.payment_method,
+            professional?.name,
+          ];
+        }),
+      ].map((row) => row.map(csvEscape).join(","));
       return new NextResponse(lines.join("\n"), { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="silentra-appointments-${from.toISOString().slice(0,10)}-${to.toISOString().slice(0,10)}.csv"`, "Cache-Control": "no-store" } });
     }
 
