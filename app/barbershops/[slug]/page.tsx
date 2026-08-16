@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { UUID_PATTERN } from "@/lib/validation";
-import {
-  getBarbershopById,
-  getBarbershopBySlug,
-  isValidPublicBarbershopSlug,
-} from "@/lib/barbershops/public";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { isValidPublicBarbershopSlug } from "@/lib/barbershops/public";
 import { getPublicProfileByRedirect, getPublicProfileBySlug } from "@/lib/barbershops/public-profile";
 import BarbershopPublicPage from "./public-barbershop-page";
 
@@ -89,13 +86,30 @@ function PublicBusinessJsonLd({
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />;
 }
 
+async function redirectUuidToPublicSlug(id: string) {
+  const database = createAdminClient();
+  const { data: shop, error } = await database
+    .from("shops")
+    .select("slug, custom_slug, public_profile_enabled")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !shop || shop.public_profile_enabled === false) notFound();
+
+  const normalizedCustomSlug = typeof shop.custom_slug === "string" ? shop.custom_slug.trim().toLowerCase() : "";
+  const targetSlug = normalizedCustomSlug && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalizedCustomSlug)
+    ? normalizedCustomSlug
+    : shop.slug;
+
+  if (!targetSlug) notFound();
+  permanentRedirect(`/barbershops/${encodeURIComponent(targetSlug)}`);
+}
+
 export default async function BarbershopPage({ params }: BarbershopPageProps) {
   const { slug } = await params;
 
   if (UUID_PATTERN.test(slug)) {
-    const shop = await getBarbershopById(slug);
-    if (!shop) notFound();
-    permanentRedirect(`/barbershops/${encodeURIComponent(shop.slug)}`);
+    await redirectUuidToPublicSlug(slug);
   }
 
   if (!isValidPublicBarbershopSlug(slug)) notFound();
