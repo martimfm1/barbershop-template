@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { hashLoyaltyToken } from "@/lib/loyalty/session";
 import { requireModuleContext, moduleErrorResponse } from "@/services/modules/authorization";
-import { getPublicProfileBySlug } from "@/lib/barbershops/public-profile";
 import { consumePublicRateLimit } from "@/lib/security/public-rate-limit";
 
 export const runtime = "nodejs";
@@ -12,20 +11,10 @@ const VALIDATION_RATE_WINDOW_SECONDS = 60;
 export async function POST(request: Request) {
   try {
     const context = await requireModuleContext("loyalty", "loyalty");
-    const body = (await request.json().catch(() => ({}))) as { identifier?: unknown; slug?: unknown };
+    const body = (await request.json().catch(() => ({}))) as { identifier?: unknown };
     const identifier = typeof body.identifier === "string" ? body.identifier.trim() : "";
-    const slug = typeof body.slug === "string" ? body.slug.trim().toLowerCase() : "";
-    if (!identifier || identifier.length > 256 || !slug) {
+    if (!identifier || identifier.length > 256) {
       return NextResponse.json({ error: "Código inválido." }, { status: 400 });
-    }
-
-    const profile = await getPublicProfileBySlug(slug);
-    if (!profile?.barbershop_id || !["pro", "enterprise"].includes(profile.plan)) {
-      return NextResponse.json({ error: "Fidelização indisponível." }, { status: 404 });
-    }
-
-    if (profile.barbershop_id !== context.barbershopId) {
-      return NextResponse.json({ error: "Este voucher pertence a outra barbearia." }, { status: 403 });
     }
 
     const allowed = await consumePublicRateLimit(
@@ -36,7 +25,10 @@ export async function POST(request: Request) {
       VALIDATION_RATE_WINDOW_SECONDS,
     );
     if (!allowed) {
-      return NextResponse.json({ error: "Demasiadas tentativas. Tenta novamente dentro de um minuto." }, { status: 429 });
+      return NextResponse.json(
+        { error: "Demasiadas tentativas. Tenta novamente dentro de um minuto." },
+        { status: 429 },
+      );
     }
 
     const hash = hashLoyaltyToken(identifier);
@@ -53,28 +45,36 @@ export async function POST(request: Request) {
         LOYALTY_REDEMPTION_EXPIRED: ["Este resgate expirou. Os pontos foram devolvidos ao cliente.", 409],
       };
       const mapped = map[error.message];
-      return NextResponse.json({ error: mapped?.[0] ?? "Não foi possível validar o resgate." }, { status: mapped?.[1] ?? 503 });
+      return NextResponse.json(
+        { error: mapped?.[0] ?? "Não foi possível validar o resgate." },
+        { status: mapped?.[1] ?? 503 },
+      );
     }
 
     const result = Array.isArray(data) ? data[0] : data;
-    if (!result?.redemption_id) return NextResponse.json({ error: "Resgate inválido." }, { status: 409 });
+    if (!result?.redemption_id) {
+      return NextResponse.json({ error: "Resgate inválido." }, { status: 409 });
+    }
 
     await context.admin.from("audit_logs").insert({
       action: "loyalty_redemption_validated",
       entity_type: "loyalty_redemption",
       entity_id: result.redemption_id,
-      metadata: { barbershop_id: context.barbershopId, staff_user_id: context.userId },
+      metadata: { barbershop_id: context.barbershopId },
     });
 
-    return NextResponse.json({
-      success: true,
-      redemption: {
-        id: result.redemption_id,
-        rewardName: result.reward_name,
-        pointsCost: result.points_cost,
-        memberEmail: result.member_email,
+    return NextResponse.json(
+      {
+        success: true,
+        redemption: {
+          id: result.redemption_id,
+          rewardName: result.reward_name,
+          pointsCost: result.points_cost,
+          memberEmail: result.member_email,
+        },
       },
-    }, { headers: { "Cache-Control": "no-store" } });
+      { headers: { "Cache-Control": "no-store" } },
+    );
   } catch (error) {
     const response = moduleErrorResponse(error);
     if (response) return response;
