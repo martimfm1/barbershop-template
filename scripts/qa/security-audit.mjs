@@ -11,41 +11,64 @@ const sourceFiles = execFileSync(
   .filter((file) => !file.startsWith("scripts/qa/"));
 
 const patterns = [
-  {
-    label: "service role exposta ao cliente",
-    pattern: /NEXT_PUBLIC_[A-Z0-9_]*(SERVICE_ROLE|SECRET)/i,
-  },
+  { label: "service role exposta ao cliente", pattern: /NEXT_PUBLIC_[A-Z0-9_]*(SERVICE_ROLE|SECRET)/i },
   {
     label: "segredo hardcoded",
-    pattern:
-      /(?:sk_(?:live|test)_[A-Za-z0-9]+|whsec_[A-Za-z0-9]+|xkeysib-[A-Za-z0-9-]+|service_role\s*:\s*["'`][^"'`\n]+["'`]|service_role\s*=\s*[^\s#]+)/i,
+    pattern: /(?:sk_(?:live|test)_[A-Za-z0-9]+|whsec_[A-Za-z0-9]+|xkeysib-[A-Za-z0-9-]+|service_role\s*:\s*["'`][^"'`\n]+["'`]|service_role\s*=\s*[^\s#]+)/i,
   },
-  {
-    label: "console com segredo",
-    pattern:
-      /console\.(?:log|info|warn|error)\([^\n]*(?:secret|service_role|password|token|apiKey|authorization)\s*[:=]/i,
-  },
-  {
-    label: "console com identificadores sensíveis",
-    pattern:
-      /console\.(?:log|info|warn|error)\([\s\S]{0,220}?(?:userId|barbershopId|customerId|stripeCustomerId|subscriptionId|stripeSubscriptionId|sessionId|email|phone|address)\s*[:=]/i,
-  },
-  {
-    label: "stack trace enviado para resposta HTTP",
-    pattern:
-      /NextResponse\.json\([\s\S]{0,220}?(?:stack|error\.stack)/i,
-  },
+  { label: "stack trace enviado para resposta HTTP", pattern: /NextResponse\.json\([\s\S]{0,220}?(?:stack|error\.stack)/i },
 ];
+
+const sensitiveIdentifierPattern = /(?:userId|barbershopId|customerId|stripeCustomerId|subscriptionId|stripeSubscriptionId|sessionId|email|phone|address)\s*[:=]/i;
+const secretIdentifierPattern = /(?:secret|service_role|password|token|apiKey|authorization)\s*[:=]/i;
+
+function extractConsoleArguments(source) {
+  const results = [];
+  const consoleCallPattern = /console\.(?:log|info|warn|error)\s*\(/g;
+  let match;
+
+  while ((match = consoleCallPattern.exec(source))) {
+    let index = match.index + match[0].length;
+    let depth = 1;
+    let quote = null;
+    let escaped = false;
+
+    for (; index < source.length && depth > 0; index += 1) {
+      const char = source[index];
+      if (quote) {
+        if (escaped) escaped = false;
+        else if (char === "\\") escaped = true;
+        else if (char === quote) quote = null;
+        continue;
+      }
+      if (char === "\"" || char === "'" || char === "`") quote = char;
+      else if (char === "(") depth += 1;
+      else if (char === ")") depth -= 1;
+    }
+    results.push(source.slice(match.index, index));
+  }
+
+  return results;
+}
 
 const findings = [];
 
 for (const file of sourceFiles) {
-  const source = execFileSync("git", ["show", `HEAD:${file}`], {
-    encoding: "utf8",
-  });
+  const source = execFileSync("git", ["show", `HEAD:${file}`], { encoding: "utf8" });
 
   for (const item of patterns) {
     if (item.pattern.test(source)) findings.push(`${item.label}: ${file}`);
+  }
+
+  for (const consoleCall of extractConsoleArguments(source)) {
+    if (secretIdentifierPattern.test(consoleCall)) {
+      findings.push(`console com segredo: ${file}`);
+      break;
+    }
+    if (sensitiveIdentifierPattern.test(consoleCall)) {
+      findings.push(`console com identificadores sensíveis: ${file}`);
+      break;
+    }
   }
 }
 
@@ -55,6 +78,4 @@ if (findings.length) {
   process.exit(1);
 }
 
-console.log(
-  `Static security audit passed (${sourceFiles.length} tracked source files checked).`,
-);
+console.log(`Static security audit passed (${sourceFiles.length} tracked source files checked).`);
