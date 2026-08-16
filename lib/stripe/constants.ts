@@ -20,6 +20,9 @@ for (const [plan, priceId] of configuredPrices) {
   if (priceId) PRICE_ID_TO_PLAN.set(priceId, plan);
 }
 
+// Kept for legacy billing flows that still reference the old trial setting.
+// New Embedded Checkout uses the Stripe promotion code below instead.
+export const TRIAL_PERIOD_DAYS = 30;
 export const NEW_MEMBER_PRO_PROMOTION_CODE = "TRIALPRO" as const;
 export const NEW_MEMBER_PRO_OFFER_MONTHS = 1 as const;
 
