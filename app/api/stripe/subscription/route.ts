@@ -46,6 +46,10 @@ export async function GET(request: Request) {
           ? await getStripeClient().subscriptions.retrieve(session.subscription)
           : session.subscription;
 
+        if (!stripeSubscription) {
+          throw new BillingError("Stripe returned a checkout session without a valid subscription.", "WEBHOOK_PROCESSING_FAILED");
+        }
+
         const previousSubscriptionId = session.metadata?.previous_subscription_id;
         const isPlanChange = session.metadata?.is_plan_change === "true";
 
