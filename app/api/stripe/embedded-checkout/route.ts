@@ -18,9 +18,13 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => ({}));
     const priceId = typeof body?.priceId === "string" ? body.priceId.trim() : "";
+    const checkoutAttemptId = typeof body?.checkoutAttemptId === "string" ? body.checkoutAttemptId.trim() : "";
     const requestedPlan = priceId ? planForPrice(priceId) : null;
     if (!requestedPlan || requestedPlan === PLANS.FREE) {
       throw new BillingError("The requested price is not available.", "INVALID_PRICE", { priceId });
+    }
+    if (!checkoutAttemptId || checkoutAttemptId.length > 100) {
+      throw new BillingError("Invalid checkout attempt.", "INVALID_PRICE");
     }
 
     const activeSubscription = await SubscriptionService.getActiveForUser(user.id);
@@ -36,7 +40,9 @@ export async function POST(request: Request) {
     const customer = await BillingService.getOrCreateCustomer(user.id, user.email);
     const origin = new URL(request.url).origin;
     const stripe = getStripeClient();
-    const idempotencyKey = `checkout-elements:${user.id}:${priceId}`;
+    // The key identifies one checkout attempt, not just user + price. Reusing the
+    // latter causes Stripe to reject a legitimate retry when any session parameter changes.
+    const idempotencyKey = `checkout-elements:${user.id}:${checkoutAttemptId}`;
 
     const session = await stripe.checkout.sessions.create({
       customer,
@@ -50,9 +56,10 @@ export async function POST(request: Request) {
         user_id: user.id,
         offer: trialEligible ? "pro_trial" : requestedPlan === PLANS.PRO ? "pro_standard" : "standard",
         trial_eligible: trialEligible ? "true" : "false",
+        checkout_attempt_id: checkoutAttemptId,
       },
       subscription_data: {
-        metadata: { user_id: user.id, trial_eligible: trialEligible ? "true" : "false" },
+        metadata: { user_id: user.id, trial_eligible: trialEligible ? "true" : "false", checkout_attempt_id: checkoutAttemptId },
         ...(trialEligible ? { trial_period_days: TRIAL_PERIOD_DAYS } : {}),
       },
       billing_address_collection: "required",
