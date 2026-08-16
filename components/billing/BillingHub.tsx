@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Check, Download, Loader2, ShieldCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -31,10 +31,10 @@ export function BillingHub() {
 
   const hasSubscription = Boolean(subscription?.stripe_subscription_id);
   const active = subscription?.status === "active" || subscription?.status === "trialing";
-  const nextRenewal = useMemo(() => {
-    if (!subscription?.current_period_end) return "—";
-    return new Date(subscription.current_period_end).toLocaleDateString("pt-PT", { day: "2-digit", month: "long", year: "numeric" });
-  }, [subscription?.current_period_end]);
+  const currentPeriodEnd = subscription?.current_period_end ?? null;
+  const nextRenewal = currentPeriodEnd
+    ? new Date(currentPeriodEnd).toLocaleDateString("pt-PT", { day: "2-digit", month: "long", year: "numeric" })
+    : "—";
 
   useEffect(() => {
     if (!hasSubscription || isAdministrativePlan) return;
