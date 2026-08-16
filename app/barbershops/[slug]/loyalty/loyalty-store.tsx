@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
-import { Copy, Gift, Loader2, Mail, ShieldCheck, Sparkles, Star, X } from "lucide-react";
+import { Copy, Gift, Loader2, Mail, Sparkles, Star, X } from "lucide-react";
 import { toast } from "sonner";
 
 type Reward = { id: string; name: string; description: string | null; points_cost: number; reward_type: string; reward_value: number | null };
@@ -32,7 +33,7 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
   const [activeRedemption, setActiveRedemption] = useState<ActiveRedemption | null>(null);
   const [countdown, setCountdown] = useState("");
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/loyalty/me?slug=${encodeURIComponent(slug)}`, { cache: "no-store" });
@@ -48,9 +49,9 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [slug]);
 
-  useEffect(() => { void load(); }, [slug]);
+  useEffect(() => { void load(); }, [load]);
 
   useEffect(() => {
     if (!activeRedemption) return;
@@ -67,7 +68,7 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
     update();
     const interval = window.setInterval(update, 1000);
     return () => window.clearInterval(interval);
-  }, [activeRedemption]);
+  }, [activeRedemption, load]);
 
   async function requestCode(event: FormEvent) {
     event.preventDefault();
@@ -165,10 +166,7 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
       </section>
 
       {error ? <div className="rounded-2xl border border-red-400/20 bg-red-400/[0.04] p-4 text-sm text-red-200">{error}</div> : null}
-
-      {activePending && !activeRedemption ? (
-        <section className="rounded-2xl border border-amber-400/15 bg-amber-400/[0.05] p-4 text-sm text-amber-100">Já tens uma recompensa reservada. Apresenta o código que recebeste por email na barbearia antes de criares outro resgate.</section>
-      ) : null}
+      {activePending && !activeRedemption ? <section className="rounded-2xl border border-amber-400/15 bg-amber-400/[0.05] p-4 text-sm text-amber-100">Já tens uma recompensa reservada. Apresenta o código que recebeste por email na barbearia antes de criares outro resgate.</section> : null}
 
       <section>
         <div className="mb-3"><h2 className="text-xl font-semibold">Recompensas</h2><p className="mt-1 text-sm text-zinc-500">Escolhe uma recompensa que consigas desbloquear agora.</p></div>
@@ -191,7 +189,7 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
             <div className="w-full rounded-3xl border border-emerald-400/20 bg-zinc-950 p-5 shadow-2xl sm:p-6">
               <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">Voucher ativo</p><h3 className="mt-2 text-xl font-semibold">Apresenta isto na barbearia</h3></div><button type="button" onClick={() => setActiveRedemption(null)} className="flex size-10 items-center justify-center rounded-full bg-white/5 text-zinc-400" aria-label="Fechar"><X className="size-4" /></button></div>
               <div className="mt-5 rounded-2xl border border-amber-400/15 bg-amber-400/[0.05] p-4 text-center"><p className="text-xs text-amber-200">Válido durante 1 hora</p><p className="mt-1 text-2xl font-bold tabular-nums text-white">{countdown}</p><p className="mt-1 text-[11px] text-zinc-500">Depois deste tempo o QR e o código deixam de funcionar.</p></div>
-              <div className="mt-5 flex justify-center rounded-2xl bg-white p-4"><img src={activeRedemption.qrDataUrl} alt="QR Code do voucher" className="h-auto w-full max-w-[280px]" /></div>
+              <div className="mt-5 flex justify-center rounded-2xl bg-white p-4"><Image src={activeRedemption.qrDataUrl} alt="QR Code do voucher" width={280} height={280} unoptimized className="h-auto w-full max-w-[280px]" /></div>
               <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center"><p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Código manual</p><p className="mt-2 text-2xl font-black tracking-[0.25em] text-white">{activeRedemption.code}</p><button type="button" onClick={() => void copyCode()} className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-3 text-xs text-zinc-300"><Copy className="size-3.5" />Copiar código</button></div>
               <div className="mt-4 flex items-center gap-2 text-xs text-zinc-500"><Mail className="size-3.5 shrink-0" />Enviámos também o QR e o código para o teu email.</div>
             </div>
