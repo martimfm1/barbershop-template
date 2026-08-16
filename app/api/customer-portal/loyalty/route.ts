@@ -23,8 +23,9 @@ export async function GET() {
   const member = memberships?.[0];
   if (!member) return NextResponse.json({ authenticated: true, enrolled: false });
 
-  const [{ data: shop }, { data: rewards }] = await Promise.all([
+  const [{ data: shop }, { data: publicShop }, { data: rewards }] = await Promise.all([
     admin.from("barbershops").select("id, name").eq("id", member.barbershop_id).maybeSingle(),
+    admin.from("shops").select("slug").eq("barbershop_id", member.barbershop_id).maybeSingle(),
     admin
       .from("loyalty_rewards")
       .select("id, name, description, points_cost, reward_type, reward_value, active")
@@ -40,7 +41,7 @@ export async function GET() {
     authenticated: true,
     enrolled: true,
     member: { id: member.id, email: member.email, name: member.name, pointsBalance: points, joinedAt: member.joined_at },
-    barbershop: shop ? { id: shop.id, name: shop.name } : null,
+    barbershop: shop ? { id: shop.id, name: shop.name, slug: publicShop?.slug ?? null } : null,
     rewards: rewards ?? [],
     nextReward,
   }, { headers: { "Cache-Control": "no-store" } });
