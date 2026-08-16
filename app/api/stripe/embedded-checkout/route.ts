@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     const customer = await BarbershopStripeService.getOrCreateCustomer(user.id);
     const canTrial = requestedPlan === PLANS.PRO && !existing;
     const origin = process.env.NEXT_PUBLIC_APP_URL?.trim() || new URL(request.url).origin;
-    const returnUrl = `${new URL(origin).origin}/dashboard/billing?checkout=return&session_id={CHECKOUT_SESSION_ID}`;
+    const returnUrl = `${new URL(origin).origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`;
     const bucket = Math.floor(Date.now() / CHECKOUT_IDEMPOTENCY_BUCKET_MS);
 
     const session = await getStripeClient().checkout.sessions.create(
