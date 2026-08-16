@@ -28,19 +28,25 @@ create table if not exists public.loyalty_rewards (
 create index if not exists loyalty_rewards_barbershop_idx
   on public.loyalty_rewards (barbershop_id, active);
 
+-- `loyalty_transactions` already exists in older installations with its own
+-- legacy shape (`client_id`, not `member_id`). Keep that table intact here.
 create table if not exists public.loyalty_transactions (
   id uuid primary key default gen_random_uuid(),
   barbershop_id uuid not null references public.barbershops(id) on delete cascade,
-  member_id uuid not null references public.loyalty_members(id) on delete cascade,
+  member_id uuid references public.loyalty_members(id) on delete cascade,
+  client_id uuid references public.users(id) on delete cascade,
   points integer not null,
-  type text not null check (type in ('earned', 'redeemed', 'adjustment')),
+  type text not null,
   description text,
   appointment_id uuid,
+  reference_id uuid,
   created_at timestamptz not null default now()
 );
 
-create index if not exists loyalty_transactions_member_idx
-  on public.loyalty_transactions (member_id, created_at desc);
+-- Only create an index on the legacy-safe column. Do not assume `member_id`
+-- exists when the table was created by the older loyalty migration.
+create index if not exists loyalty_transactions_client_idx
+  on public.loyalty_transactions (client_id, created_at desc);
 
 create table if not exists public.loyalty_verifications (
   id uuid primary key default gen_random_uuid(),
