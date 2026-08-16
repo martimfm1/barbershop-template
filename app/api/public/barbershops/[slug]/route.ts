@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPublicProfileBySlug } from "@/lib/barbershops/public-profile";
+import { requireTenantAuthorization } from "@/lib/security/tenant-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,50 +14,75 @@ function notFound() {
 }
 
 export async function GET(_request: Request, context: { params: Promise<{ slug: string }> }) {
-  const { slug } = await context.params;
-  const profile = await getPublicProfileBySlug(slug);
+  try {
+    const { slug } = await context.params;
+    const profile = await getPublicProfileBySlug(slug);
 
-  if (!profile) return notFound();
+    if (!profile) return notFound();
 
-  const database = createAdminClient();
-  const barbershopId = profile.barbershop_id ?? profile.id;
+    const barbershopId = profile.barbershop_id ?? null;
+    if (!barbershopId) return notFound();
 
-  const [{ data: services }, { data: reviews }] = await Promise.all([
-    database
-      .from("services")
-      .select("id, name, price, duration, popular")
-      .eq("barbershop_id", barbershopId)
-      .order("popular", { ascending: false })
-      .order("name", { ascending: true }),
-    database
-      .from("reviews")
-      .select("id, client_name, rating, comment, created_at")
-      .eq("barbershop_id", profile.id)
-      .order("created_at", { ascending: false }),
-  ]);
+    await requireTenantAuthorization({
+      barbershopId,
+      allowPublicTenant: true,
+    });
 
-  const reviewItems = reviews ?? [];
-  const ratingAverage = reviewItems.length
-    ? Number((reviewItems.reduce((total, review) => total + Number(review.rating || 0), 0) / reviewItems.length).toFixed(1))
-    : 0;
+    const database = createAdminClient();
 
-  return NextResponse.json(
-    {
-      data: {
-        ...profile,
-        services: (services ?? []).map((service) => ({
-          ...service,
-          popular: profile.plan !== "free" && service.popular === true,
-        })),
-        reviews: reviewItems,
-        rating: ratingAverage,
-        reviewsCount: reviewItems.length,
+    const [{ data: services, error: servicesError }, { data: reviews, error: reviewsError }] = await Promise.all([
+      database
+        .from("services")
+        .select("id, name, price, duration, popular")
+        .eq("barbershop_id", barbershopId)
+        .order("popular", { ascending: false })
+        .order("name", { ascending: true }),
+      database
+        .from("reviews")
+        .select("id, client_name, rating, comment, created_at")
+        .eq("barbershop_id", profile.id)
+        .order("created_at", { ascending: false }),
+    ]);
+
+    if (servicesError || reviewsError) {
+      console.error("[PUBLIC_BARBERSHOP_API_ERROR]", {
+        services: servicesError?.code ?? null,
+        reviews: reviewsError?.code ?? null,
+      });
+      return NextResponse.json(
+        { error: "Não foi possível carregar os dados da barbearia." },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
+    const reviewItems = reviews ?? [];
+    const ratingAverage = reviewItems.length
+      ? Number((reviewItems.reduce((total, review) => total + Number(review.rating || 0), 0) / reviewItems.length).toFixed(1))
+      : 0;
+
+    return NextResponse.json(
+      {
+        data: {
+          ...profile,
+          services: (services ?? []).map((service) => ({
+            ...service,
+            popular: profile.plan !== "free" && service.popular === true,
+          })),
+          reviews: reviewItems,
+          rating: ratingAverage,
+          reviewsCount: reviewItems.length,
+        },
       },
-    },
-    {
-      headers: {
-        "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+      {
+        headers: {
+          "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+        },
       },
-    },
-  );
+    );
+  } catch {
+    return NextResponse.json(
+      { error: "Não foi possível carregar a barbearia." },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
+  }
 }
