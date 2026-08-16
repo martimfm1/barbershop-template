@@ -124,7 +124,10 @@ export default async function BarbershopPage({ params }: BarbershopPageProps) {
         phone={profile.phone}
         image={image}
       />
-      <BarbershopPublicPage slug={profile.slug} />
+      <BarbershopPublicPage
+        slug={profile.slug}
+        loyaltyEnabled={profile.plan === "pro" || profile.plan === "enterprise"}
+      />
     </>
   );
 }
