@@ -44,11 +44,10 @@ export async function POST(request: Request) {
     const session = await stripe.checkout.sessions.create({
       customer,
       mode: "subscription",
-      // Stripe's current Checkout Elements integration uses the `elements`
-      // UI mode for a fully custom page backed by Checkout Sessions.
       ui_mode: "elements",
       line_items: [{ price: priceId, quantity: 1 }],
       return_url: `${origin}/checkout?priceId=${encodeURIComponent(priceId)}&checkout=return&session_id={CHECKOUT_SESSION_ID}`,
+      redirect_on_completion: "if_required",
       client_reference_id: user.id,
       allow_promotion_codes: true,
       metadata: {
