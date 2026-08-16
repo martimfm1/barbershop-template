@@ -14,8 +14,7 @@ export default function BillingPage() {
 
     if (checkout === "return" && sessionId) {
       void fetch(`/api/stripe/subscription?session_id=${encodeURIComponent(sessionId)}`, { cache: "no-store" }).finally(() => {
-        window.history.replaceState({}, "", "/dashboard/billing");
-        window.dispatchEvent(new Event("popstate"));
+        window.location.replace("/dashboard/billing");
       });
       return;
     }
