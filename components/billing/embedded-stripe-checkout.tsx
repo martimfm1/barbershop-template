@@ -56,7 +56,35 @@ export function EmbeddedStripeCheckout() {
         ? {
             clientSecret,
             onComplete: () => {
-              window.location.assign("/dashboard/billing?checkout=success");
+              void (async () => {
+                try {
+                  const response = await fetch("/api/stripe/checkout-complete", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    cache: "no-store",
+                  });
+
+                  const body = (await response.json().catch(() => ({}))) as {
+                    error?: string;
+                    stripeSubscriptionId?: string | null;
+                  };
+
+                  if (!response.ok) {
+                    console.error("[STRIPE_CHECKOUT_COMPLETE_CLIENT_ERROR]", {
+                      status: response.status,
+                      error: body.error ?? "Unknown synchronization error",
+                    });
+                  } else {
+                    console.info("[STRIPE_CHECKOUT_COMPLETE_CLIENT]", {
+                      stripeSubscriptionId: body.stripeSubscriptionId ?? null,
+                    });
+                  }
+                } catch (cause) {
+                  console.error("[STRIPE_CHECKOUT_COMPLETE_CLIENT_CRITICAL]", cause);
+                } finally {
+                  window.location.assign("/checkout/success");
+                }
+              })();
             },
           }
         : undefined,
