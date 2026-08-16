@@ -57,7 +57,6 @@ export async function POST(request: Request) {
       },
       billing_address_collection: "required",
       customer_update: { name: "auto", address: "auto" },
-      phone_number_collection: { enabled: true },
       tax_id_collection: { enabled: true },
       locale: "pt",
     }, { idempotencyKey });
