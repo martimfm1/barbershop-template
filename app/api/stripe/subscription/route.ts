@@ -9,19 +9,52 @@ import { billingErrorResponse } from "@/services/billing/http";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-async function recoverLatestStripeSubscription(barbershopId: string): Promise<void> {
-  const account = await BarbershopStripeService.getBillingAccount(barbershopId);
-  if (!account?.stripe_customer_id || !account.billing_owner_user_id) return;
+async function recoverLatestStripeSubscription(barbershopId: string, userId: string, email: string): Promise<void> {
+  const database = createAdminClient();
+  let account = await BarbershopStripeService.getBillingAccount(barbershopId);
+
+  if (!account?.stripe_customer_id) {
+    const customers = await getStripeClient().customers.list({ email, limit: 20 });
+    const matchingCustomer = customers.data.find((customer) =>
+      !customer.deleted && (
+        customer.metadata?.barbershop_id === barbershopId ||
+        customer.metadata?.billing_owner_user_id === userId ||
+        customer.metadata?.user_id === userId
+      ),
+    );
+
+    if (matchingCustomer) {
+      const { error } = await database.from("barbershop_billing_accounts").upsert({
+        barbershop_id: barbershopId,
+        billing_owner_user_id: userId,
+        stripe_customer_id: matchingCustomer.id,
+        billing_email: email,
+      }, { onConflict: "barbershop_id" });
+      if (error) throw new BillingError("Could not recover the Stripe billing account.", "DB_WRITE_FAILED", { barbershopId, customerId: matchingCustomer.id });
+
+      await database.from("customers").upsert({
+        user_id: userId,
+        stripe_customer_id: matchingCustomer.id,
+        email,
+      }, { onConflict: "user_id" });
+
+      account = await BarbershopStripeService.getBillingAccount(barbershopId);
+    }
+  }
+
+  if (!account?.stripe_customer_id) return;
 
   const subscriptions = await getStripeClient().subscriptions.list({
     customer: account.stripe_customer_id,
     status: "all",
     limit: 20,
   });
-  const latest = [...subscriptions.data].sort((a, b) => b.created - a.created)[0];
+  const latest = [...subscriptions.data]
+    .sort((a, b) => b.created - a.created)
+    .find((subscription) => ["active", "trialing", "past_due", "unpaid", "incomplete", "canceled"].includes(subscription.status));
   if (!latest) return;
 
-  await BarbershopStripeService.syncFromStripe(barbershopId, account.billing_owner_user_id, latest);
+  await BarbershopStripeService.syncFromStripe(barbershopId, account.billing_owner_user_id ?? userId, latest);
 }
 
 export async function GET(request: Request) {
@@ -30,11 +63,12 @@ export async function GET(request: Request) {
     if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: { "Cache-Control": "no-store" } });
 
     const database = createAdminClient();
-    const { data: userRow, error: userError } = await database.from("users").select("barbershop_id, role").eq("id", user.id).maybeSingle();
+    const { data: userRow, error: userError } = await database.from("users").select("barbershop_id, role, email").eq("id", user.id).maybeSingle();
     if (userError) throw new BillingError("Could not resolve SaaS account.", "DB_READ_FAILED", { userId: user.id });
 
     const barbershopId = userRow?.barbershop_id ?? null;
     const isBillingOwner = String(userRow?.role ?? "").toLowerCase() === "owner";
+    const email = String(userRow?.email ?? user.email ?? "").trim().toLowerCase();
     if (!barbershopId) return NextResponse.json({ subscription: null, plan: "free", planSource: "free", barbershopId: null, isBillingOwner }, { headers: { "Cache-Control": "no-store" } });
 
     const { searchParams } = new URL(request.url);
@@ -45,14 +79,22 @@ export async function GET(request: Request) {
       if (metadataBarbershopId !== barbershopId) throw new BillingError("Checkout session does not belong to this barbershop.", "SUBSCRIPTION_NOT_ACTIVE", { userId: user.id, barbershopId, sessionId: checkoutSessionId });
       if (stripeSession.subscription) {
         const stripeSubscription = typeof stripeSession.subscription === "string" ? await getStripeClient().subscriptions.retrieve(stripeSession.subscription) : stripeSession.subscription;
-        const account = await BarbershopStripeService.getBillingAccount(barbershopId);
-        await BarbershopStripeService.syncFromStripe(barbershopId, account?.billing_owner_user_id ?? user.id, stripeSubscription);
+        await database.from("barbershop_billing_accounts").upsert({
+          barbershop_id: barbershopId,
+          billing_owner_user_id: user.id,
+          stripe_customer_id: typeof stripeSession.customer === "string" ? stripeSession.customer : stripeSession.customer?.id,
+          billing_email: email,
+        }, { onConflict: "barbershop_id" });
+        if (stripeSession.customer) {
+          await database.from("customers").upsert({ user_id: user.id, stripe_customer_id: typeof stripeSession.customer === "string" ? stripeSession.customer : stripeSession.customer.id, email }, { onConflict: "user_id" });
+        }
+        await BarbershopStripeService.syncFromStripe(barbershopId, user.id, stripeSubscription);
       }
     }
 
     let subscription = await BarbershopStripeService.reconcileSubscription(barbershopId, await BarbershopStripeService.getSubscriptionForBarbershop(barbershopId));
     if (!subscription) {
-      await recoverLatestStripeSubscription(barbershopId);
+      await recoverLatestStripeSubscription(barbershopId, user.id, email);
       subscription = await BarbershopStripeService.reconcileSubscription(barbershopId, await BarbershopStripeService.getSubscriptionForBarbershop(barbershopId));
     }
 
