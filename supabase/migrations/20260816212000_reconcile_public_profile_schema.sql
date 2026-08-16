@@ -19,7 +19,8 @@ update public.shops s
 set slug = b.slug
 from public.barbershops b
 where s.barbershop_id = b.id
-  and (s.slug is null or b.slug is not null and lower(s.slug) <> lower(b.slug));
+  and b.slug is not null
+  and (s.slug is null or lower(s.slug) <> lower(b.slug));
 
 -- Custom slugs are intentionally unique only when present.
 create unique index if not exists shops_custom_slug_unique_idx
@@ -44,9 +45,5 @@ create index if not exists shop_slug_redirects_lookup_idx
 
 alter table public.shop_slug_redirects enable row level security;
 revoke all on public.shop_slug_redirects from public, anon, authenticated;
-
-grant select, insert, update, delete on public.shops to authenticated;
-
-after? 
 
 commit;
