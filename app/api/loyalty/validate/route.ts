@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     const response = moduleErrorResponse(error);
-    if (response) return NextResponse.json(response.body, { status: response.status });
+    if (response) return response;
     return NextResponse.json({ error: "Não foi possível validar o resgate." }, { status: 503 });
   }
 }
