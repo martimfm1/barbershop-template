@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { BarbershopStripeService } from "@/services/billing/barbershop-stripe.service";
 import { getStripeClient } from "@/lib/stripe/server";
-import { planForPrice, PLANS, TRIAL_PERIOD_DAYS } from "@/lib/stripe/constants";
+import { planForPrice, PLANS, NEW_MEMBER_PRO_PROMOTION_CODE } from "@/lib/stripe/constants";
 import { PLAN_ACCESS_STATUSES } from "@/lib/billing/plan-access";
 import { BillingError } from "@/types/stripe";
 
@@ -52,6 +51,24 @@ async function recoverBillingCustomer(userId: string, barbershopId: string, emai
   return customer.id;
 }
 
+async function resolveNewMemberPromotionCodeId(): Promise<string> {
+  const promotions = await getStripeClient().promotionCodes.list({
+    code: NEW_MEMBER_PRO_PROMOTION_CODE,
+    active: true,
+    limit: 1,
+  });
+
+  const promotion = promotions.data[0];
+  if (!promotion) {
+    throw new BillingError(
+      "A oferta de novos membros não está disponível neste momento.",
+      "WEBHOOK_PROCESSING_FAILED",
+    );
+  }
+
+  return promotion.id;
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -91,7 +108,11 @@ export async function POST(request: Request) {
       customer = await recoverBillingCustomer(user.id, tenant.barbershopId, tenant.email);
     }
 
-    const canTrial = requestedPlan === PLANS.PRO && !existing;
+    const isNewMemberProOffer = requestedPlan === PLANS.PRO && !existing;
+    const promotionCodeId = isNewMemberProOffer
+      ? await resolveNewMemberPromotionCodeId()
+      : null;
+
     let appOrigin = process.env.NEXT_PUBLIC_APP_URL?.trim();
     if (!appOrigin) {
       try {
@@ -114,23 +135,23 @@ export async function POST(request: Request) {
         line_items: [{ price: priceId, quantity: 1 }],
         return_url: returnUrl,
         client_reference_id: tenant.barbershopId,
-        allow_promotion_codes: true,
+        allow_promotion_codes: !isNewMemberProOffer,
+        ...(promotionCodeId ? { discounts: [{ promotion_code: promotionCodeId }] } : {}),
         metadata: {
           app: "silentra-for-barbers",
           user_id: tenant.userId,
           barbershop_id: tenant.barbershopId,
           stripe_customer_id: customer,
           plan: requestedPlan,
-          trial_eligible: canTrial ? "true" : "false",
+          new_member_offer: isNewMemberProOffer ? NEW_MEMBER_PRO_PROMOTION_CODE : "none",
         },
         subscription_data: {
           metadata: {
             app: "silentra-for-barbers",
             user_id: tenant.userId,
             barbershop_id: tenant.barbershopId,
-            trial_eligible: canTrial ? "true" : "false",
+            new_member_offer: isNewMemberProOffer ? NEW_MEMBER_PRO_PROMOTION_CODE : "none",
           },
-          ...(canTrial ? { trial_period_days: TRIAL_PERIOD_DAYS } : {}),
         },
         billing_address_collection: "required",
         customer_update: { name: "auto", address: "auto" },
@@ -145,7 +166,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { clientSecret: session.client_secret, sessionId: session.id },
+      { clientSecret: session.client_secret, sessionId: session.id, newMemberOffer: isNewMemberProOffer ? { code: NEW_MEMBER_PRO_PROMOTION_CODE, months: 1 } : null },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
@@ -153,7 +174,6 @@ export async function POST(request: Request) {
       name: error instanceof Error ? error.name : "UnknownError",
       message: error instanceof Error ? error.message : String(error),
       code: error instanceof BillingError ? error.code : undefined,
-      context: error instanceof BillingError ? error.context : undefined,
     });
 
     const status = error instanceof BillingError && error.code === "INVALID_PRICE"
