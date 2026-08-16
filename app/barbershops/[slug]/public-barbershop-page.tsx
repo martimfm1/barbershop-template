@@ -33,7 +33,7 @@ const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(
   "",
 );
 
-const formatTime = (timeStr?: string): string =>
+const formatTime = (timeStr?: string | null): string =>
   timeStr ? timeStr.slice(0, 5) : "--:--";
 
 function getStorageUrl(
@@ -410,7 +410,7 @@ export default function BarbershopPublicPage({ slug, loyaltyEnabled = false }: B
             <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center gap-3">
               <Coffee className="w-5 h-5 text-zinc-400 shrink-0" />
               <div>
-                <p className="text-xs text-zinc-400">Almoço</p>
+                <p className="text-xs text-zinc-400">Pausa</p>
                 <p className="text-xs sm:text-sm font-semibold text-zinc-200">
                   {formatTime(shop.lunch_start)} - {formatTime(shop.lunch_end)}
                 </p>
@@ -421,170 +421,86 @@ export default function BarbershopPublicPage({ slug, loyaltyEnabled = false }: B
           <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center gap-3">
             <Calendar className="w-5 h-5 text-zinc-400 shrink-0" />
             <div>
-              <p className="text-xs text-zinc-400">Folga</p>
+              <p className="text-xs text-zinc-400">Dias de fecho</p>
               <p className="text-xs sm:text-sm font-semibold text-zinc-200">
-                {formattedClosedDays || "Sem folgas fixas"}
+                {formattedClosedDays || "Nenhum"}
               </p>
             </div>
           </div>
         </div>
 
-        {loyaltyEnabled && (
-          <section className="mb-8 rounded-2xl border border-emerald-400/15 bg-emerald-400/[0.05] p-4 sm:p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 items-start gap-3">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-200">
-                  <Gift className="size-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-300/80">Fidelização</p>
-                  <h2 className="mt-1 text-base font-semibold text-white">Acumula pontos e desbloqueia recompensas.</h2>
-                  <p className="mt-1 text-sm leading-6 text-zinc-500">Consulta o teu saldo e os benefícios disponíveis nesta barbearia.</p>
-                </div>
+        <section className="space-y-5 sm:space-y-6">
+          <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/50 p-4 sm:p-6">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold text-zinc-100">Serviços</h2>
+                <p className="text-xs sm:text-sm text-zinc-500 mt-1">Escolhe o serviço e agenda o teu horário.</p>
               </div>
-              <Link
-                href={`/barbershops/${encodeURIComponent(shop.slug)}/loyalty`}
-                className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-emerald-400 px-4 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-300"
-              >
-                Abrir fidelização
-              </Link>
+              <button type="button" onClick={() => handleOpenBooking()} className="hidden sm:inline-flex min-h-10 items-center justify-center rounded-xl bg-zinc-100 px-4 text-xs font-bold text-zinc-950 hover:bg-zinc-200">Agendar</button>
             </div>
-          </section>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-4">
-            <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2 mb-3 sm:mb-4">
-              <Scissors className="w-5 h-5 text-zinc-400" />
-              Serviços Disponíveis
-            </h2>
-
-            {!shop.services || shop.services.length === 0 ? (
-              <p className="text-zinc-500 text-sm italic">Nenhum serviço cadastrado.</p>
-            ) : (
-              shop.services.map((service) => {
-                const isSelected = selectedServiceId === service.id;
-                const isPopular =
-                  (service as { popular?: boolean }).popular ||
-                  Boolean((service as { popular_service_id?: string }).popular_service_id);
-
-                return (
-                  <div
-                    key={service.id}
-                    className={`p-4 sm:p-5 rounded-2xl border transition-all flex items-center justify-between gap-3 sm:gap-4 ${isSelected ? "bg-zinc-900 border-zinc-400 ring-1 ring-zinc-400/40" : "bg-zinc-900/40 border-zinc-800/80 hover:border-zinc-700"}`}
-                  >
-                    <div className="space-y-1 min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-semibold text-sm sm:text-base text-zinc-100 truncate">{service.name}</h3>
-                        {isPopular && <span className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-zinc-700">POPULAR</span>}
-                      </div>
-                      <p className="text-xs text-zinc-500 font-medium">⏱️ {service.duration} min</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {shop.services.map((service) => (
+                <article key={service.id} className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-semibold text-zinc-100">{service.name}</h3>
+                      <p className="mt-1 text-xs text-zinc-500">{service.duration} min</p>
                     </div>
-
-                    <div className="text-right shrink-0 flex flex-col items-end justify-center">
-                      <span className="text-base sm:text-lg font-bold text-zinc-100">{Number(service.price || 0).toFixed(2)}€</span>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenBooking(service.id)}
-                        className="mt-1.5 min-h-[36px] min-w-[80px] px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-zinc-100 text-zinc-950 hover:bg-zinc-200 active:scale-95 transition-all flex items-center justify-center"
-                      >
-                        Reservar
-                      </button>
-                    </div>
+                    <span className="shrink-0 text-sm font-bold text-zinc-100">€{Number(service.price).toFixed(2)}</span>
                   </div>
-                );
-              })
-            )}
+                  <button type="button" onClick={() => handleOpenBooking(service.id)} className="mt-4 min-h-10 w-full rounded-xl bg-white text-xs font-bold text-zinc-950 hover:bg-zinc-200">Agendar este serviço</button>
+                </article>
+              ))}
+            </div>
           </div>
 
-          <div className="space-y-6">
-            <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2 mb-3 sm:mb-4">
-              <Star className="w-5 h-5 text-zinc-400" />
-              Avaliações ({totalReviews})
-            </h2>
-
-            <form onSubmit={handleSubmitReview} className="p-4 sm:p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-4">
-              <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                <MessageSquarePlus className="w-4 h-4 text-zinc-400" />
-                Deixe a sua avaliação
-              </h3>
-
-              {reviewError && <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400">{reviewError}</div>}
-              {reviewSuccess && <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400 flex items-center gap-1.5"><Check className="w-4 h-4" />Avaliação enviada com sucesso!</div>}
-
-              <div>
-                <label htmlFor="clientName" className="block text-xs font-medium text-zinc-400 mb-1">Seu Nome <span className="text-zinc-400">*</span></label>
-                <input id="clientName" type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Ex: João Silva" className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 sm:py-2 text-base sm:text-sm text-zinc-100 outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/50 placeholder:text-zinc-600" required />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1">Classificação <span className="text-zinc-400">*</span></label>
-                <div className="flex items-center gap-1 pt-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button key={star} type="button" aria-label={`Classificar com ${star} estrelas`} onClick={() => setRating(star)} onMouseEnter={() => setHoverRating(star)} onMouseLeave={() => setHoverRating(0)} className="p-1.5 transition-transform hover:scale-110 active:scale-95 focus:outline-none min-h-[44px] min-w-[44px] flex items-center justify-center">
-                      <Star className={`w-6 h-6 ${star <= (hoverRating || rating) ? "fill-zinc-100 text-zinc-100" : "text-zinc-700"}`} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="comment" className="block text-xs font-medium text-zinc-400 mb-1">Comentário (Opcional)</label>
-                <textarea id="comment" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Partilhe a sua experiência..." rows={3} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 sm:py-2 text-base sm:text-sm text-zinc-100 outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/50 placeholder:text-zinc-600 resize-none" />
-              </div>
-
-              <button type="submit" disabled={isSubmittingReview} className="w-full py-3 sm:py-2.5 rounded-xl bg-zinc-100 text-zinc-950 text-xs font-bold hover:bg-zinc-200 active:scale-95 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 min-h-[44px]">
-                {isSubmittingReview && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                Submeter Avaliação
-              </button>
-            </form>
-
-            {!shop.reviews || shop.reviews.length === 0 ? (
-              <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800 text-center"><p className="text-zinc-500 text-sm">Ainda não existem avaliações.</p></div>
-            ) : (
-              <div className="space-y-3">
-                {shop.reviews.map((rev) => (
-                  <div key={rev.id} className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800/60 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-zinc-200">{rev.client_name}</p>
-                      <div className="flex items-center gap-0.5 text-zinc-100">
-                        {Array.from({ length: 5 }).map((_, i) => <Star key={i} className={`w-3.5 h-3.5 ${i < rev.rating ? "fill-zinc-100 text-zinc-100" : "text-zinc-700"}`} />)}
-                      </div>
-                    </div>
-                    {rev.comment && <p className="text-xs text-zinc-400">{rev.comment}</p>}
-                  </div>
+          <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/50 p-4 sm:p-6">
+            <div className="mb-4">
+              <h2 className="text-lg sm:text-xl font-bold text-zinc-100">Avaliações</h2>
+              <p className="mt-1 text-xs sm:text-sm text-zinc-500">Partilha a tua experiência com esta barbearia.</p>
+            </div>
+            <form onSubmit={handleSubmitReview} className="space-y-3">
+              <input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="O teu nome" className="min-h-11 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none focus:border-zinc-500" />
+              <textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Escreve uma avaliação (opcional)" className="min-h-24 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-sm text-zinc-100 outline-none focus:border-zinc-500" />
+              <div className="flex items-center gap-2" onMouseLeave={() => setHoverRating(0)}>
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <button key={value} type="button" onMouseEnter={() => setHoverRating(value)} onClick={() => setRating(value)} aria-label={`Classificar com ${value} estrelas`} className="p-1 text-zinc-500">
+                    <Star className={`size-5 ${value <= (hoverRating || rating) ? "fill-zinc-100 text-zinc-100" : ""}`} />
+                  </button>
                 ))}
               </div>
-            )}
+              {reviewError && <p className="text-xs text-red-400">{reviewError}</p>}
+              {reviewSuccess && <p className="text-xs text-emerald-400">Avaliação enviada.</p>}
+              <button type="submit" disabled={isSubmittingReview} className="min-h-11 rounded-xl bg-white px-4 text-sm font-bold text-zinc-950 disabled:opacity-50">{isSubmittingReview ? "A enviar..." : "Enviar avaliação"}</button>
+            </form>
+            <div className="mt-6 space-y-3">
+              {shop.reviews.map((review) => (
+                <article key={review.id} className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <strong className="text-sm text-zinc-100">{review.client_name}</strong>
+                    <span className="text-xs text-zinc-500">{review.rating}/5</span>
+                  </div>
+                  {review.comment && <p className="mt-2 text-sm leading-6 text-zinc-400">{review.comment}</p>}
+                </article>
+              ))}
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 p-3 bg-zinc-950/90 backdrop-blur-xl border-t border-zinc-800/80 z-40 flex items-center justify-between gap-3 shadow-2xl">
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-zinc-200 truncate">{shop.name}</p>
-          <div className="flex items-center gap-1 text-xs text-zinc-400"><Star className="w-3 h-3 fill-zinc-100 text-zinc-100" /><span className="font-semibold text-zinc-100">{ratingAvg.toFixed(1)}</span><span>({totalReviews})</span></div>
-        </div>
-        <button type="button" onClick={() => handleOpenBooking()} className="px-5 py-2.5 rounded-xl bg-zinc-100 text-zinc-950 text-xs font-bold hover:bg-zinc-200 active:scale-95 transition-all shrink-0 min-h-[40px] shadow-sm">Agendar Horário</button>
+          {loyaltyEnabled && (
+            <div className="rounded-2xl border border-emerald-400/15 bg-emerald-400/[0.04] p-4 sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="rounded-xl bg-emerald-400/10 p-2 text-emerald-300"><Gift className="size-5" /></div>
+                <div className="min-w-0 flex-1"><h2 className="text-base font-bold text-zinc-100">Programa de fidelização</h2><p className="mt-1 text-xs sm:text-sm leading-5 text-zinc-500">Ganha pontos nas tuas visitas e troca-os por recompensas.</p><Link href={`/barbershops/${encodeURIComponent(shop.slug)}/loyalty`} className="mt-4 inline-flex min-h-10 items-center justify-center rounded-xl bg-emerald-300 px-4 text-xs font-bold text-zinc-950">Ver fidelização</Link></div>
+              </div>
+            </div>
+          )}
+        </section>
       </div>
-
       <BookingDrawer shop={shopForBooking} isOpen={isBookingOpen} onClose={handleCloseBooking} selectedServiceId={selectedServiceId} />
     </main>
   );
 }
 
 function BarbershopSkeleton() {
-  return (
-    <div className="min-h-screen bg-zinc-950 animate-pulse">
-      <div className="h-48 sm:h-64 bg-zinc-900 w-full" />
-      <div className="max-w-5xl mx-auto px-4 relative -mt-16 sm:-mt-20 space-y-6">
-        <div className="flex items-end gap-4">
-          <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl bg-zinc-800 border-4 border-zinc-950" />
-          <div className="space-y-2 flex-1"><div className="h-6 sm:h-8 bg-zinc-800 rounded w-1/3" /><div className="h-4 bg-zinc-800 rounded w-1/4" /></div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><div className="h-16 bg-zinc-900 rounded-xl" /><div className="h-16 bg-zinc-900 rounded-xl" /><div className="h-16 bg-zinc-900 rounded-xl" /></div>
-        <div className="h-64 bg-zinc-900 rounded-2xl" />
-      </div>
-    </div>
-  );
+  return <div className="min-h-screen bg-zinc-950 p-4"><div className="mx-auto max-w-5xl animate-pulse space-y-4"><div className="h-48 rounded-2xl bg-zinc-900" /><div className="h-32 rounded-2xl bg-zinc-900" /><div className="h-64 rounded-2xl bg-zinc-900" /></div></div>;
 }
