@@ -19,20 +19,34 @@ interface SubscriptionQueryResult {
   planSource: "free" | "admin" | "subscription_override" | "stripe";
   isAuthenticated: boolean;
   isBillingOwner: boolean;
+  barbershopId: string | null;
+  barbershopName: string | null;
 }
 
 async function fetchSubscription(): Promise<SubscriptionQueryResult> {
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const checkoutSessionId = searchParams?.get("session_id")?.trim();
+
   const endpoint = checkoutSessionId
     ? `/api/stripe/subscription?session_id=${encodeURIComponent(checkoutSessionId)}`
-    : "/api/stripe/subscription";
+    : "/api/stripe/billing-summary";
 
   const res = await fetch(endpoint, { cache: "no-store" });
   if (!res.ok) {
-    if (res.status === 401) return { subscription: null, plan: "free", planSource: "free", isAuthenticated: false, isBillingOwner: false };
+    if (res.status === 401) {
+      return {
+        subscription: null,
+        plan: "free",
+        planSource: "free",
+        isAuthenticated: false,
+        isBillingOwner: false,
+        barbershopId: null,
+        barbershopName: null,
+      };
+    }
     throw new Error("Failed to fetch subscription data.");
   }
+
   const json = await res.json();
   return {
     subscription: json.subscription ?? null,
@@ -40,6 +54,8 @@ async function fetchSubscription(): Promise<SubscriptionQueryResult> {
     planSource: json.planSource ?? "free",
     isAuthenticated: true,
     isBillingOwner: Boolean(json.isBillingOwner),
+    barbershopId: json.barbershopId ?? null,
+    barbershopName: json.barbershopName ?? null,
   };
 }
 
@@ -48,10 +64,10 @@ export function useSubscription() {
   const { data, isLoading } = useQuery<SubscriptionQueryResult>({
     queryKey: ["user-subscription"],
     queryFn: fetchSubscription,
-    staleTime: 0,
+    staleTime: 30_000,
     gcTime: 1000 * 60 * 10,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
     retry: 1,
   });
 
@@ -64,19 +80,29 @@ export function useSubscription() {
   const cancelMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/stripe/cancel", { method: "POST" });
-      if (!res.ok) { const error = await res.json(); throw new Error(error.error || "Failed to cancel subscription."); }
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to cancel subscription.");
+      }
       return res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["user-subscription"] }); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-subscription"] });
+    },
   });
 
   const resumeMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/stripe/resume", { method: "POST" });
-      if (!res.ok) { const error = await res.json(); throw new Error(error.error || "Failed to resume subscription."); }
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to resume subscription.");
+      }
       return res.json();
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["user-subscription"] }); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-subscription"] });
+    },
   });
 
   const isAdministrativePlan = planSource === "admin";
@@ -96,9 +122,13 @@ export function useSubscription() {
     isBusiness,
     isTrial,
     loading,
+    barbershopId: data?.barbershopId ?? null,
+    barbershopName: data?.barbershopName ?? null,
     cancel: cancelMutation.mutateAsync,
     resume: resumeMutation.mutateAsync,
-    upgrade: async () => { window.location.assign("/plans"); },
+    upgrade: async () => {
+      window.location.assign("/plans");
+    },
     checkout: async ({ priceId, plan: requestedPlan = "pro" }: { priceId: string; plan?: "pro" | "enterprise" }) => {
       window.location.assign(`/checkout?priceId=${encodeURIComponent(priceId)}&plan=${requestedPlan}`);
     },
