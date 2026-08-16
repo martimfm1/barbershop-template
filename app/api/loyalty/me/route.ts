@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getPublicProfileBySlug } from "@/lib/barbershops/public-profile";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLoyaltySession } from "@/lib/loyalty/session";
+import { requireTenantAuthorization } from "@/lib/security/tenant-guard";
 
 export const runtime = "nodejs";
 
@@ -37,6 +38,13 @@ export async function GET(request: Request) {
   const slug = new URL(request.url).searchParams.get("slug")?.trim().toLowerCase() || "";
   const profile = await getPublicProfileBySlug(slug);
   if (!profile?.barbershop_id || !["pro", "enterprise"].includes(profile.plan)) {
+    return NextResponse.json({ error: "Fidelização indisponível." }, { status: 404 });
+  }
+
+  try {
+    // Public tenant validation; loyalty session below provides endpoint-specific authentication.
+    await requireTenantAuthorization({ barbershopId: profile.barbershop_id, allowPublicTenant: true });
+  } catch {
     return NextResponse.json({ error: "Fidelização indisponível." }, { status: 404 });
   }
 
