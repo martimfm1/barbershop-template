@@ -102,6 +102,38 @@ async function getShopByBarbershopId(barbershopId: string): Promise<ShopRecord |
   return (data as ShopRecord | null) ?? null;
 }
 
+async function getBarbershopByShopSlug(slug: string): Promise<BarbershopRecord | null> {
+  const database = createAdminClient();
+  const { data: shop, error } = await database
+    .from("shops")
+    .select("barbershop_id, slug, custom_slug")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) {
+    console.warn("[PUBLIC_PROFILE_LEGACY_SLUG_LOOKUP]", { operation: "shop_slug_lookup", code: error.code ?? "UNKNOWN" });
+    return null;
+  }
+  if (!shop?.barbershop_id) return null;
+  return getBarbershopByColumn("id", String(shop.barbershop_id));
+}
+
+async function getBarbershopByCustomSlug(slug: string): Promise<BarbershopRecord | null> {
+  const database = createAdminClient();
+  const { data: shop, error } = await database
+    .from("shops")
+    .select("barbershop_id")
+    .eq("custom_slug", slug)
+    .maybeSingle();
+
+  if (error) {
+    console.warn("[PUBLIC_PROFILE_CUSTOM_SLUG_LOOKUP]", { operation: "custom_slug_lookup", code: error.code ?? "UNKNOWN" });
+    return null;
+  }
+  if (!shop?.barbershop_id) return null;
+  return getBarbershopByColumn("id", String(shop.barbershop_id));
+}
+
 async function getPlanForShop(barbershopId: string | null): Promise<{ plan: BillingPlan; ownerUserId: string | null }> {
   if (!barbershopId) {
     console.warn("[PUBLIC_PROFILE_PLAN_FALLBACK]", { reason: "missing_tenant" });
@@ -199,38 +231,23 @@ export async function getPublicProfileBySlug(slug: string): Promise<PublicProfil
   const normalized = slug.trim().toLowerCase();
   if (!isValidPublicProfileSlug(normalized)) return null;
 
-  const database = createAdminClient();
-
-  // The production baseline guarantees barbershops.slug. This is the fallback-safe canonical lookup.
-  const { data: byBaseSlug, error: baseSlugError } = await database
-    .from("barbershops")
-    .select("id, name, slug, phone, address, opening_time, closing_time, is_public_in_directory, created_by")
-    .eq("slug", normalized)
-    .maybeSingle();
-
-  if (baseSlugError) {
-    console.error("[PUBLIC_PROFILE_DB_ERROR]", { operation: "barbershop_slug_lookup", code: baseSlugError.code ?? "UNKNOWN" });
-  }
-
+  const byBaseSlug = await getBarbershopByColumn("slug", normalized);
   if (byBaseSlug) {
-    return resolvePublicBarbershop(byBaseSlug as BarbershopRecord);
+    return resolvePublicBarbershop(byBaseSlug);
   }
 
-  // Custom slugs are a Pro/Enterprise feature. Querying that optional column is intentionally best-effort
-  // so a partially migrated environment can still serve existing canonical barbershop slugs.
-  const { data: byCustomSlug, error: customSlugError } = await database
-    .from("shops")
-    .select("barbershop_id, custom_slug")
-    .eq("custom_slug", normalized)
-    .maybeSingle();
-
-  if (customSlugError) {
-    console.warn("[PUBLIC_PROFILE_CUSTOM_SLUG_UNAVAILABLE]", { operation: "custom_slug_lookup", code: customSlugError.code ?? "UNKNOWN" });
-    return null;
+  const byShopSlug = await getBarbershopByShopSlug(normalized);
+  if (byShopSlug) {
+    return resolvePublicBarbershop(byShopSlug);
   }
 
-  if (!byCustomSlug?.barbershop_id) return null;
-  return getPublicProfileById(String(byCustomSlug.barbershop_id));
+  const byCustomSlug = await getBarbershopByCustomSlug(normalized);
+  if (byCustomSlug) {
+    return resolvePublicBarbershop(byCustomSlug);
+  }
+
+  console.warn("[PUBLIC_PROFILE_NOT_FOUND]", { operation: "slug_resolution" });
+  return null;
 }
 
 export async function getPublicProfileByRedirect(oldSlug: string): Promise<PublicProfileRecord | null> {
