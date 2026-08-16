@@ -6,7 +6,7 @@ import { PlanComparison } from "@/components/billing/plan-comparison";
 
 const faqs = [
   ["Posso mudar de plano quando quiser?", "Sim. A escolha do plano e o checkout são feitos nesta página. Depois podes gerir o cancelamento na faturação."],
-  ["Como funciona o trial do Pro?", "O Barbers Pro inclui 14 dias de trial para novos utilizadores elegíveis. Durante esse período tens acesso às funcionalidades Pro; depois inicia-se a cobrança normal, salvo cancelamento."],
+  ["Como funciona a oferta do Pro?", "Novos utilizadores elegíveis recebem o primeiro mês de Barbers Pro grátis com o código TRIALPRO. Depois desse mês inicia-se a cobrança normal, salvo cancelamento."],
   ["Como são tratados os pagamentos?", "Os pagamentos, métodos de pagamento e faturas são processados com segurança pela Stripe através do checkout da Silentra."],
   ["O que acontece se cancelar?", "Manténs o acesso ao plano atual até ao final do período de faturação em curso."],
 ] as const;
@@ -24,7 +24,7 @@ export default function PlansPage() {
             <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">Esta é a página de decisão da Silentra: compara, escolhe e inicia o checkout sem sair do funil.</p>
             <div className="mt-6 grid gap-2 text-xs text-zinc-500 sm:flex sm:flex-wrap sm:gap-x-5">
               <span className="inline-flex items-center gap-2"><CheckCircle2 className="size-3.5 text-emerald-300" />Free disponível sem cartão</span>
-              <span className="inline-flex items-center gap-2"><CheckCircle2 className="size-3.5 text-emerald-300" />14 dias de Pro para novos utilizadores</span>
+              <span className="inline-flex items-center gap-2"><CheckCircle2 className="size-3.5 text-emerald-300" />1 mês de Pro com TRIALPRO para novos utilizadores</span>
               <span className="inline-flex items-center gap-2"><CheckCircle2 className="size-3.5 text-emerald-300" />Checkout dentro da Silentra</span>
               <span className="inline-flex items-center gap-2"><CheckCircle2 className="size-3.5 text-emerald-300" />Plano pertence à barbearia</span>
             </div>
