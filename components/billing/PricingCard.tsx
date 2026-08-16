@@ -43,11 +43,6 @@ export function PricingCard({ tier, title, price, priceId, description, features
   const isDowngradeToFree = isDowngrade && tier === "free" && hasCurrentPaidPlan;
   const requiresPlanChangeConfirmation = isUpgrade || isDowngrade;
 
-  const openPlanChangeConfirmation = () => {
-    if (!requiresPlanChangeConfirmation) return;
-    setConfirmationOpen(true);
-  };
-
   const handleAction = async () => {
     try {
       if (!isMounted || loading || isChangingPlan) return;
@@ -69,7 +64,7 @@ export function PricingCard({ tier, title, price, priceId, description, features
         return;
       }
       if (requiresPlanChangeConfirmation) {
-        openPlanChangeConfirmation();
+        setConfirmationOpen(true);
         return;
       }
       if (!priceId) {
@@ -83,39 +78,18 @@ export function PricingCard({ tier, title, price, priceId, description, features
     }
   };
 
-  const confirmPlanChange = async () => {
-    setIsChangingPlan(true);
-    try {
-      if (isDowngradeToFree) {
-        const response = await fetch("/api/stripe/cancel", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(body.error || "Não foi possível mudar para o plano Free.");
-        setConfirmationOpen(false);
-        window.location.assign("/dashboard/billing?plan=free-pending");
-        return;
-      }
-
-      if (!priceId) {
-        throw new Error("Este plano ainda não está disponível para alteração.");
-      }
-
-      const response = await fetch("/api/stripe/update-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newPriceId: priceId }),
-      });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error || "Não foi possível atualizar o plano.");
-      setConfirmationOpen(false);
-      window.location.assign("/dashboard/billing?plan=updated");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível concluir a alteração do plano.");
-    } finally {
-      setIsChangingPlan(false);
+  const confirmPlanChange = () => {
+    if (isDowngradeToFree) {
+      toast.error("A mudança para o plano Free não utiliza o checkout Stripe porque não existe uma subscrição paga para iniciar.");
+      return;
     }
+    if (!priceId) {
+      toast.error("Este plano ainda não está disponível para checkout.");
+      return;
+    }
+    setIsChangingPlan(true);
+    setConfirmationOpen(false);
+    window.location.assign(`/checkout?priceId=${encodeURIComponent(priceId)}&plan=${tier}&change=1`);
   };
 
   const buttonConfig = useMemo(() => {
@@ -136,9 +110,7 @@ export function PricingCard({ tier, title, price, priceId, description, features
   const isActivePaidPlan = isCurrentPlan && (tier === "pro" || tier === "enterprise");
   const currentPlanLabel = currentPlan ? PLAN_NAMES[currentPlan as PlanTier] : "Plano atual";
   const confirmationTitle = isDowngrade ? "Confirmar mudança para um plano inferior" : "Confirmar upgrade";
-  const confirmationDescription = isDowngradeToFree
-    ? "A subscrição será marcada para cancelamento no fim do período atual. Manténs o acesso ao plano pago até essa data."
-    : `A subscrição atual será alterada de ${currentPlanLabel} para ${PLAN_NAMES[tier]}. Confirma que queres aplicar esta mudança.`;
+  const confirmationDescription = `Depois da confirmação vais para o checkout Stripe para concluir a nova subscrição. A subscrição atual só será cancelada depois de o novo checkout ficar concluído.`;
 
   return (
     <>
@@ -168,40 +140,25 @@ export function PricingCard({ tier, title, price, priceId, description, features
 
         <div className="mt-8 border-t border-white/8 pt-5">
           <button type="button" onClick={handleAction} disabled={buttonConfig.disabled || loading || isChangingPlan} className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-[background-color,border-color,box-shadow,transform] duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${buttonConfig.variant === "primary" ? "bg-emerald-400 text-zinc-950 shadow-[0_8px_24px_rgba(52,211,153,0.18)] hover:bg-emerald-300 hover:shadow-[0_10px_30px_rgba(52,211,153,0.24)]" : buttonConfig.variant === "secondary" ? "border border-white/10 bg-white/5 text-zinc-400" : "border border-white/15 bg-white/[0.04] text-zinc-100 hover:border-white/25 hover:bg-white/[0.08]"}`}>{loading || isChangingPlan ? <Loader2 className="size-4 animate-spin" /> : <><span>{buttonConfig.label}</span>{!buttonConfig.disabled && <ArrowRight className="size-4" />}</>}</button>
-          {tier === "pro" && !isCurrentPlan ? <p className="mt-2 text-center text-[11px] text-zinc-600">1 mês grátis para novos utilizadores elegíveis com TRIALPRO. Depois aplica-se o preço normal.</p> : null}
-        </div>
+          {tier === "pro" && !isCurrentPlan ? <p className="mt-2 text-center text-[11px] text-zinc-600">1 mês grátis para novos utilizadores elegíveis com TRIALPRO. Depois aplica-se o preço normal.</p> : null}</div>
       </div>
 
       <Dialog open={confirmationOpen} onOpenChange={(open) => !isChangingPlan && setConfirmationOpen(open)}>
         <DialogContent className="w-[calc(100vw-2rem)] max-w-md rounded-2xl border border-white/10 bg-zinc-950 p-5 text-zinc-50 shadow-2xl sm:p-6">
           <DialogHeader>
-            <div className="mb-2 flex size-10 items-center justify-center rounded-xl border border-amber-400/20 bg-amber-400/10 text-amber-300">
-              <AlertTriangle className="size-5" />
-            </div>
+            <div className="mb-2 flex size-10 items-center justify-center rounded-xl border border-amber-400/20 bg-amber-400/10 text-amber-300"><AlertTriangle className="size-5" /></div>
             <DialogTitle>{confirmationTitle}</DialogTitle>
-            <DialogDescription className="text-sm leading-6 text-zinc-400">
-              {confirmationDescription}
-            </DialogDescription>
+            <DialogDescription className="text-sm leading-6 text-zinc-400">{confirmationDescription}</DialogDescription>
           </DialogHeader>
-
           <div className="mt-4 grid gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm sm:grid-cols-2">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Atual</p>
-              <p className="mt-1 font-semibold text-zinc-100">{currentPlanLabel}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Novo plano</p>
-              <p className="mt-1 font-semibold text-zinc-100">{title}</p>
-            </div>
+            <div><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Atual</p><p className="mt-1 font-semibold text-zinc-100">{currentPlanLabel}</p></div>
+            <div><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Novo plano</p><p className="mt-1 font-semibold text-zinc-100">{title}</p></div>
           </div>
-
           <DialogFooter className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <button type="button" onClick={() => setConfirmationOpen(false)} disabled={isChangingPlan} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm font-semibold text-zinc-200 hover:bg-white/[0.06] disabled:opacity-50">
-              Cancelar
-            </button>
-            <button type="button" onClick={() => void confirmPlanChange()} disabled={isChangingPlan} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-zinc-950 hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-60">
+            <button type="button" onClick={() => setConfirmationOpen(false)} disabled={isChangingPlan} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm font-semibold text-zinc-200 hover:bg-white/[0.06] disabled:opacity-50">Cancelar</button>
+            <button type="button" onClick={confirmPlanChange} disabled={isChangingPlan} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-zinc-950 hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-60">
               {isChangingPlan ? <Loader2 className="size-4 animate-spin" /> : null}
-              {isDowngradeToFree ? "Confirmar cancelamento" : isUpgrade ? "Confirmar upgrade" : "Confirmar mudança"}
+              {isDowngrade ? "Ir para checkout" : "Ir para checkout"}
             </button>
           </DialogFooter>
         </DialogContent>
