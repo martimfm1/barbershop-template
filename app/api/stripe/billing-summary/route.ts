@@ -54,7 +54,7 @@ export async function GET() {
     const [subscriptionResult, assignmentResult, barbershopResult] = await Promise.all([
       database
         .from("subscriptions")
-        .select("id, user_id, barbershop_id, stripe_customer_id, stripe_subscription_id, stripe_price_id, status, cancel_at_period_end, current_period_start, current_period_end, trial_end, plan, plan_override")
+        .select("id, user_id, stripe_customer_id, stripe_subscription_id, stripe_price_id, status, cancel_at_period_end, current_period_end, trial_end, plan, plan_override")
         .eq("barbershop_id", barbershopId)
         .order("updated_at", { ascending: false })
         .limit(1)
