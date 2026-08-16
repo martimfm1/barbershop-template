@@ -10,25 +10,21 @@ export const runtime = "nodejs";
 
 const LOG_PREFIX = "[billing.checkout-complete]";
 
-function log(message: string, context: Record<string, unknown> = {}) {
-  console.info(`${LOG_PREFIX} ${message}`, context);
+function log(message: string) {
+  console.info(`${LOG_PREFIX} ${message}`);
 }
 
-function fail(message: string, status: number, context: Record<string, unknown> = {}) {
-  console.error(`${LOG_PREFIX} ${message}`, context);
+function fail(message: string, status: number) {
+  console.error(`${LOG_PREFIX} ${message}`);
   return NextResponse.json({ error: message }, { status, headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST() {
-  const requestId = crypto.randomUUID();
-
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (authError || !user) {
-      return fail("Unauthorized", 401, { requestId, authError: authError?.message ?? null });
-    }
+    if (authError || !user) return fail("Unauthorized", 401);
 
     const database = createAdminClient();
     const { data: userRow, error: userError } = await database
@@ -37,25 +33,18 @@ export async function POST() {
       .eq("id", user.id)
       .maybeSingle();
 
-    if (userError) {
-      return fail("Could not resolve SaaS account.", 500, {
-        requestId,
-        userId: user.id,
-        supabase: userError,
-      });
-    }
+    if (userError) return fail("Could not resolve SaaS account.", 500);
 
     const barbershopId = userRow?.barbershop_id ?? null;
-    if (!barbershopId) {
-      return fail("A barbershop is required for billing.", 400, { requestId, userId: user.id });
-    }
+    if (!barbershopId) return fail("A barbershop is required for billing.", 400);
+    if (String(userRow?.role ?? "").toLowerCase() !== "owner") return fail("Only the barbershop owner can complete checkout.", 403);
 
-    if (String(userRow?.role ?? "").toLowerCase() !== "owner") {
-      return fail("Only the barbershop owner can complete checkout.", 403, {
-        requestId,
-        userId: user.id,
-        barbershopId,
-      });
+    const existing = await BarbershopStripeService.getSubscriptionForBarbershop(barbershopId);
+    if (existing?.stripe_subscription_id && ["active", "trialing"].includes(existing.status) && existing.plan !== "free") {
+      return NextResponse.json(
+        { success: true, stripeSubscriptionId: existing.stripe_subscription_id, subscription: existing },
+        { headers: { "Cache-Control": "no-store" } },
+      );
     }
 
     const account = await BarbershopStripeService.getBillingAccount(barbershopId);
@@ -74,7 +63,6 @@ export async function POST() {
 
       if (matchingCustomer) {
         customerId = matchingCustomer.id;
-
         const { error: billingAccountError } = await database
           .from("barbershop_billing_accounts")
           .upsert({
@@ -83,33 +71,11 @@ export async function POST() {
             stripe_customer_id: customerId,
             billing_email: email,
           }, { onConflict: "barbershop_id" });
-
-        if (billingAccountError) {
-          return fail("Could not persist the Stripe billing account.", 500, {
-            requestId,
-            userId: user.id,
-            barbershopId,
-            stripeCustomerId: customerId,
-            supabase: billingAccountError,
-          });
-        }
+        if (billingAccountError) return fail("Could not persist the Stripe billing account.", 500);
       }
     }
 
-    if (!customerId) {
-      return fail("No Stripe customer was found for this barbershop.", 404, {
-        requestId,
-        userId: user.id,
-        barbershopId,
-      });
-    }
-
-    log("Loading Stripe subscriptions", {
-      requestId,
-      userId: user.id,
-      barbershopId,
-      stripeCustomerId: customerId,
-    });
+    if (!customerId) return fail("No Stripe customer was found for this barbershop.", 404);
 
     const subscriptions = await getStripeClient().subscriptions.list({
       customer: customerId,
@@ -117,30 +83,11 @@ export async function POST() {
       limit: 20,
     });
 
-    const candidates = subscriptions.data
+    const latest = subscriptions.data
       .filter((subscription) => ["active", "trialing", "past_due", "unpaid", "incomplete"].includes(subscription.status))
-      .sort((a, b) => b.created - a.created);
+      .sort((a, b) => b.created - a.created)[0] ?? null;
 
-    const latest = candidates[0] ?? null;
-
-    log("Stripe subscription candidate resolved", {
-      requestId,
-      userId: user.id,
-      barbershopId,
-      stripeCustomerId: customerId,
-      subscriptionCount: subscriptions.data.length,
-      stripeSubscriptionId: latest?.id ?? null,
-      stripeSubscriptionStatus: latest?.status ?? null,
-    });
-
-    if (!latest) {
-      return fail("No Stripe subscription was found for this customer.", 404, {
-        requestId,
-        userId: user.id,
-        barbershopId,
-        stripeCustomerId: customerId,
-      });
-    }
+    if (!latest) return fail("No Stripe subscription was found for this customer.", 404);
 
     await BarbershopStripeService.syncFromStripe(barbershopId, user.id, latest);
 
@@ -152,57 +99,20 @@ export async function POST() {
       .eq("stripe_subscription_id", latest.id)
       .maybeSingle();
 
-    if (persistedError) {
-      return fail("Subscription sync completed but verification failed.", 500, {
-        requestId,
-        userId: user.id,
-        barbershopId,
-        stripeSubscriptionId: latest.id,
-        supabase: persistedError,
-      });
-    }
-
+    if (persistedError) return fail("Subscription sync completed but verification failed.", 500);
     if (!persisted) {
-      throw new BillingError("Stripe subscription was not persisted to Supabase.", "DB_WRITE_FAILED", {
-        userId: user.id,
-        barbershopId,
-        subscriptionId: latest.id,
-      });
+      throw new BillingError("Stripe subscription was not persisted to Supabase.", "DB_WRITE_FAILED");
     }
 
-    log("Stripe subscription persisted successfully", {
-      requestId,
-      userId: user.id,
-      barbershopId,
-      stripeSubscriptionId: latest.id,
-      supabaseSubscriptionId: persisted.id,
-      plan: persisted.plan,
-      status: persisted.status,
-    });
+    log("Subscription synchronization completed");
 
     return NextResponse.json(
-      {
-        success: true,
-        stripeSubscriptionId: persisted.stripe_subscription_id,
-        subscription: persisted,
-      },
+      { success: true, stripeSubscriptionId: persisted.stripe_subscription_id, subscription: persisted },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
-    console.error(`${LOG_PREFIX} critical error`, {
-      requestId,
-      error: error instanceof Error
-        ? { name: error.name, message: error.message, stack: error.stack }
-        : error,
-    });
-
-    if (error instanceof BillingError) {
-      return NextResponse.json({ error: error.message }, { status: 500, headers: { "Cache-Control": "no-store" } });
-    }
-
-    return NextResponse.json(
-      { error: "Could not synchronize the Stripe subscription." },
-      { status: 500, headers: { "Cache-Control": "no-store" } },
-    );
+    console.error(`${LOG_PREFIX} critical error`, error instanceof Error ? error.name : "unknown");
+    if (error instanceof BillingError) return NextResponse.json({ error: error.message }, { status: 500, headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ error: "Could not synchronize the Stripe subscription." }, { status: 500, headers: { "Cache-Control": "no-store" } });
   }
 }
