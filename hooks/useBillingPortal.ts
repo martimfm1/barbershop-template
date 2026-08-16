@@ -25,13 +25,9 @@ export function useBillingPortal(subscription: SubscriptionData | null) {
   const createSetupIntent = useMutation({ mutationFn: () => request<{ clientSecret: string }>("/api/stripe/setup-intent", { method: "POST" }) });
   const createSubscription = useMutation({
     mutationFn: async (priceId: string): Promise<SubscriptionChangeResult> => {
-      const result = await request<{ url: string }>("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, successUrl: `${window.location.origin}/dashboard/billing?checkout=success`, cancelUrl: `${window.location.origin}/dashboard/billing?checkout=cancelled` }),
-      });
-      if (!result.url) throw new Error("Stripe did not return a Checkout URL.");
-      window.location.assign(result.url);
+      const selectedPrice = pricesQuery.data?.find((price) => price.id === priceId);
+      const plan = selectedPrice?.plan === "enterprise" ? "enterprise" : "pro";
+      window.location.assign(`/checkout?priceId=${encodeURIComponent(priceId)}&plan=${plan}`);
       return { subscriptionId: "pending", clientSecret: null, action: "created" };
     },
     onSuccess: () => {
