@@ -23,7 +23,17 @@ const patterns = [
   {
     label: "console com segredo",
     pattern:
-      /console\.(?:log|info|warn|error)\([^\n]*(?:secret|service_role|password)\s*[:=]/i,
+      /console\.(?:log|info|warn|error)\([^\n]*(?:secret|service_role|password|token|apiKey|authorization)\s*[:=]/i,
+  },
+  {
+    label: "console com identificadores sensíveis",
+    pattern:
+      /console\.(?:log|info|warn|error)\([\s\S]{0,220}?(?:userId|barbershopId|customerId|stripeCustomerId|subscriptionId|stripeSubscriptionId|sessionId|email|phone|address)\s*[:=]/i,
+  },
+  {
+    label: "stack trace enviado para resposta HTTP",
+    pattern:
+      /NextResponse\.json\([\s\S]{0,220}?(?:stack|error\.stack)/i,
   },
 ];
 
@@ -35,9 +45,7 @@ for (const file of sourceFiles) {
   });
 
   for (const item of patterns) {
-    if (item.pattern.test(source)) {
-      findings.push(`${item.label}: ${file}`);
-    }
+    if (item.pattern.test(source)) findings.push(`${item.label}: ${file}`);
   }
 }
 
