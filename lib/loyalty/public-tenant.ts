@@ -5,6 +5,18 @@ interface LoyaltyTenant {
   barbershopId: string;
 }
 
+async function isLoyaltyEnabled(barbershopId: string): Promise<boolean> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("loyalty_settings")
+    .select("enabled")
+    .eq("barbershop_id", barbershopId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data?.enabled === true;
+}
+
 export async function getLoyaltyTenantBySlug(slug: string): Promise<LoyaltyTenant | null> {
   const normalized = slug.trim().toLowerCase();
   if (!isValidPublicProfileSlug(normalized)) return null;
@@ -18,8 +30,11 @@ export async function getLoyaltyTenantBySlug(slug: string): Promise<LoyaltyTenan
     .maybeSingle();
 
   if (barbershopError) throw barbershopError;
-  if (barbershop && barbershop.is_public_in_directory !== false) {
-    return { barbershopId: barbershop.id };
+
+  if (barbershop?.id && barbershop.is_public_in_directory !== false) {
+    return (await isLoyaltyEnabled(barbershop.id))
+      ? { barbershopId: barbershop.id }
+      : null;
   }
 
   const { data: shop, error: shopError } = await admin
@@ -32,7 +47,9 @@ export async function getLoyaltyTenantBySlug(slug: string): Promise<LoyaltyTenan
     if (shopError.code === "42703") return null;
     throw shopError;
   }
-  if (!shop?.barbershop_id || shop.public_profile_enabled === false) return null;
 
-  return { barbershopId: shop.barbershop_id };
+  if (!shop?.barbershop_id || shop.public_profile_enabled === false) return null;
+  return (await isLoyaltyEnabled(shop.barbershop_id))
+    ? { barbershopId: shop.barbershop_id }
+    : null;
 }
