@@ -280,19 +280,16 @@ export class BarbershopStripeService {
       .maybeSingle();
 
     if (ownerError) throw new BillingError("Could not resolve billing owner.", "DB_READ_FAILED");
-    if (!owner || owner.barbershop_id !== barbershopId || String(owner.role ?? "").toLowerCase() !== "owner") {
-      throw new BillingError("Invalid billing owner for barbershop.", "WEBHOOK_PROCESSING_FAILED");
-    }
+    if (!owner || owner.barbershop_id !== barbershopId || String(owner.role ?? "").toLowerCase() !== "owner") throw new BillingError("Billing owner does not match the barbershop.", "SUBSCRIPTION_NOT_ACTIVE");
 
-    const account = await database
+    const { data: billingAccount, error: billingAccountError } = await database
       .from("barbershop_billing_accounts")
-      .select("stripe_customer_id")
+      .select("stripe_customer_id, billing_owner_user_id")
       .eq("barbershop_id", barbershopId)
       .maybeSingle();
-    if (account.error) throw new BillingError("Could not load barbershop billing mapping.", "DB_READ_FAILED");
-    if (account.data?.stripe_customer_id && account.data.stripe_customer_id !== customer) {
-      throw new BillingError("Stripe customer does not match the barbershop billing account.", "WEBHOOK_PROCESSING_FAILED");
-    }
+    if (billingAccountError) throw new BillingError("Could not load Stripe billing account.", "DB_READ_FAILED");
+    if (billingAccount?.billing_owner_user_id && billingAccount.billing_owner_user_id !== ownerUserId) throw new BillingError("Billing owner mapping does not match.", "SUBSCRIPTION_NOT_ACTIVE");
+    if (billingAccount?.stripe_customer_id && billingAccount.stripe_customer_id !== customer) throw new BillingError("Stripe customer does not match the barbershop.", "SUBSCRIPTION_NOT_ACTIVE");
 
     const billingEmail = owner.email ?? null;
     const customerWrite = await database.from("customers").upsert({ user_id: ownerUserId, stripe_customer_id: customer, email: billingEmail }, { onConflict: "user_id" });
@@ -334,7 +331,7 @@ export class BarbershopStripeService {
     if (data?.barbershop_id && data.billing_owner_user_id) {
       const { data: owner, error: ownerError } = await database.from("users").select("id, barbershop_id, role").eq("id", data.billing_owner_user_id).maybeSingle();
       if (ownerError) throw new BillingError("Could not resolve billing owner.", "DB_READ_FAILED");
-      if (owner?.barbershop_id === data.barbershop_id && String(owner.role ?? "").toLowerCase() === "owner") return { barbershopId: data.barbershop_id, ownerUserId: data.billing_owner_user_id };
+      if (owner && owner.barbershop_id === data.barbershop_id && String(owner.role ?? "").toLowerCase() === "owner") return { barbershopId: data.barbershop_id, ownerUserId: data.billing_owner_user_id };
     }
 
     const legacy = await database.from("customers").select("user_id").eq("stripe_customer_id", customer).maybeSingle();
