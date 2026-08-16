@@ -8,10 +8,6 @@ import { BillingError } from "@/types/stripe";
 
 export const runtime = "nodejs";
 
-function safeOrigin(request: Request) {
-  return new URL(request.url).origin;
-}
-
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -38,15 +34,16 @@ export async function POST(request: Request) {
 
     const trialEligible = requestedPlan === PLANS.PRO && (await BillingService.isEligibleForProTrial(user.id));
     const customer = await BillingService.getOrCreateCustomer(user.id, user.email);
-    const origin = safeOrigin(request);
+    const origin = new URL(request.url).origin;
     const stripe = getStripeClient();
+    const idempotencyKey = `checkout-elements:${user.id}:${priceId}`;
 
     const session = await stripe.checkout.sessions.create({
       customer,
       mode: "subscription",
       ui_mode: "elements",
       line_items: [{ price: priceId, quantity: 1 }],
-      return_url: `${origin}/checkout?priceId=${encodeURIComponent(priceId)}&checkout=return&session_id={CHECKOUT_SESSION_ID}`,
+      return_url: `${origin}/dashboard/billing?checkout=return&session_id={CHECKOUT_SESSION_ID}`,
       client_reference_id: user.id,
       allow_promotion_codes: true,
       metadata: {
@@ -55,30 +52,21 @@ export async function POST(request: Request) {
         trial_eligible: trialEligible ? "true" : "false",
       },
       subscription_data: {
-        metadata: {
-          user_id: user.id,
-          trial_eligible: trialEligible ? "true" : "false",
-        },
+        metadata: { user_id: user.id, trial_eligible: trialEligible ? "true" : "false" },
         ...(trialEligible ? { trial_period_days: TRIAL_PERIOD_DAYS } : {}),
       },
       billing_address_collection: "required",
-      customer_update: {
-        name: "auto",
-        address: "auto",
-      },
+      customer_update: { name: "auto", address: "auto" },
       phone_number_collection: { enabled: true },
       tax_id_collection: { enabled: true },
       locale: "pt",
-    });
+    }, { idempotencyKey });
 
     if (!session.client_secret) {
       throw new BillingError("Stripe did not return a Checkout Elements client secret.", "WEBHOOK_PROCESSING_FAILED");
     }
 
-    return NextResponse.json(
-      { clientSecret: session.client_secret, sessionId: session.id },
-      { headers: { "Cache-Control": "no-store" } },
-    );
+    return NextResponse.json({ clientSecret: session.client_secret, sessionId: session.id }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("[STRIPE_CUSTOM_CHECKOUT_ERROR]", {
       name: error instanceof Error ? error.name : "UnknownError",
