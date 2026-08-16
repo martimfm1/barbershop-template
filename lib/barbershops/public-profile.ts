@@ -63,22 +63,44 @@ async function getShopByColumn(column: "id" | "slug" | "custom_slug", value: str
     .select("id, slug, custom_slug, name, city, address, phone, avatar_url, cover_url, tags, barbershop_id, public_profile_enabled, seo_title, seo_description, og_image_url, theme_config")
     .eq(column, value)
     .maybeSingle();
-  if (error || !data) return null;
+
+  if (error) {
+    console.error("[PUBLIC_PROFILE_DB_ERROR]", { operation: "shop_lookup", column, code: error.code ?? "UNKNOWN" });
+    return null;
+  }
+  if (!data) {
+    console.warn("[PUBLIC_PROFILE_NOT_FOUND]", { operation: "shop_lookup", column });
+    return null;
+  }
   return data as ShopRecord;
 }
 
 async function getPlanForShop(barbershopId: string | null): Promise<{ plan: BillingPlan; ownerUserId: string | null }> {
-  if (!barbershopId) return { plan: "free", ownerUserId: null };
+  if (!barbershopId) {
+    console.warn("[PUBLIC_PROFILE_PLAN_FALLBACK]", { reason: "missing_tenant" });
+    return { plan: "free", ownerUserId: null };
+  }
+
   const database = createAdminClient();
-  const [{ data: barbershop }, { data: assignment }, { data: subscription }] = await Promise.all([
+  const [{ data: barbershop, error: barbershopError }, { data: assignment, error: assignmentError }, { data: subscription, error: subscriptionError }] = await Promise.all([
     database.from("barbershops").select("id, created_by").eq("id", barbershopId).maybeSingle(),
     database.from("barbershop_plan_assignments").select("plan, expires_at").eq("barbershop_id", barbershopId).maybeSingle(),
     database.from("subscriptions").select("plan, plan_override, status").eq("barbershop_id", barbershopId).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
+
+  if (barbershopError || assignmentError || subscriptionError) {
+    console.error("[PUBLIC_PROFILE_PLAN_LOOKUP_ERROR]", {
+      barbershop: barbershopError?.code ?? null,
+      assignment: assignmentError?.code ?? null,
+      subscription: subscriptionError?.code ?? null,
+    });
+  }
+
   const ownerUserId = barbershop?.created_by ?? null;
   if (assignment && (!assignment.expires_at || new Date(assignment.expires_at).getTime() > Date.now())) {
     return { plan: assignment.plan as BillingPlan, ownerUserId };
   }
+
   const subscriptionPlan = subscription?.plan_override && subscription.plan_override !== "free" ? subscription.plan_override : subscription?.plan;
   const paidStatus = ["active", "trialing"].includes(String(subscription?.status ?? ""));
   if (paidStatus && (subscriptionPlan === "pro" || subscriptionPlan === "enterprise")) {
@@ -113,7 +135,11 @@ function buildPublicProfile(shop: ShopRecord, plan: BillingPlan, ownerUserId: st
 }
 
 async function resolvePublicShop(shop: ShopRecord | null): Promise<PublicProfileRecord | null> {
-  if (!shop || shop.public_profile_enabled === false) return null;
+  if (!shop) return null;
+  if (shop.public_profile_enabled === false) {
+    console.warn("[PUBLIC_PROFILE_DISABLED]", { operation: "profile_resolution" });
+    return null;
+  }
   const { plan, ownerUserId } = await getPlanForShop(shop.barbershop_id ?? null);
   return buildPublicProfile(shop, plan, ownerUserId);
 }
@@ -136,7 +162,11 @@ export async function getPublicProfileByRedirect(oldSlug: string): Promise<Publi
   const normalized = oldSlug.trim().toLowerCase();
   if (!normalized) return null;
   const database = createAdminClient();
-  const { data: redirect } = await database.from("shop_slug_redirects").select("shop_id").eq("old_slug", normalized).maybeSingle();
+  const { data: redirect, error } = await database.from("shop_slug_redirects").select("shop_id").eq("old_slug", normalized).maybeSingle();
+  if (error) {
+    console.error("[PUBLIC_PROFILE_REDIRECT_ERROR]", { code: error.code ?? "UNKNOWN" });
+    return null;
+  }
   if (!redirect?.shop_id) return null;
   return getPublicProfileById(String(redirect.shop_id));
 }
