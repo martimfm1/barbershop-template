@@ -1,3 +1,4 @@
+import type Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripeClient } from "@/lib/stripe/server";
@@ -18,12 +19,80 @@ async function markWebhookFailed(eventId: string, error: unknown) {
   if (markError) console.error("billing.webhook_ledger_fail_mark_failed", { eventId, error: markError });
 }
 
+async function hydrateBillingMappingFromMetadata(metadata: Stripe.Metadata | null | undefined) {
+  const barbershopId = metadata?.barbershop_id?.trim() || null;
+  const metadataUserId = metadata?.user_id?.trim() || metadata?.billing_owner_user_id?.trim() || null;
+  const customerId = metadata?.stripe_customer_id?.trim() || null;
+  if (!barbershopId) return null;
+
+  const database = createAdminClient();
+  let ownerUserId = metadataUserId;
+
+  if (!ownerUserId) {
+    const { data: owner, error } = await database
+      .from("users")
+      .select("id")
+      .eq("barbershop_id", barbershopId)
+      .eq("role", "owner")
+      .limit(1)
+      .maybeSingle();
+    if (error) throw new BillingError("Could not resolve barbershop billing owner.", "DB_READ_FAILED", { barbershopId });
+    ownerUserId = owner?.id ?? null;
+  }
+
+  if (!ownerUserId) throw new BillingError("Could not resolve barbershop billing owner.", "WEBHOOK_PROCESSING_FAILED", { barbershopId });
+
+  let resolvedCustomerId = customerId;
+  if (!resolvedCustomerId) {
+    const { data: account, error } = await database
+      .from("barbershop_billing_accounts")
+      .select("stripe_customer_id")
+      .eq("barbershop_id", barbershopId)
+      .maybeSingle();
+    if (error) throw new BillingError("Could not load barbershop Stripe mapping.", "DB_READ_FAILED", { barbershopId });
+    resolvedCustomerId = account?.stripe_customer_id ?? null;
+  }
+
+  if (resolvedCustomerId) {
+    await database.from("barbershop_billing_accounts").upsert({
+      barbershop_id: barbershopId,
+      billing_owner_user_id: ownerUserId,
+      stripe_customer_id: resolvedCustomerId,
+    }, { onConflict: "barbershop_id" });
+
+    await database.from("customers").upsert({
+      user_id: ownerUserId,
+      stripe_customer_id: resolvedCustomerId,
+    }, { onConflict: "user_id" });
+  }
+
+  return { barbershopId, ownerUserId, customerId: resolvedCustomerId };
+}
+
+async function processCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+  if (!session.subscription) return;
+
+  const stripeSubscription = typeof session.subscription === "string"
+    ? await getStripeClient().subscriptions.retrieve(session.subscription)
+    : session.subscription;
+
+  const metadata = session.metadata ?? stripeSubscription.metadata ?? {};
+  const mapping = await hydrateBillingMappingFromMetadata(metadata);
+  if (!mapping) {
+    throw new BillingError("Checkout session does not contain the barbershop billing mapping.", "WEBHOOK_PROCESSING_FAILED", {
+      sessionId: session.id,
+    });
+  }
+
+  await BarbershopStripeService.syncFromStripe(mapping.barbershopId, mapping.ownerUserId, stripeSubscription);
+}
+
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!signature || !webhookSecret) return NextResponse.json({ error: "Invalid webhook request." }, { status: 400 });
 
-  let event: import("stripe").default.Event;
+  let event: Stripe.Event;
   try {
     event = getStripeClient().webhooks.constructEvent(await request.text(), signature, webhookSecret);
   } catch (error) {
@@ -45,7 +114,21 @@ export async function POST(request: Request) {
     if (claimStatus !== "claimed") return billingErrorResponse(new BillingError("Webhook claim could not be established.", "WEBHOOK_PROCESSING_FAILED"));
 
     try {
-      await BarbershopStripeService.processWebhookEvent(event);
+      if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
+        await processCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
+      } else if (["customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted"].includes(event.type)) {
+        const subscription = event.data.object as Stripe.Subscription;
+        const mapping = await hydrateBillingMappingFromMetadata(subscription.metadata);
+        if (!mapping) {
+          throw new BillingError("Webhook customer mapping was not found.", "WEBHOOK_PROCESSING_FAILED", {
+            eventId: event.id,
+            customer: typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id,
+          });
+        }
+        await BarbershopStripeService.processWebhookEvent(event);
+      } else {
+        await BarbershopStripeService.processWebhookEvent(event);
+      }
     } catch (error) {
       await markWebhookFailed(event.id, error);
       throw error;
