@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { BillingService } from "@/services/billing/billing.service";
+import { NEW_MEMBER_PRO_OFFER_MONTHS, NEW_MEMBER_PRO_PROMOTION_CODE } from "@/lib/stripe/constants";
 
 export const runtime = "nodejs";
 
@@ -12,7 +13,12 @@ export async function GET() {
 
     const eligible = await BillingService.isEligibleForProTrial(user.id);
     return NextResponse.json(
-      { eligible, trialDays: 14, plan: "pro" },
+      {
+        eligible,
+        offerMonths: NEW_MEMBER_PRO_OFFER_MONTHS,
+        promotionCode: eligible ? NEW_MEMBER_PRO_PROMOTION_CODE : null,
+        plan: "pro",
+      },
       { headers: { "Cache-Control": "private, no-store, max-age=0" } },
     );
   } catch {
