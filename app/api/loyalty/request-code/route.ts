@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendCustomerPortalCodeEmail } from "@/lib/brevo/customer-booking-portal";
+import { CustomerPortalEmailError, sendCustomerPortalCodeEmail } from "@/lib/brevo/customer-booking-portal";
 import { requireTenantAuthorization } from "@/lib/security/tenant-guard";
 import { consumePublicRateLimit } from "@/lib/security/public-rate-limit";
 import { getLoyaltyTenantBySlug } from "@/lib/loyalty/public-tenant";
@@ -10,6 +10,10 @@ export const runtime = "nodejs";
 const EMAIL_RATE_LIMIT = 3;
 const EMAIL_RATE_WINDOW_SECONDS = 15 * 60;
 
+function logOtp(event: string, details?: Record<string, string | number>) {
+  console.info("[LOYALTY_OTP]", { event, ...details });
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as { slug?: unknown; email?: unknown };
@@ -18,12 +22,23 @@ export async function POST(request: Request) {
     if (!slug || !email) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
     const tenant = await getLoyaltyTenantBySlug(slug);
-    if (!tenant) return NextResponse.json({ error: "A fidelização não está disponível para esta barbearia." }, { status: 404 });
+    if (!tenant) {
+      logOtp("tenant_not_found");
+      return NextResponse.json({ error: "A fidelização não está disponível para esta barbearia." }, { status: 404 });
+    }
 
-    await requireTenantAuthorization({ barbershopId: tenant.barbershopId, allowPublicTenant: true });
+    try {
+      await requireTenantAuthorization({ barbershopId: tenant.barbershopId, allowPublicTenant: true });
+    } catch {
+      logOtp("tenant_authorization_failed");
+      return NextResponse.json({ error: "A fidelização não está disponível para esta barbearia." }, { status: 404 });
+    }
 
     const allowed = await consumePublicRateLimit(request, "loyalty-otp-request", `${tenant.barbershopId}:${email}`, EMAIL_RATE_LIMIT, EMAIL_RATE_WINDOW_SECONDS);
-    if (!allowed) return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
+    if (!allowed) {
+      logOtp("rate_limited");
+      return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
+    }
 
     const admin = createAdminClient();
     const code = generateLoyaltyCode();
@@ -31,21 +46,33 @@ export async function POST(request: Request) {
     const codeHash = hashLoyaltyValue(code);
 
     const { error: cleanupError } = await admin.from("loyalty_verifications").delete().eq("barbershop_id", tenant.barbershopId).eq("email", email).is("consumed_at", null);
-    if (cleanupError) throw cleanupError;
+    if (cleanupError) {
+      logOtp("verification_cleanup_failed", { code: cleanupError.code ?? "UNKNOWN" });
+      throw cleanupError;
+    }
 
     const { error: insertError } = await admin.from("loyalty_verifications").insert({ barbershop_id: tenant.barbershopId, email, code_hash: codeHash, expires_at: expiresAt });
-    if (insertError) throw insertError;
+    if (insertError) {
+      logOtp("verification_insert_failed", { code: insertError.code ?? "UNKNOWN" });
+      throw insertError;
+    }
 
     try {
       await sendCustomerPortalCodeEmail(email, code);
     } catch (emailError) {
       await admin.from("loyalty_verifications").delete().eq("barbershop_id", tenant.barbershopId).eq("email", email).eq("code_hash", codeHash).is("consumed_at", null);
-      console.error("[LOYALTY_OTP_EMAIL_ERROR]", emailError instanceof Error ? emailError.name : "UnknownError");
+      if (emailError instanceof CustomerPortalEmailError) {
+        logOtp("email_delivery_failed", { status: emailError.status ?? 0 });
+      } else {
+        logOtp("email_delivery_failed", { status: 0 });
+      }
       return NextResponse.json({ error: "Não foi possível enviar o código." }, { status: 503 });
     }
 
+    logOtp("email_sent");
     return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
-  } catch {
+  } catch (error) {
+    logOtp("request_failed", { code: error instanceof Error ? 1 : 0 });
     return NextResponse.json({ error: "Não foi possível enviar o código." }, { status: 503 });
   }
 }
