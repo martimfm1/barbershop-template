@@ -34,32 +34,77 @@ export default function CheckoutSuccessPage() {
   useEffect(() => {
     let cancelled = false;
 
+    const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
     const run = async () => {
-      const endpoint = sessionId
-        ? `/api/stripe/subscription?session_id=${encodeURIComponent(sessionId)}`
-        : "/api/stripe/subscription";
+      let lastError = "Não foi possível confirmar a subscrição.";
 
       for (let attempt = 0; attempt < 6 && !cancelled; attempt += 1) {
         try {
+          // Embedded Checkout does not expose the Checkout Session ID in onComplete.
+          // Sync the latest Stripe subscription server-side before reading the final state.
+          if (!sessionId) {
+            try {
+              const syncResponse = await fetch("/api/stripe/checkout-complete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                cache: "no-store",
+              });
+              const syncPayload = (await syncResponse.json().catch(() => ({}))) as {
+                stripeSubscriptionId?: string | null;
+                error?: string;
+              };
+
+              if (!syncResponse.ok) {
+                lastError = syncPayload.error || lastError;
+                console.warn("[CHECKOUT_SUCCESS_SYNC_RETRY]", {
+                  attempt,
+                  status: syncResponse.status,
+                  error: syncPayload.error ?? null,
+                });
+              } else {
+                console.info("[CHECKOUT_SUCCESS_SYNC]", {
+                  attempt,
+                  stripeSubscriptionId: syncPayload.stripeSubscriptionId ?? null,
+                });
+              }
+            } catch (syncError) {
+              lastError = syncError instanceof Error ? syncError.message : lastError;
+              console.warn("[CHECKOUT_SUCCESS_SYNC_NETWORK_ERROR]", { attempt, error: syncError });
+            }
+          }
+
+          const endpoint = sessionId
+            ? `/api/stripe/subscription?session_id=${encodeURIComponent(sessionId)}`
+            : "/api/stripe/subscription";
+
           const response = await fetch(endpoint, { cache: "no-store" });
           const payload = (await response.json().catch(() => ({}))) as {
             plan?: "free" | "pro" | "enterprise";
             subscription?: {
+              stripe_subscription_id?: string | null;
               status?: string;
               current_period_end?: string | null;
               trial_end?: string | null;
             } | null;
+            stripeSubscriptionId?: string | null;
             error?: string;
           };
 
           if (!response.ok) {
-            if (!cancelled) setState({ loading: false, payload: { error: payload.error || "Não foi possível confirmar a subscrição." } });
-            return;
+            lastError = payload.error || lastError;
+            if (attempt < 5) {
+              await sleep(1200);
+              continue;
+            }
+            break;
           }
 
           const plan = payload.plan;
           const subscription = payload.subscription;
+          const stripeSubscriptionId = payload.stripeSubscriptionId ?? subscription?.stripe_subscription_id ?? null;
           const isConfirmed = Boolean(
+            stripeSubscriptionId &&
             plan &&
             (plan === "pro" || plan === "enterprise") &&
             subscription &&
@@ -83,8 +128,12 @@ export default function CheckoutSuccessPage() {
           }
 
           const isPending = Boolean(subscription && ["incomplete", "past_due", "unpaid"].includes(subscription.status ?? ""));
+          lastError = isPending
+            ? "A Stripe ainda está a concluir a subscrição."
+            : lastError;
+
           if (attempt < 5) {
-            await new Promise((resolve) => window.setTimeout(resolve, 1200));
+            await sleep(1200);
             continue;
           }
 
@@ -92,17 +141,19 @@ export default function CheckoutSuccessPage() {
             setState({
               loading: false,
               payload: isPending
-                ? { status: "pending", plan, error: "A Stripe ainda está a concluir a subscrição." }
-                : { error: "A subscrição Stripe foi consultada, mas ainda não está num estado ativo." },
+                ? { status: "pending", plan, error: lastError }
+                : { error: lastError },
             });
           }
         } catch (error) {
+          lastError = error instanceof Error ? error.message : lastError;
+          console.warn("[CHECKOUT_SUCCESS_RETRY]", { attempt, error });
           if (attempt < 5) {
-            await new Promise((resolve) => window.setTimeout(resolve, 1200));
+            await sleep(1200);
             continue;
           }
           if (!cancelled) {
-            setState({ loading: false, payload: { error: error instanceof Error ? error.message : "Não foi possível confirmar a subscrição." } });
+            setState({ loading: false, payload: { error: lastError } });
           }
         }
       }
