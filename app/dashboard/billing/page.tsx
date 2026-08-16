@@ -19,7 +19,17 @@ export default function BillingPage() {
       return;
     }
 
-    if (checkout === "success") window.location.replace("/checkout/success");
+    if (checkout === "success") {
+      void fetch("/api/stripe/finalize-plan-change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+      }).finally(() => {
+        window.location.replace("/checkout/success");
+      });
+      return;
+    }
+
     if (checkout === "error") window.location.replace("/checkout/error");
   }, []);
 
