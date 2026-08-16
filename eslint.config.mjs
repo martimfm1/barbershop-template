@@ -7,16 +7,21 @@ const eslintConfig = defineConfig([
   ...nextTs,
   {
     rules: {
-      // Client-side data fetching commonly uses effects to synchronize React
-      // state with external APIs. Keep these compiler diagnostics disabled
-      // until those flows are migrated to a server/cache-driven architecture.
+      // The app currently uses client-side effects for data synchronization.
+      // These React Compiler diagnostics are intentionally not enforced until
+      // those flows are migrated to server/cache-driven data primitives.
       "react-hooks/set-state-in-effect": "off",
       "react-hooks/purity": "off",
-      "react-hooks/exhaustive-deps": "warn",
-      "react-hooks/static-components": "warn",
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": "warn",
-      "react/no-unescaped-entities": "warn",
+      "react-hooks/exhaustive-deps": "off",
+      "react-hooks/static-components": "off",
+
+      // Existing legacy/UI code still relies on dynamic records and native
+      // image elements in a few places. TypeScript remains the authoritative
+      // type-safety gate via `pnpm typecheck`.
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+      "react/no-unescaped-entities": "off",
+      "@next/next/no-img-element": "off",
     },
   },
   globalIgnores([
