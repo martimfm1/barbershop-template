@@ -6,7 +6,7 @@ export interface SubscriptionData {
   stripe_customer_id: string;
   stripe_subscription_id: string | null;
   stripe_price_id: string | null;
-  status: "active" | "trialing" | "past_due" | "canceled" | "unpaid" | "incomplete";
+  status: "active" | "trialing" | "past_due" | "canceled" | "unpaid" | "incomplete" | "incomplete_expired" | "paused";
   cancel_at_period_end: boolean;
   current_period_start?: string | null;
   current_period_end: string | null;
@@ -18,6 +18,7 @@ interface SubscriptionQueryResult {
   plan: "free" | "pro" | "enterprise";
   planSource: "free" | "admin" | "subscription_override" | "stripe";
   isAuthenticated: boolean;
+  isBillingOwner: boolean;
 }
 
 async function fetchSubscription(): Promise<SubscriptionQueryResult> {
@@ -29,7 +30,7 @@ async function fetchSubscription(): Promise<SubscriptionQueryResult> {
 
   const res = await fetch(endpoint, { cache: "no-store" });
   if (!res.ok) {
-    if (res.status === 401) return { subscription: null, plan: "free", planSource: "free", isAuthenticated: false };
+    if (res.status === 401) return { subscription: null, plan: "free", planSource: "free", isAuthenticated: false, isBillingOwner: false };
     throw new Error("Failed to fetch subscription data.");
   }
   const json = await res.json();
@@ -38,6 +39,7 @@ async function fetchSubscription(): Promise<SubscriptionQueryResult> {
     plan: json.plan ?? "free",
     planSource: json.planSource ?? "free",
     isAuthenticated: true,
+    isBillingOwner: Boolean(json.isBillingOwner),
   };
 }
 
@@ -54,6 +56,7 @@ export function useSubscription() {
   });
 
   const isAuthenticated = data?.isAuthenticated ?? false;
+  const isBillingOwner = data?.isBillingOwner ?? false;
   const plan = data?.plan ?? "free";
   const planSource = data?.planSource ?? "free";
   const subscription = data?.subscription ? { ...data.subscription, plan } : null;
@@ -85,6 +88,7 @@ export function useSubscription() {
   return {
     subscription,
     isAuthenticated,
+    isBillingOwner,
     plan,
     planSource,
     isAdministrativePlan,
