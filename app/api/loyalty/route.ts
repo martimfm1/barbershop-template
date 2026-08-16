@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAccessPlanForRequest } from "@/services/billing/plan-access.guard";
 import { assertFeature } from "@/lib/billing/entitlements";
-import { createClient } from "@/lib/supabase/server";
 import { requireModuleContext } from "@/services/modules/authorization";
 
 function parseNumber(value: unknown, fallback: number) {
