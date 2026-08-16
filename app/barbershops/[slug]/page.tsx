@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { UUID_PATTERN } from "@/lib/validation";
-import { getPublicProfileById, getPublicProfileByRedirect, getPublicProfileBySlug } from "@/lib/barbershops/public-profile";
-import { isValidPublicProfileSlug } from "@/lib/barbershops/public-profile";
+import { getPublicProfileById, getPublicProfileByRedirect, getPublicProfileBySlug, isValidPublicProfileSlug } from "@/lib/barbershops/public-profile";
 import BarbershopPublicPage from "./public-barbershop-page";
+import type { PublicProfileRecord } from "@/lib/barbershops/public-profile";
 
 interface BarbershopPageProps {
   params: Promise<{ slug: string }>;
@@ -67,20 +67,24 @@ function PublicBusinessJsonLd({ name, url, address, city, phone, image }: { name
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />;
 }
 
+function getResolvedProfileUrl(profile: PublicProfileRecord): string {
+  return `/barbershops/${encodeURIComponent(profile.slug)}`;
+}
+
 export default async function BarbershopPage({ params }: BarbershopPageProps) {
   const { slug } = await params;
   logPublicProfile("info", "request", slug, { isUuid: UUID_PATTERN.test(slug) });
 
+  let profile: PublicProfileRecord | null = null;
+
   if (UUID_PATTERN.test(slug)) {
-    const profile = await getPublicProfileById(slug);
+    profile = await getPublicProfileById(slug);
     if (!profile) {
       logPublicProfile("warn", "id_resolution_failed", slug);
       notFound();
     }
     logPublicProfile("info", "id_resolved", slug, { hasCustomSlug: Boolean(profile.custom_slug), publicProfileEnabled: profile.public_profile_enabled });
-    if (profile.slug !== slug) {
-      permanentRedirect(`/barbershops/${encodeURIComponent(profile.slug)}`);
-    }
+    permanentRedirect(getResolvedProfileUrl(profile));
   }
 
   if (!isValidPublicProfileSlug(slug)) {
@@ -88,12 +92,13 @@ export default async function BarbershopPage({ params }: BarbershopPageProps) {
     notFound();
   }
 
-  const profile = await getPublicProfileBySlug(slug);
+  profile = await getPublicProfileBySlug(slug);
+
   if (!profile) {
     const redirectProfile = await getPublicProfileByRedirect(slug);
     if (redirectProfile) {
       logPublicProfile("info", "legacy_slug_redirect", slug, { publicProfileEnabled: redirectProfile.public_profile_enabled });
-      permanentRedirect(`/barbershops/${encodeURIComponent(redirectProfile.slug)}`);
+      permanentRedirect(getResolvedProfileUrl(redirectProfile));
     }
     logPublicProfile("warn", "slug_resolution_failed", slug);
     notFound();
@@ -101,18 +106,18 @@ export default async function BarbershopPage({ params }: BarbershopPageProps) {
 
   if (slug !== profile.slug) {
     logPublicProfile("info", "canonical_redirect", slug, { publicProfileEnabled: profile.public_profile_enabled });
-    permanentRedirect(`/barbershops/${encodeURIComponent(profile.slug)}`);
+    permanentRedirect(getResolvedProfileUrl(profile));
   }
 
   logPublicProfile("info", "render", slug, { loyaltyEnabled: profile.plan === "pro" || profile.plan === "enterprise" });
 
-  const canonicalUrl = absoluteUrl(`/barbershops/${encodeURIComponent(profile.slug)}`);
+  const canonicalUrl = absoluteUrl(getResolvedProfileUrl(profile));
   const image = profile.og_image_url || profile.cover_url || profile.avatar_url || null;
 
   return (
     <>
       <PublicBusinessJsonLd name={profile.name} url={canonicalUrl} address={profile.address} city={profile.city} phone={profile.phone} image={image} />
-      <BarbershopPublicPage slug={profile.slug} loyaltyEnabled={profile.plan === "pro" || profile.plan === "enterprise"} />
+      <BarbershopPublicPage profile={profile} />
     </>
   );
 }
