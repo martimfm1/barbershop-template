@@ -22,7 +22,7 @@ export interface PricingCardProps {
 
 export function PricingCard({ tier, title, price, priceId, description, features, popular = false, trialDays, destination = "checkout" }: PricingCardProps) {
   const isMounted = useSyncExternalStore(() => () => undefined, () => true, () => false);
-  const { isAuthenticated, plan: currentPlan, loading } = useSubscription();
+  const { isAuthenticated, isBillingOwner, plan: currentPlan, loading } = useSubscription();
   const isCurrentPlan = useMemo(() => isAuthenticated && currentPlan === tier, [currentPlan, isAuthenticated, tier]);
 
   const handleAction = async () => {
@@ -33,12 +33,16 @@ export function PricingCard({ tier, title, price, priceId, description, features
         return;
       }
       if (isCurrentPlan) return;
+      if (!isBillingOwner) {
+        toast.error("Apenas o proprietário da barbearia pode alterar a subscrição.");
+        return;
+      }
       if (destination === "plans") {
         window.location.assign("/plans");
         return;
       }
       if (tier === "free") {
-        window.location.assign("/plans");
+        window.location.assign("/dashboard/billing");
         return;
       }
       if (!priceId) {
@@ -55,11 +59,12 @@ export function PricingCard({ tier, title, price, priceId, description, features
     if (!isMounted) return { label: "A carregar…", disabled: true, variant: popular ? ("primary" as const) : ("outline" as const) };
     if (!isAuthenticated) return { label: "Criar conta para começar", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
     if (isCurrentPlan) return { label: "Plano atual", disabled: true, variant: "secondary" as const };
+    if (!isBillingOwner) return { label: "Apenas o proprietário", disabled: true, variant: "outline" as const };
     if (destination === "plans") return { label: "Mudar para este plano", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
-    if (tier === "free") return { label: "Ver planos", disabled: false, variant: "outline" as const };
+    if (tier === "free") return { label: "Mudar para este plano", disabled: false, variant: "outline" as const };
     if (!priceId) return { label: "Indisponível", disabled: true, variant: "outline" as const };
     return { label: "Mudar para este plano", disabled: false, variant: popular ? ("primary" as const) : ("outline" as const) };
-  }, [destination, isMounted, isCurrentPlan, isAuthenticated, popular, tier, priceId]);
+  }, [destination, isMounted, isCurrentPlan, isAuthenticated, isBillingOwner, popular, tier, priceId]);
 
   const isActivePaidPlan = isCurrentPlan && (tier === "pro" || tier === "enterprise");
 
