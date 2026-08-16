@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { BarbershopStripeService } from "@/services/billing/barbershop-stripe.service";
 import { getStripeClient } from "@/lib/stripe/server";
 import { planForPrice, PLANS, NEW_MEMBER_PRO_PROMOTION_CODE } from "@/lib/stripe/constants";
 import { PLAN_ACCESS_STATUSES } from "@/lib/billing/plan-access";
