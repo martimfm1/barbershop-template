@@ -13,6 +13,12 @@ function subscriptionPeriodEnd(subscription: Stripe.Subscription): number | null
   return subscription.items.data[0]?.current_period_end ?? null;
 }
 
+function stripePlanForSubscription(subscription: Stripe.Subscription): BillingPlan {
+  const priceId = subscription.items.data[0]?.price.id;
+  const plan = priceId ? planForPrice(priceId) : undefined;
+  return plan ?? PLANS.FREE;
+}
+
 export class SubscriptionService {
   static async getForUser(userId: string): Promise<SubscriptionRecord | null> {
     const { data, error } = await createAdminClient().from("subscriptions").select("*").eq("user_id", userId).maybeSingle();
@@ -37,8 +43,6 @@ export class SubscriptionService {
     const subscription = await this.getForUser(owner.id);
     if (!subscription) return null;
 
-    // Keep the legacy service contract compatible for callers that inspect the
-    // tenant association, while never querying a non-existent subscriptions.barbershop_id column.
     return { ...subscription, barbershop_id: barbershopId } as SubscriptionRecord;
   }
 
@@ -89,24 +93,31 @@ export class SubscriptionService {
       try {
         const stripeSubscription = await getStripeClient().subscriptions.retrieve(subscription.stripe_subscription_id);
         const stripePriceId = stripeSubscription.items.data[0]?.price.id;
-        const stripePlan = stripePriceId ? planForPrice(stripePriceId) : undefined;
+        const stripePlan = stripePlanForSubscription(stripeSubscription);
         const stripeStatusAllowsAccess = (PLAN_ACCESS_STATUSES as readonly string[]).includes(stripeSubscription.status);
+        const currentPeriodEnd = stripeSubscription.items.data[0]?.current_period_end;
+        const nextPlan = stripeStatusAllowsAccess && stripePlan !== PLANS.FREE ? stripePlan : PLANS.FREE;
 
-        if (stripePlan && stripePlan !== PLANS.FREE && stripeStatusAllowsAccess) {
-          if (subscription.plan !== stripePlan || subscription.stripe_price_id !== stripePriceId || subscription.status !== stripeSubscription.status) {
-            const { error } = await admin.from("subscriptions").update({
-              plan: stripePlan,
-              stripe_price_id: stripePriceId,
-              status: stripeSubscription.status,
-              current_period_end: stripeSubscription.items.data[0]?.current_period_end ? new Date(stripeSubscription.items.data[0].current_period_end * 1000).toISOString() : subscription.current_period_end,
-              cancel_at_period_end: stripeSubscription.cancel_at_period_end,
-            }).eq("id", subscription.id);
-            if (error) throw new BillingError("Could not reconcile subscription plan.", "DB_WRITE_FAILED", { barbershopId });
-          }
-          return stripePlan as BillingPlan;
+        const needsReconciliation =
+          subscription.plan !== nextPlan ||
+          subscription.stripe_price_id !== (stripePriceId ?? subscription.stripe_price_id) ||
+          subscription.status !== stripeSubscription.status ||
+          subscription.cancel_at_period_end !== stripeSubscription.cancel_at_period_end ||
+          (currentPeriodEnd ? subscription.current_period_end !== new Date(currentPeriodEnd * 1000).toISOString() : false);
+
+        if (needsReconciliation) {
+          const { error } = await admin.from("subscriptions").update({
+            plan: nextPlan,
+            stripe_price_id: stripePriceId ?? subscription.stripe_price_id,
+            status: stripeSubscription.status,
+            trial_end: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000).toISOString() : null,
+            current_period_end: currentPeriodEnd ? new Date(currentPeriodEnd * 1000).toISOString() : subscription.current_period_end,
+            cancel_at_period_end: stripeSubscription.cancel_at_period_end,
+          }).eq("id", subscription.id);
+          if (error) throw new BillingError("Could not reconcile subscription with Stripe.", "DB_WRITE_FAILED", { barbershopId, subscriptionId: stripeSubscription.id, stripeStatus: stripeSubscription.status });
         }
 
-        if (!stripeStatusAllowsAccess) return PLANS.FREE;
+        return nextPlan;
       } catch (error) {
         if (error instanceof BillingError) throw error;
       }
