@@ -20,7 +20,6 @@ export async function POST(request: Request) {
     if (rewardValue !== null && (!Number.isFinite(rewardValue) || rewardValue < 0)) return NextResponse.json({ error: "Invalid reward value" }, { status: 400 });
     const { data, error } = await admin.from("loyalty_rewards").insert({ barbershop_id: barbershopId, name, description, points_cost: pointsCost, reward_type: rewardType, reward_value: rewardValue, active, created_by: userId }).select("id,name,description,points_cost,reward_type,reward_value,active,created_at,updated_at").single();
     if (error) {
-      // created_by is not part of older loyalty schemas; retry without it.
       if (error.code === "PGRST204") {
         const retry = await admin.from("loyalty_rewards").insert({ barbershop_id: barbershopId, name, description, points_cost: pointsCost, reward_type: rewardType, reward_value: rewardValue, active }).select("id,name,description,points_cost,reward_type,reward_value,active,created_at,updated_at").single();
         if (retry.error) throw retry.error;
@@ -65,11 +64,18 @@ export async function DELETE(request: Request) {
     const { admin, barbershopId } = await requireModuleContext("loyalty", "loyalty");
     const id = parseId(new URL(request.url).searchParams.get("id"));
     if (!id) return NextResponse.json({ error: "Invalid reward id" }, { status: 400 });
-    const { error } = await admin.from("loyalty_rewards").delete().eq("id", id).eq("barbershop_id", barbershopId);
+    const { data, error } = await admin
+      .from("loyalty_rewards")
+      .update({ active: false, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("barbershop_id", barbershopId)
+      .select("id,active")
+      .maybeSingle();
     if (error) throw error;
-    return NextResponse.json({ ok: true });
+    if (!data) return NextResponse.json({ error: "Reward not found" }, { status: 404 });
+    return NextResponse.json({ ok: true, reward: data });
   } catch (error) {
     console.error("[LOYALTY_REWARD_DELETE]", error);
-    return NextResponse.json({ error: "Unable to delete reward" }, { status: 500 });
+    return NextResponse.json({ error: "Unable to deactivate reward" }, { status: 500 });
   }
 }
