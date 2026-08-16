@@ -25,6 +25,7 @@ import {
   Loader2,
   Check,
   ArrowLeft,
+  Gift,
 } from "lucide-react";
 
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(
@@ -62,10 +63,10 @@ function getStorageUrl(
 
 interface BarbershopPublicPageProps {
   slug: string;
+  loyaltyEnabled?: boolean;
 }
 
-export default function BarbershopPublicPage({ slug }: BarbershopPublicPageProps) {
-
+export default function BarbershopPublicPage({ slug, loyaltyEnabled = false }: BarbershopPublicPageProps) {
   const [shop, setShop] = useState<BarbershopPublicDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,8 +95,7 @@ export default function BarbershopPublicPage({ slug }: BarbershopPublicPageProps
     async function loadData() {
       setLoading(true);
       setError(null);
-      const { data, error } =
-        await publicBarbershopService.getBarbershopData(slug);
+      const { data, error } = await publicBarbershopService.getBarbershopData(slug);
 
       if (!isMounted) return;
 
@@ -231,7 +231,6 @@ export default function BarbershopPublicPage({ slug }: BarbershopPublicPageProps
         updatedReviews.length;
       const newReviewsCount = updatedReviews.length;
 
-      // ATUALIZAR RATING E REVIEWS_COUNT NA TABELA 'SHOPS'
       try {
         const supabase = createClient();
         await supabase
@@ -284,7 +283,6 @@ export default function BarbershopPublicPage({ slug }: BarbershopPublicPageProps
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100 pb-24 sm:pb-20">
-      {/* BANNER / CAPA */}
       <div className="relative h-48 sm:h-64 md:h-80 w-full bg-zinc-900 border-b border-zinc-800/80">
         <div className="absolute top-4 left-4 z-20">
           <Link
@@ -316,7 +314,6 @@ export default function BarbershopPublicPage({ slug }: BarbershopPublicPageProps
       <div className="max-w-5xl mx-auto px-4 sm:px-6 relative -mt-16 sm:-mt-20">
         <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 sm:gap-5 mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-5 w-full sm:w-auto">
-            {/* AVATAR / LOGÓTIPO */}
             <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 rounded-2xl overflow-hidden border-4 border-zinc-950 bg-zinc-900 shadow-2xl shrink-0">
               {avatarUrl && !avatarError ? (
                 <Image
@@ -351,11 +348,7 @@ export default function BarbershopPublicPage({ slug }: BarbershopPublicPageProps
                   <Star
                     className={`w-4 h-4 ${ratingAvg > 0 ? "fill-zinc-100 text-zinc-100" : "text-zinc-600"}`}
                   />
-                  <span
-                    className={
-                      ratingAvg > 0 ? "text-zinc-100" : "text-zinc-400"
-                    }
-                  >
+                  <span className={ratingAvg > 0 ? "text-zinc-100" : "text-zinc-400"}>
                     {ratingAvg.toFixed(1)}
                   </span>
                   <span className="text-zinc-500 text-xs font-normal">
@@ -402,15 +395,13 @@ export default function BarbershopPublicPage({ slug }: BarbershopPublicPageProps
           </button>
         </div>
 
-        {/* INFORMAÇÕES DE FUNCIONAMENTO */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8 sm:mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-5 sm:mb-6">
           <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center gap-3">
             <Clock className="w-5 h-5 text-zinc-400 shrink-0" />
             <div>
               <p className="text-xs text-zinc-400">Horário</p>
               <p className="text-xs sm:text-sm font-semibold text-zinc-200">
-                {formatTime(shop.opening_time)} -{" "}
-                {formatTime(shop.closing_time)}
+                {formatTime(shop.opening_time)} - {formatTime(shop.closing_time)}
               </p>
             </div>
           </div>
@@ -438,8 +429,30 @@ export default function BarbershopPublicPage({ slug }: BarbershopPublicPageProps
           </div>
         </div>
 
+        {loyaltyEnabled && (
+          <section className="mb-8 rounded-2xl border border-emerald-400/15 bg-emerald-400/[0.05] p-4 sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-200">
+                  <Gift className="size-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-300/80">Fidelização</p>
+                  <h2 className="mt-1 text-base font-semibold text-white">Acumula pontos e desbloqueia recompensas.</h2>
+                  <p className="mt-1 text-sm leading-6 text-zinc-500">Consulta o teu saldo e os benefícios disponíveis nesta barbearia.</p>
+                </div>
+              </div>
+              <Link
+                href={`/barbershops/${encodeURIComponent(shop.slug)}/loyalty`}
+                className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-emerald-400 px-4 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-300"
+              >
+                Abrir fidelização
+              </Link>
+            </div>
+          </section>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* SERVIÇOS */}
           <div className="lg:col-span-2 space-y-4">
             <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2 mb-3 sm:mb-4">
               <Scissors className="w-5 h-5 text-zinc-400" />
@@ -447,48 +460,29 @@ export default function BarbershopPublicPage({ slug }: BarbershopPublicPageProps
             </h2>
 
             {!shop.services || shop.services.length === 0 ? (
-              <p className="text-zinc-500 text-sm italic">
-                Nenhum serviço cadastrado.
-              </p>
+              <p className="text-zinc-500 text-sm italic">Nenhum serviço cadastrado.</p>
             ) : (
               shop.services.map((service) => {
                 const isSelected = selectedServiceId === service.id;
                 const isPopular =
                   (service as { popular?: boolean }).popular ||
-                  Boolean(
-                    (service as { popular_service_id?: string })
-                      .popular_service_id,
-                  );
+                  Boolean((service as { popular_service_id?: string }).popular_service_id);
 
                 return (
                   <div
                     key={service.id}
-                    className={`p-4 sm:p-5 rounded-2xl border transition-all flex items-center justify-between gap-3 sm:gap-4 ${
-                      isSelected
-                        ? "bg-zinc-900 border-zinc-400 ring-1 ring-zinc-400/40"
-                        : "bg-zinc-900/40 border-zinc-800/80 hover:border-zinc-700"
-                    }`}
+                    className={`p-4 sm:p-5 rounded-2xl border transition-all flex items-center justify-between gap-3 sm:gap-4 ${isSelected ? "bg-zinc-900 border-zinc-400 ring-1 ring-zinc-400/40" : "bg-zinc-900/40 border-zinc-800/80 hover:border-zinc-700"}`}
                   >
                     <div className="space-y-1 min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-semibold text-sm sm:text-base text-zinc-100 truncate">
-                          {service.name}
-                        </h3>
-                        {isPopular && (
-                          <span className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-zinc-700">
-                            POPULAR
-                          </span>
-                        )}
+                        <h3 className="font-semibold text-sm sm:text-base text-zinc-100 truncate">{service.name}</h3>
+                        {isPopular && <span className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-zinc-700">POPULAR</span>}
                       </div>
-                      <p className="text-xs text-zinc-500 font-medium">
-                        ⏱️ {service.duration} min
-                      </p>
+                      <p className="text-xs text-zinc-500 font-medium">⏱️ {service.duration} min</p>
                     </div>
 
                     <div className="text-right shrink-0 flex flex-col items-end justify-center">
-                      <span className="text-base sm:text-lg font-bold text-zinc-100">
-                        {Number(service.price || 0).toFixed(2)}€
-                      </span>
+                      <span className="text-base sm:text-lg font-bold text-zinc-100">{Number(service.price || 0).toFixed(2)}€</span>
                       <button
                         type="button"
                         onClick={() => handleOpenBooking(service.id)}
@@ -503,138 +497,61 @@ export default function BarbershopPublicPage({ slug }: BarbershopPublicPageProps
             )}
           </div>
 
-          {/* AVALIAÇÕES */}
           <div className="space-y-6">
             <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2 mb-3 sm:mb-4">
               <Star className="w-5 h-5 text-zinc-400" />
               Avaliações ({totalReviews})
             </h2>
 
-            <form
-              onSubmit={handleSubmitReview}
-              className="p-4 sm:p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-4"
-            >
+            <form onSubmit={handleSubmitReview} className="p-4 sm:p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 space-y-4">
               <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
                 <MessageSquarePlus className="w-4 h-4 text-zinc-400" />
                 Deixe a sua avaliação
               </h3>
 
-              {reviewError && (
-                <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400">
-                  {reviewError}
-                </div>
-              )}
-
-              {reviewSuccess && (
-                <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400 flex items-center gap-1.5">
-                  <Check className="w-4 h-4" />
-                  Avaliação enviada com sucesso!
-                </div>
-              )}
+              {reviewError && <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400">{reviewError}</div>}
+              {reviewSuccess && <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400 flex items-center gap-1.5"><Check className="w-4 h-4" />Avaliação enviada com sucesso!</div>}
 
               <div>
-                <label
-                  htmlFor="clientName"
-                  className="block text-xs font-medium text-zinc-400 mb-1"
-                >
-                  Seu Nome <span className="text-zinc-400">*</span>
-                </label>
-                <input
-                  id="clientName"
-                  type="text"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  placeholder="Ex: João Silva"
-                  className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 sm:py-2 text-base sm:text-sm text-zinc-100 outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/50 placeholder:text-zinc-600"
-                  required
-                />
+                <label htmlFor="clientName" className="block text-xs font-medium text-zinc-400 mb-1">Seu Nome <span className="text-zinc-400">*</span></label>
+                <input id="clientName" type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Ex: João Silva" className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 sm:py-2 text-base sm:text-sm text-zinc-100 outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/50 placeholder:text-zinc-600" required />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1">
-                  Classificação <span className="text-zinc-400">*</span>
-                </label>
+                <label className="block text-xs font-medium text-zinc-400 mb-1">Classificação <span className="text-zinc-400">*</span></label>
                 <div className="flex items-center gap-1 pt-1">
                   {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      aria-label={`Classificar com ${star} estrelas`}
-                      onClick={() => setRating(star)}
-                      onMouseEnter={() => setHoverRating(star)}
-                      onMouseLeave={() => setHoverRating(0)}
-                      className="p-1.5 transition-transform hover:scale-110 active:scale-95 focus:outline-none min-h-[44px] min-w-[44px] flex items-center justify-center"
-                    >
-                      <Star
-                        className={`w-6 h-6 ${
-                          star <= (hoverRating || rating)
-                            ? "fill-zinc-100 text-zinc-100"
-                            : "text-zinc-700"
-                        }`}
-                      />
+                    <button key={star} type="button" aria-label={`Classificar com ${star} estrelas`} onClick={() => setRating(star)} onMouseEnter={() => setHoverRating(star)} onMouseLeave={() => setHoverRating(0)} className="p-1.5 transition-transform hover:scale-110 active:scale-95 focus:outline-none min-h-[44px] min-w-[44px] flex items-center justify-center">
+                      <Star className={`w-6 h-6 ${star <= (hoverRating || rating) ? "fill-zinc-100 text-zinc-100" : "text-zinc-700"}`} />
                     </button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <label
-                  htmlFor="comment"
-                  className="block text-xs font-medium text-zinc-400 mb-1"
-                >
-                  Comentário (Opcional)
-                </label>
-                <textarea
-                  id="comment"
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Partilhe a sua experiência..."
-                  rows={3}
-                  className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 sm:py-2 text-base sm:text-sm text-zinc-100 outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/50 placeholder:text-zinc-600 resize-none"
-                />
+                <label htmlFor="comment" className="block text-xs font-medium text-zinc-400 mb-1">Comentário (Opcional)</label>
+                <textarea id="comment" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Partilhe a sua experiência..." rows={3} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 sm:py-2 text-base sm:text-sm text-zinc-100 outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/50 placeholder:text-zinc-600 resize-none" />
               </div>
 
-              <button
-                type="submit"
-                disabled={isSubmittingReview}
-                className="w-full py-3 sm:py-2.5 rounded-xl bg-zinc-100 text-zinc-950 text-xs font-bold hover:bg-zinc-200 active:scale-95 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 min-h-[44px]"
-              >
-                {isSubmittingReview && (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                )}
+              <button type="submit" disabled={isSubmittingReview} className="w-full py-3 sm:py-2.5 rounded-xl bg-zinc-100 text-zinc-950 text-xs font-bold hover:bg-zinc-200 active:scale-95 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 min-h-[44px]">
+                {isSubmittingReview && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Submeter Avaliação
               </button>
             </form>
 
             {!shop.reviews || shop.reviews.length === 0 ? (
-              <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800 text-center">
-                <p className="text-zinc-500 text-sm">
-                  Ainda não existem avaliações.
-                </p>
-              </div>
+              <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800 text-center"><p className="text-zinc-500 text-sm">Ainda não existem avaliações.</p></div>
             ) : (
               <div className="space-y-3">
                 {shop.reviews.map((rev) => (
-                  <div
-                    key={rev.id}
-                    className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800/60 space-y-2"
-                  >
+                  <div key={rev.id} className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800/60 space-y-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-zinc-200">
-                        {rev.client_name}
-                      </p>
+                      <p className="text-sm font-semibold text-zinc-200">{rev.client_name}</p>
                       <div className="flex items-center gap-0.5 text-zinc-100">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-3.5 h-3.5 ${i < rev.rating ? "fill-zinc-100 text-zinc-100" : "text-zinc-700"}`}
-                          />
-                        ))}
+                        {Array.from({ length: 5 }).map((_, i) => <Star key={i} className={`w-3.5 h-3.5 ${i < rev.rating ? "fill-zinc-100 text-zinc-100" : "text-zinc-700"}`} />)}
                       </div>
                     </div>
-                    {rev.comment && (
-                      <p className="text-xs text-zinc-400">{rev.comment}</p>
-                    )}
+                    {rev.comment && <p className="text-xs text-zinc-400">{rev.comment}</p>}
                   </div>
                 ))}
               </div>
@@ -643,35 +560,15 @@ export default function BarbershopPublicPage({ slug }: BarbershopPublicPageProps
         </div>
       </div>
 
-      {/* BARRA FIXA MOBILE */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 p-3 bg-zinc-950/90 backdrop-blur-xl border-t border-zinc-800/80 z-40 flex items-center justify-between gap-3 shadow-2xl">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-zinc-200 truncate">
-            {shop.name}
-          </p>
-          <div className="flex items-center gap-1 text-xs text-zinc-400">
-            <Star className="w-3 h-3 fill-zinc-100 text-zinc-100" />
-            <span className="font-semibold text-zinc-100">
-              {ratingAvg.toFixed(1)}
-            </span>
-            <span>({totalReviews})</span>
-          </div>
+          <p className="text-xs font-medium text-zinc-200 truncate">{shop.name}</p>
+          <div className="flex items-center gap-1 text-xs text-zinc-400"><Star className="w-3 h-3 fill-zinc-100 text-zinc-100" /><span className="font-semibold text-zinc-100">{ratingAvg.toFixed(1)}</span><span>({totalReviews})</span></div>
         </div>
-        <button
-          type="button"
-          onClick={() => handleOpenBooking()}
-          className="px-5 py-2.5 rounded-xl bg-zinc-100 text-zinc-950 text-xs font-bold hover:bg-zinc-200 active:scale-95 transition-all shrink-0 min-h-[40px] shadow-sm"
-        >
-          Agendar Horário
-        </button>
+        <button type="button" onClick={() => handleOpenBooking()} className="px-5 py-2.5 rounded-xl bg-zinc-100 text-zinc-950 text-xs font-bold hover:bg-zinc-200 active:scale-95 transition-all shrink-0 min-h-[40px] shadow-sm">Agendar Horário</button>
       </div>
 
-      <BookingDrawer
-        shop={shopForBooking}
-        isOpen={isBookingOpen}
-        onClose={handleCloseBooking}
-        selectedServiceId={selectedServiceId}
-      />
+      <BookingDrawer shop={shopForBooking} isOpen={isBookingOpen} onClose={handleCloseBooking} selectedServiceId={selectedServiceId} />
     </main>
   );
 }
@@ -683,16 +580,9 @@ function BarbershopSkeleton() {
       <div className="max-w-5xl mx-auto px-4 relative -mt-16 sm:-mt-20 space-y-6">
         <div className="flex items-end gap-4">
           <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl bg-zinc-800 border-4 border-zinc-950" />
-          <div className="space-y-2 flex-1">
-            <div className="h-6 sm:h-8 bg-zinc-800 rounded w-1/3" />
-            <div className="h-4 bg-zinc-800 rounded w-1/4" />
-          </div>
+          <div className="space-y-2 flex-1"><div className="h-6 sm:h-8 bg-zinc-800 rounded w-1/3" /><div className="h-4 bg-zinc-800 rounded w-1/4" /></div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="h-16 bg-zinc-900 rounded-xl" />
-          <div className="h-16 bg-zinc-900 rounded-xl" />
-          <div className="h-16 bg-zinc-900 rounded-xl" />
-        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><div className="h-16 bg-zinc-900 rounded-xl" /><div className="h-16 bg-zinc-900 rounded-xl" /><div className="h-16 bg-zinc-900 rounded-xl" /></div>
         <div className="h-64 bg-zinc-900 rounded-2xl" />
       </div>
     </div>
