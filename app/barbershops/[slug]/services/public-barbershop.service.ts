@@ -7,30 +7,30 @@ export interface ServiceItem {
   name: string;
   price: number;
   duration: number;
-  popular_service_id?: boolean;
+  popular?: boolean;
 }
 
 export interface ReviewItem {
   id: string;
   client_name: string;
   rating: number;
-  comment?: string;
+  comment?: string | null;
   created_at?: string;
 }
 
 export interface BarbershopPublicDetails {
   id: string;
-  barbershop_id?: string;
+  barbershop_id?: string | null;
   name: string;
   slug: string;
-  city?: string;
-  address?: string;
-  phone?: string;
+  city?: string | null;
+  address?: string | null;
+  phone?: string | null;
   popular_service_id?: string | null;
-  opening_time?: string;
-  closing_time?: string;
-  lunch_start?: string;
-  lunch_end?: string;
+  opening_time?: string | null;
+  closing_time?: string | null;
+  lunch_start?: string | null;
+  lunch_end?: string | null;
   off_days?: number[];
   rating_avg?: number;
   total_reviews?: number;
@@ -42,161 +42,44 @@ export interface BarbershopPublicDetails {
   avatar_url?: string | null;
   cover_url?: string | null;
   closed_days?: string | null;
+  public_profile_enabled?: boolean;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  og_image_url?: string | null;
 }
 
-interface RawService {
-  id: string;
-  name: string;
-  price: number;
-  duration: number;
-  popular: boolean | null;
-}
-
-interface BarbershopRow {
-  id: string;
-  name: string;
-  slug: string | null;
-  phone: string | null;
-  address: string | null;
-  opening_time: string | null;
-  closing_time: string | null;
-  lunch_start: string | null;
-  lunch_end: string | null;
-  closed_days: string | null;
-  is_public_in_directory: boolean | null;
-}
-
-interface ShopRow {
-  id: string;
-  barbershop_id: string | null;
-  name: string | null;
-  slug: string | null;
-  custom_slug?: string | null;
-  city: string | null;
-  address: string | null;
-  phone: string | null;
-  opening_time: string | null;
-  closing_time: string | null;
-  lunch_start: string | null;
-  lunch_end: string | null;
-  tags: string[] | null;
-  popular_service_id: string | null;
-  rating: number | null;
-  reviews_count: number | null;
-  avatar_url: string | null;
-  cover_url: string | null;
-  off_days?: number[] | null;
-}
-
-async function loadBarbershopById(id: string): Promise<BarbershopRow | null> {
-  const { data, error } = await supabase
-    .from("barbershops")
-    .select("id, name, slug, phone, address, opening_time, closing_time, lunch_start, lunch_end, closed_days, is_public_in_directory")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error || !data) return null;
-  return data as BarbershopRow;
-}
-
-async function loadShopByBarbershopId(barbershopId: string): Promise<ShopRow | null> {
-  const { data } = await supabase
-    .from("shops")
-    .select("*")
-    .eq("barbershop_id", barbershopId)
-    .maybeSingle();
-  return (data as ShopRow | null) ?? null;
+interface PublicProfileApiResponse {
+  data: BarbershopPublicDetails & {
+    reviewsCount?: number;
+  };
 }
 
 export const publicBarbershopService = {
   async getBarbershopData(slug: string) {
+    const cleanSlug = slug.trim().toLowerCase();
+    if (!cleanSlug) {
+      return { data: null, error: new Error("Barbearia não encontrada.") };
+    }
+
     try {
-      const cleanSlug = slug.toLowerCase().trim();
-      if (!cleanSlug) {
-        return { data: null, error: { message: "Barbearia não encontrada." } };
+      const response = await fetch(`/api/public/barbershops/${encodeURIComponent(cleanSlug)}`, {
+        method: "GET",
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      });
+
+      if (!response.ok) {
+        return { data: null, error: new Error("Barbearia não encontrada.") };
       }
 
-      let barbershop: BarbershopRow | null = null;
-      let resolvedCustomSlug = false;
-
-      const { data: baseBarbershop, error: baseError } = await supabase
-        .from("barbershops")
-        .select("id, name, slug, phone, address, opening_time, closing_time, lunch_start, lunch_end, closed_days, is_public_in_directory")
-        .eq("slug", cleanSlug)
-        .maybeSingle();
-
-      if (!baseError && baseBarbershop) {
-        barbershop = baseBarbershop as BarbershopRow;
-      } else {
-        const { data: customShop, error: customError } = await supabase
-          .from("shops")
-          .select("barbershop_id, custom_slug")
-          .eq("custom_slug", cleanSlug)
-          .maybeSingle();
-
-        if (!customError && customShop?.barbershop_id) {
-          barbershop = await loadBarbershopById(customShop.barbershop_id);
-          resolvedCustomSlug = Boolean(barbershop);
-        }
+      const payload = (await response.json()) as PublicProfileApiResponse;
+      if (!payload?.data) {
+        return { data: null, error: new Error("Barbearia não encontrada.") };
       }
 
-      if (!barbershop || barbershop.is_public_in_directory === false) {
-        return { data: null, error: { message: "Barbearia não encontrada." } };
-      }
-
-      const shopRow = await loadShopByBarbershopId(barbershop.id);
-
-      const { data: servicesRaw } = await supabase
-        .from("services")
-        .select("id, name, price, duration, popular")
-        .eq("barbershop_id", barbershop.id);
-
-      const servicesFormatted: ServiceItem[] = ((servicesRaw as RawService[]) ?? []).map((srv) => ({
-        ...srv,
-        popular: shopRow?.popular_service_id ? srv.id === shopRow.popular_service_id : Boolean(srv.popular),
-      }));
-
-      const { data: reviews } = await supabase
-        .from("reviews")
-        .select("id, client_name, rating, comment, created_at")
-        .eq("barbershop_id", shopRow?.id ?? barbershop.id)
-        .order("created_at", { ascending: false });
-
-      const normalizedReviews = reviews ?? [];
-      const totalReviews = normalizedReviews.length;
-      const ratingAvg = totalReviews > 0
-        ? Number((normalizedReviews.reduce((acc, review) => acc + review.rating, 0) / totalReviews).toFixed(1))
-        : Number(shopRow?.rating ?? 0);
-
-      const formattedShop: BarbershopPublicDetails = {
-        id: shopRow?.id ?? barbershop.id,
-        barbershop_id: barbershop.id,
-        name: shopRow?.name?.trim() || barbershop.name,
-        slug: resolvedCustomSlug ? cleanSlug : cleanSlug,
-        city: shopRow?.city || "",
-        address: shopRow?.address || barbershop.address || "",
-        phone: shopRow?.phone || barbershop.phone || "",
-        popular_service_id: shopRow?.popular_service_id || null,
-        opening_time: shopRow?.opening_time || barbershop.opening_time || "09:00",
-        closing_time: shopRow?.closing_time || barbershop.closing_time || "19:00",
-        lunch_start: shopRow?.lunch_start || barbershop.lunch_start || undefined,
-        lunch_end: shopRow?.lunch_end || barbershop.lunch_end || undefined,
-        closed_days: barbershop.closed_days || null,
-        off_days: shopRow?.off_days || [],
-        rating_avg: ratingAvg,
-        total_reviews: totalReviews,
-        rating: ratingAvg,
-        tags: shopRow?.tags || [],
-        avatar_url: shopRow?.avatar_url || null,
-        cover_url: shopRow?.cover_url || null,
-        services: servicesFormatted,
-        reviews: normalizedReviews,
-      };
-
-      return { data: formattedShop, error: null };
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Erro inesperado.";
-      return { data: null, error: { message } };
+      return { data: payload.data, error: null };
+    } catch {
+      return { data: null, error: new Error("Não foi possível carregar a barbearia.") };
     }
   },
 
@@ -227,6 +110,6 @@ export const publicBarbershopService = {
     }
 
     const review = Array.isArray(data) ? data[0] : data;
-    return { data: review as ReviewItem | null, error: null };
+    return { data: (review as ReviewItem | null) ?? null, error: null };
   },
 };
