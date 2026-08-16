@@ -7,11 +7,23 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
+export class CustomerPortalEmailError extends Error {
+  readonly provider: "brevo";
+  readonly status: number | null;
+
+  constructor(status: number | null, message = "Customer portal email delivery failed.") {
+    super(message);
+    this.name = "CustomerPortalEmailError";
+    this.provider = "brevo";
+    this.status = status;
+  }
+}
+
 export async function sendCustomerPortalCodeEmail(email: string, code: string) {
   const apiKey = process.env.BREVO_API_KEY;
   const senderEmail = process.env.SENDER_EMAIL;
   if (!apiKey || !senderEmail) {
-    throw new Error("Configuração do servidor de e-mail incompleta.");
+    throw new CustomerPortalEmailError(null, "Customer portal email configuration is missing.");
   }
 
   const safeCode = escapeHtml(code);
@@ -27,23 +39,27 @@ export async function sendCustomerPortalCodeEmail(email: string, code: string) {
       </div>
     </div>`;
 
-  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: {
-      accept: "application/json",
-      "content-type": "application/json",
-      "api-key": apiKey,
-    },
-    body: JSON.stringify({
-      sender: { name: "Silentra", email: senderEmail },
-      to: [{ email }],
-      subject: "Código para aceder às tuas marcações — Silentra",
-      htmlContent,
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        "api-key": apiKey,
+      },
+      body: JSON.stringify({
+        sender: { name: "Silentra", email: senderEmail },
+        to: [{ email }],
+        subject: "Código para aceder às tuas marcações — Silentra",
+        htmlContent,
+      }),
+    });
+  } catch {
+    throw new CustomerPortalEmailError(null);
+  }
 
-  const data = (await response.json().catch(() => ({}))) as { message?: string };
   if (!response.ok) {
-    throw new Error(data.message || "Não foi possível enviar o email.");
+    throw new CustomerPortalEmailError(response.status);
   }
 }
