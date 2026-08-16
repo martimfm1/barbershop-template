@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripeClient } from "@/lib/stripe/server";
+import { BarbershopStripeService } from "@/services/billing/barbershop-stripe.service";
 import { BillingError } from "@/types/stripe";
 
 export const runtime = "nodejs";
@@ -16,7 +17,7 @@ export async function POST() {
     const database = createAdminClient();
     const { data: owner, error: ownerError } = await database
       .from("users")
-      .select("barbershop_id, role, email")
+      .select("barbershop_id, role")
       .eq("id", user.id)
       .maybeSingle();
 
@@ -51,9 +52,14 @@ export async function POST() {
 
     if (!changeSubscription) return NextResponse.json({ success: true, changed: false });
 
+    await BarbershopStripeService.syncFromStripe(owner.barbershop_id, user.id, changeSubscription);
+
     const previousSubscriptionId = changeSubscription.metadata.previous_subscription_id;
     if (!previousSubscriptionId || previousSubscriptionId === "none") {
-      return NextResponse.json({ success: true, changed: false });
+      return NextResponse.json(
+        { success: true, changed: false, stripeSubscriptionId: changeSubscription.id },
+        { headers: { "Cache-Control": "no-store" } },
+      );
     }
 
     const previous = await getStripeClient().subscriptions.retrieve(previousSubscriptionId).catch(() => null);
