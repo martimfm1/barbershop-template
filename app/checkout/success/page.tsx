@@ -35,49 +35,76 @@ export default function CheckoutSuccessPage() {
     let cancelled = false;
 
     const run = async () => {
-      try {
-        const endpoint = sessionId
-          ? `/api/stripe/subscription?session_id=${encodeURIComponent(sessionId)}`
-          : "/api/stripe/subscription";
-        const response = await fetch(endpoint, { cache: "no-store" });
-        const payload = (await response.json().catch(() => ({}))) as {
-          plan?: "free" | "pro" | "enterprise";
-          subscription?: {
-            status?: string;
-            current_period_end?: string | null;
-            trial_end?: string | null;
-          } | null;
-          error?: string;
-        };
+      const endpoint = sessionId
+        ? `/api/stripe/subscription?session_id=${encodeURIComponent(sessionId)}`
+        : "/api/stripe/subscription";
 
-        if (!response.ok) {
-          if (!cancelled) setState({ loading: false, payload: { error: payload.error || "Não foi possível confirmar a subscrição." } });
-          return;
-        }
+      for (let attempt = 0; attempt < 6 && !cancelled; attempt += 1) {
+        try {
+          const response = await fetch(endpoint, { cache: "no-store" });
+          const payload = (await response.json().catch(() => ({}))) as {
+            plan?: "free" | "pro" | "enterprise";
+            subscription?: {
+              status?: string;
+              current_period_end?: string | null;
+              trial_end?: string | null;
+            } | null;
+            error?: string;
+          };
 
-        const plan = payload.plan;
-        const subscription = payload.subscription;
-        const isConfirmed = Boolean(plan && (plan === "pro" || plan === "enterprise") && subscription && ["active", "trialing"].includes(subscription.status ?? ""));
-        const isPending = Boolean(subscription && ["incomplete", "past_due", "unpaid"].includes(subscription.status ?? ""));
+          if (!response.ok) {
+            if (!cancelled) setState({ loading: false, payload: { error: payload.error || "Não foi possível confirmar a subscrição." } });
+            return;
+          }
 
-        if (!cancelled) {
-          setState({
-            loading: false,
-            payload: isConfirmed
-              ? {
+          const plan = payload.plan;
+          const subscription = payload.subscription;
+          const isConfirmed = Boolean(
+            plan &&
+            (plan === "pro" || plan === "enterprise") &&
+            subscription &&
+            ["active", "trialing"].includes(subscription.status ?? ""),
+          );
+
+          if (isConfirmed) {
+            if (!cancelled) {
+              setState({
+                loading: false,
+                payload: {
                   success: true,
                   plan,
                   status: subscription?.status,
                   trialEnd: subscription?.trial_end ?? null,
                   currentPeriodEnd: subscription?.current_period_end ?? null,
-                }
-              : isPending
+                },
+              });
+            }
+            return;
+          }
+
+          const isPending = Boolean(subscription && ["incomplete", "past_due", "unpaid"].includes(subscription.status ?? ""));
+          if (attempt < 5) {
+            await new Promise((resolve) => window.setTimeout(resolve, 1200));
+            continue;
+          }
+
+          if (!cancelled) {
+            setState({
+              loading: false,
+              payload: isPending
                 ? { status: "pending", plan, error: "A Stripe ainda está a concluir a subscrição." }
                 : { error: "A subscrição Stripe foi consultada, mas ainda não está num estado ativo." },
-          });
+            });
+          }
+        } catch (error) {
+          if (attempt < 5) {
+            await new Promise((resolve) => window.setTimeout(resolve, 1200));
+            continue;
+          }
+          if (!cancelled) {
+            setState({ loading: false, payload: { error: error instanceof Error ? error.message : "Não foi possível confirmar a subscrição." } });
+          }
         }
-      } catch (error) {
-        if (!cancelled) setState({ loading: false, payload: { error: error instanceof Error ? error.message : "Não foi possível confirmar a subscrição." } });
       }
     };
 
@@ -86,11 +113,11 @@ export default function CheckoutSuccessPage() {
   }, [sessionId]);
 
   if (state.loading) {
-    return <main className="grid min-h-screen place-items-center bg-zinc-950 px-4 text-white"><div className="text-center"><div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-200"><Loader2 className="size-5 animate-spin" /></div><h1 className="mt-5 text-xl font-semibold">A confirmar a tua subscrição…</h1><p className="mt-2 text-sm text-zinc-500">Estamos a sincronizar o pagamento e o plano da tua barbearia.</p></div></main>;
+    return <main className="grid min-h-screen place-items-center bg-zinc-950 px-4 text-white"><div className="text-center"><div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-200"><Loader2 className="size-5 animate-spin" /></div><h1 className="mt-5 text-xl font-semibold">A confirmar a tua subscrição…</h1><p className="mt-2 text-sm text-zinc-500">Estamos a sincronizar o pagamento, a conta Stripe e o plano da tua barbearia.</p></div></main>;
   }
 
   if (state.payload?.status === "pending") {
-    return <main className="grid min-h-screen place-items-center bg-zinc-950 px-4 text-white"><div className="w-full max-w-lg rounded-3xl border border-amber-400/20 bg-zinc-900/80 p-7 text-center"><div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-amber-400/20 bg-amber-400/10 text-amber-200"><Loader2 className="size-5 animate-spin" /></div><h1 className="mt-5 text-2xl font-semibold">Pagamento em processamento</h1><p className="mt-2 text-sm leading-6 text-zinc-400">A subscrição já chegou à Silentra, mas a Stripe ainda não a colocou num estado ativo. Volta ao billing para acompanhar a sincronização.</p><Link href="/dashboard/billing" className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-zinc-950">Abrir billing <ArrowRight className="size-4" /></Link></div></main>;
+    return <main className="grid min-h-screen place-items-center bg-zinc-950 px-4 text-white"><div className="w-full max-w-lg rounded-3xl border border-amber-400/20 bg-zinc-900/80 p-7 text-center"><div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-amber-400/20 bg-amber-400/10 text-amber-200"><Loader2 className="size-5 animate-spin" /></div><h1 className="mt-5 text-2xl font-semibold">Pagamento em processamento</h1><p className="mt-2 text-sm leading-6 text-zinc-400">A subscrição já chegou à Silentra, mas a Stripe ainda não a colocou num estado ativo. Volta ao billing para acompanhar o estado.</p><Link href="/dashboard/billing" className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-zinc-950">Abrir billing <ArrowRight className="size-4" /></Link></div></main>;
   }
 
   if (!state.payload?.success || state.payload.error) {
