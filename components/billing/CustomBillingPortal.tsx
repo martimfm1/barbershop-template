@@ -121,29 +121,48 @@ export function CustomBillingPortal() {
       </section>
 
       {hasStripeSubscription && !isAdministrativePlan && (
-        <section className="grid gap-4 md:grid-cols-3">
-          {[
-            { title: "Método de pagamento", body: "Atualiza cartões e dados de faturação diretamente no Stripe.", action: "Atualizar cartão" },
-            { title: "Faturas e recibos", body: "Consulta, descarrega e gere o histórico completo de faturação.", action: "Ver faturas" },
-            { title: "Subscrição", body: "Altera o plano, cancela no fim do período ou retoma a subscrição.", action: "Gerir subscrição" },
-          ].map((item) => (
+        <section className="space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300/80">Customer dashboard</p>
+              <h3 className="mt-1 text-xl font-semibold tracking-tight text-white">Gere a tua conta Stripe</h3>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-500">Usa a conta que já tens autenticada na Silentra. Não precisas de criar outro login para abrir o Customer Portal.</p>
+            </div>
             <button
-              key={item.title}
               type="button"
               onClick={() => void handlePortal()}
-              disabled={openingPortal}
-              className="group rounded-2xl border border-white/10 bg-zinc-900/70 p-5 text-left transition hover:-translate-y-0.5 hover:border-emerald-400/20 hover:bg-zinc-900 disabled:opacity-60"
+              disabled={openingPortal || loading}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-zinc-100 transition hover:border-emerald-400/20 hover:bg-emerald-500/10 hover:text-emerald-200 disabled:cursor-wait disabled:opacity-60"
             >
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-sm font-semibold text-zinc-100">{item.title}</h3>
-                  <p className="mt-2 text-xs leading-5 text-zinc-500">{item.body}</p>
-                </div>
-                <ExternalLink className="size-4 shrink-0 text-zinc-600 transition group-hover:text-emerald-300" />
-              </div>
-              <p className="mt-4 text-xs font-semibold text-emerald-300">{item.action} →</p>
+              {openingPortal ? <Loader2 className="size-4 animate-spin" /> : <ExternalLink className="size-4" />}
+              {openingPortal ? "A abrir…" : "Abrir Customer Dashboard"}
             </button>
-          ))}
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {[
+              { title: "Método de pagamento", body: "Atualiza cartões e dados de faturação diretamente no Stripe.", action: "Atualizar cartão" },
+              { title: "Faturas e recibos", body: "Consulta, descarrega e gere o histórico completo de faturação.", action: "Ver faturas" },
+              { title: "Subscrição", body: "Altera o plano, cancela no fim do período ou retoma a subscrição.", action: "Gerir subscrição" },
+            ].map((item) => (
+              <button
+                key={item.title}
+                type="button"
+                onClick={() => void handlePortal()}
+                disabled={openingPortal}
+                className="group rounded-2xl border border-white/10 bg-zinc-900/70 p-5 text-left transition hover:-translate-y-0.5 hover:border-emerald-400/20 hover:bg-zinc-900 disabled:opacity-60"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-zinc-100">{item.title}</h3>
+                    <p className="mt-2 text-xs leading-5 text-zinc-500">{item.body}</p>
+                  </div>
+                  <ExternalLink className="size-4 shrink-0 text-zinc-600 transition group-hover:text-emerald-300" />
+                </div>
+                <p className="mt-4 text-xs font-semibold text-emerald-300">{item.action} →</p>
+              </button>
+            ))}
+          </div>
         </section>
       )}
 
