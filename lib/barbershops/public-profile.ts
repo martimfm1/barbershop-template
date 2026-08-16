@@ -1,6 +1,5 @@
 import type { BillingPlan } from "@/types/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { BarbershopStripeService } from "@/services/billing/barbershop-stripe.service";
 
 const PUBLIC_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -53,20 +52,27 @@ async function getPlanForShop(barbershopId: string | null): Promise<{ plan: Bill
   if (!barbershopId) return { plan: "free", ownerUserId: null };
 
   const database = createAdminClient();
-  const { data: barbershop } = await database
-    .from("barbershops")
-    .select("id, created_by")
-    .eq("id", barbershopId)
-    .maybeSingle();
+  const [{ data: barbershop }, { data: assignment }, { data: subscription }] = await Promise.all([
+    database.from("barbershops").select("id, created_by").eq("id", barbershopId).maybeSingle(),
+    database.from("barbershop_plan_assignments").select("plan, expires_at").eq("barbershop_id", barbershopId).maybeSingle(),
+    database.from("subscriptions").select("plan, plan_override, status").eq("barbershop_id", barbershopId).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+  ]);
 
-  if (!barbershop?.created_by) return { plan: "free", ownerUserId: null };
-
-  try {
-    const plan = await BarbershopStripeService.getEffectivePlan(barbershop.created_by);
-    return { plan, ownerUserId: barbershop.created_by };
-  } catch {
-    return { plan: "free", ownerUserId: barbershop.created_by };
+  const ownerUserId = barbershop?.created_by ?? null;
+  if (assignment && (!assignment.expires_at || new Date(assignment.expires_at).getTime() > Date.now())) {
+    return { plan: assignment.plan as BillingPlan, ownerUserId };
   }
+
+  const subscriptionPlan = subscription?.plan_override && subscription.plan_override !== "free"
+    ? subscription.plan_override
+    : subscription?.plan;
+  const paidStatus = ["active", "trialing"].includes(String(subscription?.status ?? ""));
+
+  if (paidStatus && (subscriptionPlan === "pro" || subscriptionPlan === "enterprise")) {
+    return { plan: subscriptionPlan as BillingPlan, ownerUserId };
+  }
+
+  return { plan: "free", ownerUserId };
 }
 
 export async function getPublicProfileBySlug(slug: string): Promise<PublicProfileRecord | null> {
