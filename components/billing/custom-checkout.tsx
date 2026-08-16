@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CheckoutElementsProvider, BillingAddressElement, PaymentElement, TaxIdElement, useCheckout } from "@stripe/react-stripe-js/checkout";
+import { CheckoutElementsProvider, BillingAddressElement, PaymentElement, useCheckout } from "@stripe/react-stripe-js/checkout";
 import { loadStripe } from "@stripe/stripe-js";
 import { ArrowLeft, Check, LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
 
@@ -97,9 +97,6 @@ function CheckoutForm({ plan }: CheckoutFormProps) {
       <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
         <p className="mb-3 text-sm font-semibold text-white">Dados de faturação</p>
         <BillingAddressElement />
-        <div className="mt-4 border-t border-white/8 pt-4">
-          <TaxIdElement options={{}} />
-        </div>
       </div>
 
       <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
