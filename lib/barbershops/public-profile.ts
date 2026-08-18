@@ -77,14 +77,15 @@ async function getBarbershopByColumn(column: "id" | "slug", value: string): Prom
     .maybeSingle();
 
   if (error) {
-    console.error("[PUBLIC_PROFILE_DB_ERROR]", { operation: "barbershop_lookup", column, code: error.code ?? "UNKNOWN" });
+    console.error("[PUBLIC_PROFILE_DB_ERROR]", {
+      operation: "barbershop_lookup",
+      column,
+      code: error.code ?? "UNKNOWN",
+    });
     return null;
   }
-  if (!data) {
-    console.warn("[PUBLIC_PROFILE_NOT_FOUND]", { operation: "barbershop_lookup", column });
-    return null;
-  }
-  return data as BarbershopRecord;
+
+  return data as BarbershopRecord | null;
 }
 
 async function getShopByBarbershopId(barbershopId: string): Promise<ShopRecord | null> {
@@ -96,9 +97,13 @@ async function getShopByBarbershopId(barbershopId: string): Promise<ShopRecord |
     .maybeSingle();
 
   if (error) {
-    console.warn("[PUBLIC_PROFILE_SHOP_ENRICHMENT]", { operation: "shop_lookup", code: error.code ?? "UNKNOWN" });
+    console.error("[PUBLIC_PROFILE_DB_ERROR]", {
+      operation: "shop_enrichment",
+      code: error.code ?? "UNKNOWN",
+    });
     return null;
   }
+
   return (data as ShopRecord | null) ?? null;
 }
 
@@ -106,14 +111,18 @@ async function getBarbershopByShopSlug(slug: string): Promise<BarbershopRecord |
   const database = createAdminClient();
   const { data: shop, error } = await database
     .from("shops")
-    .select("barbershop_id, slug, custom_slug")
+    .select("barbershop_id")
     .eq("slug", slug)
     .maybeSingle();
 
   if (error) {
-    console.warn("[PUBLIC_PROFILE_LEGACY_SLUG_LOOKUP]", { operation: "shop_slug_lookup", code: error.code ?? "UNKNOWN" });
+    console.error("[PUBLIC_PROFILE_DB_ERROR]", {
+      operation: "shop_slug_lookup",
+      code: error.code ?? "UNKNOWN",
+    });
     return null;
   }
+
   if (!shop?.barbershop_id) return null;
   return getBarbershopByColumn("id", String(shop.barbershop_id));
 }
@@ -127,18 +136,21 @@ async function getBarbershopByCustomSlug(slug: string): Promise<BarbershopRecord
     .maybeSingle();
 
   if (error) {
-    console.warn("[PUBLIC_PROFILE_CUSTOM_SLUG_LOOKUP]", { operation: "custom_slug_lookup", code: error.code ?? "UNKNOWN" });
+    if (error.code !== "42703") {
+      console.error("[PUBLIC_PROFILE_DB_ERROR]", {
+        operation: "custom_slug_lookup",
+        code: error.code ?? "UNKNOWN",
+      });
+    }
     return null;
   }
+
   if (!shop?.barbershop_id) return null;
   return getBarbershopByColumn("id", String(shop.barbershop_id));
 }
 
 async function getPlanForShop(barbershopId: string | null): Promise<{ plan: BillingPlan; ownerUserId: string | null }> {
-  if (!barbershopId) {
-    console.warn("[PUBLIC_PROFILE_PLAN_FALLBACK]", { reason: "missing_tenant" });
-    return { plan: "free", ownerUserId: null };
-  }
+  if (!barbershopId) return { plan: "free", ownerUserId: null };
 
   const database = createAdminClient();
   const [{ data: barbershop, error: barbershopError }, { data: assignment, error: assignmentError }, { data: subscription, error: subscriptionError }] = await Promise.all([
@@ -160,11 +172,14 @@ async function getPlanForShop(barbershopId: string | null): Promise<{ plan: Bill
     return { plan: assignment.plan as BillingPlan, ownerUserId };
   }
 
-  const subscriptionPlan = subscription?.plan_override && subscription.plan_override !== "free" ? subscription.plan_override : subscription?.plan;
+  const subscriptionPlan = subscription?.plan_override && subscription.plan_override !== "free"
+    ? subscription.plan_override
+    : subscription?.plan;
   const paidStatus = ["active", "trialing"].includes(String(subscription?.status ?? ""));
   if (paidStatus && (subscriptionPlan === "pro" || subscriptionPlan === "enterprise")) {
     return { plan: subscriptionPlan as BillingPlan, ownerUserId };
   }
+
   return { plan: "free", ownerUserId };
 }
 
@@ -172,7 +187,10 @@ function buildPublicProfile(barbershop: BarbershopRecord, shop: ShopRecord | nul
   const customSlug = typeof shop?.custom_slug === "string" ? shop.custom_slug.trim().toLowerCase() : null;
   const baseSlug = barbershop.slug?.trim().toLowerCase() || shop?.slug?.trim().toLowerCase() || "";
   const effectiveSlug = planSupportsCustomSlug(plan) && customSlug ? customSlug : baseSlug;
-  const themeConfig = planSupportsEnterpriseCustomization(plan) && shop?.theme_config && typeof shop.theme_config === "object" && !Array.isArray(shop.theme_config)
+  const themeConfig = planSupportsEnterpriseCustomization(plan)
+    && shop?.theme_config
+    && typeof shop.theme_config === "object"
+    && !Array.isArray(shop.theme_config)
     ? shop.theme_config as Record<string, unknown>
     : {};
 
@@ -199,24 +217,14 @@ function buildPublicProfile(barbershop: BarbershopRecord, shop: ShopRecord | nul
 }
 
 async function resolvePublicBarbershop(barbershop: BarbershopRecord | null): Promise<PublicProfileRecord | null> {
-  if (!barbershop || barbershop.is_public_in_directory === false) {
-    if (barbershop) console.warn("[PUBLIC_PROFILE_DISABLED]", { operation: "barbershop_visibility" });
-    return null;
-  }
+  if (!barbershop || barbershop.is_public_in_directory === false) return null;
 
   const shop = await getShopByBarbershopId(barbershop.id);
   const { plan, ownerUserId } = await getPlanForShop(barbershop.id);
   const profile = buildPublicProfile(barbershop, shop, plan, ownerUserId);
 
-  if (!isValidPublicProfileSlug(profile.slug)) {
-    console.warn("[PUBLIC_PROFILE_INVALID_CANONICAL_SLUG]", { operation: "profile_resolution" });
-    return null;
-  }
-
-  if (profile.public_profile_enabled === false) {
-    console.warn("[PUBLIC_PROFILE_DISABLED]", { operation: "profile_visibility" });
-    return null;
-  }
+  if (!isValidPublicProfileSlug(profile.slug)) return null;
+  if (profile.public_profile_enabled === false) return null;
 
   return profile;
 }
@@ -232,33 +240,33 @@ export async function getPublicProfileBySlug(slug: string): Promise<PublicProfil
   if (!isValidPublicProfileSlug(normalized)) return null;
 
   const byBaseSlug = await getBarbershopByColumn("slug", normalized);
-  if (byBaseSlug) {
-    return resolvePublicBarbershop(byBaseSlug);
-  }
+  if (byBaseSlug) return resolvePublicBarbershop(byBaseSlug);
 
   const byShopSlug = await getBarbershopByShopSlug(normalized);
-  if (byShopSlug) {
-    return resolvePublicBarbershop(byShopSlug);
-  }
+  if (byShopSlug) return resolvePublicBarbershop(byShopSlug);
 
   const byCustomSlug = await getBarbershopByCustomSlug(normalized);
-  if (byCustomSlug) {
-    return resolvePublicBarbershop(byCustomSlug);
-  }
+  if (byCustomSlug) return resolvePublicBarbershop(byCustomSlug);
 
-  console.warn("[PUBLIC_PROFILE_NOT_FOUND]", { operation: "slug_resolution" });
   return null;
 }
 
 export async function getPublicProfileByRedirect(oldSlug: string): Promise<PublicProfileRecord | null> {
   const normalized = oldSlug.trim().toLowerCase();
   if (!normalized) return null;
+
   const database = createAdminClient();
-  const { data: redirect, error } = await database.from("shop_slug_redirects").select("shop_id").eq("old_slug", normalized).maybeSingle();
+  const { data: redirect, error } = await database
+    .from("shop_slug_redirects")
+    .select("shop_id")
+    .eq("old_slug", normalized)
+    .maybeSingle();
+
   if (error) {
     console.error("[PUBLIC_PROFILE_REDIRECT_ERROR]", { code: error.code ?? "UNKNOWN" });
     return null;
   }
+
   if (!redirect?.shop_id) return null;
   return getPublicProfileById(String(redirect.shop_id));
 }
