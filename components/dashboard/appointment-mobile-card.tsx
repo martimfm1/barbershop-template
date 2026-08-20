@@ -1,11 +1,12 @@
 "use client";
 
+import type { ComponentProps } from "react";
 import { CalendarDays, Clock3, User } from "lucide-react";
 import type { Appointment } from "@/types";
 import { StatusBadge } from "@/app/state/_components/shared/StatusBadge";
 import { AppointmentActions } from "./appointment-actions";
 
-type Props = React.ComponentProps<typeof AppointmentActions>;
+type Props = ComponentProps<typeof AppointmentActions>;
 
 export function AppointmentMobileCard({ appointment, onDetails, ...actionProps }: Props) {
   const date = new Date(appointment.date_hour);
@@ -14,7 +15,7 @@ export function AppointmentMobileCard({ appointment, onDetails, ...actionProps }
 
   return (
     <article
-      className="space-y-3 py-4 first:pt-0 last:pb-0 cursor-pointer rounded-xl transition-colors hover:bg-white/[0.015]"
+      className="cursor-pointer space-y-3 rounded-xl py-4 transition-colors hover:bg-white/[0.015] first:pt-0 last:pb-0"
       onClick={onDetails}
       onKeyDown={(event) => {
         if ((event.key === "Enter" || event.key === " ") && onDetails) {
@@ -33,7 +34,6 @@ export function AppointmentMobileCard({ appointment, onDetails, ...actionProps }
         </div>
         <StatusBadge status={appointment.status} />
       </div>
-
       <div className="grid grid-cols-2 gap-2 rounded-xl border border-white/5 bg-white/[0.02] p-3 text-xs">
         <div>
           <span className="block text-[10px] uppercase tracking-wide text-zinc-500">Serviço</span>
@@ -46,7 +46,6 @@ export function AppointmentMobileCard({ appointment, onDetails, ...actionProps }
           <span className="mt-0.5 flex items-center gap-1 text-[11px] text-zinc-400"><Clock3 className="size-3" aria-hidden="true" />{date.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}</span>
         </div>
       </div>
-
       <AppointmentActions appointment={appointment} onDetails={onDetails} {...actionProps} />
     </article>
   );
