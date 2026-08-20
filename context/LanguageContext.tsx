@@ -1,11 +1,11 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { pt } from "@/app/locales/pt";
 import { en } from "@/app/locales/en";
 
 type Locale = "pt" | "en";
-const translations: Record<Locale, unknown> = { pt, en };
+const translations = { pt, en } as const;
 
 interface LanguageContextType {
   locale: Locale;
@@ -15,47 +15,51 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+function resolveTranslation(locale: Locale, path: string): string | undefined {
+  const value = path.split(".").reduce<unknown>((current, key) => {
+    if (current && typeof current === "object" && Object.prototype.hasOwnProperty.call(current, key)) {
+      return (current as Record<string, unknown>)[key];
+    }
+    return undefined;
+  }, translations[locale]);
+
+  return typeof value === "string" ? value : undefined;
+}
+
+function interpolate(value: string, variables?: Record<string, unknown>) {
+  if (!variables) return value;
+  return Object.entries(variables).reduce(
+    (result, [key, val]) => result.replaceAll(`{${key}}`, String(val)),
+    value,
+  );
+}
+
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("pt");
 
   useEffect(() => {
-    const saved = localStorage.getItem("locale") as Locale;
-    if (saved && (saved === "pt" || saved === "en")) {
-      setLocaleState(saved);
-    }
+    const saved = window.localStorage.getItem("locale");
+    if (saved === "pt" || saved === "en") setLocaleState(saved);
   }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = locale === "pt" ? "pt-PT" : "en";
+    document.documentElement.dir = "ltr";
+  }, [locale]);
 
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
-    localStorage.setItem("locale", newLocale);
+    window.localStorage.setItem("locale", newLocale);
   };
 
-  // Função de tradução que resolve caminhos aninhados como 'appointments.finishTitle'
-    const t = (path: string, variables?: Record<string, unknown>) => {
-      const keys = path.split(".");
-      let value: unknown = translations[locale];
-
-      for (const key of keys) {
-        if (value && typeof value === "object" && Object.prototype.hasOwnProperty.call(value, key)) {
-          value = (value as Record<string, unknown>)[key];
-        } else {
-          return path;
-        }
-      }
-
-      if (typeof value !== "string") return path;
-
-      let result = value as string;
-
-      // Substitui variáveis dinâmicas no formato {variavel}
-      if (variables) {
-        Object.entries(variables).forEach(([key, val]) => {
-          result = result.replace(`{${key}}`, String(val));
-        });
-      }
-
-      return result;
-    };
+  const t = useMemo(
+    () => (path: string, variables?: Record<string, unknown>) => {
+      const translated = resolveTranslation(locale, path);
+      if (translated === undefined) return path;
+      return interpolate(translated, variables);
+    },
+    [locale],
+  );
 
   return (
     <LanguageContext.Provider value={{ locale, setLocale, t }}>
@@ -66,8 +70,6 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
 export function useLanguage() {
   const context = useContext(LanguageContext);
-  if (!context) {
-    throw new Error("useLanguage deve ser usado dentro de um LanguageProvider");
-  }
+  if (!context) throw new Error("useLanguage deve ser usado dentro de um LanguageProvider");
   return context;
 }
