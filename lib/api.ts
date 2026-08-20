@@ -7,7 +7,8 @@ export async function fetchShops({
   date,
   filter,
   userLocation,
-}: FetchMarketplaceShopsParams): Promise<MarketplaceShop[]> {
+  signal,
+}: FetchMarketplaceShopsParams & { signal?: AbortSignal }): Promise<MarketplaceShop[]> {
   const params = new URLSearchParams();
 
   if (query) params.set("query", query);
@@ -18,7 +19,10 @@ export async function fetchShops({
     params.set("lng", String(userLocation.longitude));
   }
 
-  const response = await fetch(`/api/shops?${params.toString()}`);
+  const response = await fetch(`/api/shops?${params.toString()}`, {
+    signal,
+    headers: { Accept: "application/json" },
+  });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch shops: ${response.statusText}`);
