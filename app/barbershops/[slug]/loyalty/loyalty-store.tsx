@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
-import { Copy, Gift, Loader2, Mail, Sparkles, Star, X } from "lucide-react";
+import { Copy, Gift, Loader2, Mail, RotateCcw, Sparkles, Star, X } from "lucide-react";
 import { toast } from "sonner";
 
 type Reward = { id: string; name: string; description: string | null; points_cost: number; reward_type: string; reward_value: number | null };
@@ -28,6 +28,7 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
   const [step, setStep] = useState<"email" | "code">("email");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [recoveringId, setRecoveringId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
   const [activeRedemption, setActiveRedemption] = useState<ActiveRedemption | null>(null);
@@ -93,10 +94,7 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
 
       const data = await response.json().catch(() => ({}));
       console.info("[LOYALTY_UI] request-code:response", { status: response.status, success: Boolean(data?.success) });
-
-      if (!response.ok) {
-        throw new Error(data?.error || `Não foi possível enviar o código (${response.status}).`);
-      }
+      if (!response.ok) throw new Error(data?.error || `Não foi possível enviar o código (${response.status}).`);
 
       setEmail(normalizedEmail);
       setStep("code");
@@ -128,6 +126,32 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
   const points = member?.points_balance ?? 0;
   const activePending = useMemo(() => redemptions.find((item) => item.status === "pending" && new Date(item.expires_at).getTime() > Date.now()), [redemptions]);
 
+  async function recoverRedemption(redemption: Redemption) {
+    const remaining = new Date(redemption.expires_at).getTime() - Date.now();
+    if (redemption.status !== "pending" || remaining <= 0) {
+      toast.error("Este voucher já expirou ou foi utilizado.");
+      await load();
+      return;
+    }
+
+    setRecoveringId(redemption.id);
+    setError(null);
+    try {
+      const response = await fetch(`/api/loyalty/redemption/recover?slug=${encodeURIComponent(slug)}&redemptionId=${encodeURIComponent(redemption.id)}`, { cache: "no-store", credentials: "same-origin" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Não foi possível recuperar o voucher.");
+      const recovered = data.redemption;
+      const qrDataUrl = await QRCode.toDataURL(recovered.qrPayload, { width: 720, margin: 2, errorCorrectionLevel: "M" });
+      setActiveRedemption({ ...recovered, qrDataUrl });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Não foi possível recuperar o voucher.";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setRecoveringId(null);
+    }
+  }
+
   async function redeem() {
     if (!selectedReward || busy) return;
     setBusy(true);
@@ -141,11 +165,8 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
       setActiveRedemption({ ...redemption, qrDataUrl });
       setSelectedReward(null);
       await load();
-      if (data.emailSent) {
-        toast.success("Resgate criado. Enviámos o QR e o código para o teu email.");
-      } else {
-        toast.warning("Resgate criado, mas não foi possível enviar o email. Usa o QR/código apresentado nesta página e contacta a barbearia se necessário.");
-      }
+      if (data.emailSent) toast.success("Resgate criado. Enviámos o QR e o código para o teu email.");
+      else toast.warning("Resgate criado, mas não foi possível enviar o email. Usa o QR/código apresentado nesta página.");
     } catch (err) { setError(err instanceof Error ? err.message : "Não foi possível resgatar a recompensa."); }
     finally { setBusy(false); }
   }
@@ -194,7 +215,7 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
       </section>
 
       {error ? <div role="alert" className="rounded-2xl border border-red-400/20 bg-red-400/[0.04] p-4 text-sm text-red-200">{error}</div> : null}
-      {activePending && !activeRedemption ? <section className="rounded-2xl border border-amber-400/15 bg-amber-400/[0.05] p-4 text-sm text-amber-100">Já tens uma recompensa reservada. Apresenta o código que recebeste por email na barbearia antes de criares outro resgate.</section> : null}
+      {activePending && !activeRedemption ? <section className="rounded-2xl border border-amber-400/15 bg-amber-400/[0.05] p-4 text-sm text-amber-100">Já tens uma recompensa reservada. Clica no resgate abaixo para voltar a ver o QR e o código enquanto continuam válidos.</section> : null}
 
       <section>
         <div className="mb-3"><h2 className="text-xl font-semibold">Recompensas</h2><p className="mt-1 text-sm text-zinc-500">Escolhe uma recompensa que consigas desbloquear agora.</p></div>
@@ -209,7 +230,33 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
         })}</div>}
       </section>
 
-      {redemptions.length > 0 ? <section><h2 className="mb-3 text-xl font-semibold">Os teus resgates</h2><div className="space-y-2">{redemptions.map((item) => <div key={item.id} className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4"><div><p className="text-sm font-medium text-zinc-200">{rewards.find((reward) => reward.id === item.reward_id)?.name ?? "Recompensa"}</p><p className="mt-1 text-xs text-zinc-500">{item.points_spent} pontos · {item.status === "fulfilled" ? "Utilizada" : item.status === "pending" ? `Por utilizar · ${formatRemaining(item.expires_at)}` : "Expirada"}</p></div><span className="text-xs text-zinc-600">{new Date(item.created_at).toLocaleDateString("pt-PT")}</span></div>)}</div></section> : null}
+      {redemptions.length > 0 ? (
+        <section>
+          <h2 className="mb-3 text-xl font-semibold">Os teus resgates</h2>
+          <div className="space-y-2">
+            {redemptions.map((item) => {
+              const active = item.status === "pending" && new Date(item.expires_at).getTime() > Date.now();
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  disabled={!active || recoveringId === item.id}
+                  onClick={() => void recoverRedemption(item)}
+                  aria-label={active ? "Voltar a ver o QR e o código desta recompensa" : "Resgate já utilizado ou expirado"}
+                  className="flex w-full items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-left transition hover:bg-white/[0.04] disabled:cursor-default disabled:opacity-70"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-zinc-200">{rewards.find((reward) => reward.id === item.reward_id)?.name ?? "Recompensa"}</p>
+                    <p className="mt-1 text-xs text-zinc-500">{item.points_spent} pontos · {item.status === "fulfilled" ? "Utilizada" : item.status === "pending" ? `Por utilizar · ${formatRemaining(item.expires_at)}` : "Expirada"}</p>
+                    {active ? <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-300"><RotateCcw className="size-3.5" /> Clique para voltar a ver o voucher</p> : null}
+                  </div>
+                  <span className="shrink-0 text-xs text-zinc-600">{recoveringId === item.id ? "A carregar…" : new Date(item.created_at).toLocaleDateString("pt-PT")}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       {activeRedemption ? (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true">
