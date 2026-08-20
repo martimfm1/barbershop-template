@@ -83,6 +83,8 @@
   button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
   button, [role="button"] { min-height: 44px; }
   input, select, textarea { max-width: 100%; }
+  input, select, textarea, button { font: inherit; }
+  input::placeholder, textarea::placeholder { opacity: 0.72; }
   select:not([data-slot]) {
     min-height: 2.75rem;
     width: 100%;
@@ -107,9 +109,50 @@
 ::selection { background: rgb(52 211 153 / 0.22); color: #f8fafc; }
 
 :focus-visible {
-  outline: 2px solid rgb(52 211 153 / 0.78);
-  outline-offset: 2px;
+  outline: 2px solid rgb(52 211 153 / 0.82);
+  outline-offset: 3px;
 }
+
+:focus:not(:focus-visible) { outline: none; }
+
+.skip-link {
+  position: fixed;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 9999;
+  transform: translateY(-180%);
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  color: #09090b;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.35);
+  transition: transform 120ms ease;
+}
+.skip-link:focus-visible { transform: translateY(0); }
+
+.sr-announcer {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+[aria-busy="true"] { cursor: progress; }
+
+input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"] {
+  border-color: rgb(248 113 113 / 0.7);
+  box-shadow: 0 0 0 3px rgb(248 113 113 / 0.10);
+}
+
+input[type="checkbox"], input[type="radio"] { accent-color: rgb(52 211 153); }
+input[type="checkbox"]:focus-visible, input[type="radio"]:focus-visible { outline-offset: 4px; }
 
 input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.7; }
 
@@ -173,6 +216,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert
 .silentra-pill { border-radius: 9999px; }
 .silentra-focus:focus-visible { border-color: rgb(52 211 153 / 0.55); box-shadow: 0 0 0 3px rgb(52 211 153 / 0.16); }
 .silentra-empty { border: 1px dashed rgb(255 255 255 / 0.13); background: rgb(255 255 255 / 0.012); }
+.silentra-status { min-height: 1.25rem; }
 
 .silentra-form-grid { display: grid; gap: 1.25rem; }
 .silentra-form-field { display: grid; gap: 0.5rem; }
@@ -183,6 +227,11 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert
 
 .dashboard-page h1, .dashboard-page h2, .dashboard-page h3 { text-wrap: balance; }
 .dashboard-page h1 { letter-spacing: -0.035em; }
+
+@media (forced-colors: active) {
+  :focus-visible { outline: 3px solid CanvasText; outline-offset: 3px; }
+  .skip-link { background: Canvas; color: CanvasText; border: 1px solid CanvasText; }
+}
 
 @media (max-width: 639px) {
   .dashboard-page { padding-inline: 1rem; padding-bottom: 5.5rem; }
