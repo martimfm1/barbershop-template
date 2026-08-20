@@ -4,6 +4,7 @@ import { getLoyaltySession, hashLoyaltyToken, generateLoyaltyToken } from "@/lib
 import { sendLoyaltyRedemptionEmail } from "@/lib/brevo/loyalty";
 import { requireTenantAuthorization } from "@/lib/security/tenant-guard";
 import { getLoyaltyTenantBySlug } from "@/lib/loyalty/public-tenant";
+import { encryptRedemptionSecret } from "@/lib/loyalty/redemption-secret";
 import { randomBytes } from "node:crypto";
 
 export const runtime = "nodejs";
@@ -47,10 +48,7 @@ export async function POST(request: Request) {
       admin.from("loyalty_settings").select("enabled").eq("barbershop_id", tenant.barbershopId).maybeSingle(),
       admin.from("barbershops").select("name").eq("id", tenant.barbershopId).maybeSingle(),
     ]);
-    if (settingsError || barbershopError) {
-      console.error("[LOYALTY_REDEEM] shop_lookup_failed", { requestId, settingsCode: settingsError?.code, barbershopCode: barbershopError?.code });
-      return errorResponse("Não foi possível validar a fidelização.", 503, { requestId });
-    }
+    if (settingsError || barbershopError) return errorResponse("Não foi possível validar a fidelização.", 503, { requestId });
     if (enabledSettings?.enabled !== true) return errorResponse("A fidelização está desativada nesta barbearia.", 409, { requestId });
     if (!barbershop?.name) return errorResponse("Não foi possível identificar a barbearia.", 503, { requestId });
 
@@ -72,6 +70,8 @@ export async function POST(request: Request) {
     const code = generateHumanCode();
     const tokenHash = hashLoyaltyToken(token);
     const codeHash = hashLoyaltyToken(code);
+    const tokenEncrypted = encryptRedemptionSecret(token);
+    const codeEncrypted = encryptRedemptionSecret(code);
     const expiresAt = new Date(Date.now() + REDEMPTION_TTL_MS).toISOString();
 
     const { data: redemption, error } = await admin.rpc("redeem_loyalty_reward", {
@@ -79,6 +79,8 @@ export async function POST(request: Request) {
       p_reward_id: reward.id,
       p_token_hash: tokenHash,
       p_code_hash: codeHash,
+      p_token_encrypted: tokenEncrypted,
+      p_code_encrypted: codeEncrypted,
       p_expires_at: expiresAt,
     });
     if (error) {
@@ -114,7 +116,6 @@ export async function POST(request: Request) {
       console.error("[LOYALTY_REDEEM] email_failed", { requestId, errorName: emailError instanceof Error ? emailError.name : "UnknownError" });
     }
 
-    console.info("[LOYALTY_REDEEM] success", { requestId, barbershopId: tenant.barbershopId, memberId: member.id, rewardId: reward.id, redemptionId: result.redemption_id, emailSent });
     return NextResponse.json({ success: true, emailSent, redemption: { id: result.redemption_id, pointsCost: result.points_cost, pointsBalance: result.points_balance, code, token, qrPayload: token, expiresAt } }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("[LOYALTY_REDEEM] unexpected_error", { requestId, tenantId, rewardId: rewardIdForLog, errorName: error instanceof Error ? error.name : "UnknownError", errorMessage: error instanceof Error ? error.message : "Unknown error" });
