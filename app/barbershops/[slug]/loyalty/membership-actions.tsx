@@ -24,7 +24,9 @@ export default function LoyaltyMembershipActions({ slug }: Props) {
   useEffect(() => { void refresh(); }, [slug]);
 
   function enter() {
-    document.getElementById("loyalty-store")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const emailInput = document.querySelector<HTMLInputElement>('input[type="email"]');
+    emailInput?.scrollIntoView({ behavior: "smooth", block: "center" });
+    emailInput?.focus({ preventScroll: true });
   }
 
   async function leave() {
@@ -40,7 +42,6 @@ export default function LoyaltyMembershipActions({ slug }: Props) {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Não foi possível sair da fidelização.");
       toast.success("Saíste da fidelização. Os teus pontos ficam guardados para uma futura reentrada nesta barbearia.");
-      await refresh();
       window.location.reload();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível sair da fidelização.");
