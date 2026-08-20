@@ -5,8 +5,7 @@ import { cn } from "@/lib/utils";
 import { ClientShell } from "@/components/client-shell";
 import { ProductionLogGuard } from "@/app/production-log-guard";
 import { LanguageProvider } from "@/context/LanguageContext";
-import { createClient } from "@/lib/supabase/server";
-import { metadataForAuth } from "@/lib/site-metadata";
+import { guestMetadata } from "@/lib/site-metadata";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -15,16 +14,7 @@ const sourceSans3 = Source_Sans_3({ subsets: ["latin"], variable: "--font-sans" 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
-export async function generateMetadata(): Promise<Metadata> {
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    return metadataForAuth(Boolean(user));
-  } catch {
-    return metadataForAuth(false);
-  }
-}
-
+export const metadata: Metadata = guestMetadata;
 export const viewport = { width: "device-width", initialScale: 1 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
