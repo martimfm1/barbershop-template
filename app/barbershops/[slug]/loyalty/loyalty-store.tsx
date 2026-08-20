@@ -72,16 +72,43 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
 
   async function requestCode(event: FormEvent) {
     event.preventDefault();
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      setError("Introduz um email válido.");
+      return;
+    }
+
     setBusy(true);
     setError(null);
+    console.info("[LOYALTY_UI] request-code:start", { slug, emailLength: normalizedEmail.length });
+
     try {
-      const response = await fetch("/api/loyalty/request-code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug, email }) });
+      const response = await fetch("/api/loyalty/request-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ slug, email: normalizedEmail }),
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "Não foi possível enviar o código.");
+      console.info("[LOYALTY_UI] request-code:response", { status: response.status, success: Boolean(data?.success) });
+
+      if (!response.ok) {
+        throw new Error(data?.error || `Não foi possível enviar o código (${response.status}).`);
+      }
+
+      setEmail(normalizedEmail);
       setStep("code");
       toast.success("Código enviado. Verifica o teu email.");
-    } catch (err) { setError(err instanceof Error ? err.message : "Não foi possível enviar o código."); }
-    finally { setBusy(false); }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Não foi possível enviar o código.";
+      console.error("[LOYALTY_UI] request-code:error", message);
+      setError(message);
+      toast.error(message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function verifyCode(event: FormEvent) {
@@ -140,15 +167,16 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
           <form onSubmit={requestCode} className="mt-6 space-y-4">
             <div><h2 className="text-xl font-semibold">Entrar na fidelização</h2><p className="mt-1 text-sm leading-6 text-zinc-500">Usa o email que costumas dar à {shopName}. Não precisas de password.</p></div>
             <label className="block"><span className="sr-only">Email</span><div className="flex items-center rounded-xl border border-white/10 bg-black/20 px-3"><Mail className="size-4 text-zinc-500"/><input required autoComplete="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nome@email.com" className="h-12 min-w-0 flex-1 bg-transparent px-3 text-sm text-white outline-none placeholder:text-zinc-600"/></div></label>
-            <button disabled={busy} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 text-sm font-semibold text-zinc-950 disabled:opacity-50">{busy ? <Loader2 className="size-4 animate-spin" /> : null}{busy ? "A enviar…" : "Enviar código"}</button>
+            {error ? <p role="alert" className="text-xs text-red-300">{error}</p> : null}
+            <button type="submit" disabled={busy} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 text-sm font-semibold text-zinc-950 disabled:opacity-50">{busy ? <Loader2 className="size-4 animate-spin" /> : null}{busy ? "A enviar…" : "Enviar código"}</button>
           </form>
         ) : (
           <form onSubmit={verifyCode} className="mt-6 space-y-4">
             <div><h2 className="text-xl font-semibold">Confirma o teu email</h2><p className="mt-1 text-sm leading-6 text-zinc-500">Enviámos um código de 6 dígitos para {email}.</p></div>
             <input required autoFocus autoComplete="one-time-code" inputMode="numeric" value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" className="h-14 w-full rounded-xl border border-white/10 bg-black/20 text-center text-2xl tracking-[0.35em] text-white outline-none"/>
-            {error ? <p className="text-xs text-red-300">{error}</p> : null}
-            <button disabled={busy || code.length !== 6} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 text-sm font-semibold text-zinc-950 disabled:opacity-50">{busy ? <Loader2 className="size-4 animate-spin" /> : null}{busy ? "A confirmar…" : "Entrar na fidelização"}</button>
-            <button type="button" onClick={() => { setStep("email"); setCode(""); }} className="w-full text-xs text-zinc-500">Usar outro email</button>
+            {error ? <p role="alert" className="text-xs text-red-300">{error}</p> : null}
+            <button type="submit" disabled={busy || code.length !== 6} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 text-sm font-semibold text-zinc-950 disabled:opacity-50">{busy ? <Loader2 className="size-4 animate-spin" /> : null}{busy ? "A confirmar…" : "Entrar na fidelização"}</button>
+            <button type="button" onClick={() => { setStep("email"); setCode(""); setError(null); }} className="w-full text-xs text-zinc-500">Usar outro email</button>
           </form>
         )}
       </div>
@@ -165,7 +193,7 @@ export default function LoyaltyStore({ slug, shopName }: Props) {
         </div>
       </section>
 
-      {error ? <div className="rounded-2xl border border-red-400/20 bg-red-400/[0.04] p-4 text-sm text-red-200">{error}</div> : null}
+      {error ? <div role="alert" className="rounded-2xl border border-red-400/20 bg-red-400/[0.04] p-4 text-sm text-red-200">{error}</div> : null}
       {activePending && !activeRedemption ? <section className="rounded-2xl border border-amber-400/15 bg-amber-400/[0.05] p-4 text-sm text-amber-100">Já tens uma recompensa reservada. Apresenta o código que recebeste por email na barbearia antes de criares outro resgate.</section> : null}
 
       <section>
