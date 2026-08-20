@@ -25,7 +25,6 @@ export function SiteNavbar() {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const pathname = usePathname();
-  const isDashboard = pathname === "/dashboard" || pathname.startsWith("/dashboard/");
 
   const bookingManagementLink = useMemo(() => ({
     label: t("nav.manageBookings", { defaultValue: "Gerir marcações" }),
@@ -33,90 +32,320 @@ export function SiteNavbar() {
   }), [t]);
 
   const guestLinks = useMemo(() => [
-    { label: t("nav.barbershops", { defaultValue: "Barbershops" }), href: "/barbershops" },
+    { label: t("nav.barbershops", { defaultValue: "Barbearias" }), href: "/barbershops" },
     bookingManagementLink,
-    { label: t("nav.howItWorks", { defaultValue: "How it works" }), href: "/#friction" },
-    { label: t("nav.forBarbers", { defaultValue: "For barbers" }), href: "/registo" },
+    { label: t("nav.howItWorks", { defaultValue: "Como funciona" }), href: "/#friction" },
+    { label: t("nav.forBarbers", { defaultValue: "Para barbeiros" }), href: "/registo" },
   ], [t, bookingManagementLink]);
 
   const authenticatedLinks = useMemo(() => [
     { label: t("nav.dashboard", { defaultValue: "Dashboard" }), href: "/dashboard" },
-    { label: t("nav.barbershops", { defaultValue: "Barbershops" }), href: "/barbershops" },
+    { label: t("nav.barbershops", { defaultValue: "Barbearias" }), href: "/barbershops" },
     bookingManagementLink,
-    { label: t("nav.settings", { defaultValue: "Settings" }), href: "/dashboard/settings" },
+    { label: t("nav.settings", { defaultValue: "Definições" }), href: "/dashboard/settings" },
     { label: "Analytics", href: "/dashboard/analytics" },
-    { label: t("nav.plans", { defaultValue: "Plans" }), href: "/plans" },
+    { label: t("nav.plans", { defaultValue: "Planos" }), href: "/plans" },
   ], [t, bookingManagementLink]);
 
   const links = user ? authenticatedLinks : guestLinks;
 
   useEffect(() => {
+    let mounted = true;
     const getUserSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null); setLoading(false);
+      if (mounted) {
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
     };
-    getUserSession();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => setUser(session?.user ?? null));
-    return () => subscription.unsubscribe();
+
+    void getUserSession();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+      if (mounted) setUser(session?.user ?? null);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [supabase]);
 
   useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "unset";
-    return () => { document.body.style.overflow = "unset"; };
-  }, [open]);
-
-  useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 24);
-    handleScroll(); window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) setDropdownOpen(false);
+    if (!open) {
+      document.body.style.overflow = "";
+      return;
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        setDropdownOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, []);
+
+  const isActive = (href: string) => {
+    if (href === "/") return pathname === "/";
+    if (href.startsWith("/#")) return pathname === "/";
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   const getUserDetails = () => {
     const fullName = user?.user_metadata?.name || user?.user_metadata?.full_name;
     const firstName = fullName ? fullName.split(" ")[0] : user?.email?.split("@")[0] || "User";
-    return { firstName: firstName.charAt(0).toUpperCase() + firstName.slice(1), initial: firstName.charAt(0).toUpperCase() };
+    return {
+      firstName: firstName.charAt(0).toUpperCase() + firstName.slice(1),
+      initial: firstName.charAt(0).toUpperCase(),
+    };
   };
-  const handleLogout = async () => { await supabase.auth.signOut(); setDropdownOpen(false); setOpen(false); router.push("/"); };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setDropdownOpen(false);
+    setOpen(false);
+    router.push("/");
+  };
+
   const { firstName, initial } = user ? getUserDetails() : { firstName: "", initial: "" };
 
-  return <>
-    <motion.header layout className="fixed inset-x-0 top-0 z-200" animate={{ paddingTop: isDashboard ? 0 : (isScrolled ? 0 : 16), paddingLeft: isDashboard ? 0 : (isScrolled ? 0 : 16), paddingRight: isDashboard ? 0 : (isScrolled ? 0 : 16) }} transition={NAVBAR_TRANSITION}>
-      <motion.div layout className={cn("relative border backdrop-blur-2xl", isDashboard ? "border-transparent bg-transparent backdrop-blur-none" : "border-white/10 bg-zinc-950/55")} style={{ width: isDashboard || isScrolled ? "100%" : "min(100%, 80rem)", maxWidth: isDashboard || isScrolled ? "100%" : "80rem", marginLeft: isDashboard || isScrolled ? 0 : "auto", marginRight: isDashboard || isScrolled ? 0 : "auto" }} animate={{ borderRadius: isDashboard || isScrolled ? 0 : 9999, boxShadow: isDashboard ? "none" : (isScrolled ? "0 18px 80px rgba(0,0,0,0.18)" : "0 18px 80px rgba(0,0,0,0.32)") }} transition={NAVBAR_TRANSITION}>
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex min-h-11 items-center gap-3"><div className="flex items-center justify-center text-zinc-100"><BarberIcon className="size-7 sm:size-8" /></div><span className="text-zinc-100 font-heading text-lg sm:text-xl font-semibold tracking-tight">Silentra</span></Link>
-          <div className="flex items-center gap-2 sm:gap-3 z-200">
-            <AnimatePresence>{open && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={NAVBAR_POPUP_TRANSITION}><LanguageSwitcher /></motion.div>}</AnimatePresence>
-            {!loading && (user ? <div className="relative" ref={dropdownRef}>
-              <button onClick={() => setDropdownOpen((prev) => !prev)} aria-haspopup="true" aria-expanded={dropdownOpen} className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm font-medium tracking-wider text-zinc-100 transition-all hover:border-white/30 hover:bg-white/10 active:scale-95">{initial}</button>
-              <AnimatePresence>{dropdownOpen && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={NAVBAR_POPUP_TRANSITION} className="absolute right-0 mt-3 w-64 origin-top-right rounded-xl border border-white/10 bg-zinc-900/98 p-1.5 text-zinc-200 shadow-2xl backdrop-blur-lg">
-                <div className="px-3 py-2.5 text-xs text-zinc-400 border-b border-white/5 truncate font-medium"><span className="text-zinc-100 font-semibold">{firstName}</span><span className="mx-1.5 text-white/20">|</span><span className="text-zinc-400 font-normal">{user.email}</span></div>
-                <Link href="/dashboard" onClick={() => setDropdownOpen(false)} className="flex w-full items-center rounded-lg px-3 py-2.5 mt-1 text-sm transition-colors hover:bg-white/5 hover:text-white">Dashboard</Link>
-                <Link href="/barbershops" onClick={() => setDropdownOpen(false)} className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/5 hover:text-white">Barbershops</Link>
-                <Link href="/my-bookings" onClick={() => setDropdownOpen(false)} className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/5 hover:text-white">{bookingManagementLink.label}</Link>
-                <Link href="/dashboard/settings" onClick={() => setDropdownOpen(false)} className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/5 hover:text-white">Settings</Link>
-                <Link href="/dashboard/analytics" onClick={() => setDropdownOpen(false)} className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/5 hover:text-white">Analytics</Link>
-                <Link href="/plans" onClick={() => setDropdownOpen(false)} className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/5 hover:text-white">Plans</Link>
-                <button onClick={handleLogout} className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300 cursor-pointer font-medium">Logout</button>
-              </motion.div>}</AnimatePresence>
-            </div> : <div className="flex items-center gap-2">
-              <Button asChild variant="ghost" className="hidden h-10 px-3 text-xs text-zinc-200 hover:bg-white/10 hover:text-white sm:inline-flex"><Link href="/my-bookings">{bookingManagementLink.label}</Link></Button>
-              <Button asChild variant="outline" className="border-white/15 bg-white/5 text-zinc-100 hover:border-white/30 hover:bg-white/10 text-xs sm:text-sm px-3 h-9 sm:h-10 sm:px-4"><Link href="/login">{t("nav.signIn", { defaultValue: "Sign In" })}</Link></Button>
-            </div>)}
-            <Button type="button" variant="outline" size="icon-lg" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} onClick={() => setOpen((prev) => !prev)} className="relative z-110 size-10 cursor-pointer border border-white/10 bg-white/5 text-zinc-100 hover:bg-white/10 hover:text-white active:scale-95"><MenuIcon open={open} className="size-5" /></Button>
+  return (
+    <>
+      <motion.header
+        layout
+        className="fixed inset-x-0 top-0 z-[200] px-3 pt-3 sm:px-4 sm:pt-4"
+        transition={NAVBAR_TRANSITION}
+      >
+        <motion.div
+          layout
+          className={cn(
+            "mx-auto flex h-[4.25rem] w-full max-w-7xl items-center rounded-2xl border px-2 shadow-2xl backdrop-blur-2xl transition-colors",
+            isScrolled
+              ? "border-white/15 bg-zinc-950/82 shadow-black/30"
+              : "border-white/10 bg-zinc-950/62 shadow-black/20",
+          )}
+          animate={{
+            borderRadius: isScrolled ? 18 : 22,
+            boxShadow: isScrolled ? "0 18px 60px rgba(0,0,0,0.30)" : "0 14px 50px rgba(0,0,0,0.22)",
+          }}
+          transition={NAVBAR_TRANSITION}
+        >
+          <div className="flex min-w-0 flex-1 items-center gap-2 px-1 sm:gap-3 sm:px-2">
+            <Link
+              href="/"
+              aria-label="Silentra"
+              onClick={() => setOpen(false)}
+              className="group flex min-h-11 min-w-0 shrink-0 items-center gap-2.5 rounded-xl px-2 text-zinc-100 transition-colors hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25 sm:gap-3 sm:px-3"
+            >
+              <span className="flex size-8 shrink-0 items-center justify-center text-zinc-100 sm:size-9">
+                <BarberIcon className="size-7 sm:size-8" />
+              </span>
+              <span className="font-heading text-[1.02rem] font-semibold tracking-tight sm:text-lg">Silentra</span>
+            </Link>
+
+            <nav aria-label="Navegação principal" className="hidden min-w-0 items-center gap-1 lg:flex">
+              {links.map((link) => {
+                const active = isActive(link.href);
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setOpen(false)}
+                    aria-current={active && !link.href.startsWith("/#") ? "page" : undefined}
+                    className={cn(
+                      "relative flex min-h-10 items-center rounded-xl px-3 text-[13px] font-medium transition-[background-color,color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25",
+                      active
+                        ? "bg-white/[0.09] text-white"
+                        : "text-zinc-400 hover:bg-white/[0.05] hover:text-zinc-100",
+                    )}
+                  >
+                    {link.label}
+                    {active ? <span aria-hidden="true" className="absolute inset-x-3 -bottom-px h-px bg-white/70" /> : null}
+                  </Link>
+                );
+              })}
+            </nav>
           </div>
-        </div>
-      </motion.div>
-    </motion.header>
-    <div className={cn("fixed inset-0 z-90 flex flex-col bg-zinc-950/98 px-6 py-24 text-zinc-50 backdrop-blur-2xl transition-opacity duration-700 ease-out origin-top-right", open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0")} style={{ clipPath: open ? "circle(150% at calc(100% - 2.5rem) 2.5rem)" : "circle(0% at calc(100% - 2.5rem) 2.5rem)" }} aria-hidden={!open}>
-      <motion.div className="z-200 mx-auto flex w-full max-w-7xl flex-1 flex-col justify-center overflow-y-auto max-h-[calc(100vh-12rem)] no-scrollbar" initial={false} animate={open ? { opacity: 1 } : { opacity: 0 }} transition={NAVBAR_TRANSITION}><div className="grid gap-4 sm:gap-6">{links.map((link) => <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className="group border-b border-white/4 py-3 sm:py-4 font-heading text-3xl sm:text-5xl font-semibold tracking-tight text-zinc-200 transition-colors hover:text-white"><span className="mr-3 inline-block text-sm sm:text-base text-zinc-600 transition-transform group-hover:translate-x-1 group-hover:text-zinc-400">/</span>{link.label}</Link>)}</div></motion.div>
-    </div>
-  </>;
+
+          <div className="relative z-[210] flex shrink-0 items-center gap-1.5 sm:gap-2" ref={dropdownRef}>
+            <LanguageSwitcher />
+
+            {!loading && user ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setDropdownOpen((previous) => !previous)}
+                  aria-label={`Conta de ${firstName}`}
+                  aria-haspopup="menu"
+                  aria-expanded={dropdownOpen}
+                  className={cn(
+                    "flex size-10 items-center justify-center rounded-xl border text-sm font-semibold tracking-wide transition-[background-color,border-color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25",
+                    dropdownOpen
+                      ? "border-white/20 bg-white/[0.10] text-white"
+                      : "border-white/10 bg-white/[0.04] text-zinc-200 hover:border-white/20 hover:bg-white/[0.08]",
+                  )}
+                >
+                  {initial}
+                </button>
+
+                <AnimatePresence>
+                  {dropdownOpen ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -5, scale: 0.98 }}
+                      transition={NAVBAR_POPUP_TRANSITION}
+                      role="menu"
+                      className="absolute right-0 top-[calc(100%+0.65rem)] w-[min(19rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/96 p-1.5 text-zinc-200 shadow-2xl shadow-black/35 backdrop-blur-2xl supports-[backdrop-filter]:bg-zinc-950/82"
+                    >
+                      <div className="border-b border-white/8 px-3 py-3">
+                        <p className="truncate text-sm font-semibold text-white">{firstName}</p>
+                        <p className="mt-0.5 truncate text-xs text-zinc-500">{user.email}</p>
+                      </div>
+                      <div className="mt-1 grid gap-1">
+                        {authenticatedLinks.map((link) => (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            role="menuitem"
+                            onClick={() => setDropdownOpen(false)}
+                            className={cn(
+                              "flex min-h-11 items-center rounded-xl px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25",
+                              isActive(link.href)
+                                ? "bg-white/[0.08] text-white"
+                                : "text-zinc-300 hover:bg-white/[0.05] hover:text-white",
+                            )}
+                          >
+                            {link.label}
+                          </Link>
+                        ))}
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => void handleLogout()}
+                          className="mt-1 flex min-h-11 w-full items-center rounded-xl px-3 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-500/10 hover:text-red-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/25"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+              </>
+            ) : !loading ? (
+              <div className="hidden items-center gap-2 sm:flex">
+                <Button asChild variant="ghost" className="h-10 rounded-xl px-3 text-xs font-medium text-zinc-300 hover:bg-white/[0.06] hover:text-white">
+                  <Link href="/my-bookings">{bookingManagementLink.label}</Link>
+                </Button>
+                <Button asChild variant="outline" className="h-10 rounded-xl border-white/15 bg-white/[0.05] px-4 text-xs font-semibold text-white hover:border-white/25 hover:bg-white/[0.09]">
+                  <Link href="/login">{t("nav.signIn", { defaultValue: "Entrar" })}</Link>
+                </Button>
+              </div>
+            ) : null}
+
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-lg"
+              aria-label={open ? "Fechar menu" : "Abrir menu"}
+              aria-expanded={open}
+              aria-controls="site-navigation-overlay"
+              onClick={() => setOpen((previous) => !previous)}
+              className="size-10 rounded-xl border-white/10 bg-white/[0.04] text-zinc-100 hover:border-white/20 hover:bg-white/[0.08] active:scale-[0.98]"
+            >
+              <MenuIcon open={open} className="size-5" />
+            </Button>
+          </div>
+        </motion.div>
+      </motion.header>
+
+      <AnimatePresence>
+        {open ? (
+          <motion.div
+            id="site-navigation-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={NAVBAR_TRANSITION}
+            className="fixed inset-0 z-[150] flex flex-col bg-zinc-950/97 px-5 pb-8 pt-28 text-zinc-50 backdrop-blur-2xl sm:px-8 sm:pt-32"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu de navegação"
+          >
+            <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-y-auto">
+              <div className="mb-6 flex items-center justify-between gap-4 border-b border-white/8 pb-5 sm:mb-8">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Silentra</p>
+                  <p className="mt-1 text-sm text-zinc-400">{user ? `Olá, ${firstName}` : "Navegação"}</p>
+                </div>
+                <LanguageSwitcher />
+              </div>
+
+              <nav aria-label="Navegação móvel" className="grid gap-1">
+                {links.map((link, index) => {
+                  const active = isActive(link.href);
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setOpen(false)}
+                      aria-current={active && !link.href.startsWith("/#") ? "page" : undefined}
+                      className={cn(
+                        "group flex min-h-14 items-center rounded-2xl border px-4 font-heading text-2xl font-semibold tracking-tight transition-[background-color,border-color,color,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25 sm:min-h-16 sm:px-5 sm:text-4xl",
+                        active
+                          ? "border-white/12 bg-white/[0.07] text-white"
+                          : "border-transparent text-zinc-300 hover:border-white/8 hover:bg-white/[0.04] hover:text-white",
+                      )}
+                    >
+                      <span className="mr-4 flex size-7 shrink-0 items-center justify-center rounded-lg border border-white/8 bg-white/[0.03] text-xs font-medium text-zinc-500 transition-colors group-hover:text-zinc-300 sm:size-8">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span className="min-w-0 truncate">{link.label}</span>
+                      {active ? <span aria-hidden="true" className="ml-auto size-2 rounded-full bg-white/80" /> : null}
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              {!loading && !user ? (
+                <div className="mt-auto grid gap-2 border-t border-white/8 pt-6 sm:flex sm:items-center sm:justify-end">
+                  <Button asChild variant="ghost" className="min-h-12 rounded-xl justify-center text-zinc-300 hover:bg-white/[0.06] hover:text-white sm:min-w-40">
+                    <Link href="/my-bookings" onClick={() => setOpen(false)}>{bookingManagementLink.label}</Link>
+                  </Button>
+                  <Button asChild variant="outline" className="min-h-12 rounded-xl border-white/15 bg-white/[0.05] text-white hover:border-white/25 hover:bg-white/[0.09] sm:min-w-40">
+                    <Link href="/login" onClick={() => setOpen(false)}>{t("nav.signIn", { defaultValue: "Entrar" })}</Link>
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </>
+  );
 }
