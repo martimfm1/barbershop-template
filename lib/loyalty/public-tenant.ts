@@ -28,10 +28,10 @@ async function isLoyaltyEnabled(
     return false;
   }
 
-  // The migration defaults enabled=true, but existing Pro/Enterprise
-  // barbershops may not have a settings row yet. In that case the feature
-  // should still be considered enabled until explicitly disabled.
-  return data?.enabled ?? true;
+  // Loyalty must be explicitly enabled by the barbershop owner.
+  // Missing settings = disabled, so the public card/page stays hidden
+  // until the owner enables the programme in the dashboard.
+  return data?.enabled === true;
 }
 
 export async function getLoyaltyTenantBySlug(
