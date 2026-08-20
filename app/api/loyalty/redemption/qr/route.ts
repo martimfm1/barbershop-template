@@ -19,7 +19,12 @@ export async function GET(request: Request) {
     .eq("token_hash", hashLoyaltyToken(token))
     .maybeSingle();
 
-  if (!redemption || redemption.status !== "pending" || !redemption.expires_at || new Date(redemption.expires_at).getTime() <= Date.now()) {
+  if (
+    !redemption ||
+    redemption.status !== "pending" ||
+    !redemption.expires_at ||
+    new Date(redemption.expires_at).getTime() <= Date.now()
+  ) {
     return new NextResponse("Not found", { status: 404 });
   }
 
@@ -30,12 +35,12 @@ export async function GET(request: Request) {
     errorCorrectionLevel: "M",
   });
 
-  return new NextResponse(png, {
+  return new NextResponse(new Uint8Array(png), {
     status: 200,
     headers: {
       "Content-Type": "image/png",
       "Cache-Control": "private, max-age=300, must-revalidate",
-      "Content-Disposition": "inline; filename=golden-voucher-qr.png",
+      "Content-Disposition": 'inline; filename="silentra-loyalty-qr.png"',
       "X-Content-Type-Options": "nosniff",
     },
   });
