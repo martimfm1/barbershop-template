@@ -8,6 +8,7 @@ import {
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ClientShell } from "@/components/client-shell";
+import { ProductionLogGuard } from "@/app/production-log-guard";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { createClient } from "@/lib/supabase/server";
 import { metadataForAuth } from "@/lib/site-metadata";
@@ -69,6 +70,7 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-black text-foreground">
         <LanguageProvider>
+          <ProductionLogGuard />
           <SpeedInsights/>
           <Analytics/>
           <ClientShell>{children}</ClientShell>
