@@ -84,7 +84,7 @@ export async function GET(request: Request) {
   let skippedNoClients = 0;
   let failed = 0;
 
-  console.info("[BIRTHDAY_CRON] started", {
+  console.warn("[BIRTHDAY_CRON] started", {
     requestId,
     timezone: TIME_ZONE,
     birthdayDate: birthday.iso,
@@ -104,7 +104,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unable to load birthday automations", requestId }, { status: 500 });
   }
 
-  console.info("[BIRTHDAY_CRON] automations loaded", {
+  console.warn("[BIRTHDAY_CRON] automations loaded", {
     requestId,
     count: automations?.length ?? 0,
   });
@@ -301,6 +301,6 @@ export async function GET(request: Request) {
     failed,
   };
 
-  console.info("[BIRTHDAY_CRON] completed", result);
+  console.warn("[BIRTHDAY_CRON] completed", result);
   return NextResponse.json(result);
 }
