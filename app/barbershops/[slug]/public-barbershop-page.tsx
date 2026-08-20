@@ -1,13 +1,18 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { publicBarbershopService, type BarbershopPublicDetails } from "./services/public-barbershop.service";
-import { BookingDrawer } from "../components/booking-drawer";
 import { formatClosedDays } from "@/lib/utils/format-closed-days";
 import type { MarketplaceShop } from "@/types/marketplace/shops";
 import { ArrowLeft, Calendar, Coffee, Gift, MapPin, Phone, Star, Scissors } from "lucide-react";
+
+const BookingDrawer = dynamic(
+  () => import("../components/booking-drawer").then((module) => module.BookingDrawer),
+  { ssr: false },
+);
 
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\/$/, "");
 
@@ -103,11 +108,9 @@ export default function BarbershopPublicPage({ initialData, loyaltyEnabled = fal
   return (
     <main className="min-h-screen bg-zinc-950 pb-24 text-zinc-100">
       <section className="relative h-52 border-b border-zinc-800 bg-zinc-900 sm:h-72">
-        {bannerUrl ? <Image src={bannerUrl} alt={`Imagem da ${shop.name}`} fill unoptimized priority className="object-cover opacity-50" /> : <div className="h-full w-full bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900" />}
+        {bannerUrl ? <Image src={bannerUrl} alt={`Imagem da ${shop.name}`} fill quality={65} priority sizes="100vw" className="object-cover opacity-50" /> : <div className="h-full w-full bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900" />}
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
-        <Link href="/barbershops" className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950/70 px-3 py-2 text-xs font-medium backdrop-blur sm:text-sm">
-          <ArrowLeft className="size-4" /> Voltar
-        </Link>
+        <Link href="/barbershops" className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950/70 px-3 py-2 text-xs font-medium backdrop-blur sm:text-sm"><ArrowLeft className="size-4" /> Voltar</Link>
       </section>
 
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
@@ -115,18 +118,11 @@ export default function BarbershopPublicPage({ initialData, loyaltyEnabled = fal
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex items-end gap-4">
               <div className="relative size-24 shrink-0 overflow-hidden rounded-2xl border-4 border-zinc-950 bg-zinc-900 shadow-2xl sm:size-32">
-                {avatarUrl ? <Image src={avatarUrl} alt={shop.name} fill unoptimized className="object-cover" /> : <div className="grid h-full place-items-center"><Scissors className="size-9 text-zinc-500" /></div>}
+                {avatarUrl ? <Image src={avatarUrl} alt={shop.name} fill quality={70} sizes="(max-width: 639px) 96px, 128px" className="object-cover" /> : <div className="grid h-full place-items-center"><Scissors className="size-9 text-zinc-500" /></div>}
               </div>
               <div className="pb-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-2xl font-extrabold sm:text-3xl">{shop.name}</h1>
-                  {shop.city && <span className="rounded-full border border-zinc-700 bg-zinc-800 px-2.5 py-1 text-xs text-zinc-300">{shop.city}</span>}
-                </div>
-                <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-400 sm:text-sm">
-                  <span className="inline-flex items-center gap-1"><Star className="size-4" /> {rating.toFixed(1)} ({reviewsCount})</span>
-                  {shop.address && <span className="inline-flex items-center gap-1"><MapPin className="size-4" /> {shop.address}</span>}
-                  {shop.phone && <span className="inline-flex items-center gap-1"><Phone className="size-4" /> {shop.phone}</span>}
-                </div>
+                <div className="flex flex-wrap items-center gap-2"><h1 className="text-2xl font-extrabold sm:text-3xl">{shop.name}</h1>{shop.city && <span className="rounded-full border border-zinc-700 bg-zinc-800 px-2.5 py-1 text-xs text-zinc-300">{shop.city}</span>}</div>
+                <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-400 sm:text-sm"><span className="inline-flex items-center gap-1"><Star className="size-4" /> {rating.toFixed(1)} ({reviewsCount})</span>{shop.address && <span className="inline-flex items-center gap-1"><MapPin className="size-4" /> {shop.address}</span>}{shop.phone && <span className="inline-flex items-center gap-1"><Phone className="size-4" /> {shop.phone}</span>}</div>
               </div>
             </div>
             <button type="button" onClick={() => { setSelectedServiceId(null); setBookingOpen(true); }} className="min-h-11 rounded-xl bg-white px-5 text-sm font-bold text-zinc-950">Agendar horário</button>
@@ -141,16 +137,14 @@ export default function BarbershopPublicPage({ initialData, loyaltyEnabled = fal
 
         <section className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 sm:p-6">
           <h2 className="text-xl font-bold">Serviços</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {shop.services.map((service) => <article key={service.id} className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4"><div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold">{service.name}</h3><p className="mt-1 text-xs text-zinc-500">{service.duration} min</p></div><span className="font-bold">€{Number(service.price).toFixed(2)}</span></div><button type="button" onClick={() => { setSelectedServiceId(service.id); setBookingOpen(true); }} className="mt-4 min-h-10 w-full rounded-xl bg-white text-xs font-bold text-zinc-950">Agendar este serviço</button></article>)}
-          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">{shop.services.map((service) => <article key={service.id} className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4"><div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold">{service.name}</h3><p className="mt-1 text-xs text-zinc-500">{service.duration} min</p></div><span className="font-bold">€{Number(service.price).toFixed(2)}</span></div><button type="button" onClick={() => { setSelectedServiceId(service.id); setBookingOpen(true); }} className="mt-4 min-h-10 w-full rounded-xl bg-white text-xs font-bold text-zinc-950">Agendar este serviço</button></article>)}</div>
         </section>
 
         <section className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 sm:p-6">
           <h2 className="text-xl font-bold">Avaliações</h2>
           <form onSubmit={submitReview} className="mt-4 space-y-3">
             <input value={reviewName} onChange={(e) => setReviewName(e.target.value)} placeholder="O teu nome" className="min-h-11 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 text-sm" />
-            <div className="flex gap-1">{[1,2,3,4,5].map((value) => <button type="button" key={value} onClick={() => setReviewRating(value)} aria-label={`${value} estrelas`}><Star className={`size-5 ${value <= reviewRating ? "fill-white text-white" : "text-zinc-600"}`} /></button>)}</div>
+            <div className="flex gap-1">{[1, 2, 3, 4, 5].map((value) => <button type="button" key={value} onClick={() => setReviewRating(value)} aria-label={`${value} estrelas`}><Star className={`size-5 ${value <= reviewRating ? "fill-white text-white" : "text-zinc-600"}`} /></button>)}</div>
             <textarea value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="Escreve uma avaliação (opcional)" className="min-h-24 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-sm" />
             {reviewError && <p className="text-xs text-red-300">{reviewError}</p>}
             {reviewSent && <p className="text-xs text-emerald-300">Avaliação enviada.</p>}
