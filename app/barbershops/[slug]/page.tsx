@@ -118,6 +118,28 @@ async function getInitialPublicDetails(profile: PublicProfileRecord): Promise<Ba
   };
 }
 
+async function getPublicLoyaltyEnabled(profile: PublicProfileRecord): Promise<boolean> {
+  if (!["pro", "enterprise"].includes(profile.plan)) return false;
+
+  const database = createAdminClient();
+  const { data, error } = await database
+    .from("loyalty_settings")
+    .select("enabled")
+    .eq("barbershop_id", profile.barbershop_id ?? profile.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[PUBLIC_BARBERSHOP]", {
+      event: "loyalty_settings_lookup_failed",
+      slug: profile.slug,
+      code: error.code ?? "UNKNOWN",
+    });
+    return false;
+  }
+
+  return data?.enabled === true;
+}
+
 export default async function BarbershopPage({ params }: BarbershopPageProps) {
   const { slug } = await params;
   logPublicProfile("info", "request", slug, { isUuid: UUID_PATTERN.test(slug) });
@@ -156,7 +178,7 @@ export default async function BarbershopPage({ params }: BarbershopPageProps) {
     permanentRedirect(getResolvedProfileUrl(profile));
   }
 
-  const loyaltyEnabled = profile.plan === "pro" || profile.plan === "enterprise";
+  const loyaltyEnabled = await getPublicLoyaltyEnabled(profile);
   logPublicProfile("info", "render", slug, { loyaltyEnabled });
 
   const initialData = await getInitialPublicDetails(profile);
