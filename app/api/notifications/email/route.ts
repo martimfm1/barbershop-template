@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     const { data: appointment, error: appointmentError } = await admin
       .from("appointments")
-      .select("id,date_hour,manual_name,manual_email,barbershop_id,service:services(name),barbershop:barbershops(name,address)")
+      .select("id,date_hour,duration,manual_name,manual_email,barbershop_id,service:services(name),barbershop:barbershops(name,address)")
       .eq("id", appointmentId)
       .eq("barbershop_id", tenant.barbershopId)
       .maybeSingle();
@@ -50,11 +50,13 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await sendBookingConfirmationEmail({
+      appointmentId: appointment.id,
       to: email,
       clientName,
       serviceName: service.name,
       date: dateHour.toISOString().slice(0, 10),
       time: dateHour.toISOString().slice(11, 16),
+      durationMinutes: Number(appointment.duration ?? 30),
       barbershopId: tenant.barbershopId,
       barbershopName: barbershop.name,
       barbershopAddress: barbershop.address,
