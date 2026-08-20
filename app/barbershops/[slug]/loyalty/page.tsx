@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import LoyaltyStore from "./loyalty-store";
 import { getPublicProfileBySlug } from "@/lib/barbershops/public-profile";
+import { getLoyaltyTenantBySlug } from "@/lib/loyalty/public-tenant";
 
 interface LoyaltyPageProps {
   params: Promise<{ slug: string }>;
@@ -11,7 +12,8 @@ interface LoyaltyPageProps {
 export async function generateMetadata({ params }: LoyaltyPageProps): Promise<Metadata> {
   const { slug } = await params;
   const profile = await getPublicProfileBySlug(slug);
-  if (!profile || !profile.barbershop_id || !["pro", "enterprise"].includes(profile.plan)) return {};
+  const tenant = await getLoyaltyTenantBySlug(slug);
+  if (!profile || !tenant) return {};
 
   const title = `Fidelização ${profile.name} | Silentra`;
   const description = `Consulta os teus pontos, recompensas e benefícios da ${profile.name}.`;
@@ -26,7 +28,9 @@ export async function generateMetadata({ params }: LoyaltyPageProps): Promise<Me
 export default async function LoyaltyPage({ params }: LoyaltyPageProps) {
   const { slug } = await params;
   const profile = await getPublicProfileBySlug(slug);
-  if (!profile || !profile.barbershop_id || !["pro", "enterprise"].includes(profile.plan)) notFound();
+  const tenant = await getLoyaltyTenantBySlug(slug);
+
+  if (!profile || !profile.barbershop_id || !tenant) notFound();
 
   return (
     <main className="min-h-screen bg-zinc-950 px-4 py-10 text-white sm:px-6 sm:py-14">
