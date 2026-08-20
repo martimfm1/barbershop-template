@@ -1,12 +1,12 @@
 import { SiteNavbar } from "@/components/site-navbar";
 import { FooterSection } from "@/components/hero/footer-section";
-import { SaaSHomepageV2 } from "@/components/hero/saas-homepage-v2";
+import { LocalizedHomepage } from "@/components/hero/localized-homepage";
 
 export default function LandingPage() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-zinc-950 text-zinc-50 antialiased">
       <SiteNavbar />
-      <SaaSHomepageV2 />
+      <LocalizedHomepage />
       <FooterSection />
     </div>
   );
