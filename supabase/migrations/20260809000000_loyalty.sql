@@ -1,6 +1,6 @@
 create table if not exists public.loyalty_settings (
   barbershop_id uuid primary key references public.barbershops(id) on delete cascade,
-  enabled boolean not null default true,
+  enabled boolean not null default false,
   points_per_euro numeric(10,2) not null default 1 check (points_per_euro > 0 and points_per_euro <= 100),
   welcome_points integer not null default 0 check (welcome_points >= 0 and welcome_points <= 100000),
   referral_points integer not null default 0 check (referral_points >= 0 and referral_points <= 100000),
