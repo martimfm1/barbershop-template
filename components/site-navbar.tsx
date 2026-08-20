@@ -14,13 +14,21 @@ import { useLanguage } from "@/context/LanguageContext";
 import { cn } from "@/lib/utils";
 import { NAVBAR_POPUP_TRANSITION, NAVBAR_TRANSITION } from "./navbar-motion";
 
-// Existing navbar implementation; only imports were normalized so cn is available.
+type NavigationRole = "owner" | "admin" | "manager" | "barber" | "receptionist" | "staff" | "client";
+type NavPermission = "dashboard" | "agenda" | "clients" | "services" | "team" | "messages" | "marketing" | "loyalty" | "automations" | "analytics" | "qr" | "settings" | "billing";
+type NavLink = { label: string; href: string; permission?: NavPermission };
+
+const NAV_PERMISSIONS: NavPermission[] = ["dashboard", "agenda", "clients", "services", "team", "messages", "marketing", "loyalty", "automations", "analytics", "qr", "settings", "billing"];
+const NAV_ROLES: NavigationRole[] = ["owner", "admin", "manager", "barber", "receptionist", "staff", "client"];
+
 export function SiteNavbar() {
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [navigationRole, setNavigationRole] = useState<NavigationRole>("client");
+  const [permissions, setPermissions] = useState<NavPermission[]>([]);
   const { t, locale } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
@@ -38,10 +46,38 @@ export function SiteNavbar() {
     }
     void syncSession();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
-      if (mounted) setUser(session?.user ?? null);
+      if (!mounted) return;
+      setUser(session?.user ?? null);
+      if (!session?.user) {
+        setNavigationRole("client");
+        setPermissions([]);
+      }
     });
     return () => { mounted = false; subscription.unsubscribe(); };
   }, [supabase]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    async function syncNavigationContext() {
+      try {
+        const response = await fetch("/api/navigation/context", { cache: "no-store" });
+        if (!response.ok) throw new Error(`navigation context ${response.status}`);
+        const data = (await response.json()) as { role?: string; permissions?: string[] };
+        if (cancelled) return;
+        const role = NAV_ROLES.includes(data.role as NavigationRole) ? data.role as NavigationRole : "client";
+        setNavigationRole(role);
+        setPermissions((data.permissions ?? []).filter((value): value is NavPermission => NAV_PERMISSIONS.includes(value as NavPermission)));
+      } catch (error) {
+        if (cancelled) return;
+        console.warn("[NAVIGATION_CONTEXT_SYNC]", error);
+        setNavigationRole("client");
+        setPermissions([]);
+      }
+    }
+    void syncNavigationContext();
+    return () => { cancelled = true; };
+  }, [user]);
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 24);
@@ -73,40 +109,6 @@ export function SiteNavbar() {
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, []);
 
-  const accountType = useMemo<"barber" | "customer">(() => {
-    if (!user) return "customer";
-    const rawRole = String(user.app_metadata?.role ?? user.user_metadata?.role ?? "").toLowerCase();
-    if (["barber", "owner", "admin", "staff", "barbershop_owner", "barbershop_admin"].includes(rawRole)) return "barber";
-    const hasBarbershopContext = Boolean(user.user_metadata?.barbershopId ?? user.user_metadata?.barbershop_id ?? user.app_metadata?.barbershopId ?? user.app_metadata?.barbershop_id);
-    return hasBarbershopContext ? "barber" : "customer";
-  }, [user]);
-
-  const barberLinks = useMemo(() => [
-    { label: t("nav.dashboard", { defaultValue: "Painel" }), href: "/dashboard" },
-    { label: t("dashboard.appointments", { defaultValue: "Agendamentos" }), href: "/dashboard/agenda" },
-    { label: t("dashboard.clients", { defaultValue: "Clientes" }), href: "/dashboard/clients" },
-    { label: t("dashboard.loyalty", { defaultValue: "Fidelização" }), href: "/dashboard/loyalty" },
-    { label: t("nav.stats", { defaultValue: "Estatísticas" }), href: "/dashboard/analytics" },
-  ], [t]);
-
-  const customerLinks = useMemo(() => [
-    { label: t("nav.barbershops", { defaultValue: "Barbearias" }), href: "/barbershops" },
-    { label: t("nav.manageBookings", { defaultValue: "As minhas marcações" }), href: "/my-bookings" },
-    { label: t("nav.howItWorks", { defaultValue: "Como funciona" }), href: "/#friction" },
-  ], [t]);
-
-  const guestLinks = useMemo(() => [
-    { label: t("nav.barbershops", { defaultValue: "Barbearias" }), href: "/barbershops" },
-    { label: t("nav.manageBookings", { defaultValue: "As minhas marcações" }), href: "/my-bookings" },
-    { label: t("nav.howItWorks", { defaultValue: "Como funciona" }), href: "/#friction" },
-    { label: t("nav.forBarbers", { defaultValue: "Para barbeiros" }), href: "/registo" },
-  ], [t]);
-
-  const links = !user ? guestLinks : accountType === "barber" ? barberLinks : customerLinks;
-  const roleLabel = accountType === "barber"
-    ? (locale === "pt" ? "Barbeiro" : "Barber")
-    : (locale === "pt" ? "Cliente" : "Customer");
-
   const getUserDetails = () => {
     const fullName = user?.user_metadata?.name || user?.user_metadata?.full_name;
     const fallback = user?.email?.split("@")[0] || "User";
@@ -114,8 +116,54 @@ export function SiteNavbar() {
     return { firstName: firstName.charAt(0).toUpperCase() + firstName.slice(1), initial: firstName.charAt(0).toUpperCase() };
   };
   const { firstName, initial } = user ? getUserDetails() : { firstName: "", initial: "" };
+
+  const permissionGranted = (permission: NavPermission) => navigationRole === "owner" || permissions.includes(permission);
+
+  const teamLinks = useMemo<NavLink[]>(() => [
+    { label: t("nav.dashboard", { defaultValue: "Painel" }), href: "/dashboard", permission: "dashboard" },
+    { label: t("dashboard.appointments", { defaultValue: "Agendamentos" }), href: "/dashboard/agenda", permission: "agenda" },
+    { label: t("dashboard.clients", { defaultValue: "Clientes" }), href: "/dashboard/clients", permission: "clients" },
+    { label: t("dashboard.loyalty", { defaultValue: "Fidelização" }), href: "/dashboard/loyalty", permission: "loyalty" },
+    { label: t("nav.stats", { defaultValue: "Estatísticas" }), href: "/dashboard/analytics", permission: "analytics" },
+    { label: t("dashboard.team", { defaultValue: "Equipa" }), href: "/dashboard/team", permission: "team" },
+    { label: t("dashboard.settings", { defaultValue: "Definições" }), href: "/dashboard/settings", permission: "settings" },
+  ], [t]);
+
+  const customerLinks = useMemo<NavLink[]>(() => [
+    { label: t("nav.barbershops", { defaultValue: "Barbearias" }), href: "/barbershops" },
+    { label: t("nav.manageBookings", { defaultValue: "As minhas marcações" }), href: "/my-bookings" },
+    { label: t("nav.howItWorks", { defaultValue: "Como funciona" }), href: "/#friction" },
+  ], [t]);
+
+  const guestLinks = useMemo<NavLink[]>(() => [
+    { label: t("nav.barbershops", { defaultValue: "Barbearias" }), href: "/barbershops" },
+    { label: t("nav.manageBookings", { defaultValue: "As minhas marcações" }), href: "/my-bookings" },
+    { label: t("nav.howItWorks", { defaultValue: "Como funciona" }), href: "/#friction" },
+    { label: t("nav.forBarbers", { defaultValue: "Para barbeiros" }), href: "/registo" },
+  ], [t]);
+
+  const links = !user
+    ? guestLinks
+    : navigationRole === "client"
+      ? customerLinks
+      : teamLinks.filter((link) => !link.permission || permissionGranted(link.permission));
+
+  const roleLabel = navigationRole === "client"
+    ? (locale === "pt" ? "Cliente" : "Customer")
+    : navigationRole === "owner"
+      ? (locale === "pt" ? "Proprietário" : "Owner")
+      : navigationRole === "admin"
+        ? "Admin"
+        : navigationRole === "manager"
+          ? (locale === "pt" ? "Gestor" : "Manager")
+          : navigationRole === "barber"
+            ? (locale === "pt" ? "Barbeiro" : "Barber")
+            : navigationRole === "receptionist"
+              ? (locale === "pt" ? "Receção" : "Receptionist")
+              : "Staff";
+
   const isActive = (href: string) => href.startsWith("/#") ? pathname === "/" : href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
-  const handleLogout = async () => { await supabase.auth.signOut(); setDropdownOpen(false); setOpen(false); router.push("/"); };
+  const handleLogout = async () => { await supabase.auth.signOut(); setDropdownOpen(false); setOpen(false); setNavigationRole("client"); setPermissions([]); router.push("/"); };
 
   return (
     <>
