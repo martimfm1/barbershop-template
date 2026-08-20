@@ -62,15 +62,11 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const rawQuery = searchParams.get("query")?.trim() ?? "";
-    if (rawQuery.length > 160) {
-      return NextResponse.json({ error: "Pesquisa demasiado longa." }, { status: 400 });
-    }
+    if (rawQuery.length > 160) return NextResponse.json({ error: "Pesquisa demasiado longa." }, { status: 400 });
 
     const query = rawQuery.toLocaleLowerCase();
     const filter = searchParams.get("filter") ?? "All";
-    if (!["All", "Near Me", "Top Rated"].includes(filter)) {
-      return NextResponse.json({ error: "Filtro inválido." }, { status: 400 });
-    }
+    if (!["All", "Near Me", "Top Rated"].includes(filter)) return NextResponse.json({ error: "Filtro inválido." }, { status: 400 });
 
     const requestedDate = searchParams.get("date");
     const isIsoDate = Boolean(requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) && !Number.isNaN(new Date(`${requestedDate}T12:00:00`).getTime()));
@@ -80,9 +76,7 @@ export async function GET(request: Request) {
     const longitude = Number(searchParams.get("lng"));
     const hasLatitude = searchParams.has("lat");
     const hasLongitude = searchParams.has("lng");
-    if ((hasLatitude || hasLongitude) && !isValidCoordinates(latitude, longitude)) {
-      return NextResponse.json({ error: "Localização inválida." }, { status: 400 });
-    }
+    if ((hasLatitude || hasLongitude) && !isValidCoordinates(latitude, longitude)) return NextResponse.json({ error: "Localização inválida." }, { status: 400 });
     const canMeasureDistance = isValidCoordinates(latitude, longitude);
 
     const supabase = await createClient();
@@ -104,7 +98,10 @@ export async function GET(request: Request) {
     });
 
     const barbershopIds = records.map((record) => record.barbershop_id).filter(Boolean);
-    const { data: appointments } = barbershopIds.length ? await supabase.from("appointments").select("barbershop_id, date_hour").in("barbershop_id", barbershopIds).gte("date_hour", `${date}T00:00:00`).lte("date_hour", `${date}T23:59:59`) : { data: [] as { barbershop_id: string; date_hour: string }[] };
+    const { data: appointments } = barbershopIds.length
+      ? await supabase.from("appointments").select("barbershop_id, date_hour").in("barbershop_id", barbershopIds).gte("date_hour", `${date}T00:00:00`).lte("date_hour", `${date}T23:59:59`)
+      : { data: [] as { barbershop_id: string; date_hour: string }[] };
+
     const bookedByShop = new Map<string, Set<string>>();
     for (const appointment of appointments ?? []) {
       const time = appointment.date_hour?.split("T")[1]?.slice(0, 5) ?? "";
@@ -112,8 +109,7 @@ export async function GET(request: Request) {
       bookedByShop.get(appointment.barbershop_id)?.add(time);
     }
 
-    const available = records.filter((record) => hasAvailableSlot(record, bookedByShop.get(record.barbershop_id) ?? new Set(), date));
-    const shops = available.map((record) => {
+    const shops = records.filter((record) => hasAvailableSlot(record, bookedByShop.get(record.barbershop_id) ?? new Set(), date)).map((record) => {
       const shop = mapRecordToMarketplaceShopResponse(record);
       const distanceKm = canMeasureDistance && isValidCoordinates(Number(record.lat), Number(record.lng))
         ? haversineKm(latitude, longitude, Number(record.lat), Number(record.lng))
@@ -124,7 +120,12 @@ export async function GET(request: Request) {
     if (filter === "Near Me" && canMeasureDistance) shops.sort((a, b) => a.distanceKm - b.distanceKm);
     if (filter === "Top Rated") shops.sort((a, b) => b.rating - a.rating || b.reviewsCount - a.reviewsCount);
 
-    return NextResponse.json({ data: shops }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ data: shops }, {
+      headers: {
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
+        Vary: "Accept-Encoding",
+      },
+    });
   } catch (error) {
     console.error("[SHOPS_INTERNAL_ERROR]", error);
     return NextResponse.json({ error: "Ocorreu um erro ao carregar as barbearias." }, { status: 500 });
