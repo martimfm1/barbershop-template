@@ -189,12 +189,12 @@ export function SiteNavbar() {
                   </Link>
                 );
               })}
+              <span className="ml-1 h-6 w-px bg-white/8" aria-hidden="true" />
+              <LanguageSwitcher />
             </nav>
           </div>
 
           <div className="relative z-[210] flex shrink-0 items-center gap-1.5 sm:gap-2" ref={dropdownRef}>
-            <LanguageSwitcher />
-
             {!loading && user ? (
               <>
                 <button
@@ -267,6 +267,10 @@ export function SiteNavbar() {
                 </Button>
               </div>
             ) : null}
+
+            <div className="lg:hidden">
+              <LanguageSwitcher />
+            </div>
 
             <Button
               type="button"
