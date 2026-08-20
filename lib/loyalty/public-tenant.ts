@@ -5,7 +5,14 @@ interface LoyaltyTenant {
   barbershopId: string;
 }
 
-async function isLoyaltyEnabled(barbershopId: string): Promise<boolean> {
+async function isLoyaltyEnabled(
+  barbershopId: string,
+  plan: string | null | undefined,
+): Promise<boolean> {
+  if (!["pro", "enterprise"].includes(String(plan ?? "").toLowerCase())) {
+    return false;
+  }
+
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("loyalty_settings")
@@ -21,10 +28,15 @@ async function isLoyaltyEnabled(barbershopId: string): Promise<boolean> {
     return false;
   }
 
-  return data?.enabled === true;
+  // The migration defaults enabled=true, but existing Pro/Enterprise
+  // barbershops may not have a settings row yet. In that case the feature
+  // should still be considered enabled until explicitly disabled.
+  return data?.enabled ?? true;
 }
 
-export async function getLoyaltyTenantBySlug(slug: string): Promise<LoyaltyTenant | null> {
+export async function getLoyaltyTenantBySlug(
+  slug: string,
+): Promise<LoyaltyTenant | null> {
   const normalized = slug.trim().toLowerCase();
   if (!isValidPublicProfileSlug(normalized)) return null;
 
@@ -36,7 +48,7 @@ export async function getLoyaltyTenantBySlug(slug: string): Promise<LoyaltyTenan
       return null;
     }
 
-    return (await isLoyaltyEnabled(barbershopId))
+    return (await isLoyaltyEnabled(barbershopId, profile?.plan))
       ? { barbershopId }
       : null;
   } catch (error) {
