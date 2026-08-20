@@ -8,7 +8,7 @@ create or replace function public.admin_grant_loyalty_points(
 )
 returns table (
   member_id uuid,
-  email text,
+  member_email text,
   previous_balance integer,
   points_added integer,
   new_balance integer
@@ -40,11 +40,11 @@ begin
     raise exception 'LOYALTY_REASON_REQUIRED' using errcode = '22023';
   end if;
 
-  select * into v_member
-  from public.loyalty_members
-  where barbershop_id = p_barbershop_id
-    and lower(email) = v_email
-    and status = 'active'
+  select lm.* into v_member
+  from public.loyalty_members as lm
+  where lm.barbershop_id = p_barbershop_id
+    and lower(lm.email) = v_email
+    and lm.status = 'active'
   for update;
 
   if not found then
@@ -54,10 +54,10 @@ begin
   v_previous := v_member.points_balance;
   v_new := v_previous + p_points;
 
-  update public.loyalty_members
+  update public.loyalty_members as lm
   set points_balance = v_new,
       updated_at = now()
-  where id = v_member.id;
+  where lm.id = v_member.id;
 
   insert into public.loyalty_member_transactions (
     barbershop_id,
