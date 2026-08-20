@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 const EMAIL_RATE_LIMIT = 3;
 const EMAIL_RATE_WINDOW_SECONDS = 15 * 60;
 
-function logOtpError(event: string, details?: Record<string, string | number>) {
+function logOtpError(event: string, details?: Record<string, string | number | boolean>) {
   console.error("[LOYALTY_OTP_ERROR]", { event, ...details });
 }
 
@@ -19,7 +19,10 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => ({}))) as { slug?: unknown; email?: unknown };
     const slug = typeof body.slug === "string" ? body.slug.trim().toLowerCase() : "";
     const email = normalizeLoyaltyEmail(body.email);
-    if (!slug || !email) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+
+    if (!slug || !email) {
+      return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+    }
 
     const tenant = await getLoyaltyTenantBySlug(slug);
     if (!tenant) {
@@ -32,6 +35,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "A fidelização não está disponível para esta barbearia." }, { status: 404 });
     }
 
+    if (!process.env.BREVO_API_KEY || !process.env.SENDER_EMAIL) {
+      logOtpError("email_configuration_missing", {
+        hasBrevoApiKey: Boolean(process.env.BREVO_API_KEY),
+        hasSenderEmail: Boolean(process.env.SENDER_EMAIL),
+      });
+      return NextResponse.json(
+        { error: "O envio de emails da fidelização não está configurado. Tenta novamente mais tarde." },
+        { status: 503 },
+      );
+    }
+
     const allowed = await consumePublicRateLimit(
       request,
       "loyalty-otp-request",
@@ -39,6 +53,7 @@ export async function POST(request: Request) {
       EMAIL_RATE_LIMIT,
       EMAIL_RATE_WINDOW_SECONDS,
     );
+
     if (!allowed) {
       return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
     }
@@ -53,6 +68,7 @@ export async function POST(request: Request) {
       .select("name")
       .eq("id", tenant.barbershopId)
       .maybeSingle();
+
     if (barbershopError) {
       logOtpError("barbershop_lookup_failed", { code: barbershopError.code ?? "UNKNOWN" });
       return NextResponse.json({ error: "Não foi possível preparar o envio." }, { status: 503 });
@@ -64,6 +80,7 @@ export async function POST(request: Request) {
       .eq("barbershop_id", tenant.barbershopId)
       .eq("email", email)
       .is("consumed_at", null);
+
     if (cleanupError) {
       logOtpError("verification_cleanup_failed", { code: cleanupError.code ?? "UNKNOWN" });
       throw cleanupError;
@@ -77,6 +94,7 @@ export async function POST(request: Request) {
         code_hash: codeHash,
         expires_at: expiresAt,
       });
+
     if (insertError) {
       logOtpError("verification_insert_failed", { code: insertError.code ?? "UNKNOWN" });
       throw insertError;
@@ -98,6 +116,7 @@ export async function POST(request: Request) {
       } else {
         logOtpError("email_delivery_failed", { status: 0 });
       }
+
       return NextResponse.json({ error: "Não foi possível enviar o código." }, { status: 503 });
     }
 
