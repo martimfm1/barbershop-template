@@ -4,10 +4,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const TEAM_ROLES = ["owner", "admin", "manager", "barber", "receptionist", "staff"] as const;
 type TeamRole = (typeof TEAM_ROLES)[number];
+type NavigationRole = TeamRole | "client";
 
-function normalizeRole(value: unknown): TeamRole | null {
+function normalizeRole(value: unknown): TeamRole | "client" {
   const role = String(value ?? "").toLowerCase();
-  return (TEAM_ROLES as readonly string[]).includes(role) ? (role as TeamRole) : null;
+  return (TEAM_ROLES as readonly string[]).includes(role) ? (role as TeamRole) : "client";
 }
 
 const ROLE_PERMISSIONS: Record<TeamRole, string[]> = {
@@ -39,12 +40,27 @@ export async function GET() {
     return NextResponse.json({ authenticated: true, role: "client", permissions: [] });
   }
 
-  const role = normalizeRole(profile?.role) ?? "staff";
+  const role = normalizeRole(profile?.role);
   const barbershopId = profile?.barbershop_id ?? null;
 
-  let permissions = ROLE_PERMISSIONS[role];
+  if (role === "client" || !barbershopId) {
+    return NextResponse.json({
+      authenticated: true,
+      userId: user.id,
+      role: "client",
+      barbershopId: null,
+      permissions: [],
+    }, {
+      headers: {
+        "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
+        Vary: "Cookie",
+      },
+    });
+  }
 
-  if (barbershopId && role !== "owner") {
+  let permissions = [...ROLE_PERMISSIONS[role]];
+
+  if (role !== "owner") {
     const { data: memberGrant, error: permissionError } = await admin
       .from("barbershop_member_permissions")
       .select("permissions")
