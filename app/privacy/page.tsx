@@ -21,7 +21,7 @@ const currentPrivacyPolicy = {
   },
   en: {
     ...privacyPolicy.en,
-    lastUpdated: "August 13, 2026",
+    lastUpdated: "August 21, 2026",
     sections: [
       ...privacyPolicy.en.sections,
       currentPrivacyAddendum.en,
