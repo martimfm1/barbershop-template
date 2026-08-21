@@ -6,7 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 
-export function InviteCodeCard() {
+type InviteCodeCardProps = {
+  seats?: { used: number; limit: number; unlimited: boolean };
+};
+
+export function InviteCodeCard({ seats }: InviteCodeCardProps) {
   const [code, setCode] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,7 +31,10 @@ export function InviteCodeCard() {
     return () => window.clearInterval(timer);
   }, [remaining, expiresAt]);
 
+  const teamFull = Boolean(seats && !seats.unlimited && seats.used >= seats.limit);
+
   async function generate() {
+    if (teamFull) return;
     setLoading(true);
     setCopied(false);
     try {
@@ -66,14 +73,15 @@ export function InviteCodeCard() {
           <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
             <KeyRound className="size-5" aria-hidden="true" />
           </div>
-          <div>
+          <div className="min-w-0">
             <CardTitle className="text-lg font-semibold text-zinc-50">Código de entrada</CardTitle>
-            <p className="mt-1 text-sm text-zinc-500">Gera um código de utilização única válido durante 10 minutos. Quem entrar com este código entra automaticamente como barbeiro.</p>
+            <p className="mt-1 text-sm text-zinc-500">Gera um código de utilização única válido durante 10 minutos. Quem entrar fica ligado à equipa e começa como barbeiro.</p>
           </div>
         </div>
       </CardHeader>
       <CardContent className="grid gap-4 p-5 sm:p-6">
-        <Button onClick={generate} disabled={loading} className="min-h-11 bg-emerald-600 text-white hover:bg-emerald-500 sm:w-fit">
+        {teamFull && <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.05] p-4 text-sm text-amber-100"><p className="font-semibold">Limite da equipa atingido</p><p className="mt-1 text-xs leading-5 text-amber-100/60">Aumenta o plano para convidar outra pessoa. O código não pode ser gerado enquanto não existir um lugar disponível.</p></div>}
+        <Button onClick={generate} disabled={loading || teamFull} className="min-h-11 bg-emerald-600 text-white hover:bg-emerald-500 sm:w-fit">
           {loading ? <Loader2 className="size-4 animate-spin" /> : <><RefreshCw className="mr-2 size-4" />Gerar código de barbeiro</>}
         </Button>
 
@@ -92,7 +100,7 @@ export function InviteCodeCard() {
             </div>
           </div>
         ) : (
-          <p className="text-xs leading-5 text-zinc-500">Depois de entrar, o proprietário pode alterar a função e as permissões dessa pessoa na aba de membros.</p>
+          <p className="text-xs leading-5 text-zinc-500">Depois de entrar, o proprietário ou um gestor com permissão de equipa pode alterar a função e as permissões da pessoa. A role Barbeiro mantém o perfil profissional sincronizado.</p>
         )}
       </CardContent>
     </Card>
