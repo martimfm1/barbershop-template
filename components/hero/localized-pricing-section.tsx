@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Check, Crown, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Crown, Loader2, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 
+type PlanKey = "free" | "pro" | "enterprise";
+
 type Plan = {
+  key: PlanKey;
   name: string;
   price: string;
   description: string;
@@ -12,13 +16,49 @@ type Plan = {
   features: string[];
 };
 
+type BillingContext = {
+  plan: PlanKey;
+  isBillingOwner: boolean;
+};
+
 export function LocalizedPricingSection() {
   const { locale } = useLanguage();
   const pt = locale === "pt";
+  const [billing, setBilling] = useState<BillingContext | null>(null);
+  const [billingLoading, setBillingLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    fetch("/api/stripe/subscription", { cache: "no-store" })
+      .then(async (response) => {
+        if (response.status === 401) return null;
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload) return null;
+        return {
+          plan: (payload.plan === "pro" || payload.plan === "enterprise" ? payload.plan : "free") as PlanKey,
+          isBillingOwner: payload.isBillingOwner === true,
+        } satisfies BillingContext;
+      })
+      .then((context) => {
+        if (active) setBilling(context);
+      })
+      .catch(() => {
+        if (active) setBilling(null);
+      })
+      .finally(() => {
+        if (active) setBillingLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const plans: Plan[] = pt
     ? [
         {
+          key: "free",
           name: "Barbers Free",
           price: "0 €",
           description: "O essencial para começar a receber reservas e organizar a operação.",
@@ -33,6 +73,7 @@ export function LocalizedPricingSection() {
           ],
         },
         {
+          key: "pro",
           name: "Barbers Pro",
           price: "9,90 € / mês",
           description: "Para barbearias que querem crescer, fidelizar clientes e automatizar o dia a dia.",
@@ -50,6 +91,7 @@ export function LocalizedPricingSection() {
           ],
         },
         {
+          key: "enterprise",
           name: "Barbers Enterprise",
           price: "29,99 € / mês",
           description: "Para operações maiores, várias localizações e controlo operacional avançado.",
@@ -67,6 +109,7 @@ export function LocalizedPricingSection() {
       ]
     : [
         {
+          key: "free",
           name: "Barbers Free",
           price: "€0",
           description: "Everything you need to start taking bookings and organize your operation.",
@@ -81,6 +124,7 @@ export function LocalizedPricingSection() {
           ],
         },
         {
+          key: "pro",
           name: "Barbers Pro",
           price: "€9.90 / month",
           description: "For barbershops ready to grow, retain customers and automate daily operations.",
@@ -98,6 +142,7 @@ export function LocalizedPricingSection() {
           ],
         },
         {
+          key: "enterprise",
           name: "Barbers Enterprise",
           price: "€29.99 / month",
           description: "For larger operations, multiple locations and advanced operational control.",
@@ -121,8 +166,57 @@ export function LocalizedPricingSection() {
     : "Start free. Upgrade when your barbershop needs more control, automation and scale.";
   const trial = pt ? "1 mês de Pro com TRIALPRO para novos utilizadores elegíveis" : "1 month of Pro with TRIALPRO for eligible new users";
   const compare = pt ? "Comparar planos em detalhe" : "Compare plans in detail";
-  const cta = pt ? "Começar grátis" : "Start for free";
   const included = pt ? "Incluído" : "Included";
+
+  const ctaForPlan = useMemo(() => {
+    return (plan: PlanKey) => {
+      if (billingLoading) {
+        return {
+          label: "",
+          href: "/plans",
+          disabled: true,
+        };
+      }
+
+      if (!billing) {
+        return {
+          label: plan === "free"
+            ? (pt ? "Começar grátis" : "Start for free")
+            : plan === "pro"
+              ? (pt ? "Escolher Pro" : "Choose Pro")
+              : (pt ? "Escolher Enterprise" : "Choose Enterprise"),
+          href: plan === "free" ? "/registo" : `/plans#${plan}`,
+          disabled: false,
+        };
+      }
+
+      if (billing.plan === plan) {
+        return {
+          label: pt ? "Plano atual" : "Current plan",
+          href: "/dashboard/billing",
+          disabled: true,
+        };
+      }
+
+      if (!billing.isBillingOwner) {
+        return {
+          label: pt ? "Ver planos" : "View plans",
+          href: "/plans",
+          disabled: false,
+        };
+      }
+
+      return {
+        label: plan === "free"
+          ? (pt ? "Manter Free" : "Keep Free")
+          : plan === "pro"
+            ? (billing.plan === "enterprise" ? (pt ? "Mudar para Pro" : "Switch to Pro") : (pt ? "Fazer upgrade" : "Upgrade"))
+            : (pt ? "Fazer upgrade" : "Upgrade"),
+        href: plan === "free" ? "/dashboard/billing" : `/plans#${plan}`,
+        disabled: false,
+      };
+    };
+  }, [billing, billingLoading, pt]);
 
   return (
     <section id="planos" className="border-y border-white/8 bg-white/[0.015]">
@@ -137,27 +231,36 @@ export function LocalizedPricingSection() {
         </div>
 
         <div className="mt-10 grid gap-4 lg:grid-cols-3 lg:items-stretch">
-          {plans.map((plan) => (
-            <article key={plan.name} className={`relative flex h-full flex-col rounded-2xl border p-6 transition ${plan.featured ? "border-emerald-400/30 bg-emerald-400/[0.045] shadow-[0_30px_90px_rgba(16,185,129,0.08)]" : "border-white/10 bg-white/[0.025]"}`}>
-              {plan.featured && <div className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200"><Crown className="size-3" />{pt ? "Mais escolhido" : "Most popular"}</div>}
-              <div>
-                <p className="text-sm font-semibold text-white">{plan.name}</p>
-                <p className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-white">{plan.price}</p>
-                <p className="mt-2 min-h-12 text-sm leading-6 text-zinc-400">{plan.description}</p>
-              </div>
-              <ul className="mt-6 flex-1 space-y-3 border-t border-white/8 pt-6">
-                {plan.features.map((feature, index) => (
-                  <li key={feature} className="flex items-start gap-2.5 text-sm text-zinc-300">
-                    <Check className={`mt-0.5 size-4 shrink-0 ${index === 0 && plan.featured ? "text-emerald-300" : "text-zinc-500"}`} />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link href="/registo" className={`mt-7 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition ${plan.featured ? "bg-white text-zinc-950 hover:bg-zinc-100" : "border border-white/10 bg-white/[0.04] text-zinc-100 hover:bg-white/[0.07]"}`}>
-                {cta}<ArrowRight className="size-4" />
-              </Link>
-            </article>
-          ))}
+          {plans.map((plan) => {
+            const cta = ctaForPlan(plan.key);
+            return (
+              <article key={plan.name} className={`relative flex h-full flex-col rounded-2xl border p-6 transition ${plan.featured ? "border-emerald-400/30 bg-emerald-400/[0.045] shadow-[0_30px_90px_rgba(16,185,129,0.08)]" : "border-white/10 bg-white/[0.025]"}`}>
+                {plan.featured && <div className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-200"><Crown className="size-3" />{pt ? "Mais escolhido" : "Most popular"}</div>}
+                <div>
+                  <p className="text-sm font-semibold text-white">{plan.name}</p>
+                  <p className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-white">{plan.price}</p>
+                  <p className="mt-2 min-h-12 text-sm leading-6 text-zinc-400">{plan.description}</p>
+                </div>
+                <ul className="mt-6 flex-1 space-y-3 border-t border-white/8 pt-6">
+                  {plan.features.map((feature, index) => (
+                    <li key={feature} className="flex items-start gap-2.5 text-sm text-zinc-300">
+                      <Check className={`mt-0.5 size-4 shrink-0 ${index === 0 && plan.featured ? "text-emerald-300" : "text-zinc-500"}`} />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                {cta.disabled ? (
+                  <button type="button" disabled className="mt-7 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm font-semibold text-zinc-500 disabled:cursor-default">
+                    {billingLoading ? <Loader2 className="size-4 animate-spin" /> : cta.label}
+                  </button>
+                ) : (
+                  <Link href={cta.href} className={`mt-7 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition ${plan.featured ? "bg-white text-zinc-950 hover:bg-zinc-100" : "border border-white/10 bg-white/[0.04] text-zinc-100 hover:bg-white/[0.07]"}`}>
+                    {cta.label}<ArrowRight className="size-4" />
+                  </Link>
+                )}
+              </article>
+            );
+          })}
         </div>
 
         <div className="mt-10 grid gap-3 md:grid-cols-2">
