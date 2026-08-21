@@ -164,7 +164,8 @@ export function LocalizedPricingSection() {
   const subtitle = pt
     ? "Começa grátis. Faz upgrade quando a tua barbearia precisar de mais controlo, automação e escala."
     : "Start free. Upgrade when your barbershop needs more control, automation and scale.";
-  const trial = pt ? "1 mês de Pro com TRIALPRO para novos utilizadores elegíveis" : "1 month of Pro with TRIALPRO for eligible new users";
+  const trial = pt ? "Oferta de lançamento: 1.º mês de Pro grátis com o cupão TRIALPRO" : "Launch offer: 1st month of Pro free with coupon TRIALPRO";
+  const trialDetails = pt ? "Válido para novos utilizadores elegíveis. Sem compromisso." : "Valid for eligible new users. No commitment.";
   const compare = pt ? "Comparar planos em detalhe" : "Compare plans in detail";
   const included = pt ? "Incluído" : "Included";
 
@@ -183,7 +184,7 @@ export function LocalizedPricingSection() {
           label: plan === "free"
             ? (pt ? "Começar grátis" : "Start for free")
             : plan === "pro"
-              ? (pt ? "Escolher Pro" : "Choose Pro")
+              ? (pt ? "Testar Pro grátis" : "Try Pro free")
               : (pt ? "Escolher Enterprise" : "Choose Enterprise"),
           href: plan === "free" ? "/registo" : `/plans#${plan}`,
           disabled: false,
@@ -210,7 +211,7 @@ export function LocalizedPricingSection() {
         label: plan === "free"
           ? (pt ? "Manter Free" : "Keep Free")
           : plan === "pro"
-            ? (billing.plan === "enterprise" ? (pt ? "Mudar para Pro" : "Switch to Pro") : (pt ? "Fazer upgrade" : "Upgrade"))
+            ? (billing.plan === "enterprise" ? (pt ? "Mudar para Pro" : "Switch to Pro") : (pt ? "Testar Pro grátis" : "Try Pro free"))
             : (pt ? "Fazer upgrade" : "Upgrade"),
         href: plan === "free" ? "/dashboard/billing" : `/plans#${plan}`,
         disabled: false,
@@ -225,8 +226,22 @@ export function LocalizedPricingSection() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-300/80">{eyebrow}</p>
           <h2 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">{title}</h2>
           <p className="mt-4 text-sm leading-6 text-zinc-400 sm:text-base">{subtitle}</p>
-          <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[0.06] px-3 py-1.5 text-xs text-emerald-200">
-            <Sparkles className="size-3.5" />{trial}
+
+          <div className="mx-auto mt-5 max-w-2xl rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-4 text-left shadow-[0_20px_60px_rgba(16,185,129,0.06)]">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl border border-emerald-300/20 bg-emerald-300/10 text-emerald-200">
+                  <Sparkles className="size-4" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-emerald-100">{trial}</p>
+                  <p className="mt-1 text-xs leading-5 text-emerald-100/55">{trialDetails}</p>
+                </div>
+              </div>
+              <Link href="/plans#pro" className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-3.5 text-xs font-semibold text-zinc-950 transition hover:bg-zinc-100">
+                {pt ? "Ver oferta" : "View offer"}<ArrowRight className="size-3.5" />
+              </Link>
+            </div>
           </div>
         </div>
 
