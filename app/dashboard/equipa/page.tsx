@@ -65,9 +65,7 @@ export default function EquipaPage() {
   }, [fetchProfessionals, fetchTeamState]);
 
   useEffect(() => {
-    if (!isLoadingBarbershop && barbershopId) {
-      queueMicrotask(() => void refreshTeam());
-    }
+    if (!isLoadingBarbershop && barbershopId) queueMicrotask(() => void refreshTeam());
   }, [barbershopId, isLoadingBarbershop, refreshTeam]);
 
   const { loadingProfessionals, newProfessionalName, setNewProfessionalName, newProfessionalCommission, setNewProfessionalCommission, editingProfessional, setEditingProfessional, handleCreateProfessional, handleUpdateProfessional, handleDeleteProfessional } = useProfessionals(barbershopId, refreshTeam, isFreePlan);
@@ -79,14 +77,7 @@ export default function EquipaPage() {
   if (isLoadingPlan) return <main className="min-h-screen bg-zinc-950" />;
 
   return <main className="min-h-screen bg-zinc-950 p-4 pt-16 text-zinc-100 sm:p-6 sm:pt-16 lg:p-8 lg:pt-16"><div className="mx-auto max-w-7xl space-y-6">
-    <ManagementPageHeader
-      icon={Briefcase}
-      eyebrow="Equipa e permissões"
-      title="Equipa"
-      description="Um lugar por pessoa. Os convidados contam para o plano e a role Barbeiro mantém automaticamente o perfil profissional ligado."
-      accentClassName="border-purple-500/20 bg-purple-500/10 text-purple-400"
-      actions={teamLimitReached ? <Button asChild className="min-h-11"><Link href="/plans">Aumentar equipa</Link></Button> : undefined}
-    />
+    <ManagementPageHeader icon={Briefcase} eyebrow="Equipa e permissões" title="Equipa" description="Um lugar por pessoa. Os convidados contam para o plano e a role Barbeiro mantém automaticamente o perfil profissional ligado." accentClassName="border-purple-500/20 bg-purple-500/10 text-purple-400" actions={teamLimitReached ? <Button asChild className="min-h-11"><Link href="/plans">Aumentar equipa</Link></Button> : undefined} />
 
     <section className="grid gap-3 sm:grid-cols-3">
       <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4"><p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">Lugares de equipa</p><p className="mt-2 text-2xl font-semibold text-white">{teamLoading ? "—" : teamSeats.unlimited ? `${teamSeats.used} / ∞` : `${teamSeats.used} / ${teamSeats.limit}`}</p><p className="mt-1 text-xs text-zinc-500">Cada membro convidado consome 1 lugar.</p></div>
@@ -100,7 +91,7 @@ export default function EquipaPage() {
       <button type="button" onClick={() => setActiveTab("invite")} className={`flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-medium transition ${activeTab === "invite" ? "bg-white text-zinc-950 shadow" : "text-zinc-400 hover:bg-white/5 hover:text-white"}`}><KeyRound className="size-4" />Convidar</button>
     </nav>
 
-    {activeTab === "invite" && <InviteCodeCard />}
+    {activeTab === "invite" && <InviteCodeCard seats={teamSeats} />}
     {activeTab === "members" && <TeamMembersManager onMembershipChanged={refreshTeam} />}
 
     {activeTab === "professionals" && <>
