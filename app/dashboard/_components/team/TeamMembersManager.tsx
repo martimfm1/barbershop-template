@@ -19,6 +19,11 @@ type Member = {
   joined_via_code: boolean;
   joined_at: string | null;
   permissions: Permissions;
+  professional?: { id: string; name: string; active: boolean; commission_percentage: number | null } | null;
+};
+
+type TeamMembersManagerProps = {
+  onMembershipChanged?: () => Promise<void> | void;
 };
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -46,8 +51,9 @@ const PERMISSION_LABELS: Record<string, string> = {
   billing: "Faturação",
 };
 
-export function TeamMembersManager() {
+export function TeamMembersManager({ onMembershipChanged }: TeamMembersManagerProps) {
   const [members, setMembers] = useState<Member[]>([]);
+  const [seats, setSeats] = useState<{ used: number; limit: number; unlimited: boolean }>({ used: 0, limit: 1, unlimited: false });
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
 
@@ -58,6 +64,7 @@ export function TeamMembersManager() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Não foi possível carregar os membros.");
       setMembers(data.members ?? []);
+      setSeats(data.seats ?? { used: 0, limit: 1, unlimited: false });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível carregar os membros.");
     } finally {
@@ -79,6 +86,8 @@ export function TeamMembersManager() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Não foi possível guardar as permissões.");
       toast.success(`${member.name_complete || "Membro"} atualizado.`);
+      await load();
+      await onMembershipChanged?.();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível guardar as permissões.");
     } finally {
@@ -100,6 +109,7 @@ export function TeamMembersManager() {
       if (!response.ok) throw new Error(data.error || "Não foi possível remover o membro.");
       toast.success("Membro removido da equipa.");
       await load();
+      await onMembershipChanged?.();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível remover o membro.");
     } finally {
@@ -114,9 +124,15 @@ export function TeamMembersManager() {
           <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-purple-500/20 bg-purple-500/10 text-purple-400">
             <ShieldCheck className="size-5" aria-hidden="true" />
           </div>
-          <div>
+          <div className="min-w-0">
             <CardTitle className="text-lg font-semibold text-zinc-50">Membros e permissões</CardTitle>
-            <p className="mt-1 text-sm text-zinc-500">O plano pertence à barbearia. Estas permissões controlam o que cada membro pode utilizar dentro desse plano.</p>
+            <p className="mt-1 text-sm text-zinc-500">As pessoas convidadas contam para o limite da equipa. A role `Barbeiro` cria e mantém automaticamente o perfil de barbeiro ligado à conta.</p>
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-300">
+              <span className="font-semibold text-white">{seats.used}</span>
+              <span className="text-zinc-500">/</span>
+              <span>{seats.unlimited ? "∞" : seats.limit}</span>
+              <span className="text-zinc-500">lugares de equipa utilizados</span>
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -137,6 +153,7 @@ export function TeamMembersManager() {
                       <h3 className="font-semibold text-zinc-100">{member.name_complete || member.email || "Membro"}</h3>
                       <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[11px] text-zinc-400">{ROLE_LABELS[member.role]}</span>
                       {isOwner && <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-400">Plano da barbearia</span>}
+                      {member.role === "barber" && member.professional && <span className="rounded-full border border-purple-500/20 bg-purple-500/10 px-2 py-0.5 text-[11px] text-purple-300">Perfil de barbeiro ligado</span>}
                       {member.joined_via_code && <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[11px] text-blue-400">Entrou por código</span>}
                     </div>
                     <p className="mt-1 text-xs text-zinc-500">{member.email || "Sem email"}{member.num_phone ? ` · ${member.num_phone}` : ""}</p>
