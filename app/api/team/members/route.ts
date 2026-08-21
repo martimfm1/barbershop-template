@@ -19,6 +19,18 @@ const DEFAULT_PERMISSIONS: Record<string, boolean> = {
   billing: false,
 };
 
+function defaultPermissionsForRole(role: string) {
+  if (role === "barber") {
+    return {
+      ...DEFAULT_PERMISSIONS,
+      agenda: true,
+      clients: true,
+      services: true,
+    };
+  }
+  return { ...DEFAULT_PERMISSIONS };
+}
+
 export async function GET(request: Request) {
   const tenant = await requireTenantAuthorization(request, TEAM_VIEW_ROLES);
   if (!tenant.ok) {
@@ -40,17 +52,23 @@ export async function GET(request: Request) {
     }
   }
 
-  const [{ data: members, error: membersError }, { data: permissionRows, error: permissionsError }, { data: inviteRows, error: invitesError }] = await Promise.all([
+  const [{ data: members, error: membersError }, { data: permissionRows, error: permissionsError }, { data: inviteRows, error: invitesError }, { data: professionals, error: professionalsError }, { data: teamCount, error: teamCountError }, { data: teamLimit, error: teamLimitError }] = await Promise.all([
     tenant.admin.from("users").select("id, name_complete, email, num_phone, role").eq("barbershop_id", tenant.barbershopId),
     tenant.admin.from("barbershop_member_permissions").select("user_id, permissions").eq("barbershop_id", tenant.barbershopId),
     tenant.admin.from("barbershop_invite_codes").select("used_by, used_at").eq("barbershop_id", tenant.barbershopId).not("used_by", "is", null),
+    tenant.admin.from("professionals").select("id, user_id, name, commission_percentage, active").eq("barbershop_id", tenant.barbershopId),
+    tenant.admin.rpc("get_effective_team_member_count", { p_barbershop_id: tenant.barbershopId }),
+    tenant.admin.rpc("get_effective_team_limit", { p_barbershop_id: tenant.barbershopId }),
   ]);
 
-  if (membersError || permissionsError || invitesError) {
+  if (membersError || permissionsError || invitesError || professionalsError || teamCountError || teamLimitError) {
     console.error("[TEAM_MEMBERS_LIST_FAIL]", {
       members: membersError?.message,
       permissions: permissionsError?.message,
       invites: invitesError?.message,
+      professionals: professionalsError?.message,
+      teamCount: teamCountError?.message,
+      teamLimit: teamLimitError?.message,
     });
     return NextResponse.json({ error: "Nao foi possivel carregar os membros." }, { status: 500 });
   }
@@ -62,6 +80,8 @@ export async function GET(request: Request) {
       inviteByUser.set(invite.used_by, invite.used_at);
     }
   }
+
+  const professionalByUser = new Map((professionals ?? []).filter((professional) => professional.user_id).map((professional) => [professional.user_id!, professional]));
 
   const orderedMembers = [...(members ?? [])].sort((a, b) => {
     if (a.role === "owner" && b.role !== "owner") return -1;
@@ -79,8 +99,14 @@ export async function GET(request: Request) {
         role: member.role,
         joined_via_code: inviteByUser.has(member.id),
         joined_at: inviteByUser.get(member.id) ?? null,
-        permissions: { ...DEFAULT_PERMISSIONS, ...(permissionsByUser.get(member.id) ?? {}) },
+        professional: professionalByUser.get(member.id) ?? null,
+        permissions: { ...defaultPermissionsForRole(member.role), ...(permissionsByUser.get(member.id) ?? {}) },
       })),
+      seats: {
+        used: Number(teamCount ?? 0),
+        limit: Number(teamLimit ?? 1),
+        unlimited: Number(teamLimit ?? 1) >= 2147483647,
+      },
     },
     { headers: { "Cache-Control": "no-store" } },
   );
@@ -99,6 +125,8 @@ export async function PATCH(request: Request) {
   if (error) {
     console.error("[TEAM_MEMBER_UPDATE_FAIL]", error);
     if (error.code === "42501") return NextResponse.json({ error: "So o proprietario pode alterar funcoes e permissoes." }, { status: 403 });
+    if (error.message === "TEAM_MEMBER_LIMIT_REACHED") return NextResponse.json({ error: "O plano da barbearia não tem lugares disponíveis para esta equipa." }, { status: 409 });
+    if (error.message === "PROFESSIONAL_LIMIT_REACHED") return NextResponse.json({ error: "Não existem lugares de barbeiro disponíveis neste plano." }, { status: 409 });
     return NextResponse.json({ error: error.message === "owner_role_is_immutable" ? "A funcao do proprietario nao pode ser alterada." : "Nao foi possivel atualizar o membro." }, { status: 400 });
   }
   return NextResponse.json({ success: true });
