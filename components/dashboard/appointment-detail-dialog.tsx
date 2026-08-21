@@ -25,13 +25,57 @@ function DetailItem({ icon, label, children }: { icon: ReactNode; label: string;
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
+  const id = `appointment-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
   return (
-    <section aria-labelledby={`appointment-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
-      <h2 id={`appointment-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`} className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+    <section aria-labelledby={id}>
+      <h2 id={id} className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
         {title}
       </h2>
       {children}
     </section>
+  );
+}
+
+function PaymentSummary({ appointment, servicePrice, extra, total }: { appointment: Appointment; servicePrice: number; extra: number; total: number }) {
+  const paymentLabel = appointment.payment_method === "cash"
+    ? "Dinheiro"
+    : appointment.payment_method === "mbway"
+      ? "MB WAY"
+      : appointment.payment_method === "card"
+        ? "Cartão"
+        : appointment.payment_method || "Ainda não registado";
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5">
+      <div className="flex items-center gap-2 text-sm font-semibold text-zinc-100">
+        <Wallet className="size-4 text-emerald-300" aria-hidden="true" />
+        Resumo financeiro
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-xl border border-white/8 bg-black/15">
+        <div className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
+          <span className="text-zinc-500">Serviço</span>
+          <span className="font-medium tabular-nums text-zinc-200">{servicePrice.toFixed(2)} €</span>
+        </div>
+        <div className="border-t border-white/8 px-4 py-3">
+          <div className="flex items-center justify-between gap-4 text-sm">
+            <span className="text-zinc-500">Produtos</span>
+            <span className="font-medium tabular-nums text-zinc-200">{extra.toFixed(2)} €</span>
+          </div>
+        </div>
+        <div className="border-t border-white/8 bg-white/[0.02] px-4 py-4">
+          <div className="flex items-end justify-between gap-4">
+            <span className="text-sm font-semibold text-zinc-300">Total</span>
+            <span className="text-xl font-semibold tabular-nums text-white">{total.toFixed(2)} €</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 rounded-xl border border-white/8 bg-black/15 p-4">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Pagamento</p>
+        <p className="mt-1.5 text-sm font-medium text-zinc-200">{paymentLabel}</p>
+      </div>
+    </div>
   );
 }
 
@@ -55,7 +99,7 @@ export function AppointmentDetailDialog({ appointment, open, onOpenChange }: Pro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         aria-describedby="appointment-detail-description"
-        className="flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-4xl flex-col gap-0 overflow-hidden rounded-2xl border-white/10 bg-zinc-950 p-0 text-white shadow-[0_30px_120px_rgba(0,0,0,0.55)] sm:max-h-[calc(100dvh-2rem)] sm:w-[min(94vw,56rem)] sm:rounded-3xl"
+        className="flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-5xl flex-col gap-0 overflow-hidden rounded-2xl border-white/10 bg-zinc-950 p-0 text-white shadow-[0_30px_120px_rgba(0,0,0,0.55)] sm:max-h-[calc(100dvh-2rem)] sm:w-[min(94vw,64rem)] sm:rounded-3xl"
       >
         <DialogHeader className="shrink-0 border-b border-white/8 bg-zinc-950/95 px-4 py-4 backdrop-blur-xl sm:px-6 sm:py-5">
           <div className="pr-9">
@@ -74,7 +118,7 @@ export function AppointmentDetailDialog({ appointment, open, onOpenChange }: Pro
             </div>
 
             <div className="mt-3 flex flex-wrap gap-2" aria-label="Resumo da marcação">
-              <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[11px] text-zinc-300">{dateLabel}</span>
+              <span className="max-w-full truncate rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[11px] text-zinc-300">{dateLabel}</span>
               <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[11px] text-zinc-300">{timeLabel}</span>
               <span className="max-w-full truncate rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1.5 text-[11px] text-emerald-300">{serviceName}</span>
             </div>
@@ -82,8 +126,8 @@ export function AppointmentDetailDialog({ appointment, open, onOpenChange }: Pro
         </DialogHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-6">
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-8">
-            <div className="space-y-6">
+          <div className="space-y-6 xl:grid xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-8 xl:space-y-0">
+            <div className="min-w-0 space-y-6">
               <Section title="Marcação">
                 <div className="grid gap-2.5 sm:grid-cols-2">
                   <DetailItem icon={<CalendarDays className="size-3.5" />} label="Data">{dateLabel}</DetailItem>
@@ -126,40 +170,9 @@ export function AppointmentDetailDialog({ appointment, open, onOpenChange }: Pro
               ) : null}
             </div>
 
-            <aside className="min-w-0 lg:sticky lg:top-0">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5">
-                <div className="flex items-center gap-2 text-sm font-semibold text-zinc-100">
-                  <Wallet className="size-4 text-emerald-300" aria-hidden="true" />
-                  Resumo financeiro
-                </div>
-
-                <div className="mt-4 overflow-hidden rounded-xl border border-white/8 bg-black/15">
-                  <div className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
-                    <span className="text-zinc-500">Serviço</span>
-                    <span className="font-medium tabular-nums text-zinc-200">{servicePrice.toFixed(2)} €</span>
-                  </div>
-                  <div className="border-t border-white/8 px-4 py-3">
-                    <div className="flex items-center justify-between gap-4 text-sm">
-                      <span className="text-zinc-500">Produtos</span>
-                      <span className="font-medium tabular-nums text-zinc-200">{extra.toFixed(2)} €</span>
-                    </div>
-                  </div>
-                  <div className="border-t border-white/8 bg-white/[0.02] px-4 py-4">
-                    <div className="flex items-end justify-between gap-4">
-                      <span className="text-sm font-semibold text-zinc-300">Total</span>
-                      <span className="text-xl font-semibold tabular-nums text-white">{total.toFixed(2)} €</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-3 rounded-xl border border-white/8 bg-black/15 p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Pagamento</p>
-                  <p className="mt-1.5 text-sm font-medium text-zinc-200">
-                    {appointment.payment_method === "cash" ? "Dinheiro" : appointment.payment_method === "mbway" ? "MB WAY" : appointment.payment_method === "card" ? "Cartão" : appointment.payment_method || "Ainda não registado"}
-                  </p>
-                </div>
-              </div>
-            </aside>
+            <div className="min-w-0 xl:sticky xl:top-0">
+              <PaymentSummary appointment={appointment} servicePrice={servicePrice} extra={extra} total={total} />
+            </div>
           </div>
         </div>
       </DialogContent>
