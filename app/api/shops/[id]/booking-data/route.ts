@@ -73,15 +73,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       const slotEnd = slotStart + serviceDuration;
       if (slotEnd > closeTotalMinutes || (isToday && slotStart <= currentMinutesNow) || isClosedDay) continue;
       if (lunchStartMinutes !== null && lunchEndMinutes !== null && overlaps(slotStart, slotEnd, lunchStartMinutes, lunchEndMinutes)) continue;
-      for (const professional of professionals) {
-        if (canProfessionalTakeSlot(slotStart, slotEnd, professional.id)) professionalAvailability[professional.id].push(minutesToTime(slotStart));
+
+      const availableForProfessionals = professionals.filter((professional) => canProfessionalTakeSlot(slotStart, slotEnd, professional.id));
+      for (const professional of availableForProfessionals) professionalAvailability[professional.id].push(minutesToTime(slotStart));
+
+      if (requestedProfessionalId) {
+        if (availableForProfessionals.some((professional) => professional.id === requestedProfessionalId)) availableSlots.push(minutesToTime(slotStart));
+      } else if (availableForProfessionals.length > 0) {
+        availableSlots.push(minutesToTime(slotStart));
       }
-      if (requestedProfessionalId) { if (canProfessionalTakeSlot(slotStart, slotEnd, requestedProfessionalId)) availableSlots.push(minutesToTime(slotStart)); }
-      else if (professionals.length > 0) { if (professionals.some((professional) => canProfessionalTakeSlot(slotStart, slotEnd, professional.id))) availableSlots.push(minutesToTime(slotStart)); }
-      else { const globallyBlocked = blockedIntervals.some((block) => { if (block.professionalId) return false; if (block.allDay) return true; return overlaps(slotStart, slotEnd, timeToMinutes(block.startTime!), timeToMinutes(block.endTime!)); }); const globallyBooked = isBookedForProfessional(slotStart, slotEnd, null); if (!globallyBlocked && !globallyBooked) availableSlots.push(minutesToTime(slotStart)); }
     }
+
     const visibleBlockedIntervals = requestedProfessionalId ? blockedIntervals.filter((block) => !block.professionalId || block.professionalId === requestedProfessionalId) : blockedIntervals;
-    const isClosed = isClosedDay || visibleBlockedIntervals.some((block) => block.allDay && (!block.professionalId || block.professionalId === requestedProfessionalId)) || availableSlots.length === 0;
+    const isClosed = isClosedDay || professionals.length === 0 || availableSlots.length === 0;
     return NextResponse.json({ services, professionals, availableSlots, professionalAvailability, isClosed, closedDay: isClosedDay, blockedIntervals: visibleBlockedIntervals, selectedProfessionalId: requestedProfessionalId }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("[BOOKING_DATA_ERROR]", error instanceof Error ? error.name : "UNKNOWN");
