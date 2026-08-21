@@ -11,6 +11,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="silentra-dashboard-shell">
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute left-[18%] top-[-12rem] size-[28rem] rounded-full bg-emerald-400/[0.025] blur-3xl" />
+        <div className="absolute right-[-10rem] top-[18%] size-[24rem] rounded-full bg-white/[0.018] blur-3xl" />
+      </div>
       {!isSettingsPage && <DashboardTopBar />}
       <DashboardSidebar />
       <div
@@ -18,9 +22,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           isSettingsPage ? "pt-0" : "pt-16"
         }`}
       >
-        <div className="min-h-[calc(100dvh-4rem)]">
+        <main className="dashboard-page mx-auto max-w-[1600px] py-5 sm:py-7">
           {children}
-        </div>
+        </main>
       </div>
     </div>
   );
