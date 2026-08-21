@@ -5,16 +5,19 @@ import { LoyaltySummary } from "@/components/customer-portal/loyalty-summary";
 
 export default function CustomerBookingsPage() {
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="silentra-page-shell min-h-screen text-foreground">
       <SiteNavbar />
-      <main className="mx-auto max-w-6xl px-4 pb-10 pt-24 sm:px-6 lg:px-8">
-        <div className="mb-6">
+      <div className="silentra-page-grid" aria-hidden="true" />
+
+      <div className="relative z-[1] mx-auto w-full max-w-6xl px-4 pb-4 pt-24 sm:px-6 sm:pt-28 lg:px-8">
+        <div className="mb-5">
           <LoyaltySummary />
         </div>
         <MyBookingsPage />
-      </main>
-      <footer className="mx-auto max-w-6xl px-4 pb-10 text-center text-xs text-zinc-600 sm:px-6 lg:px-8">
-        <Link href="/barbershops" className="hover:text-zinc-400">
+      </div>
+
+      <footer className="relative z-[1] mx-auto flex max-w-6xl items-center justify-center border-t border-white/[0.06] px-4 py-8 text-xs text-zinc-600 sm:px-6 lg:px-8">
+        <Link href="/barbershops" className="transition-colors hover:text-zinc-400">
           Explorar barbearias
         </Link>
       </footer>
