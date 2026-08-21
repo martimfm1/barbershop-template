@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { isValidDate, UUID_PATTERN } from "@/lib/validation";
 
 type AppointmentRow = { date_hour: string | null; duration_minutes: number | null; professional_id: string | null; status: string | null };
@@ -21,6 +22,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     if (requestedProfessionalId && !UUID_PATTERN.test(requestedProfessionalId)) return NextResponse.json({ error: "Profissional inválido." }, { status: 400 });
 
     const supabase = await createClient();
+    const admin = createAdminClient();
     const { data: shopRecord, error: shopError } = await supabase.from("shops").select(`id, barbershop_id, barbershops (opening_time, closing_time, lunch_start, lunch_end, closed_days)`).eq("id", shopId).single();
     if (shopError || !shopRecord) {
       console.error("[SHOP_FETCH_ERROR]", shopError?.code ?? "NOT_FOUND");
@@ -45,10 +47,35 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     if (servicesData.length === 0) { const legacy = await supabase.from("services").select("*").eq("shop_id", shopId); if (legacy.error && legacy.error.code !== "42703") return NextResponse.json({ error: "Não foi possível carregar os serviços." }, { status: 503 }); servicesData = legacy.data ?? []; }
     const services = servicesData.map((service: any) => ({ id: service.id, barbershopId: service.barbershop_id || service.shop_id || shopId, name: service.name || service.title || "Serviço", price: Number(service.price || service.cost || 0), durationMinutes: Math.max(1, Number(service.duration || service.duration_minutes || 30)) }));
 
-    const professionalsResult = await supabase.from("professionals").select("*").eq("barbershop_id", barbershopId);
-    if (professionalsResult.error) { console.error("[BOOKING_PROFESSIONALS_ERROR]", professionalsResult.error.code ?? "UNKNOWN"); return NextResponse.json({ error: "Não foi possível carregar os barbeiros." }, { status: 503 }); }
+    // Professionals are a public booking resource. Prefer active professional profiles;
+    // fall back to team members explicitly assigned the barber role so older/legacy data
+    // still appears in the booking flow.
+    const professionalsResult = await supabase.from("professionals").select("id, user_id, name, role, active").eq("barbershop_id", barbershopId).eq("active", true).order("name", { ascending: true });
+    if (professionalsResult.error) console.warn("[BOOKING_PROFESSIONALS_LOOKUP]", professionalsResult.error.code ?? "UNKNOWN");
     let professionalsData: any[] = professionalsResult.data ?? [];
-    if (professionalsData.length === 0) { const legacy = await supabase.from("professionals").select("*").eq("shop_id", shopId); if (legacy.error && legacy.error.code !== "42703") return NextResponse.json({ error: "Não foi possível carregar os barbeiros." }, { status: 503 }); professionalsData = legacy.data ?? []; }
+
+    if (professionalsData.length === 0) {
+      const { data: teamBarbers, error: teamBarbersError } = await admin
+        .from("users")
+        .select("id, name_complete, email, role")
+        .eq("barbershop_id", barbershopId)
+        .eq("role", "barber")
+        .order("name_complete", { ascending: true });
+
+      if (teamBarbersError) {
+        console.warn("[BOOKING_TEAM_BARBERS_LOOKUP]", teamBarbersError.code ?? "UNKNOWN");
+      } else if (teamBarbers?.length) {
+        professionalsData = teamBarbers.map((member: any) => ({
+          id: member.id,
+          name: member.name_complete || member.email || "Barbeiro",
+          role: "Barbeiro Profissional",
+          active: true,
+          user_id: member.id,
+          source: "team",
+        }));
+      }
+    }
+
     const professionals = professionalsData.map((professional: any) => ({ id: professional.id, name: professional.name || professional.full_name || "Barbeiro", role: professional.role || "Barbeiro Profissional" }));
     if (requestedProfessionalId && !professionals.some((professional) => professional.id === requestedProfessionalId)) return NextResponse.json({ error: "O profissional selecionado não pertence a esta barbearia." }, { status: 400 });
 
