@@ -47,6 +47,7 @@ export interface MarketplaceBookingResponse {
   closedDay?: boolean;
   blockedIntervals?: BookingBlockedInterval[];
   professionals?: MarketplaceProfessional[];
+  professionalAvailability?: Record<string, string[]>;
 }
 
 export interface UseBookingSlotsReturn {
