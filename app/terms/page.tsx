@@ -21,7 +21,7 @@ const currentTerms = {
   },
   en: {
     ...termsAndConditions.en,
-    lastUpdated: "August 13, 2026",
+    lastUpdated: "August 21, 2026",
     sections: [...termsAndConditions.en.sections, currentTermsAddendum.en],
   },
 };
