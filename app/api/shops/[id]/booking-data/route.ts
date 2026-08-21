@@ -23,7 +23,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const supabase = await createClient();
     const admin = createAdminClient();
-    const { data: shopRecord, error: shopError } = await supabase.from("shops").select(`id, barbershop_id, barbershops (opening_time, closing_time, lunch_start, lunch_end, closed_days)`).eq("id", shopId).single();
+    const { data: shopRecord, error: shopError } = await admin.from("shops").select(`id, barbershop_id, barbershops (opening_time, closing_time, lunch_start, lunch_end, closed_days)`).eq("id", shopId).single();
     if (shopError || !shopRecord) {
       console.error("[SHOP_FETCH_ERROR]", shopError?.code ?? "NOT_FOUND");
       return NextResponse.json({ error: "Barbearia não encontrada." }, { status: 404 });
@@ -41,50 +41,24 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const selectedWeekday = new Date(`${date}T12:00:00`).getDay();
     const isClosedDay = closedDays.has(selectedWeekday);
 
-    const servicesResult = await supabase.from("services").select("*").eq("barbershop_id", barbershopId);
+    const servicesResult = await admin.from("services").select("*").eq("barbershop_id", barbershopId);
     if (servicesResult.error) { console.error("[BOOKING_SERVICES_ERROR]", servicesResult.error.code ?? "UNKNOWN"); return NextResponse.json({ error: "Não foi possível carregar os serviços." }, { status: 503 }); }
     let servicesData: any[] = servicesResult.data ?? [];
-    if (servicesData.length === 0) { const legacy = await supabase.from("services").select("*").eq("shop_id", shopId); if (legacy.error && legacy.error.code !== "42703") return NextResponse.json({ error: "Não foi possível carregar os serviços." }, { status: 503 }); servicesData = legacy.data ?? []; }
+    if (servicesData.length === 0) { const legacy = await admin.from("services").select("*").eq("shop_id", shopId); if (legacy.error && legacy.error.code !== "42703") return NextResponse.json({ error: "Não foi possível carregar os serviços." }, { status: 503 }); servicesData = legacy.data ?? []; }
     const services = servicesData.map((service: any) => ({ id: service.id, barbershopId: service.barbershop_id || service.shop_id || shopId, name: service.name || service.title || "Serviço", price: Number(service.price || service.cost || 0), durationMinutes: Math.max(1, Number(service.duration || service.duration_minutes || 30)) }));
 
-    // Professionals are a public booking resource. Prefer active professional profiles;
-    // fall back to team members explicitly assigned the barber role so older/legacy data
-    // still appears in the booking flow.
-    const professionalsResult = await supabase.from("professionals").select("id, user_id, name, role, active").eq("barbershop_id", barbershopId).eq("active", true).order("name", { ascending: true });
-    if (professionalsResult.error) console.warn("[BOOKING_PROFESSIONALS_LOOKUP]", professionalsResult.error.code ?? "UNKNOWN");
-    let professionalsData: any[] = professionalsResult.data ?? [];
-
-    if (professionalsData.length === 0) {
-      const { data: teamBarbers, error: teamBarbersError } = await admin
-        .from("users")
-        .select("id, name_complete, email, role")
-        .eq("barbershop_id", barbershopId)
-        .eq("role", "barber")
-        .order("name_complete", { ascending: true });
-
-      if (teamBarbersError) {
-        console.warn("[BOOKING_TEAM_BARBERS_LOOKUP]", teamBarbersError.code ?? "UNKNOWN");
-      } else if (teamBarbers?.length) {
-        professionalsData = teamBarbers.map((member: any) => ({
-          id: member.id,
-          name: member.name_complete || member.email || "Barbeiro",
-          role: "Barbeiro Profissional",
-          active: true,
-          user_id: member.id,
-          source: "team",
-        }));
-      }
-    }
-
+    const professionalsResult = await admin.from("professionals").select("id, user_id, name, role, active").eq("barbershop_id", barbershopId).eq("active", true).order("name", { ascending: true });
+    if (professionalsResult.error) { console.error("[BOOKING_PROFESSIONALS_ERROR]", professionalsResult.error.code ?? "UNKNOWN"); return NextResponse.json({ error: "Não foi possível carregar os barbeiros." }, { status: 503 }); }
+    const professionalsData: any[] = professionalsResult.data ?? [];
     const professionals = professionalsData.map((professional: any) => ({ id: professional.id, name: professional.name || professional.full_name || "Barbeiro", role: professional.role || "Barbeiro Profissional" }));
     if (requestedProfessionalId && !professionals.some((professional) => professional.id === requestedProfessionalId)) return NextResponse.json({ error: "O profissional selecionado não pertence a esta barbearia." }, { status: 400 });
 
-    const { data: blockRows, error: blocksError } = await supabase.from("schedule_blocks").select("id, professional_id, date, start_time, end_time, reason").eq("barbershop_id", barbershopId).eq("date", date).order("start_time", { ascending: true });
+    const { data: blockRows, error: blocksError } = await admin.from("schedule_blocks").select("id, professional_id, date, start_time, end_time, reason").eq("barbershop_id", barbershopId).eq("date", date).order("start_time", { ascending: true });
     if (blocksError && blocksError.code !== "42P01") { console.error("[BOOKING_BLOCKS_ERROR]", blocksError.code ?? "UNKNOWN"); return NextResponse.json({ error: "Não foi possível carregar os horários bloqueados." }, { status: 503 }); }
     const blockedIntervals = ((blockRows ?? []) as ScheduleBlockRow[]).map((block) => ({ id: block.id, professionalId: block.professional_id, startTime: block.start_time ? block.start_time.slice(0, 5) : null, endTime: block.end_time ? block.end_time.slice(0, 5) : null, reason: block.reason?.trim() || "Horário bloqueado", allDay: !block.start_time || !block.end_time }));
 
     const dayStart = `${date}T00:00:00`; const dayEnd = `${date}T23:59:59`;
-    const { data: appointments, error: appointmentsError } = await supabase.from("appointments").select("date_hour, duration_minutes, professional_id, status").eq("barbershop_id", barbershopId).gte("date_hour", dayStart).lte("date_hour", dayEnd).in("status", ["pending", "scheduled"]);
+    const { data: appointments, error: appointmentsError } = await admin.from("appointments").select("date_hour, duration_minutes, professional_id, status").eq("barbershop_id", barbershopId).gte("date_hour", dayStart).lte("date_hour", dayEnd).in("status", ["pending", "scheduled"]);
     if (appointmentsError) { console.error("[BOOKING_APPOINTMENTS_ERROR]", appointmentsError.code ?? "UNKNOWN"); return NextResponse.json({ error: "Não foi possível confirmar a agenda." }, { status: 503 }); }
 
     const now = new Date(); const todayPortugal = now.toLocaleDateString("en-CA", { timeZone: "Europe/Lisbon" }); const timePortugal = now.toLocaleTimeString("pt-PT", { timeZone: "Europe/Lisbon", hour: "2-digit", minute: "2-digit", hour12: false }); const isToday = date === todayPortugal; const currentMinutesNow = timeToMinutes(timePortugal); const lunchStartMinutes = lunchStart ? timeToMinutes(lunchStart) : null; const lunchEndMinutes = lunchEnd ? timeToMinutes(lunchEnd) : null; const selectedService = serviceId ? services.find((service) => service.id === serviceId) : services[0]; const serviceDuration = Math.min(Math.max(Number(selectedService?.durationMinutes ?? 30), 1), 1440);
@@ -92,18 +66,23 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const isBlockedForProfessional = (slotStart: number, slotEnd: number, professionalId: string | null) => blockedIntervals.some((block) => { if (block.professionalId && block.professionalId !== professionalId) return false; if (block.allDay) return true; return overlaps(slotStart, slotEnd, timeToMinutes(block.startTime!), timeToMinutes(block.endTime!)); });
     const isBookedForProfessional = (slotStart: number, slotEnd: number, professionalId: string | null) => appointmentIntervals.some((appointment) => { if (professionalId) return appointment.professionalId === professionalId && overlaps(slotStart, slotEnd, appointment.start, appointment.end); return appointment.professionalId === null && overlaps(slotStart, slotEnd, appointment.start, appointment.end); });
     const canProfessionalTakeSlot = (slotStart: number, slotEnd: number, professionalId: string) => !isBlockedForProfessional(slotStart, slotEnd, professionalId) && !isBookedForProfessional(slotStart, slotEnd, professionalId);
-    const availableSlots: string[] = []; const openTotalMinutes = timeToMinutes(openTime); const closeTotalMinutes = timeToMinutes(closeTime);
+    const availableSlots: string[] = [];
+    const professionalAvailability: Record<string, string[]> = Object.fromEntries(professionals.map((professional) => [professional.id, []]));
+    const openTotalMinutes = timeToMinutes(openTime); const closeTotalMinutes = timeToMinutes(closeTime);
     for (let slotStart = openTotalMinutes; slotStart < closeTotalMinutes; slotStart += 30) {
       const slotEnd = slotStart + serviceDuration;
       if (slotEnd > closeTotalMinutes || (isToday && slotStart <= currentMinutesNow) || isClosedDay) continue;
       if (lunchStartMinutes !== null && lunchEndMinutes !== null && overlaps(slotStart, slotEnd, lunchStartMinutes, lunchEndMinutes)) continue;
+      for (const professional of professionals) {
+        if (canProfessionalTakeSlot(slotStart, slotEnd, professional.id)) professionalAvailability[professional.id].push(minutesToTime(slotStart));
+      }
       if (requestedProfessionalId) { if (canProfessionalTakeSlot(slotStart, slotEnd, requestedProfessionalId)) availableSlots.push(minutesToTime(slotStart)); }
       else if (professionals.length > 0) { if (professionals.some((professional) => canProfessionalTakeSlot(slotStart, slotEnd, professional.id))) availableSlots.push(minutesToTime(slotStart)); }
       else { const globallyBlocked = blockedIntervals.some((block) => { if (block.professionalId) return false; if (block.allDay) return true; return overlaps(slotStart, slotEnd, timeToMinutes(block.startTime!), timeToMinutes(block.endTime!)); }); const globallyBooked = isBookedForProfessional(slotStart, slotEnd, null); if (!globallyBlocked && !globallyBooked) availableSlots.push(minutesToTime(slotStart)); }
     }
     const visibleBlockedIntervals = requestedProfessionalId ? blockedIntervals.filter((block) => !block.professionalId || block.professionalId === requestedProfessionalId) : blockedIntervals;
     const isClosed = isClosedDay || visibleBlockedIntervals.some((block) => block.allDay && (!block.professionalId || block.professionalId === requestedProfessionalId)) || availableSlots.length === 0;
-    return NextResponse.json({ services, professionals, availableSlots, isClosed, closedDay: isClosedDay, blockedIntervals: visibleBlockedIntervals, selectedProfessionalId: requestedProfessionalId }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ services, professionals, availableSlots, professionalAvailability, isClosed, closedDay: isClosedDay, blockedIntervals: visibleBlockedIntervals, selectedProfessionalId: requestedProfessionalId }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("[BOOKING_DATA_ERROR]", error instanceof Error ? error.name : "UNKNOWN");
     return NextResponse.json({ error: "Não foi possível carregar a disponibilidade. Tenta novamente." }, { status: 500, headers: { "Cache-Control": "no-store" } });
