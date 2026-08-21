@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppointmentDetailDialog } from "@/components/dashboard/appointment-detail-dialog";
-import { AppointmentActions } from "@/components/dashboard/appointment-actions";
 import { AppointmentMobileCard } from "@/components/dashboard/appointment-mobile-card";
 import { AppointmentsTable } from "@/components/dashboard/appointments-table";
 
@@ -145,58 +144,73 @@ export default function AgendaPage() {
   };
 
   return (
-    <main className="min-h-screen bg-zinc-950 p-4 text-zinc-100 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <header className="flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2 text-emerald-400"><CalendarDays className="size-5" aria-hidden="true" /></div>
-              <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl lg:text-3xl">Agenda</h1>
+    <main className="silentra-page-shell dashboard-page">
+      <div className="silentra-page-grid" aria-hidden="true" />
+      <div className="relative z-10 mx-auto w-full max-w-[100rem] px-0 py-6 sm:py-8 lg:py-10">
+        <header className="silentra-page-header">
+          <div className="min-w-0">
+            <p className="silentra-eyebrow">Operação diária</p>
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-300 shadow-[0_10px_30px_rgba(16,185,129,0.08)]">
+                <CalendarDays className="size-5" aria-hidden="true" />
+              </div>
+              <div>
+                <h1 className="silentra-page-title">Agenda</h1>
+                <p className="silentra-page-description">Vê o que está marcado, resolve o próximo passo e mantém o teu dia organizado.</p>
+              </div>
             </div>
-            <p className="mt-1 text-xs text-zinc-400 sm:text-sm">Vê o que está marcado, resolve o próximo passo e mantém o teu dia organizado.</p>
-            {!loadingInitial && <p className="mt-2 text-xs text-zinc-500"><span className="font-medium text-zinc-300">{todayAppointments.length}</span>{" "}{todayAppointments.length === 1 ? "marcação hoje" : "marcações hoje"} · <span className="font-medium text-zinc-300">{appointments.length}</span> no total</p>}
+            {!loadingInitial && (
+              <p className="mt-3 text-xs text-zinc-500">
+                <span className="font-semibold text-zinc-200">{todayAppointments.length}</span>{" "}
+                {todayAppointments.length === 1 ? "marcação hoje" : "marcações hoje"} ·{" "}
+                <span className="font-semibold text-zinc-200">{appointments.length}</span> no total
+              </p>
+            )}
           </div>
 
-          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
-            <Button variant="ghost" onClick={() => setShowAddForm((value) => !value)} className="col-span-2 min-h-[44px] gap-2 border border-emerald-500/20 bg-emerald-500/10 text-xs text-emerald-400 hover:bg-emerald-500/20 sm:col-span-1 sm:text-sm">
-              <Plus className="size-4" aria-hidden="true" />{showAddForm ? "Fechar marcação" : "Nova marcação"}
+          <div className="silentra-page-actions w-full sm:w-auto">
+            <Button variant="outline" onClick={() => setShowAddForm((value) => !value)} className="border-emerald-400/20 bg-emerald-400/[0.06] text-emerald-200 hover:border-emerald-400/30 hover:bg-emerald-400/[0.1]">
+              <Plus className="size-4" aria-hidden="true" />
+              {showAddForm ? "Fechar marcação" : "Nova marcação"}
             </Button>
-            <Button variant="ghost" onClick={() => setShowAddBlockForm((value) => !value)} className="min-h-[44px] gap-2 border border-white/10 bg-zinc-900 text-xs text-zinc-200 hover:bg-zinc-800 sm:text-sm">
-              <CalendarOff className="size-4" aria-hidden="true" />{showAddBlockForm ? "Fechar bloqueio" : "Bloquear horário"}
+            <Button variant="outline" onClick={() => setShowAddBlockForm((value) => !value)}>
+              <CalendarOff className="size-4" aria-hidden="true" />
+              {showAddBlockForm ? "Fechar bloqueio" : "Bloquear horário"}
             </Button>
-            <Link href="/dashboard" className="flex-1 sm:flex-none"><Button variant="ghost" className="min-h-[44px] w-full border border-white/10 bg-zinc-900 text-xs text-zinc-200 hover:bg-zinc-800 sm:text-sm">Voltar</Button></Link>
+            <Button asChild variant="ghost">
+              <Link href="/dashboard">Voltar</Link>
+            </Button>
           </div>
         </header>
 
-        {showAddForm && <BookingForm clients={clients} services={services} professionals={professionals} loading={loadingAppointments} formData={formData} setFormData={setFormData} selectedProfessionalId={selectedProfessionalId} setSelectedProfessionalId={setSelectedProfessionalId} selectedDate={selectedDate} setSelectedDate={setSelectedDate} selectedTime={selectedTime} setSelectedTime={setSelectedTime} onSubmit={handleCreateBooking} />}
-        {showAddBlockForm && <BlockScheduleForm professionals={professionals} loading={loadingAppointments} blockFormData={blockFormData} setBlockFormData={setBlockFormData} onSubmit={handleCreateBlock} />}
+        <div className="space-y-4">
+          {showAddForm && <section className="silentra-section-block p-4 sm:p-6"><BookingForm clients={clients} services={services} professionals={professionals} loading={loadingAppointments} formData={formData} setFormData={setFormData} selectedProfessionalId={selectedProfessionalId} setSelectedProfessionalId={setSelectedProfessionalId} selectedDate={selectedDate} setSelectedDate={setSelectedDate} selectedTime={selectedTime} setSelectedTime={setSelectedTime} onSubmit={handleCreateBooking} /></section>}
+          {showAddBlockForm && <section className="silentra-section-block p-4 sm:p-6"><BlockScheduleForm professionals={professionals} loading={loadingAppointments} blockFormData={blockFormData} setBlockFormData={setBlockFormData} onSubmit={handleCreateBlock} /></section>}
 
-        <Card className="border border-white/10 bg-zinc-900/60 shadow-xl">
-          <CardHeader className="px-4 py-4 sm:px-6">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <section className="silentra-section-block overflow-hidden" aria-labelledby="agenda-list-title">
+            <div className="flex flex-col gap-3 border-b border-white/[0.075] p-4 sm:flex-row sm:items-end sm:justify-between sm:px-6 sm:py-5">
               <div>
-                <CardTitle className="text-xl font-bold tracking-tight text-zinc-100 sm:text-2xl">Marcações</CardTitle>
-                <p className="mt-1 text-xs text-zinc-500">As mais próximas aparecem primeiro para encontrares rapidamente o que exige atenção.</p>
+                <p className="silentra-eyebrow mb-0">Hoje e próximos</p>
+                <h2 id="agenda-list-title" className="mt-1 text-xl font-semibold tracking-[-0.03em] text-zinc-50 sm:text-2xl">Marcações</h2>
+                <p className="mt-1 text-sm leading-6 text-zinc-500">As mais próximas aparecem primeiro para encontrares rapidamente o que exige atenção.</p>
               </div>
-              {!loadingInitial && orderedAppointments.length > 0 && <span className="w-fit rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-zinc-400">{orderedAppointments.length} {orderedAppointments.length === 1 ? "marcação" : "marcações"}</span>}
+              {!loadingInitial && orderedAppointments.length > 0 && <span className="silentra-pill w-fit border border-white/10 bg-white/[0.035] px-3 py-1.5 text-xs font-medium text-zinc-400">{orderedAppointments.length} {orderedAppointments.length === 1 ? "marcação" : "marcações"}</span>}
             </div>
-          </CardHeader>
 
-          <CardContent className="p-0 sm:p-6 sm:pt-0">
             {loadingInitial ? (
-              <div className="space-y-3 p-4 sm:p-0" role="status" aria-label="A carregar marcações">
-                {[...Array(4)].map((_, index) => <div key={index} className="space-y-3 rounded-xl border border-white/5 bg-white/[0.02] p-4"><div className="h-5 w-32 rounded bg-white/10" /><div className="h-4 w-48 rounded bg-white/10" /><div className="h-9 w-full rounded-lg bg-white/10" /></div>)}
+              <div className="space-y-3 p-4 sm:p-6" role="status" aria-label="A carregar marcações">
+                {[0, 1, 2, 3].map((index) => <div key={index} className="rounded-2xl border border-white/[0.055] bg-white/[0.02] p-4"><Skeleton className="h-4 w-32 bg-white/[0.07]" /><Skeleton className="mt-3 h-4 w-48 bg-white/[0.07]" /><Skeleton className="mt-4 h-9 w-full bg-white/[0.07]" /></div>)}
               </div>
             ) : orderedAppointments.length === 0 ? (
-              <div className="mx-4 mb-4 rounded-3xl border border-dashed border-white/10 bg-white/[0.02] px-5 py-10 text-center sm:mx-0">
-                <div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400"><Sparkles className="size-5" aria-hidden="true" /></div>
+              <div className="m-4 rounded-3xl border border-dashed border-white/10 bg-white/[0.015] px-5 py-12 text-center sm:m-6">
+                <div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] text-emerald-300"><Sparkles className="size-5" aria-hidden="true" /></div>
                 <h2 className="mt-4 text-base font-semibold text-zinc-100">A tua agenda está pronta para receber a primeira marcação.</h2>
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">Não precisas de configurar tudo antes de começar. Cria uma marcação agora e adiciona o resto à medida que precisares.</p>
-                <Button onClick={() => setShowAddForm(true)} className="mt-5 min-h-[44px] bg-zinc-50 text-zinc-950 hover:bg-white"><Plus className="mr-2 size-4" aria-hidden="true" />Criar primeira marcação</Button>
+                <Button onClick={() => setShowAddForm(true)} className="mt-5 bg-zinc-50 text-zinc-950 hover:bg-white"><Plus className="size-4" aria-hidden="true" />Criar primeira marcação</Button>
               </div>
             ) : (
               <>
-                <div className="divide-y divide-white/5 px-4 pb-4 md:hidden">
+                <div className="divide-y divide-white/[0.055] px-4 pb-4 md:hidden">
                   {orderedAppointments.map((appointment) => <AppointmentMobileCard key={appointment.id} appointment={appointment} onDetails={() => setSelectedAppointment(appointment)} {...actionProps} />)}
                 </div>
                 <div className="hidden md:block">
@@ -204,8 +218,8 @@ export default function AgendaPage() {
                 </div>
               </>
             )}
-          </CardContent>
-        </Card>
+          </section>
+        </div>
       </div>
 
       <AppointmentDetailDialog appointment={selectedAppointment} open={Boolean(selectedAppointment)} onOpenChange={(open) => { if (!open) setSelectedAppointment(null); }} />
