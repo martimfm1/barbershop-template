@@ -47,10 +47,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     if (servicesData.length === 0) { const legacy = await admin.from("services").select("*").eq("shop_id", shopId); if (legacy.error && legacy.error.code !== "42703") return NextResponse.json({ error: "Não foi possível carregar os serviços." }, { status: 503 }); servicesData = legacy.data ?? []; }
     const services = servicesData.map((service: any) => ({ id: service.id, barbershopId: service.barbershop_id || service.shop_id || shopId, name: service.name || service.title || "Serviço", price: Number(service.price || service.cost || 0), durationMinutes: Math.max(1, Number(service.duration || service.duration_minutes || 30)) }));
 
-    const professionalsResult = await admin.from("professionals").select("id, user_id, name, role, active").eq("barbershop_id", barbershopId).eq("active", true).order("name", { ascending: true });
-    if (professionalsResult.error) { console.error("[BOOKING_PROFESSIONALS_ERROR]", professionalsResult.error.code ?? "UNKNOWN"); return NextResponse.json({ error: "Não foi possível carregar os barbeiros." }, { status: 503 }); }
+    // The live professionals table contains only id/barbershop_id/name/commission/active/created_at.
+    // Do not query user_id or role here; those columns do not exist and caused 42703.
+    const professionalsResult = await admin.from("professionals").select("id, name, active").eq("barbershop_id", barbershopId).eq("active", true).order("name", { ascending: true });
+    if (professionalsResult.error) {
+      console.error("[BOOKING_PROFESSIONALS_ERROR]", professionalsResult.error.code ?? "UNKNOWN");
+      return NextResponse.json({ error: "Não foi possível carregar os barbeiros." }, { status: 503 });
+    }
     const professionalsData: any[] = professionalsResult.data ?? [];
-    const professionals = professionalsData.map((professional: any) => ({ id: professional.id, name: professional.name || professional.full_name || "Barbeiro", role: professional.role || "Barbeiro Profissional" }));
+    const professionals = professionalsData.map((professional: any) => ({ id: professional.id, name: professional.name || "Barbeiro", role: "Barbeiro Profissional" }));
     if (requestedProfessionalId && !professionals.some((professional) => professional.id === requestedProfessionalId)) return NextResponse.json({ error: "O profissional selecionado não pertence a esta barbearia." }, { status: 400 });
 
     const { data: blockRows, error: blocksError } = await admin.from("schedule_blocks").select("id, professional_id, date, start_time, end_time, reason").eq("barbershop_id", barbershopId).eq("date", date).order("start_time", { ascending: true });
@@ -73,10 +78,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       const slotEnd = slotStart + serviceDuration;
       if (slotEnd > closeTotalMinutes || (isToday && slotStart <= currentMinutesNow) || isClosedDay) continue;
       if (lunchStartMinutes !== null && lunchEndMinutes !== null && overlaps(slotStart, slotEnd, lunchStartMinutes, lunchEndMinutes)) continue;
-
       const availableForProfessionals = professionals.filter((professional) => canProfessionalTakeSlot(slotStart, slotEnd, professional.id));
       for (const professional of availableForProfessionals) professionalAvailability[professional.id].push(minutesToTime(slotStart));
-
       if (requestedProfessionalId) {
         if (availableForProfessionals.some((professional) => professional.id === requestedProfessionalId)) availableSlots.push(minutesToTime(slotStart));
       } else if (availableForProfessionals.length > 0) {
