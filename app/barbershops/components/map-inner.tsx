@@ -11,23 +11,23 @@ import { Navigation, Star } from "lucide-react";
 const shopIcon = L.divIcon({
   className: "custom-map-pin",
   html: `
-    <div class="relative flex size-9 items-center justify-center">
-      <div class="absolute -inset-2 rounded-full bg-emerald-400/25 blur-md"></div>
-      <div class="relative flex size-9 items-center justify-center rounded-full border border-emerald-300/40 bg-zinc-950/90 text-emerald-300 shadow-xl">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+    <div class="relative flex size-10 items-center justify-center" aria-hidden="true">
+      <div class="absolute -inset-1.5 rounded-full bg-emerald-300/20 blur-md"></div>
+      <div class="relative flex size-10 items-center justify-center rounded-full border-2 border-emerald-200/80 bg-zinc-950 text-emerald-100 shadow-[0_8px_30px_rgba(0,0,0,0.45)]">
+        <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
       </div>
     </div>
   `,
-  iconSize: [36, 36],
-  iconAnchor: [18, 36],
-  popupAnchor: [0, -36],
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
+  popupAnchor: [0, -40],
 });
 
 const userIcon = L.divIcon({
   className: "custom-user-location-pin",
-  html: `<div class="relative flex size-8 items-center justify-center"><span class="absolute inset-0 animate-ping rounded-full bg-sky-400/30"></span><span class="relative size-4 rounded-full border-2 border-white bg-sky-500 shadow-lg shadow-sky-500/40"></span></div>`,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
+  html: `<div class="relative flex size-9 items-center justify-center" aria-hidden="true"><span class="absolute inset-0 animate-ping rounded-full bg-sky-300/25"></span><span class="relative size-4 rounded-full border-2 border-white bg-sky-500 shadow-[0_0_0_4px_rgba(14,165,233,0.16),0_6px_20px_rgba(14,165,233,0.4)]"></span></div>`,
+  iconSize: [36, 36],
+  iconAnchor: [18, 18],
 });
 
 function MapBoundsController({ shops, userLocation }: Pick<MapInnerProps, "shops" | "userLocation">) {
@@ -57,62 +57,131 @@ export default function MapInner({ shops, onSelectShop, userLocation }: MapInner
     : [38.7223, -9.1393];
 
   return (
-    <MapContainer center={defaultCenter} zoom={12} scrollWheelZoom className="h-full w-full rounded-3xl">
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-      />
+    <div className="h-full w-full">
+      <style>{`
+        .custom-leaflet-popup .leaflet-popup-content-wrapper,
+        .custom-leaflet-popup .leaflet-popup-tip {
+          background: #18181b;
+          color: #f4f4f5;
+          border: 1px solid rgba(255,255,255,.14);
+          box-shadow: 0 18px 50px rgba(0,0,0,.42);
+        }
+        .custom-leaflet-popup .leaflet-popup-content {
+          margin: 12px 14px;
+          min-width: 220px;
+        }
+        .custom-leaflet-popup .leaflet-popup-close-button {
+          color: #d4d4d8 !important;
+          font-size: 22px !important;
+          font-weight: 700;
+          line-height: 1;
+          padding: 8px 10px !important;
+          border-radius: 10px;
+        }
+        .custom-leaflet-popup .leaflet-popup-close-button:hover,
+        .custom-leaflet-popup .leaflet-popup-close-button:focus-visible {
+          color: #fff !important;
+          background: rgba(255,255,255,.08);
+          outline: 2px solid rgba(52,211,153,.78);
+          outline-offset: 2px;
+        }
+        .leaflet-control-zoom a {
+          display: flex !important;
+          align-items: center;
+          justify-content: center;
+          width: 38px !important;
+          height: 38px !important;
+          background: #18181b !important;
+          color: #f4f4f5 !important;
+          border-color: rgba(255,255,255,.14) !important;
+          font-size: 22px !important;
+          line-height: 1 !important;
+        }
+        .leaflet-control-zoom a:hover,
+        .leaflet-control-zoom a:focus-visible {
+          background: #27272a !important;
+          color: #fff !important;
+          outline: 2px solid rgba(52,211,153,.78);
+          outline-offset: 2px;
+        }
+        .leaflet-control-attribution {
+          background: rgba(9,9,11,.88) !important;
+          color: #d4d4d8 !important;
+          border: 1px solid rgba(255,255,255,.08);
+          border-radius: 10px 0 0 0;
+          padding: 3px 7px !important;
+        }
+        .leaflet-control-attribution a { color: #a7f3d0 !important; }
+        .leaflet-container { font: inherit; background: #09090b; }
+        @media (max-width: 640px) {
+          .custom-leaflet-popup .leaflet-popup-content { min-width: 190px; margin: 11px 12px; }
+          .leaflet-control-zoom a { width: 42px !important; height: 42px !important; }
+        }
+      `}</style>
+      <MapContainer
+        center={defaultCenter}
+        zoom={12}
+        scrollWheelZoom
+        keyboard
+        className="h-full w-full rounded-3xl"
+        aria-label="Mapa de barbearias próximas"
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        />
 
-      <MapBoundsController shops={shops} userLocation={userLocation} />
+        <MapBoundsController shops={shops} userLocation={userLocation} />
 
-      {userLocation ? (
-        <>
-          <Circle
-            center={[userLocation.latitude, userLocation.longitude]}
-            radius={45}
-            pathOptions={{ color: "#38bdf8", fillColor: "#38bdf8", fillOpacity: 0.08, weight: 1 }}
-          />
-          <Marker position={[userLocation.latitude, userLocation.longitude]} icon={userIcon} zIndexOffset={1000}>
-            <Popup className="custom-leaflet-popup">
-              <div className="p-1">
-                <div className="flex items-center gap-2">
-                  <Navigation className="size-4 text-sky-400" />
-                  <span className="font-semibold text-zinc-100">A sua localização</span>
-                </div>
-                <p className="mt-1 text-xs text-zinc-400">Usada para calcular a proximidade das barbearias.</p>
-              </div>
-            </Popup>
-          </Marker>
-        </>
-      ) : null}
-
-      {shops.map((shop: MarketplaceShop) => {
-        if (!Number.isFinite(shop.lat) || !Number.isFinite(shop.lng)) return null;
-
-        return (
-          <Marker key={shop.id} position={[shop.lat!, shop.lng!]} icon={shopIcon}>
-            <Popup className="custom-leaflet-popup">
-              <div className="p-1">
-                <div className="flex items-center justify-between gap-2">
-                  <h5 className="font-semibold text-zinc-100">{shop.name}</h5>
-                  <div className="flex items-center gap-1 text-xs text-amber-300">
-                    <Star className="size-3 fill-amber-300" />
-                    <span>{shop.rating}</span>
+        {userLocation ? (
+          <>
+            <Circle
+              center={[userLocation.latitude, userLocation.longitude]}
+              radius={45}
+              pathOptions={{ color: "#7dd3fc", fillColor: "#38bdf8", fillOpacity: 0.1, weight: 2 }}
+            />
+            <Marker position={[userLocation.latitude, userLocation.longitude]} icon={userIcon} zIndexOffset={1000}>
+              <Popup className="custom-leaflet-popup">
+                <div className="p-1">
+                  <div className="flex items-center gap-2">
+                    <Navigation className="size-4 text-sky-300" aria-hidden="true" />
+                    <span className="font-semibold text-zinc-50">A tua localização</span>
                   </div>
+                  <p className="mt-1 text-xs leading-5 text-zinc-300">Usada apenas para calcular a proximidade das barbearias.</p>
                 </div>
-                <p className="mt-1 text-xs text-zinc-400">{shop.city} · {shop.distanceKm > 0 ? `${shop.distanceKm.toFixed(1)} km · ` : ""}{shop.price}</p>
-                <button
-                  type="button"
-                  onClick={() => onSelectShop(shop)}
-                  className="mt-3 min-h-11 w-full rounded-xl bg-zinc-100 px-3 py-2 text-xs font-semibold text-zinc-950 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-                >
-                  Ver barbearia
-                </button>
-              </div>
-            </Popup>
-          </Marker>
-        );
-      })}
-    </MapContainer>
+              </Popup>
+            </Marker>
+          </>
+        ) : null}
+
+        {shops.map((shop: MarketplaceShop) => {
+          if (!Number.isFinite(shop.lat) || !Number.isFinite(shop.lng)) return null;
+
+          return (
+            <Marker key={shop.id} position={[shop.lat!, shop.lng!]} icon={shopIcon} keyboard>
+              <Popup className="custom-leaflet-popup">
+                <div className="p-1">
+                  <div className="flex items-start justify-between gap-3 pr-2">
+                    <h5 className="font-semibold leading-5 text-zinc-50">{shop.name}</h5>
+                    <div className="flex shrink-0 items-center gap-1 text-xs font-semibold text-amber-200">
+                      <Star className="size-3 fill-amber-300 text-amber-300" aria-hidden="true" />
+                      <span>{shop.rating}</span>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-zinc-300">{shop.city}{shop.distanceKm > 0 ? ` · ${shop.distanceKm.toFixed(1)} km` : ""} · {shop.price}</p>
+                  <button
+                    type="button"
+                    onClick={() => onSelectShop(shop)}
+                    className="mt-3 min-h-11 w-full rounded-xl bg-emerald-300 px-3 py-2 text-xs font-bold text-zinc-950 shadow-[0_8px_24px_rgba(16,185,129,0.18)] transition hover:bg-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+                  >
+                    Ver barbearia
+                  </button>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+      </MapContainer>
+    </div>
   );
 }
