@@ -1,6 +1,6 @@
-import { createClient } from "@/lib/supabase/client";
-import { Professional } from "@/types";
-  
+import { createClient } from '@/lib/supabase/client';
+import { Professional } from '@/types';
+
 const supabase = createClient();
 
 export interface CreateProfessionalPayload {
@@ -19,10 +19,10 @@ export interface UpdateProfessionalPayload {
 export const professionalService = {
   async getAll(barbershopId: string) {
     const { data, error } = await supabase
-      .from("professionals")
-      .select("*")
-      .eq("barbershop_id", barbershopId)
-      .order("name", { ascending: true });
+      .from('professionals')
+      .select('*')
+      .eq('barbershop_id', barbershopId)
+      .order('name', { ascending: true });
 
     return { data: data as Professional[], error };
   },
@@ -31,19 +31,24 @@ export const professionalService = {
     // Creation is routed through a server-side API so the plan quota is
     // enforced (the browser can no longer bypass the limit by writing to
     // `professionals` directly).
-    const res = await fetch(`/api/barbershops/${payload.barbershop_id}/professionals`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: payload.name,
-        commission_percentage: payload.commission_percentage,
-        active: payload.active,
-      }),
-    });
+    const res = await fetch(
+      `/api/barbershops/${payload.barbershop_id}/professionals`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: payload.name,
+          commission_percentage: payload.commission_percentage,
+          active: payload.active,
+        }),
+      },
+    );
 
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const error = new Error(body.error || "Não foi possível criar o barbeiro.");
+      const error = new Error(
+        body.error || 'Não foi possível criar o barbeiro.',
+      );
       return { data: null as Professional | null, error };
     }
     return { data: body.data as Professional | null, error: null };
@@ -51,9 +56,9 @@ export const professionalService = {
 
   async update(id: string, updates: UpdateProfessionalPayload) {
     const { data, error } = await supabase
-      .from("professionals")
+      .from('professionals')
       .update(updates)
-      .eq("id", id)
+      .eq('id', id)
       .select()
       .single();
 
@@ -61,7 +66,10 @@ export const professionalService = {
   },
 
   async delete(id: string) {
-    const { error } = await supabase.from("professionals").delete().eq("id", id);
+    const { error } = await supabase
+      .from('professionals')
+      .delete()
+      .eq('id', id);
     return { error };
   },
 
@@ -73,7 +81,7 @@ export const professionalService = {
     reason: string;
   }) {
     const { data, error } = await supabase
-      .from("schedule_blocks")
+      .from('schedule_blocks')
       .insert([
         {
           barbershop_id: payload.barbershop_id,
@@ -90,10 +98,10 @@ export const professionalService = {
 
   async deleteBlock(id: string) {
     const { error } = await supabase
-      .from("schedule_blocks")
+      .from('schedule_blocks')
       .delete()
-      .eq("id", id);
+      .eq('id', id);
 
     return { error };
-  }
+  },
 } as const;

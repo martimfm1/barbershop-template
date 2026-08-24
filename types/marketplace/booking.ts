@@ -1,4 +1,4 @@
-import type { MarketplaceService, MarketplaceShop } from "./shops";
+import type { MarketplaceService, MarketplaceShop } from './shops';
 
 /** A selectable day in the booking flow. */
 export interface BookingDayOption {

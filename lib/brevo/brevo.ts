@@ -1,4 +1,7 @@
-import { createCalendarToken, getPublicAppUrl } from "@/lib/email/calendar-link";
+import {
+  createCalendarToken,
+  getPublicAppUrl,
+} from '@/lib/email/calendar-link';
 
 export interface BookingEmailPayload {
   to: string;
@@ -14,56 +17,79 @@ export interface BookingEmailPayload {
 }
 
 export type SendEmailResponse =
-  | { success: true; messageId?: string }
-  | { success: false; error: string };
+  { success: true; messageId?: string } | { success: false; error: string };
 
 function escapeHtml(value: string): string {
   return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function getBarbershopAvatarUrl(barbershopId?: string): string | null {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '');
   if (!supabaseUrl || !barbershopId) return null;
   return `${supabaseUrl}/storage/v1/object/public/avatar/${encodeURIComponent(barbershopId)}/avatar.webp`;
 }
 
-function buildCalendarLinks(payload: BookingEmailPayload, title: string, description: string, location: string) {
+function buildCalendarLinks(
+  payload: BookingEmailPayload,
+  title: string,
+  description: string,
+  location: string,
+) {
   const calendarToken = createCalendarToken(payload.appointmentId);
   const appUrl = getPublicAppUrl();
   const appleCalUrl = `${appUrl}/api/calendar/appointments/${encodeURIComponent(payload.appointmentId)}?token=${encodeURIComponent(calendarToken)}`;
   const start = new Date(`${payload.date}T${payload.time}:00`);
-  const end = new Date(start.getTime() + Math.max(1, payload.durationMinutes ?? 45) * 60_000);
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Lisbon",
-    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
-    hourCycle: "h23",
+  const end = new Date(
+    start.getTime() + Math.max(1, payload.durationMinutes ?? 45) * 60_000,
+  );
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Lisbon',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
   }).formatToParts(start);
-  const get = (type: string) => parts.find((item) => item.type === type)?.value ?? "00";
-  const startDate = `${get("year")}${get("month")}${get("day")}T${get("hour")}${get("minute")}00`;
-  const endParts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Lisbon",
-    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
-    hourCycle: "h23",
+  const get = (type: string) =>
+    parts.find((item) => item.type === type)?.value ?? '00';
+  const startDate = `${get('year')}${get('month')}${get('day')}T${get('hour')}${get('minute')}00`;
+  const endParts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Lisbon',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
   }).formatToParts(end);
-  const endGet = (type: string) => endParts.find((item) => item.type === type)?.value ?? "00";
-  const endDate = `${endGet("year")}${endGet("month")}${endGet("day")}T${endGet("hour")}${endGet("minute")}00`;
+  const endGet = (type: string) =>
+    endParts.find((item) => item.type === type)?.value ?? '00';
+  const endDate = `${endGet('year')}${endGet('month')}${endGet('day')}T${endGet('hour')}${endGet('minute')}00`;
 
-  const google = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${encodeURIComponent(startDate + "/" + endDate)}&details=${encodeURIComponent(description)}&location=${encodeURIComponent(location)}`;
+  const google = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${encodeURIComponent(startDate + '/' + endDate)}&details=${encodeURIComponent(description)}&location=${encodeURIComponent(location)}`;
   return { google, apple: appleCalUrl };
 }
 
-export async function sendBookingConfirmationEmail(payload: BookingEmailPayload): Promise<SendEmailResponse> {
+export async function sendBookingConfirmationEmail(
+  payload: BookingEmailPayload,
+): Promise<SendEmailResponse> {
   const apiKey = process.env.BREVO_API_KEY;
   const senderEmail = process.env.SENDER_EMAIL;
 
   if (!apiKey || !senderEmail) {
-    console.error("[BREVO_ERROR] Variáveis BREVO_API_KEY ou SENDER_EMAIL ausentes.");
-    return { success: false, error: "Configuração do servidor de e-mail incompleta." };
+    console.error(
+      '[BREVO_ERROR] Variáveis BREVO_API_KEY ou SENDER_EMAIL ausentes.',
+    );
+    return {
+      success: false,
+      error: 'Configuração do servidor de e-mail incompleta.',
+    };
   }
 
   const safeClientName = escapeHtml(payload.clientName);
@@ -73,14 +99,21 @@ export async function sendBookingConfirmationEmail(payload: BookingEmailPayload)
   const avatarUrl = getBarbershopAvatarUrl(payload.barbershopId);
   const title = `${payload.serviceName} — ${payload.barbershopName}`;
   const description = `Agendamento de ${payload.serviceName} para ${payload.clientName}.`;
-  const location = [payload.barbershopName, payload.barbershopAddress].filter(Boolean).join(", ");
-  const { google, apple } = buildCalendarLinks(payload, title, description, location);
+  const location = [payload.barbershopName, payload.barbershopAddress]
+    .filter(Boolean)
+    .join(', ');
+  const { google, apple } = buildCalendarLinks(
+    payload,
+    title,
+    description,
+    location,
+  );
   const googleMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
   const appleMaps = `https://maps.apple.com/?address=${encodeURIComponent(payload.barbershopAddress || payload.barbershopName)}`;
 
   const avatarMarkup = avatarUrl
     ? `<img src="${avatarUrl}" alt="Logótipo da ${safeBarbershopName}" width="64" height="64" style="display:block;width:64px;height:64px;border-radius:16px;object-fit:cover;border:1px solid #27272a;" />`
-    : "";
+    : '';
 
   const htmlContent = `<!DOCTYPE html>
 <html lang="pt-PT">
@@ -103,9 +136,13 @@ ${avatarMarkup}
 </div></body></html>`;
 
   try {
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: { accept: "application/json", "content-type": "application/json", "api-key": apiKey },
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+        'api-key': apiKey,
+      },
       body: JSON.stringify({
         sender: { name: payload.barbershopName, email: senderEmail },
         to: [{ email: payload.to, name: payload.clientName }],
@@ -114,14 +151,26 @@ ${avatarMarkup}
         textContent: `Agendamento confirmado\n${payload.serviceName}\n${payload.date} às ${payload.time}\n${payload.barbershopName}\n${payload.barbershopAddress}\n\nGoogle Calendar: ${google}\nApple Calendar: ${apple}\nGoogle Maps: ${googleMaps}\nApple Maps: ${appleMaps}`,
       }),
     });
-    const data = (await response.json()) as { messageId?: string; message?: string };
+    const data = (await response.json()) as {
+      messageId?: string;
+      message?: string;
+    };
     if (!response.ok) {
-      console.error("[BREVO_API_ERROR]", data);
-      return { success: false, error: data.message || "Falha ao enviar o email." };
+      console.error('[BREVO_API_ERROR]', data);
+      return {
+        success: false,
+        error: data.message || 'Falha ao enviar o email.',
+      };
     }
     return { success: true, messageId: data.messageId };
   } catch (error) {
-    console.error("[BREVO_FETCH_ERROR]", error);
-    return { success: false, error: error instanceof Error ? error.message : "Erro ao comunicar com o Brevo." };
+    console.error('[BREVO_FETCH_ERROR]', error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Erro ao comunicar com o Brevo.',
+    };
   }
 }

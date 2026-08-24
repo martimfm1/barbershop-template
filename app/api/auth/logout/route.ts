@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST() {
   try {
@@ -9,7 +9,7 @@ export async function POST() {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Erro ao fazer logout:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    console.error('Erro ao fazer logout:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

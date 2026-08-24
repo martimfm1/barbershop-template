@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
 //utils
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import { type BlockScheduleFormProps } from "@/types";
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { type BlockScheduleFormProps } from '@/types';
 
 //UI
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
-import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -17,13 +17,13 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { CalendarIcon, CalendarOff } from "lucide-react";
+} from '@/components/ui/popover';
+import { CalendarIcon, CalendarOff } from 'lucide-react';
 
 export function BlockScheduleForm({
   professionals,
@@ -76,17 +76,17 @@ export function BlockScheduleForm({
                 <Button
                   variant="ghost"
                   className={cn(
-                    "justify-start bg-white/5 border border-white/10 text-white hover:bg-white/10 cursor-pointer",
-                    !blockFormData.start_date && "text-muted-foreground",
+                    'justify-start bg-white/5 border border-white/10 text-white hover:bg-white/10 cursor-pointer',
+                    !blockFormData.start_date && 'text-muted-foreground',
                   )}
                 >
                   <CalendarIcon className="mr-2 size-4" />
                   {blockFormData.start_date
                     ? format(
-                        new Date(blockFormData.start_date + "T00:00:00"),
-                        "PPP",
+                        new Date(blockFormData.start_date + 'T00:00:00'),
+                        'PPP',
                       )
-                    : "Date"}
+                    : 'Date'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0 bg-zinc-900 border-zinc-800">
@@ -94,14 +94,14 @@ export function BlockScheduleForm({
                   mode="single"
                   selected={
                     blockFormData.start_date
-                      ? new Date(blockFormData.start_date + "T00:00:00")
+                      ? new Date(blockFormData.start_date + 'T00:00:00')
                       : undefined
                   }
                   onSelect={(d) =>
                     d &&
                     setBlockFormData({
                       ...blockFormData,
-                      start_date: format(d, "yyyy-MM-dd"),
+                      start_date: format(d, 'yyyy-MM-dd'),
                     })
                   }
                 />
@@ -146,7 +146,7 @@ export function BlockScheduleForm({
             <input
               placeholder="Reason for the block"
               className="bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-white"
-              value={blockFormData.reason || ""}
+              value={blockFormData.reason || ''}
               onChange={(e) =>
                 setBlockFormData({ ...blockFormData, reason: e.target.value })
               }
@@ -160,7 +160,7 @@ export function BlockScheduleForm({
             variant="ghost"
             className="bg-red-600 hover:bg-red-500 text-white h-10 w-full cursor-pointer"
           >
-            {loading ? <Spinner className="mr-2" /> : "Block Time"}
+            {loading ? <Spinner className="mr-2" /> : 'Block Time'}
           </Button>
         </form>
       </CardContent>

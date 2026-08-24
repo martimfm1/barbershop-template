@@ -1,30 +1,30 @@
-import { useState, useCallback } from "react";
-import { toast } from "sonner";
+import { useState, useCallback } from 'react';
+import { toast } from 'sonner';
 import {
   clientsService,
   CreateClientPayload,
-} from "@/app/dashboard/_services/clients.service";
-import { getErrorMessage } from "@/app/dashboard/_lib/error-utils";
-import { Client } from "@/types";
+} from '@/app/dashboard/_services/clients.service';
+import { getErrorMessage } from '@/app/dashboard/_lib/error-utils';
+import { Client } from '@/types';
 
 export function useClients(
   barbershopId: string | null,
   onRefreshData: () => Promise<void>,
 ) {
   const [loadingClients, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [newClientData, setNewClientData] = useState({
-    name_complete: "",
-    num_phone: "",
-    email: "",
+    name_complete: '',
+    num_phone: '',
+    email: '',
   });
 
   const handleCreateClient = async (e?: React.SyntheticEvent) => {
     e?.preventDefault();
     const formattedPhone = newClientData.num_phone.trim();
     if (!newClientData.name_complete.trim() || !formattedPhone) {
-      toast.error("Por favor, introduz um nome e um telemóvel.");
+      toast.error('Por favor, introduz um nome e um telemóvel.');
       return;
     }
     setLoading(true);
@@ -36,15 +36,15 @@ export function useClients(
           ? newClientData.email.trim().toLowerCase()
           : undefined,
         barbershop_id: barbershopId,
-        role: "client",
+        role: 'client',
       };
       const { error } = await clientsService.createClient(payload);
       if (error) throw error;
-      toast.success("Cliente adicionado com sucesso!");
-      setNewClientData({ name_complete: "", num_phone: "", email: "" });
+      toast.success('Cliente adicionado com sucesso!');
+      setNewClientData({ name_complete: '', num_phone: '', email: '' });
       await onRefreshData();
     } catch (error) {
-      console.error("[Create Client Hook Error]:", error);
+      console.error('[Create Client Hook Error]:', error);
       toast.error(getErrorMessage(error));
     } finally {
       setLoading(false);
@@ -59,15 +59,15 @@ export function useClients(
       const { error } = await clientsService.updateClient(editingClient.id, {
         name_complete: editingClient.name_complete.trim(),
         num_phone: editingClient.num_phone.trim(),
-        email: editingClient.email?.trim() || "",
+        email: editingClient.email?.trim() || '',
         birth_date: editingClient.birth_date || null,
       });
       if (error) throw error;
-      toast.success("Cliente editado com sucesso!");
+      toast.success('Cliente editado com sucesso!');
       setEditingClient(null);
       await onRefreshData();
     } catch (error) {
-      console.error("[Update Client Hook Error]:", error);
+      console.error('[Update Client Hook Error]:', error);
       toast.error(getErrorMessage(error));
     } finally {
       setLoading(false);
@@ -79,12 +79,12 @@ export function useClients(
     try {
       const { error } = await clientsService.deleteClient(id);
       if (error) throw error;
-      toast.success("Cliente removido com sucesso.");
+      toast.success('Cliente removido com sucesso.');
       await onRefreshData();
     } catch (error) {
-      console.error("[Delete Client Hook Error]:", error);
+      console.error('[Delete Client Hook Error]:', error);
       toast.error(
-        "Impossível remover. O cliente pode conter marcações ativas.",
+        'Impossível remover. O cliente pode conter marcações ativas.',
       );
     } finally {
       setLoading(false);

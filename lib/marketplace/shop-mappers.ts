@@ -2,7 +2,7 @@ import type {
   MarketplaceShop,
   MarketplaceShopRecord,
   MarketplaceShopResponse,
-} from "@/types/marketplace/shops";
+} from '@/types/marketplace/shops';
 
 export function mapRecordToMarketplaceShopResponse(
   record: MarketplaceShopRecord,
@@ -14,18 +14,18 @@ export function mapRecordToMarketplaceShopResponse(
   return {
     id: record.id,
     barbershopId: record.barbershop_id,
-    name: relation?.name || "Barbearia",
-    address: relation?.address || "",
+    name: relation?.name || 'Barbearia',
+    address: relation?.address || '',
     city: record.city,
     price: record.price,
     tags: record.tags || [],
     lat: record.lat,
     lng: record.lng,
     distanceKm: 0,
-    openTime: relation?.opening_time?.substring(0, 5) || "09:00",
-    closeTime: relation?.closing_time?.substring(0, 5) || "19:00",
+    openTime: relation?.opening_time?.substring(0, 5) || '09:00',
+    closeTime: relation?.closing_time?.substring(0, 5) || '19:00',
     slug: record.slug,
-    nextSlot: "15:00",
+    nextSlot: '15:00',
     rating: Number(record.rating ?? 0),
     reviewsCount: Number(record.reviews_count ?? 0),
   };
@@ -49,10 +49,10 @@ export function mapMarketplaceShopResponseToMarketplaceShop(
     rating: shop.rating,
     reviewsCount: shop.reviewsCount,
     reviews: String(shop.reviewsCount),
-    nextSlot: shop.nextSlot ? `${shop.nextSlot} Hoje` : "Sem vagas",
+    nextSlot: shop.nextSlot ? `${shop.nextSlot} Hoje` : 'Sem vagas',
     tags: shop.tags,
     lat: shop.lat,
     lng: shop.lng,
-    accent: "amber",
+    accent: 'amber',
   };
 }

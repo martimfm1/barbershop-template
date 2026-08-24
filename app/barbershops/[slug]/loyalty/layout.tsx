@@ -1,6 +1,12 @@
-import LoyaltyMembershipActions from "./membership-actions";
+import LoyaltyMembershipActions from './membership-actions';
 
-export default async function LoyaltyLayout({ children, params }: { children: React.ReactNode; params: Promise<{ slug: string }> }) {
+export default async function LoyaltyLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ slug: string }>;
+}) {
   const { slug } = await params;
   return (
     <div className="relative">

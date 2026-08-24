@@ -1,9 +1,16 @@
-"use client";
+'use client';
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { CheckCircle2, Loader2, MapPin, Navigation, Search, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  CheckCircle2,
+  Loader2,
+  MapPin,
+  Navigation,
+  Search,
+  X,
+} from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 export interface AddressSuggestion {
   id: string;
@@ -31,7 +38,7 @@ export function AddressAutocomplete({
   value,
   onChange,
   onSelect,
-  placeholder = "Ex.: Rua Garrett, Lisboa",
+  placeholder = 'Ex.: Rua Garrett, Lisboa',
   inputId,
   disabled,
   className,
@@ -65,22 +72,27 @@ export function AddressAutocomplete({
       try {
         const params = new URLSearchParams({ q: value.trim() });
         if (userLocation) {
-          params.set("lat", String(userLocation.latitude));
-          params.set("lng", String(userLocation.longitude));
+          params.set('lat', String(userLocation.latitude));
+          params.set('lng', String(userLocation.longitude));
         }
 
-        const response = await fetch(`/api/address/search?${params.toString()}`, {
-          signal: controller.signal,
-          cache: "no-store",
-        });
-        const data = (await response.json()) as { suggestions?: AddressSuggestion[] };
+        const response = await fetch(
+          `/api/address/search?${params.toString()}`,
+          {
+            signal: controller.signal,
+            cache: 'no-store',
+          },
+        );
+        const data = (await response.json()) as {
+          suggestions?: AddressSuggestion[];
+        };
         const next = Array.isArray(data.suggestions) ? data.suggestions : [];
         setSuggestions(next);
         setIsOpen(next.length > 0);
         setActiveIndex(-1);
       } catch (error) {
-        if ((error as Error)?.name !== "AbortError") {
-          console.error("[ADDRESS_AUTOCOMPLETE]", error);
+        if ((error as Error)?.name !== 'AbortError') {
+          console.error('[ADDRESS_AUTOCOMPLETE]', error);
           setSuggestions([]);
           setIsOpen(false);
         }
@@ -99,8 +111,8 @@ export function AddressAutocomplete({
     const onPointerDown = (event: MouseEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) setIsOpen(false);
     };
-    document.addEventListener("mousedown", onPointerDown);
-    return () => document.removeEventListener("mousedown", onPointerDown);
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
   }, []);
 
   const selectSuggestion = (suggestion: AddressSuggestion) => {
@@ -113,20 +125,22 @@ export function AddressAutocomplete({
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (!isOpen || suggestions.length === 0) {
-      if (event.key === "Escape") setIsOpen(false);
+      if (event.key === 'Escape') setIsOpen(false);
       return;
     }
 
-    if (event.key === "ArrowDown") {
+    if (event.key === 'ArrowDown') {
       event.preventDefault();
       setActiveIndex((current) => (current + 1) % suggestions.length);
-    } else if (event.key === "ArrowUp") {
+    } else if (event.key === 'ArrowUp') {
       event.preventDefault();
-      setActiveIndex((current) => (current <= 0 ? suggestions.length - 1 : current - 1));
-    } else if (event.key === "Enter" && activeIndex >= 0) {
+      setActiveIndex((current) =>
+        current <= 0 ? suggestions.length - 1 : current - 1,
+      );
+    } else if (event.key === 'Enter' && activeIndex >= 0) {
       event.preventDefault();
       selectSuggestion(suggestions[activeIndex]);
-    } else if (event.key === "Escape") {
+    } else if (event.key === 'Escape') {
       event.preventDefault();
       setIsOpen(false);
       setActiveIndex(-1);
@@ -142,7 +156,10 @@ export function AddressAutocomplete({
   return (
     <div ref={rootRef} className="relative w-full">
       <div className="relative">
-        <MapPin className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-zinc-500" aria-hidden="true" />
+        <MapPin
+          className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-zinc-500"
+          aria-hidden="true"
+        />
         <Input
           id={id}
           value={value}
@@ -153,16 +170,30 @@ export function AddressAutocomplete({
           aria-autocomplete="list"
           aria-expanded={isOpen}
           aria-controls={isOpen ? listboxId : undefined}
-          aria-activedescendant={activeIndex >= 0 ? `${listboxId}-${suggestions[activeIndex].id}` : undefined}
+          aria-activedescendant={
+            activeIndex >= 0
+              ? `${listboxId}-${suggestions[activeIndex].id}`
+              : undefined
+          }
           aria-busy={loading}
           autoComplete="street-address"
           disabled={disabled}
           placeholder={placeholder}
-          className={cn("min-h-11 pl-10 pr-20 text-base sm:text-sm", className)}
+          className={cn('min-h-11 pl-10 pr-20 text-base sm:text-sm', className)}
         />
         <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
-          {loading ? <Loader2 className="size-4 animate-spin text-zinc-500" aria-label="A pesquisar" /> : null}
-          {selected ? <CheckCircle2 className="size-4 text-emerald-400" aria-label="Morada confirmada" /> : null}
+          {loading ? (
+            <Loader2
+              className="size-4 animate-spin text-zinc-500"
+              aria-label="A pesquisar"
+            />
+          ) : null}
+          {selected ? (
+            <CheckCircle2
+              className="size-4 text-emerald-400"
+              aria-label="Morada confirmada"
+            />
+          ) : null}
           {value ? (
             <button
               type="button"
@@ -170,7 +201,7 @@ export function AddressAutocomplete({
                 setSelected(false);
                 setSuggestions([]);
                 setIsOpen(false);
-                onChange("");
+                onChange('');
               }}
               className="inline-flex size-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-white/10 hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
               aria-label="Limpar morada"
@@ -202,8 +233,8 @@ export function AddressAutocomplete({
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => selectSuggestion(suggestion)}
               className={cn(
-                "flex min-h-12 w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400",
-                index === activeIndex ? "bg-white/10" : "hover:bg-white/[0.06]",
+                'flex min-h-12 w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400',
+                index === activeIndex ? 'bg-white/10' : 'hover:bg-white/[0.06]',
               )}
             >
               <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
@@ -214,17 +245,23 @@ export function AddressAutocomplete({
                   {suggestion.streetWithNumber || suggestion.fullAddress}
                 </span>
                 <span className="mt-0.5 block truncate text-xs text-zinc-500">
-                  {suggestion.city}{suggestion.postalCode ? ` · ${suggestion.postalCode}` : ""}
+                  {suggestion.city}
+                  {suggestion.postalCode ? ` · ${suggestion.postalCode}` : ''}
                 </span>
               </span>
               {suggestion.accuracy ? (
                 <span className="mt-0.5 shrink-0 rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-zinc-500">
-                  {suggestion.accuracy === "rooftop" || suggestion.accuracy === "parcel" ? "Precisa" : "Aproximada"}
+                  {suggestion.accuracy === 'rooftop' ||
+                  suggestion.accuracy === 'parcel'
+                    ? 'Precisa'
+                    : 'Aproximada'}
                 </span>
               ) : null}
             </button>
           ))}
-          <p className="px-3 py-2 text-[10px] text-zinc-600">Pesquisa de moradas · © Mapbox</p>
+          <p className="px-3 py-2 text-[10px] text-zinc-600">
+            Pesquisa de moradas · © Mapbox
+          </p>
         </div>
       ) : null}
     </div>

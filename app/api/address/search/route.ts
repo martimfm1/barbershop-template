@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
 const MAX_QUERY_LENGTH = 256;
 
@@ -22,42 +22,53 @@ interface MapboxFeature {
   };
 }
 
-function firstContextName(context: Record<string, { name?: string }> | undefined, keys: string[]) {
+function firstContextName(
+  context: Record<string, { name?: string }> | undefined,
+  keys: string[],
+) {
   for (const key of keys) {
     const value = context?.[key]?.name?.trim();
     if (value) return value;
   }
-  return "";
+  return '';
 }
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const token = process.env.MAPBOX_ACCESS_TOKEN?.trim();
-  const query = searchParams.get("q")?.trim() ?? "";
-  const postalCode = searchParams.get("postalCode")?.trim() ?? "";
-  const houseNumber = searchParams.get("houseNumber")?.trim() ?? "";
-  const city = searchParams.get("city")?.trim() ?? "";
-  const latitude = Number(searchParams.get("lat"));
-  const longitude = Number(searchParams.get("lng"));
+  const query = searchParams.get('q')?.trim() ?? '';
+  const postalCode = searchParams.get('postalCode')?.trim() ?? '';
+  const houseNumber = searchParams.get('houseNumber')?.trim() ?? '';
+  const city = searchParams.get('city')?.trim() ?? '';
+  const latitude = Number(searchParams.get('lat'));
+  const longitude = Number(searchParams.get('lng'));
 
   const searchQuery =
     postalCode.length >= 4
-      ? `${houseNumber ? `${houseNumber} ` : ""}${postalCode}${city ? ` ${city}` : ""}`.trim()
+      ? `${houseNumber ? `${houseNumber} ` : ''}${postalCode}${city ? ` ${city}` : ''}`.trim()
       : query;
 
   if (searchQuery.length < 3) {
-    return NextResponse.json({ suggestions: [] }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(
+      { suggestions: [] },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
   }
 
-  if (searchQuery.length > MAX_QUERY_LENGTH || searchQuery.includes(";")) {
-    return NextResponse.json({ error: "Pesquisa inválida." }, { status: 400 });
+  if (searchQuery.length > MAX_QUERY_LENGTH || searchQuery.includes(';')) {
+    return NextResponse.json({ error: 'Pesquisa inválida.' }, { status: 400 });
   }
 
   if (!token) {
-    console.error("[ADDRESS_SEARCH_CONFIG_ERROR] MAPBOX_ACCESS_TOKEN is missing.");
+    console.error(
+      '[ADDRESS_SEARCH_CONFIG_ERROR] MAPBOX_ACCESS_TOKEN is missing.',
+    );
     return NextResponse.json(
-      { error: "A pesquisa de moradas está temporariamente indisponível.", suggestions: [] },
-      { status: 503, headers: { "Cache-Control": "no-store" } },
+      {
+        error: 'A pesquisa de moradas está temporariamente indisponível.',
+        suggestions: [],
+      },
+      { status: 503, headers: { 'Cache-Control': 'no-store' } },
     );
   }
 
@@ -65,15 +76,15 @@ export async function GET(request: Request) {
     const params = new URLSearchParams({
       q: searchQuery,
       access_token: token,
-      autocomplete: "true",
-      country: "PT",
-      language: "pt-PT",
-      limit: "6",
-      types: "address,street,place,postcode",
+      autocomplete: 'true',
+      country: 'PT',
+      language: 'pt-PT',
+      limit: '6',
+      types: 'address,street,place,postcode',
     });
 
     if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-      params.set("proximity", `${longitude},${latitude}`);
+      params.set('proximity', `${longitude},${latitude}`);
     }
 
     const controller = new AbortController();
@@ -82,16 +93,16 @@ export async function GET(request: Request) {
       `https://api.mapbox.com/search/geocode/v6/forward?${params.toString()}`,
       {
         signal: controller.signal,
-        headers: { Accept: "application/json" },
-        cache: "no-store",
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
       },
     ).finally(() => clearTimeout(timeout));
 
     if (!response.ok) {
-      console.warn("[ADDRESS_SEARCH_PROVIDER_ERROR]", response.status);
+      console.warn('[ADDRESS_SEARCH_PROVIDER_ERROR]', response.status);
       return NextResponse.json(
-        { error: "Não foi possível pesquisar esta morada.", suggestions: [] },
-        { status: 502, headers: { "Cache-Control": "no-store" } },
+        { error: 'Não foi possível pesquisar esta morada.', suggestions: [] },
+        { status: 502, headers: { 'Cache-Control': 'no-store' } },
       );
     }
 
@@ -104,17 +115,34 @@ export async function GET(request: Request) {
         const lat = Number(coordinates.latitude ?? geometry?.[1]);
         const lng = Number(coordinates.longitude ?? geometry?.[0]);
         const context = properties.context;
-        const street = properties.street || firstContextName(context, ["street", "address"]);
+        const street =
+          properties.street || firstContextName(context, ['street', 'address']);
         const number = properties.address_number || houseNumber;
-        const detectedCity = firstContextName(context, ["place", "locality", "district", "municipality"]);
-        const detectedPostalCode = firstContextName(context, ["postcode"]);
-        const fullAddress = properties.full_address || properties.address || properties.name || "";
+        const detectedCity = firstContextName(context, [
+          'place',
+          'locality',
+          'district',
+          'municipality',
+        ]);
+        const detectedPostalCode = firstContextName(context, ['postcode']);
+        const fullAddress =
+          properties.full_address ||
+          properties.address ||
+          properties.name ||
+          '';
 
-        if (!feature.id || !Number.isFinite(lat) || !Number.isFinite(lng) || !fullAddress) return null;
+        if (
+          !feature.id ||
+          !Number.isFinite(lat) ||
+          !Number.isFinite(lng) ||
+          !fullAddress
+        )
+          return null;
 
         return {
           id: feature.id,
-          streetWithNumber: `${street || properties.name || fullAddress}${number ? ` ${number}` : ""}`.trim(),
+          streetWithNumber:
+            `${street || properties.name || fullAddress}${number ? ` ${number}` : ''}`.trim(),
           fullAddress,
           city: detectedCity || city,
           postalCode: detectedPostalCode || postalCode,
@@ -127,13 +155,16 @@ export async function GET(request: Request) {
 
     return NextResponse.json(
       { suggestions },
-      { headers: { "Cache-Control": "no-store" } },
+      { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (error) {
-    console.error("[ADDRESS_SEARCH_ERROR]", error instanceof Error ? error.name : "unknown");
+    console.error(
+      '[ADDRESS_SEARCH_ERROR]',
+      error instanceof Error ? error.name : 'unknown',
+    );
     return NextResponse.json(
-      { error: "Não foi possível pesquisar esta morada.", suggestions: [] },
-      { status: 502, headers: { "Cache-Control": "no-store" } },
+      { error: 'Não foi possível pesquisar esta morada.', suggestions: [] },
+      { status: 502, headers: { 'Cache-Control': 'no-store' } },
     );
   }
 }

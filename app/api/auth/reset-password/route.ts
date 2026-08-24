@@ -1,18 +1,22 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
     const body: unknown = await request.json();
     const password =
-      typeof body === "object" && body !== null && "password" in body
+      typeof body === 'object' && body !== null && 'password' in body
         ? (body as { password?: unknown }).password
         : undefined;
 
-    if (typeof password !== "string" || password.length < 12 || password.length > 128) {
+    if (
+      typeof password !== 'string' ||
+      password.length < 12 ||
+      password.length > 128
+    ) {
       return NextResponse.json(
-        { error: "A nova palavra-passe deve ter entre 12 e 128 caracteres." },
+        { error: 'A nova palavra-passe deve ter entre 12 e 128 caracteres.' },
         { status: 400 },
       );
     }
@@ -46,7 +50,7 @@ export async function POST(request: Request) {
 
     if (userError || !user) {
       return NextResponse.json(
-        { error: "A sessão de recuperação é inválida ou expirou." },
+        { error: 'A sessão de recuperação é inválida ou expirou.' },
         { status: 401 },
       );
     }
@@ -54,27 +58,30 @@ export async function POST(request: Request) {
     const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
-      console.warn("[AUTH_PASSWORD_UPDATE_REJECTED]", {
+      console.warn('[AUTH_PASSWORD_UPDATE_REJECTED]', {
         code: error.code,
         status: error.status,
       });
       return NextResponse.json(
-        { error: "Não foi possível atualizar a palavra-passe. Solicita um novo link e tenta novamente." },
+        {
+          error:
+            'Não foi possível atualizar a palavra-passe. Solicita um novo link e tenta novamente.',
+        },
         { status: 400 },
       );
     }
 
     return NextResponse.json(
       { success: true },
-      { headers: { "Cache-Control": "no-store" } },
+      { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (error) {
     console.error(
-      "[AUTH_PASSWORD_UPDATE_ERROR]",
-      error instanceof Error ? error.name : "unknown",
+      '[AUTH_PASSWORD_UPDATE_ERROR]',
+      error instanceof Error ? error.name : 'unknown',
     );
     return NextResponse.json(
-      { error: "Ocorreu um erro interno ao redefinir a palavra-passe." },
+      { error: 'Ocorreu um erro interno ao redefinir a palavra-passe.' },
       { status: 500 },
     );
   }

@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
-import { generateNextDays } from "@/app/barbershops/utils/booking-slots";
-import type { UseBookingSlotsReturn } from "@/types/marketplace/booking";
+import { useState, useEffect, useMemo } from 'react';
+import { generateNextDays } from '@/app/barbershops/utils/booking-slots';
+import type { UseBookingSlotsReturn } from '@/types/marketplace/booking';
 
 export function useBookingSlots(
   shopId: string | null,
@@ -40,7 +40,7 @@ export function useBookingSlots(
           setSlots(data.slots || []);
         }
       } catch (err) {
-        console.error("Erro ao carregar slots:", err);
+        console.error('Erro ao carregar slots:', err);
       } finally {
         if (isMounted) setIsLoading(false);
       }

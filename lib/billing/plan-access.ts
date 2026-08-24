@@ -1,5 +1,5 @@
-import { PLANS } from "@/lib/stripe/constants";
-import type { BillingPlan } from "@/types/stripe";
+import { PLANS } from '@/lib/stripe/constants';
+import type { BillingPlan } from '@/types/stripe';
 
 /**
  * Shared source of truth for plan access.
@@ -12,7 +12,7 @@ import type { BillingPlan } from "@/types/stripe";
 export const PAID_PLANS: readonly BillingPlan[] = [PLANS.PRO, PLANS.ENTERPRISE];
 
 /** Stripe statuses that grant access to a paid plan. */
-export const PLAN_ACCESS_STATUSES = ["active", "trialing"] as const;
+export const PLAN_ACCESS_STATUSES = ['active', 'trialing'] as const;
 
 export interface PlanRecord {
   plan: BillingPlan | null | undefined;
@@ -30,7 +30,7 @@ export function hasActivePaidSubscription(
     subscription &&
     isPaidPlan(subscription.plan) &&
     (PLAN_ACCESS_STATUSES as readonly string[]).includes(
-      subscription.status ?? "",
+      subscription.status ?? '',
     ),
   );
 }

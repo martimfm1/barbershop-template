@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { AlertCircle, ArrowLeft, Mail } from "lucide-react";
+import Link from 'next/link';
+import { AlertCircle, ArrowLeft, Mail } from 'lucide-react';
 
 export default function EmailConfirmationErrorPage() {
   return (

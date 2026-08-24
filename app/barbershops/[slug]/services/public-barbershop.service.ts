@@ -1,4 +1,4 @@
-import type { PublicProfileRecord } from "@/lib/barbershops/public-profile";
+import type { PublicProfileRecord } from '@/lib/barbershops/public-profile';
 
 export interface ServiceItem {
   id: string;
@@ -38,24 +38,29 @@ interface PublicProfileApiResponse {
   error?: string;
 }
 
-async function getPublicProfileApi(slug: string): Promise<BarbershopPublicDetails> {
-  const response = await fetch(`/api/public/barbershops/${encodeURIComponent(slug)}`, {
-    method: "GET",
-    cache: "no-store",
-    headers: {
-      Accept: "application/json",
+async function getPublicProfileApi(
+  slug: string,
+): Promise<BarbershopPublicDetails> {
+  const response = await fetch(
+    `/api/public/barbershops/${encodeURIComponent(slug)}`,
+    {
+      method: 'GET',
+      cache: 'no-store',
+      headers: {
+        Accept: 'application/json',
+      },
     },
-  });
+  );
 
   let payload: PublicProfileApiResponse = {};
   try {
     payload = (await response.json()) as PublicProfileApiResponse;
   } catch {
-    throw new Error("Não foi possível carregar a página da barbearia.");
+    throw new Error('Não foi possível carregar a página da barbearia.');
   }
 
   if (!response.ok || !payload.data) {
-    throw new Error(payload.error || "Barbearia não encontrada.");
+    throw new Error(payload.error || 'Barbearia não encontrada.');
   }
 
   return payload.data;
@@ -67,7 +72,7 @@ export const publicBarbershopService = {
     if (!normalizedSlug) {
       return {
         data: null,
-        error: new Error("Barbearia não encontrada."),
+        error: new Error('Barbearia não encontrada.'),
       };
     }
 
@@ -77,9 +82,10 @@ export const publicBarbershopService = {
     } catch (error: unknown) {
       return {
         data: null,
-        error: error instanceof Error
-          ? error
-          : new Error("Não foi possível carregar a barbearia."),
+        error:
+          error instanceof Error
+            ? error
+            : new Error('Não foi possível carregar a barbearia.'),
       };
     }
   },
@@ -90,17 +96,17 @@ export const publicBarbershopService = {
     rating: number;
     comment?: string;
   }) {
-    const response = await fetch("/api/public/reviews", {
-      method: "POST",
+    const response = await fetch('/api/public/reviews', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
       },
       body: JSON.stringify({
         barbershopId: payload.barbershop_id,
         clientName: payload.client_name,
         rating: payload.rating,
-        comment: payload.comment ?? "",
+        comment: payload.comment ?? '',
       }),
     });
 
@@ -114,7 +120,7 @@ export const publicBarbershopService = {
     if (!response.ok || !body.data) {
       return {
         data: null,
-        error: new Error(body.error || "Não foi possível enviar a avaliação."),
+        error: new Error(body.error || 'Não foi possível enviar a avaliação.'),
       };
     }
 

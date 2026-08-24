@@ -1,16 +1,13 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
-import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
-import {
-  authenticatedMetadata,
-  guestMetadata,
-} from "@/lib/site-metadata";
+import { useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
+import { authenticatedMetadata, guestMetadata } from '@/lib/site-metadata';
 
 function setMetaTag(
   selector: string,
-  attribute: "name" | "property",
+  attribute: 'name' | 'property',
   key: string,
   content: string,
 ) {
@@ -18,7 +15,7 @@ function setMetaTag(
     `meta[${attribute}="${key}"]`,
   );
   if (!el) {
-    el = document.createElement("meta");
+    el = document.createElement('meta');
     el.setAttribute(attribute, key);
     document.head.appendChild(el);
   }
@@ -28,35 +25,38 @@ function setMetaTag(
 function applyMetadata(isAuthenticated: boolean) {
   const meta = isAuthenticated ? authenticatedMetadata : guestMetadata;
   const title =
-    typeof meta.title === "string" ? meta.title : "Silentra for Barbers";
-  const description = meta.description ?? "";
+    typeof meta.title === 'string' ? meta.title : 'Silentra for Barbers';
+  const description = meta.description ?? '';
 
   document.title = title;
-  setMetaTag('meta[name="description"]', "name", "description", description);
+  setMetaTag('meta[name="description"]', 'name', 'description', description);
 
   const ogTitle =
-    typeof meta.openGraph?.title === "string"
-      ? meta.openGraph.title
-      : title;
+    typeof meta.openGraph?.title === 'string' ? meta.openGraph.title : title;
   const ogDescription = meta.openGraph?.description ?? description;
 
-  setMetaTag('meta[property="og:title"]', "property", "og:title", ogTitle);
+  setMetaTag('meta[property="og:title"]', 'property', 'og:title', ogTitle);
   setMetaTag(
     'meta[property="og:description"]',
-    "property",
-    "og:description",
+    'property',
+    'og:description',
     ogDescription,
   );
 
   const twitterTitle =
-    typeof meta.twitter?.title === "string" ? meta.twitter.title : title;
+    typeof meta.twitter?.title === 'string' ? meta.twitter.title : title;
   const twitterDescription = meta.twitter?.description ?? description;
 
-  setMetaTag('meta[name="twitter:title"]', "name", "twitter:title", twitterTitle);
+  setMetaTag(
+    'meta[name="twitter:title"]',
+    'name',
+    'twitter:title',
+    twitterTitle,
+  );
   setMetaTag(
     'meta[name="twitter:description"]',
-    "name",
-    "twitter:description",
+    'name',
+    'twitter:description',
     twitterDescription,
   );
 }
@@ -76,12 +76,11 @@ export function DynamicMetadata() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((
-      _event: AuthChangeEvent,
-      session: Session | null,
-    ) => {
-      applyMetadata(Boolean(session?.user));
-    });
+    } = supabase.auth.onAuthStateChange(
+      (_event: AuthChangeEvent, session: Session | null) => {
+        applyMetadata(Boolean(session?.user));
+      },
+    );
 
     return () => subscription.unsubscribe();
   }, []);

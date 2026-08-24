@@ -1,9 +1,26 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Activity, AlertTriangle, Building2, CheckCircle2, ChevronRight, Clock3, Copy, Database, Gauge, KeyRound, RefreshCw, Search, ShieldCheck, UserRoundCog, Wrench, XCircle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Activity,
+  AlertTriangle,
+  Building2,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  Copy,
+  Database,
+  Gauge,
+  KeyRound,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  UserRoundCog,
+  Wrench,
+  XCircle,
+} from 'lucide-react';
 
-type Plan = "free" | "pro" | "enterprise";
+type Plan = 'free' | 'pro' | 'enterprise';
 type Overview = {
   generatedAt: string;
   stats: {
@@ -18,71 +35,122 @@ type Overview = {
     planAssignments: number;
   };
   plans: { free: number; pro: number; enterprise: number };
-  recentShops: Array<{ id: string; name: string; slug: string | null; created_at: string | null; plan: Plan; assigned: boolean; expires_at: string | null }>;
+  recentShops: Array<{
+    id: string;
+    name: string;
+    slug: string | null;
+    created_at: string | null;
+    plan: Plan;
+    assigned: boolean;
+    expires_at: string | null;
+  }>;
 };
 
 type ApiResponse = { ok?: boolean; error?: string; [key: string]: unknown };
 
 const tabs = [
-  { id: "overview", label: "Overview", icon: Gauge },
-  { id: "shops", label: "Barbearias", icon: Building2 },
-  { id: "plans", label: "Planos", icon: KeyRound },
-  { id: "diagnostics", label: "Diagnóstico", icon: Wrench },
+  { id: 'overview', label: 'Overview', icon: Gauge },
+  { id: 'shops', label: 'Barbearias', icon: Building2 },
+  { id: 'plans', label: 'Planos', icon: KeyRound },
+  { id: 'diagnostics', label: 'Diagnóstico', icon: Wrench },
 ] as const;
 
-type Tab = (typeof tabs)[number]["id"];
+type Tab = (typeof tabs)[number]['id'];
 
 function formatDate(value: string | null) {
-  if (!value) return "—";
-  return new Intl.DateTimeFormat("pt-PT", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  if (!value) return '—';
+  return new Intl.DateTimeFormat('pt-PT', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
 }
 
-function StatCard({ label, value, meta, tone = "default" }: { label: string; value: number | string; meta?: string; tone?: "default" | "good" | "warn" | "bad" }) {
-  const Icon = tone === "good" ? CheckCircle2 : tone === "warn" ? AlertTriangle : tone === "bad" ? XCircle : Activity;
+function StatCard({
+  label,
+  value,
+  meta,
+  tone = 'default',
+}: {
+  label: string;
+  value: number | string;
+  meta?: string;
+  tone?: 'default' | 'good' | 'warn' | 'bad';
+}) {
+  const Icon =
+    tone === 'good'
+      ? CheckCircle2
+      : tone === 'warn'
+        ? AlertTriangle
+        : tone === 'bad'
+          ? XCircle
+          : Activity;
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-500">{label}</p>
-          <p className="mt-2 text-2xl font-semibold tracking-tight text-white">{value}</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-500">
+            {label}
+          </p>
+          <p className="mt-2 text-2xl font-semibold tracking-tight text-white">
+            {value}
+          </p>
           {meta ? <p className="mt-1 text-xs text-zinc-500">{meta}</p> : null}
         </div>
-        <Icon className={`size-4 ${tone === "good" ? "text-emerald-400" : tone === "warn" ? "text-amber-400" : tone === "bad" ? "text-red-400" : "text-zinc-500"}`} />
+        <Icon
+          className={`size-4 ${tone === 'good' ? 'text-emerald-400' : tone === 'warn' ? 'text-amber-400' : tone === 'bad' ? 'text-red-400' : 'text-zinc-500'}`}
+        />
       </div>
     </div>
   );
 }
 
 export default function PlatformAdminConsole() {
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTab] = useState<Tab>('overview');
   const [data, setData] = useState<Overview | null>(null);
-  const [query, setQuery] = useState("");
-  const [selectedShop, setSelectedShop] = useState<Overview["recentShops"][number] | null>(null);
-  const [plan, setPlan] = useState<Plan>("pro");
-  const [reason, setReason] = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
+  const [query, setQuery] = useState('');
+  const [selectedShop, setSelectedShop] = useState<
+    Overview['recentShops'][number] | null
+  >(null);
+  const [plan, setPlan] = useState<Plan>('pro');
+  const [reason, setReason] = useState('');
+  const [expiresAt, setExpiresAt] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [health, setHealth] = useState<{ status: number; latencyMs: number; ok: boolean } | null>(null);
+  const [health, setHealth] = useState<{
+    status: number;
+    latencyMs: number;
+    ok: boolean;
+  } | null>(null);
 
-  const load = useCallback(async (search = query) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`/api/_silentra-admin/overview?q=${encodeURIComponent(search)}`, { cache: "no-store" });
-      const payload = await response.json() as Overview & ApiResponse;
-      if (!response.ok || !payload.stats) throw new Error(payload.error || "Não foi possível carregar o painel.");
-      setData(payload);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro inesperado.");
-    } finally {
-      setLoading(false);
-    }
-  }, [query]);
+  const load = useCallback(
+    async (search = query) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(
+          `/api/_silentra-admin/overview?q=${encodeURIComponent(search)}`,
+          { cache: 'no-store' },
+        );
+        const payload = (await response.json()) as Overview & ApiResponse;
+        if (!response.ok || !payload.stats)
+          throw new Error(
+            payload.error || 'Não foi possível carregar o painel.',
+          );
+        setData(payload);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro inesperado.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [query],
+  );
 
-  useEffect(() => { void load(""); }, [load]);
+  useEffect(() => {
+    void load('');
+  }, [load]);
 
   const searchResults = useMemo(() => data?.recentShops ?? [], [data]);
 
@@ -92,17 +160,25 @@ export default function PlatformAdminConsole() {
     setMessage(null);
     setError(null);
     try {
-      const response = await fetch("/api/_silentra-admin/plan", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ barbershopId: selectedShop.id, plan, reason, expiresAt: expiresAt || null }),
+      const response = await fetch('/api/_silentra-admin/plan', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          barbershopId: selectedShop.id,
+          plan,
+          reason,
+          expiresAt: expiresAt || null,
+        }),
       });
-      const payload = await response.json() as ApiResponse;
-      if (!response.ok) throw new Error(payload.error || "Não foi possível atribuir o plano.");
-      setMessage(`Plano ${plan.toUpperCase()} atribuído a ${selectedShop.name}.`);
+      const payload = (await response.json()) as ApiResponse;
+      if (!response.ok)
+        throw new Error(payload.error || 'Não foi possível atribuir o plano.');
+      setMessage(
+        `Plano ${plan.toUpperCase()} atribuído a ${selectedShop.name}.`,
+      );
       await load(query);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro inesperado.");
+      setError(err instanceof Error ? err.message : 'Erro inesperado.');
     } finally {
       setSaving(false);
     }
@@ -114,13 +190,19 @@ export default function PlatformAdminConsole() {
     setMessage(null);
     setError(null);
     try {
-      const response = await fetch(`/api/_silentra-admin/plan?barbershopId=${encodeURIComponent(selectedShop.id)}`, { method: "DELETE" });
-      const payload = await response.json() as ApiResponse;
-      if (!response.ok) throw new Error(payload.error || "Não foi possível remover a atribuição.");
+      const response = await fetch(
+        `/api/_silentra-admin/plan?barbershopId=${encodeURIComponent(selectedShop.id)}`,
+        { method: 'DELETE' },
+      );
+      const payload = (await response.json()) as ApiResponse;
+      if (!response.ok)
+        throw new Error(
+          payload.error || 'Não foi possível remover a atribuição.',
+        );
       setMessage(`A atribuição manual de ${selectedShop.name} foi removida.`);
       await load(query);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro inesperado.");
+      setError(err instanceof Error ? err.message : 'Erro inesperado.');
     } finally {
       setSaving(false);
     }
@@ -129,16 +211,24 @@ export default function PlatformAdminConsole() {
   const runHealth = async () => {
     const started = performance.now();
     try {
-      const response = await fetch("/api/health", { cache: "no-store" });
-      setHealth({ status: response.status, latencyMs: Math.round(performance.now() - started), ok: response.ok });
+      const response = await fetch('/api/health', { cache: 'no-store' });
+      setHealth({
+        status: response.status,
+        latencyMs: Math.round(performance.now() - started),
+        ok: response.ok,
+      });
     } catch {
-      setHealth({ status: 0, latencyMs: Math.round(performance.now() - started), ok: false });
+      setHealth({
+        status: 0,
+        latencyMs: Math.round(performance.now() - started),
+        ok: false,
+      });
     }
   };
 
   const copy = async (value: string) => {
     await navigator.clipboard.writeText(value);
-    setMessage("Copiado para a área de transferência.");
+    setMessage('Copiado para a área de transferência.');
   };
 
   return (
@@ -147,63 +237,445 @@ export default function PlatformAdminConsole() {
         <header className="sticky top-3 z-20 mb-5 rounded-2xl border border-red-400/15 bg-zinc-950/90 p-4 shadow-2xl backdrop-blur-xl sm:p-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-red-300"><ShieldCheck className="size-3.5" /> Internal / Platform Control</div>
-              <div className="mt-2 flex items-center gap-2"><h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Silentra Control Center</h1><span className="rounded-full border border-red-400/20 bg-red-400/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-red-300">Private</span></div>
-              <p className="mt-1 max-w-2xl text-xs leading-5 text-zinc-500">Operação interna. Esta área não é exposta na navegação pública nem deve substituir as permissões normais das barbearias.</p>
+              <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-red-300">
+                <ShieldCheck className="size-3.5" /> Internal / Platform Control
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                  Silentra Control Center
+                </h1>
+                <span className="rounded-full border border-red-400/20 bg-red-400/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-red-300">
+                  Private
+                </span>
+              </div>
+              <p className="mt-1 max-w-2xl text-xs leading-5 text-zinc-500">
+                Operação interna. Esta área não é exposta na navegação pública
+                nem deve substituir as permissões normais das barbearias.
+              </p>
             </div>
-            <button type="button" onClick={() => void load(query)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 text-sm font-medium hover:bg-white/[0.08]"><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />Atualizar</button>
+            <button
+              type="button"
+              onClick={() => void load(query)}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 text-sm font-medium hover:bg-white/[0.08]"
+            >
+              <RefreshCw
+                className={`size-4 ${loading ? 'animate-spin' : ''}`}
+              />
+              Atualizar
+            </button>
           </div>
           <div className="mt-4 flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {tabs.map(({ id, label: label, icon: Icon }) => <button key={id} type="button" onClick={() => setTab(id)} className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl border px-3.5 text-sm font-medium ${tab === id ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-200" : "border-white/10 bg-white/[0.025] text-zinc-500 hover:text-zinc-200"}`}><Icon className="size-4" />{label}</button>)}
+            {tabs.map(({ id, label: label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setTab(id)}
+                className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl border px-3.5 text-sm font-medium ${tab === id ? 'border-emerald-400/25 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-white/[0.025] text-zinc-500 hover:text-zinc-200'}`}
+              >
+                <Icon className="size-4" />
+                {label}
+              </button>
+            ))}
           </div>
         </header>
 
-        {message ? <div className="mb-4 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] px-4 py-3 text-sm text-emerald-200">{message}</div> : null}
-        {error ? <div className="mb-4 rounded-xl border border-red-400/20 bg-red-400/[0.06] px-4 py-3 text-sm text-red-200">{error}</div> : null}
+        {message ? (
+          <div className="mb-4 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] px-4 py-3 text-sm text-emerald-200">
+            {message}
+          </div>
+        ) : null}
+        {error ? (
+          <div className="mb-4 rounded-xl border border-red-400/20 bg-red-400/[0.06] px-4 py-3 text-sm text-red-200">
+            {error}
+          </div>
+        ) : null}
 
-        {tab === "overview" && data ? (
+        {tab === 'overview' && data ? (
           <section className="space-y-5">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard label="Barbearias" value={data.stats.barbershops} meta="tenants" />
-              <StatCard label="Utilizadores" value={data.stats.users} meta={`${data.stats.owners} owners · ${data.stats.barbers} barbeiros`} />
-              <StatCard label="Clientes" value={data.stats.clients} meta="CRM por tenant" />
-              <StatCard label="Bookings" value={data.stats.appointments} meta={`${data.stats.upcomingAppointments} futuros`} tone={data.stats.upcomingAppointments > 0 ? "good" : "default"} />
+              <StatCard
+                label="Barbearias"
+                value={data.stats.barbershops}
+                meta="tenants"
+              />
+              <StatCard
+                label="Utilizadores"
+                value={data.stats.users}
+                meta={`${data.stats.owners} owners · ${data.stats.barbers} barbeiros`}
+              />
+              <StatCard
+                label="Clientes"
+                value={data.stats.clients}
+                meta="CRM por tenant"
+              />
+              <StatCard
+                label="Bookings"
+                value={data.stats.appointments}
+                meta={`${data.stats.upcomingAppointments} futuros`}
+                tone={data.stats.upcomingAppointments > 0 ? 'good' : 'default'}
+              />
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard label="Free" value={data.plans.free} meta="plano efetivo" />
-              <StatCard label="Pro" value={data.plans.pro} meta="plano efetivo" tone="good" />
-              <StatCard label="Enterprise" value={data.plans.enterprise} meta="plano efetivo" tone="good" />
-              <StatCard label="Subscrições ativas" value={data.stats.activeSubscriptions} meta={`${data.stats.planAssignments} overrides`} />
+              <StatCard
+                label="Free"
+                value={data.plans.free}
+                meta="plano efetivo"
+              />
+              <StatCard
+                label="Pro"
+                value={data.plans.pro}
+                meta="plano efetivo"
+                tone="good"
+              />
+              <StatCard
+                label="Enterprise"
+                value={data.plans.enterprise}
+                meta="plano efetivo"
+                tone="good"
+              />
+              <StatCard
+                label="Subscrições ativas"
+                value={data.stats.activeSubscriptions}
+                meta={`${data.stats.planAssignments} overrides`}
+              />
             </div>
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
-                <div className="flex items-center justify-between gap-3"><div><h2 className="font-semibold">Barbearias recentes</h2><p className="mt-1 text-xs text-zinc-500">Pesquisa por nome, slug ou ID.</p></div><button type="button" onClick={() => setTab("shops")} className="text-xs text-zinc-400 hover:text-white">Ver todas <ChevronRight className="inline size-3" /></button></div>
-                <div className="mt-4 space-y-2">{data.recentShops.map(shop => <button key={shop.id} type="button" onClick={() => { setSelectedShop(shop); setTab("plans"); }} className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/8 bg-black/15 px-3 py-3 text-left hover:border-white/15"><div className="min-w-0"><p className="truncate text-sm font-medium text-zinc-200">{shop.name}</p><p className="mt-1 truncate text-[11px] text-zinc-600">{shop.slug || shop.id}</p></div><span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold uppercase ${shop.plan === "enterprise" ? "bg-violet-400/10 text-violet-200" : shop.plan === "pro" ? "bg-emerald-400/10 text-emerald-200" : "bg-white/5 text-zinc-500"}`}>{shop.plan}</span></button>)}</div>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="font-semibold">Barbearias recentes</h2>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      Pesquisa por nome, slug ou ID.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setTab('shops')}
+                    className="text-xs text-zinc-400 hover:text-white"
+                  >
+                    Ver todas <ChevronRight className="inline size-3" />
+                  </button>
+                </div>
+                <div className="mt-4 space-y-2">
+                  {data.recentShops.map((shop) => (
+                    <button
+                      key={shop.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedShop(shop);
+                        setTab('plans');
+                      }}
+                      className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/8 bg-black/15 px-3 py-3 text-left hover:border-white/15"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-zinc-200">
+                          {shop.name}
+                        </p>
+                        <p className="mt-1 truncate text-[11px] text-zinc-600">
+                          {shop.slug || shop.id}
+                        </p>
+                      </div>
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold uppercase ${shop.plan === 'enterprise' ? 'bg-violet-400/10 text-violet-200' : shop.plan === 'pro' ? 'bg-emerald-400/10 text-emerald-200' : 'bg-white/5 text-zinc-500'}`}
+                      >
+                        {shop.plan}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5"><div className="flex items-center gap-2"><Database className="size-4 text-emerald-300" /><h2 className="font-semibold">System health</h2></div><p className="mt-1 text-xs text-zinc-500">Health endpoint público de baixo risco.</p><button type="button" onClick={() => void runHealth()} className="mt-4 min-h-10 w-full rounded-xl border border-white/10 bg-white/[0.04] text-sm hover:bg-white/[0.07]">Testar /api/health</button>{health ? <div className="mt-3 rounded-xl border border-white/8 bg-black/15 p-3 text-sm"><div className="flex items-center justify-between"><span className={health.ok ? "text-emerald-300" : "text-red-300"}>{health.ok ? "Healthy" : "Error"}</span><span className="font-mono text-xs text-zinc-500">{health.status} · {health.latencyMs}ms</span></div></div> : null}</div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+                <div className="flex items-center gap-2">
+                  <Database className="size-4 text-emerald-300" />
+                  <h2 className="font-semibold">System health</h2>
+                </div>
+                <p className="mt-1 text-xs text-zinc-500">
+                  Health endpoint público de baixo risco.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void runHealth()}
+                  className="mt-4 min-h-10 w-full rounded-xl border border-white/10 bg-white/[0.04] text-sm hover:bg-white/[0.07]"
+                >
+                  Testar /api/health
+                </button>
+                {health ? (
+                  <div className="mt-3 rounded-xl border border-white/8 bg-black/15 p-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={
+                          health.ok ? 'text-emerald-300' : 'text-red-300'
+                        }
+                      >
+                        {health.ok ? 'Healthy' : 'Error'}
+                      </span>
+                      <span className="font-mono text-xs text-zinc-500">
+                        {health.status} · {health.latencyMs}ms
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </div>
-            <p className="text-right text-[11px] text-zinc-700">Atualizado {formatDate(data.generatedAt)}</p>
+            <p className="text-right text-[11px] text-zinc-700">
+              Atualizado {formatDate(data.generatedAt)}
+            </p>
           </section>
         ) : null}
 
-        {tab === "shops" ? (
+        {tab === 'shops' ? (
           <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-lg font-semibold">Barbearias</h2><p className="mt-1 text-xs text-zinc-500">Pesquisa operacional por tenant.</p></div><div className="flex w-full gap-2 sm:max-w-xl"><div className="relative min-w-0 flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-600" /><input value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === "Enter") void load(query); }} placeholder="Nome, slug ou ID…" className="h-11 w-full rounded-xl border border-white/10 bg-black/20 pl-9 pr-3 text-sm outline-none focus:border-emerald-400/30" /></div><button type="button" onClick={() => void load(query)} className="min-h-11 shrink-0 rounded-xl bg-white px-4 text-sm font-semibold text-zinc-950">Pesquisar</button></div></div>
-            <div className="mt-5 space-y-2">{searchResults.map(shop => <button key={shop.id} type="button" onClick={() => { setSelectedShop(shop); setTab("plans"); }} className="flex w-full items-center justify-between gap-4 rounded-xl border border-white/8 bg-black/15 px-4 py-3 text-left hover:border-white/15"><div className="min-w-0"><p className="truncate font-medium">{shop.name}</p><p className="mt-1 truncate text-xs text-zinc-600">{shop.slug || shop.id}</p><p className="mt-1 text-[11px] text-zinc-700">Criada {formatDate(shop.created_at)}</p></div><div className="flex shrink-0 items-center gap-2"><span className="rounded-full bg-white/5 px-2 py-1 text-[10px] uppercase text-zinc-400">{shop.plan}</span><ChevronRight className="size-4 text-zinc-700" /></div></button>)}{!loading && searchResults.length === 0 ? <div className="rounded-xl border border-dashed border-white/10 p-8 text-center text-sm text-zinc-500">Nenhuma barbearia encontrada.</div> : null}</div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Barbearias</h2>
+                <p className="mt-1 text-xs text-zinc-500">
+                  Pesquisa operacional por tenant.
+                </p>
+              </div>
+              <div className="flex w-full gap-2 sm:max-w-xl">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-600" />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') void load(query);
+                    }}
+                    placeholder="Nome, slug ou ID…"
+                    className="h-11 w-full rounded-xl border border-white/10 bg-black/20 pl-9 pr-3 text-sm outline-none focus:border-emerald-400/30"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void load(query)}
+                  className="min-h-11 shrink-0 rounded-xl bg-white px-4 text-sm font-semibold text-zinc-950"
+                >
+                  Pesquisar
+                </button>
+              </div>
+            </div>
+            <div className="mt-5 space-y-2">
+              {searchResults.map((shop) => (
+                <button
+                  key={shop.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedShop(shop);
+                    setTab('plans');
+                  }}
+                  className="flex w-full items-center justify-between gap-4 rounded-xl border border-white/8 bg-black/15 px-4 py-3 text-left hover:border-white/15"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{shop.name}</p>
+                    <p className="mt-1 truncate text-xs text-zinc-600">
+                      {shop.slug || shop.id}
+                    </p>
+                    <p className="mt-1 text-[11px] text-zinc-700">
+                      Criada {formatDate(shop.created_at)}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="rounded-full bg-white/5 px-2 py-1 text-[10px] uppercase text-zinc-400">
+                      {shop.plan}
+                    </span>
+                    <ChevronRight className="size-4 text-zinc-700" />
+                  </div>
+                </button>
+              ))}
+              {!loading && searchResults.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-white/10 p-8 text-center text-sm text-zinc-500">
+                  Nenhuma barbearia encontrada.
+                </div>
+              ) : null}
+            </div>
           </section>
         ) : null}
 
-        {tab === "plans" ? (
+        {tab === 'plans' ? (
           <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5"><div className="flex items-center gap-2"><KeyRound className="size-4 text-emerald-300" /><h2 className="font-semibold">Atribuição de plano</h2></div><p className="mt-1 text-xs leading-5 text-zinc-500">Concede acesso efetivo à barbearia sem alterar a subscrição Stripe. Pode ter expiração automática.</p><div className="mt-5 grid gap-2 sm:grid-cols-3">{(["free", "pro", "enterprise"] as Plan[]).map(item => <button key={item} type="button" onClick={() => setPlan(item)} className={`rounded-xl border px-4 py-4 text-left ${plan === item ? "border-emerald-400/30 bg-emerald-400/[0.08]" : "border-white/10 bg-black/15"}`}><div className="text-sm font-semibold uppercase">{item}</div><div className="mt-1 text-xs text-zinc-600">{item === "free" ? "Acesso base" : item === "pro" ? "Funcionalidades Pro" : "Acesso Enterprise"}</div></button>)}</div><div className="mt-4 grid gap-4 sm:grid-cols-2"><label className="space-y-2"><span className="text-xs font-medium text-zinc-400">Motivo</span><input value={reason} onChange={e => setReason(e.target.value)} maxLength={500} placeholder="Beta, compensação, suporte…" className="h-11 w-full rounded-xl border border-white/10 bg-black/20 px-3 text-sm outline-none focus:border-emerald-400/30" /></label><label className="space-y-2"><span className="text-xs font-medium text-zinc-400">Expira em</span><input type="datetime-local" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} className="h-11 w-full rounded-xl border border-white/10 bg-black/20 px-3 text-sm outline-none focus:border-emerald-400/30" /></label></div><div className="mt-5 flex flex-col gap-2 sm:flex-row"><button type="button" disabled={!selectedShop || saving} onClick={() => void assignPlan()} className="min-h-11 rounded-xl bg-white px-4 text-sm font-semibold text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40">{saving ? "A guardar…" : "Atribuir plano"}</button><button type="button" disabled={!selectedShop || saving} onClick={() => void clearPlan()} className="min-h-11 rounded-xl border border-red-400/15 bg-red-400/[0.05] px-4 text-sm font-semibold text-red-200 disabled:cursor-not-allowed disabled:opacity-40">Remover atribuição</button></div></div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5"><h2 className="font-semibold">Barbearia selecionada</h2>{selectedShop ? <><div className="mt-4 rounded-xl border border-white/8 bg-black/15 p-4"><p className="font-medium">{selectedShop.name}</p><p className="mt-1 break-all text-xs text-zinc-600">{selectedShop.id}</p><div className="mt-4 grid grid-cols-2 gap-2"><div className="rounded-lg bg-white/[0.03] p-3"><p className="text-[10px] uppercase text-zinc-600">Plano efetivo</p><p className="mt-1 text-sm font-semibold uppercase">{selectedShop.plan}</p></div><div className="rounded-lg bg-white/[0.03] p-3"><p className="text-[10px] uppercase text-zinc-600">Override</p><p className="mt-1 text-sm font-semibold">{selectedShop.assigned ? "Ativo" : "Não"}</p></div></div><button type="button" onClick={() => void copy(selectedShop.id)} className="mt-3 inline-flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-200"><Copy className="size-3.5" />Copiar ID</button></div><p className="mt-4 text-[11px] leading-5 text-zinc-600">A atribuição administrativa tem precedência enquanto estiver válida. Quando expirar ou for removida, a resolução volta para a subscrição normal.</p></> : <div className="mt-4 rounded-xl border border-dashed border-white/10 p-8 text-center text-sm text-zinc-600">Seleciona uma barbearia em Overview ou Barbearias.</div>}</div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+              <div className="flex items-center gap-2">
+                <KeyRound className="size-4 text-emerald-300" />
+                <h2 className="font-semibold">Atribuição de plano</h2>
+              </div>
+              <p className="mt-1 text-xs leading-5 text-zinc-500">
+                Concede acesso efetivo à barbearia sem alterar a subscrição
+                Stripe. Pode ter expiração automática.
+              </p>
+              <div className="mt-5 grid gap-2 sm:grid-cols-3">
+                {(['free', 'pro', 'enterprise'] as Plan[]).map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setPlan(item)}
+                    className={`rounded-xl border px-4 py-4 text-left ${plan === item ? 'border-emerald-400/30 bg-emerald-400/[0.08]' : 'border-white/10 bg-black/15'}`}
+                  >
+                    <div className="text-sm font-semibold uppercase">
+                      {item}
+                    </div>
+                    <div className="mt-1 text-xs text-zinc-600">
+                      {item === 'free'
+                        ? 'Acesso base'
+                        : item === 'pro'
+                          ? 'Funcionalidades Pro'
+                          : 'Acesso Enterprise'}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <label className="space-y-2">
+                  <span className="text-xs font-medium text-zinc-400">
+                    Motivo
+                  </span>
+                  <input
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    maxLength={500}
+                    placeholder="Beta, compensação, suporte…"
+                    className="h-11 w-full rounded-xl border border-white/10 bg-black/20 px-3 text-sm outline-none focus:border-emerald-400/30"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-xs font-medium text-zinc-400">
+                    Expira em
+                  </span>
+                  <input
+                    type="datetime-local"
+                    value={expiresAt}
+                    onChange={(e) => setExpiresAt(e.target.value)}
+                    className="h-11 w-full rounded-xl border border-white/10 bg-black/20 px-3 text-sm outline-none focus:border-emerald-400/30"
+                  />
+                </label>
+              </div>
+              <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  disabled={!selectedShop || saving}
+                  onClick={() => void assignPlan()}
+                  className="min-h-11 rounded-xl bg-white px-4 text-sm font-semibold text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {saving ? 'A guardar…' : 'Atribuir plano'}
+                </button>
+                <button
+                  type="button"
+                  disabled={!selectedShop || saving}
+                  onClick={() => void clearPlan()}
+                  className="min-h-11 rounded-xl border border-red-400/15 bg-red-400/[0.05] px-4 text-sm font-semibold text-red-200 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Remover atribuição
+                </button>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+              <h2 className="font-semibold">Barbearia selecionada</h2>
+              {selectedShop ? (
+                <>
+                  <div className="mt-4 rounded-xl border border-white/8 bg-black/15 p-4">
+                    <p className="font-medium">{selectedShop.name}</p>
+                    <p className="mt-1 break-all text-xs text-zinc-600">
+                      {selectedShop.id}
+                    </p>
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <div className="rounded-lg bg-white/[0.03] p-3">
+                        <p className="text-[10px] uppercase text-zinc-600">
+                          Plano efetivo
+                        </p>
+                        <p className="mt-1 text-sm font-semibold uppercase">
+                          {selectedShop.plan}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-white/[0.03] p-3">
+                        <p className="text-[10px] uppercase text-zinc-600">
+                          Override
+                        </p>
+                        <p className="mt-1 text-sm font-semibold">
+                          {selectedShop.assigned ? 'Ativo' : 'Não'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void copy(selectedShop.id)}
+                      className="mt-3 inline-flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-200"
+                    >
+                      <Copy className="size-3.5" />
+                      Copiar ID
+                    </button>
+                  </div>
+                  <p className="mt-4 text-[11px] leading-5 text-zinc-600">
+                    A atribuição administrativa tem precedência enquanto estiver
+                    válida. Quando expirar ou for removida, a resolução volta
+                    para a subscrição normal.
+                  </p>
+                </>
+              ) : (
+                <div className="mt-4 rounded-xl border border-dashed border-white/10 p-8 text-center text-sm text-zinc-600">
+                  Seleciona uma barbearia em Overview ou Barbearias.
+                </div>
+              )}
+            </div>
           </section>
         ) : null}
 
-        {tab === "diagnostics" ? (
+        {tab === 'diagnostics' ? (
           <section className="grid gap-5 lg:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5"><div className="flex items-center gap-2"><Activity className="size-4 text-emerald-300" /><h2 className="font-semibold">Quick checks</h2></div><div className="mt-4 space-y-2"><button type="button" onClick={() => void runHealth()} className="flex min-h-11 w-full items-center justify-between rounded-xl border border-white/10 bg-black/15 px-4 text-sm hover:bg-white/[0.04]"><span>GET /api/health</span><span>{health ? `${health.status} · ${health.latencyMs}ms` : "Executar"}</span></button><button type="button" onClick={() => void load(query)} className="flex min-h-11 w-full items-center justify-between rounded-xl border border-white/10 bg-black/15 px-4 text-sm hover:bg-white/[0.04]"><span>Admin overview query</span><span>{loading ? "A executar…" : "Executar"}</span></button></div></div>
-            <div className="rounded-2xl border border-amber-400/10 bg-amber-400/[0.025] p-4 sm:p-5"><div className="flex items-center gap-2"><ShieldCheck className="size-4 text-amber-300" /><h2 className="font-semibold">Segurança</h2></div><p className="mt-2 text-xs leading-5 text-zinc-500">Este painel não aparece na navbar, não é indexável e todas as rotas internas repetem a validação do administrador no servidor.</p><div className="mt-4 space-y-2 text-xs text-zinc-500"><p><span className="text-zinc-300">Auth:</span> sessão Supabase obrigatória</p><p><span className="text-zinc-300">Allowlist:</span> SILENTRA_PLATFORM_ADMIN_USER_ID / EMAIL</p><p><span className="text-zinc-300">Secrets:</span> nunca expostos ao browser</p><p><span className="text-zinc-300">Mutations:</span> apenas via API interna autenticada</p></div></div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+              <div className="flex items-center gap-2">
+                <Activity className="size-4 text-emerald-300" />
+                <h2 className="font-semibold">Quick checks</h2>
+              </div>
+              <div className="mt-4 space-y-2">
+                <button
+                  type="button"
+                  onClick={() => void runHealth()}
+                  className="flex min-h-11 w-full items-center justify-between rounded-xl border border-white/10 bg-black/15 px-4 text-sm hover:bg-white/[0.04]"
+                >
+                  <span>GET /api/health</span>
+                  <span>
+                    {health
+                      ? `${health.status} · ${health.latencyMs}ms`
+                      : 'Executar'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void load(query)}
+                  className="flex min-h-11 w-full items-center justify-between rounded-xl border border-white/10 bg-black/15 px-4 text-sm hover:bg-white/[0.04]"
+                >
+                  <span>Admin overview query</span>
+                  <span>{loading ? 'A executar…' : 'Executar'}</span>
+                </button>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-amber-400/10 bg-amber-400/[0.025] p-4 sm:p-5">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="size-4 text-amber-300" />
+                <h2 className="font-semibold">Segurança</h2>
+              </div>
+              <p className="mt-2 text-xs leading-5 text-zinc-500">
+                Este painel não aparece na navbar, não é indexável e todas as
+                rotas internas repetem a validação do administrador no servidor.
+              </p>
+              <div className="mt-4 space-y-2 text-xs text-zinc-500">
+                <p>
+                  <span className="text-zinc-300">Auth:</span> sessão Supabase
+                  obrigatória
+                </p>
+                <p>
+                  <span className="text-zinc-300">Allowlist:</span>{' '}
+                  SILENTRA_PLATFORM_ADMIN_USER_ID / EMAIL
+                </p>
+                <p>
+                  <span className="text-zinc-300">Secrets:</span> nunca expostos
+                  ao browser
+                </p>
+                <p>
+                  <span className="text-zinc-300">Mutations:</span> apenas via
+                  API interna autenticada
+                </p>
+              </div>
+            </div>
           </section>
         ) : null}
       </div>

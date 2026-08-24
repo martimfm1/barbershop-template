@@ -1,21 +1,27 @@
-import { getPublicAppUrl } from "@/lib/email/calendar-link";
+import { getPublicAppUrl } from '@/lib/email/calendar-link';
 
 function escapeHtml(value: string): string {
   return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 type LoyaltyEmailError = { status: number | null };
-export class LoyaltyEmailDeliveryError extends Error implements LoyaltyEmailError {
+export class LoyaltyEmailDeliveryError
+  extends Error
+  implements LoyaltyEmailError
+{
   readonly status: number | null;
 
-  constructor(status: number | null, message = "Loyalty email delivery failed.") {
+  constructor(
+    status: number | null,
+    message = 'Loyalty email delivery failed.',
+  ) {
     super(message);
-    this.name = "LoyaltyEmailDeliveryError";
+    this.name = 'LoyaltyEmailDeliveryError';
     this.status = status;
   }
 }
@@ -28,15 +34,23 @@ async function sendBrevoEmail(input: {
 }) {
   const apiKey = process.env.BREVO_API_KEY;
   const senderEmail = process.env.SENDER_EMAIL;
-  if (!apiKey || !senderEmail) throw new LoyaltyEmailDeliveryError(null, "Loyalty email configuration is missing.");
+  if (!apiKey || !senderEmail)
+    throw new LoyaltyEmailDeliveryError(
+      null,
+      'Loyalty email configuration is missing.',
+    );
 
   let response: Response;
   try {
-    response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: { accept: "application/json", "content-type": "application/json", "api-key": apiKey },
+    response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+        'api-key': apiKey,
+      },
       body: JSON.stringify({
-        sender: { name: "Silentra", email: senderEmail },
+        sender: { name: 'Silentra', email: senderEmail },
         to: [{ email: input.email }],
         subject: input.subject,
         htmlContent: input.htmlContent,
@@ -48,7 +62,7 @@ async function sendBrevoEmail(input: {
   }
 
   if (!response.ok) {
-    let message = "Loyalty email delivery failed.";
+    let message = 'Loyalty email delivery failed.';
     try {
       const data = (await response.json()) as { message?: string };
       message = data.message || message;
@@ -59,7 +73,11 @@ async function sendBrevoEmail(input: {
   }
 }
 
-export async function sendLoyaltyCodeEmail(email: string, code: string, barbershopName: string): Promise<void> {
+export async function sendLoyaltyCodeEmail(
+  email: string,
+  code: string,
+  barbershopName: string,
+): Promise<void> {
   const safeShop = escapeHtml(barbershopName);
   const safeCode = escapeHtml(code);
   const htmlContent = `
@@ -96,19 +114,23 @@ type LoyaltyRedemptionEmailInput = {
   expiresAt: string;
 };
 
-export async function sendLoyaltyRedemptionEmail(input: LoyaltyRedemptionEmailInput): Promise<void> {
+export async function sendLoyaltyRedemptionEmail(
+  input: LoyaltyRedemptionEmailInput,
+): Promise<void> {
   const appUrl = getPublicAppUrl();
   const qrImageUrl = `${appUrl}/api/loyalty/redemption/qr?token=${encodeURIComponent(input.qrPayload)}`;
-  const safeName = escapeHtml(input.customerName?.trim() || "Olá");
+  const safeName = escapeHtml(input.customerName?.trim() || 'Olá');
   const safeShop = escapeHtml(input.barbershopName);
   const safeReward = escapeHtml(input.rewardName);
-  const safeDescription = escapeHtml(input.rewardDescription || "Recompensa de fidelização");
+  const safeDescription = escapeHtml(
+    input.rewardDescription || 'Recompensa de fidelização',
+  );
   const safeCode = escapeHtml(input.code);
   const expiresAt = new Date(input.expiresAt);
-  const expiryLabel = new Intl.DateTimeFormat("pt-PT", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "Europe/Lisbon",
+  const expiryLabel = new Intl.DateTimeFormat('pt-PT', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Europe/Lisbon',
   }).format(expiresAt);
 
   const htmlContent = `
@@ -161,12 +183,12 @@ export async function sendLoyaltyRedemptionEmail(input: LoyaltyRedemptionEmailIn
 
   const textContent = [
     `Voucher de fidelização — ${input.barbershopName}`,
-    `Olá ${input.customerName?.trim() || ""}, o teu resgate de ${input.rewardName} foi criado com sucesso.`,
+    `Olá ${input.customerName?.trim() || ''}, o teu resgate de ${input.rewardName} foi criado com sucesso.`,
     `Pontos utilizados: ${input.pointsCost}. Pontos restantes: ${input.remainingPoints}.`,
     `Código de utilização: ${input.code}.`,
     `Válido até: ${expiryLabel}.`,
-    "O QR Code está disponível na versão HTML deste email.",
-  ].join("\n\n");
+    'O QR Code está disponível na versão HTML deste email.',
+  ].join('\n\n');
 
   await sendBrevoEmail({
     email: input.email,

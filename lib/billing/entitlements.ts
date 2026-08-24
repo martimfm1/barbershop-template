@@ -1,19 +1,19 @@
-import { PLANS, type BillingPlan } from "@/lib/stripe/constants";
+import { PLANS, type BillingPlan } from '@/lib/stripe/constants';
 import {
   getPlanLimit,
   hasPlanFeature,
   isUnlimited,
   type FeatureKey,
   type PlanLimitKey,
-} from "@/lib/billing/plan-features";
+} from '@/lib/billing/plan-features';
 
 export class EntitlementError extends Error {
-  readonly code: "FEATURE_NOT_INCLUDED" | "LIMIT_REACHED";
+  readonly code: 'FEATURE_NOT_INCLUDED' | 'LIMIT_REACHED';
   readonly status = 403;
 
-  constructor(code: "FEATURE_NOT_INCLUDED" | "LIMIT_REACHED", message: string) {
+  constructor(code: 'FEATURE_NOT_INCLUDED' | 'LIMIT_REACHED', message: string) {
     super(message);
-    this.name = "EntitlementError";
+    this.name = 'EntitlementError';
     this.code = code;
   }
 }
@@ -25,7 +25,7 @@ export function canUseFeature(plan: BillingPlan, feature: FeatureKey): boolean {
 export function assertFeature(plan: BillingPlan, feature: FeatureKey): void {
   if (!canUseFeature(plan, feature)) {
     throw new EntitlementError(
-      "FEATURE_NOT_INCLUDED",
+      'FEATURE_NOT_INCLUDED',
       `The ${feature} feature is not included in the ${plan} plan.`,
     );
   }
@@ -46,7 +46,7 @@ export function assertWithinLimit(
 
   if (currentCount + increment > maximum) {
     throw new EntitlementError(
-      "LIMIT_REACHED",
+      'LIMIT_REACHED',
       `The ${plan} plan allows up to ${maximum} ${limit}.`,
     );
   }

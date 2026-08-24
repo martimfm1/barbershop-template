@@ -1,7 +1,7 @@
-import { SiteNavbar } from "@/components/site-navbar";
-import { FooterSection } from "@/components/hero/footer-section";
-import { LocalizedHomepage } from "@/components/hero/localized-homepage";
-import { LocalizedPricingSection } from "@/components/hero/localized-pricing-section";
+import { SiteNavbar } from '@/components/site-navbar';
+import { FooterSection } from '@/components/hero/footer-section';
+import { LocalizedHomepage } from '@/components/hero/localized-homepage';
+import { LocalizedPricingSection } from '@/components/hero/localized-pricing-section';
 
 export default function LandingPage() {
   return (

@@ -1,20 +1,23 @@
 function escapeHtml(value: string): string {
   return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 export class CustomerPortalEmailError extends Error {
-  readonly provider: "brevo";
+  readonly provider: 'brevo';
   readonly status: number | null;
 
-  constructor(status: number | null, message = "Customer portal email delivery failed.") {
+  constructor(
+    status: number | null,
+    message = 'Customer portal email delivery failed.',
+  ) {
     super(message);
-    this.name = "CustomerPortalEmailError";
-    this.provider = "brevo";
+    this.name = 'CustomerPortalEmailError';
+    this.provider = 'brevo';
     this.status = status;
   }
 }
@@ -23,7 +26,10 @@ export async function sendCustomerPortalCodeEmail(email: string, code: string) {
   const apiKey = process.env.BREVO_API_KEY;
   const senderEmail = process.env.SENDER_EMAIL;
   if (!apiKey || !senderEmail) {
-    throw new CustomerPortalEmailError(null, "Customer portal email configuration is missing.");
+    throw new CustomerPortalEmailError(
+      null,
+      'Customer portal email configuration is missing.',
+    );
   }
 
   const safeCode = escapeHtml(code);
@@ -41,17 +47,17 @@ export async function sendCustomerPortalCodeEmail(email: string, code: string) {
 
   let response: Response;
   try {
-    response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
+    response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
       headers: {
-        accept: "application/json",
-        "content-type": "application/json",
-        "api-key": apiKey,
+        accept: 'application/json',
+        'content-type': 'application/json',
+        'api-key': apiKey,
       },
       body: JSON.stringify({
-        sender: { name: "Silentra", email: senderEmail },
+        sender: { name: 'Silentra', email: senderEmail },
         to: [{ email }],
-        subject: "Código para aceder às tuas marcações — Silentra",
+        subject: 'Código para aceder às tuas marcações — Silentra',
         htmlContent,
       }),
     });

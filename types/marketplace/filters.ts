@@ -1,6 +1,7 @@
 /** Controls available in the marketplace directory. */
-export type MarketplaceDateFilter = "Today" | "Tomorrow" | `${number}-${number}-${number}`;
-export type MarketplaceSortFilter = "All" | "Near Me" | "Top Rated";
+export type MarketplaceDateFilter =
+  'Today' | 'Tomorrow' | `${number}-${number}-${number}`;
+export type MarketplaceSortFilter = 'All' | 'Near Me' | 'Top Rated';
 
 export interface UserCoordinates {
   latitude: number;

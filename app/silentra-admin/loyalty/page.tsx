@@ -1,11 +1,11 @@
-import { notFound } from "next/navigation";
-import type { Metadata } from "next";
-import { getPlatformAdminContext } from "@/lib/internal/platform-admin";
-import LoyaltyPointsConsole from "./points-console";
+import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
+import { getPlatformAdminContext } from '@/lib/internal/platform-admin';
+import LoyaltyPointsConsole from './points-console';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  title: "Silentra Internal — Loyalty",
+  title: 'Silentra Internal — Loyalty',
   robots: { index: false, follow: false },
 };
 

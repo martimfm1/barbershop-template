@@ -1,50 +1,50 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import QRCode from "qrcode";
-import { Check, Copy, Download, Printer, QrCode, Share2 } from "lucide-react";
-import { toast } from "sonner";
-import { ManagementPageHeader } from "@/app/dashboard/_components/shared/ManagementPageHeader";
-import { Button } from "@/components/ui/button";
+import { useEffect, useMemo, useState } from 'react';
+import QRCode from 'qrcode';
+import { Check, Copy, Download, Printer, QrCode, Share2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { ManagementPageHeader } from '@/app/dashboard/_components/shared/ManagementPageHeader';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const DEFAULT_TEXT =
-  "Scaneia para conhecer a nossa barbearia e marcar o teu proximo servico.";
+  'Scaneia para conhecer a nossa barbearia e marcar o teu proximo servico.';
 function download(href: string, filename: string) {
-  const link = document.createElement("a");
+  const link = document.createElement('a');
   link.href = href;
   link.download = filename;
   link.click();
 }
 
 export default function QrCodePage() {
-  const [slug, setSlug] = useState("");
-  const [name, setName] = useState("Barbearia");
+  const [slug, setSlug] = useState('');
+  const [name, setName] = useState('Barbearia');
   const [text, setText] = useState(DEFAULT_TEXT);
   const [savedText, setSavedText] = useState(DEFAULT_TEXT);
-  const [png, setPng] = useState("");
-  const [svg, setSvg] = useState("");
+  const [png, setPng] = useState('');
+  const [svg, setSvg] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const publicUrl = useMemo(() => {
     const origin =
       process.env.NEXT_PUBLIC_SITE_URL ||
       process.env.NEXT_PUBLIC_APP_URL ||
-      (typeof window === "undefined" ? "" : window.location.origin);
+      (typeof window === 'undefined' ? '' : window.location.origin);
     return slug && origin
-      ? `${origin.replace(/\/$/, "")}/barbershops/${encodeURIComponent(slug)}`
-      : "";
+      ? `${origin.replace(/\/$/, '')}/barbershops/${encodeURIComponent(slug)}`
+      : '';
   }, [slug]);
   useEffect(() => {
-    fetch("/api/barbershops/qr-code", { cache: "no-store" })
+    fetch('/api/barbershops/qr-code', { cache: 'no-store' })
       .then(async (response) => {
         if (!response.ok) throw new Error();
         return response.json() as Promise<{
@@ -59,7 +59,7 @@ export default function QrCodePage() {
         setText(data.text);
         setSavedText(data.text);
       })
-      .catch(() => toast.error("Nao foi possivel carregar o codigo QR."))
+      .catch(() => toast.error('Nao foi possivel carregar o codigo QR.'))
       .finally(() => setLoading(false));
   }, []);
   useEffect(() => {
@@ -68,12 +68,12 @@ export default function QrCodePage() {
       QRCode.toDataURL(publicUrl, {
         width: 720,
         margin: 2,
-        errorCorrectionLevel: "M",
+        errorCorrectionLevel: 'M',
       }),
       QRCode.toString(publicUrl, {
-        type: "svg",
+        type: 'svg',
         margin: 2,
-        errorCorrectionLevel: "M",
+        errorCorrectionLevel: 'M',
       }),
     ]).then(([nextPng, nextSvg]) => {
       setPng(nextPng);
@@ -83,25 +83,25 @@ export default function QrCodePage() {
   const saveText = async () => {
     setSaving(true);
     try {
-      const response = await fetch("/api/barbershops/qr-code", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/barbershops/qr-code', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
       });
       if (!response.ok) throw new Error();
       const data = (await response.json()) as { text: string };
       setText(data.text);
       setSavedText(data.text);
-      toast.success("Texto do codigo QR guardado.");
+      toast.success('Texto do codigo QR guardado.');
     } catch {
-      toast.error("Nao foi possivel guardar o texto.");
+      toast.error('Nao foi possivel guardar o texto.');
     } finally {
       setSaving(false);
     }
   };
   const copyUrl = async () => {
     await navigator.clipboard.writeText(publicUrl);
-    toast.success("URL copiado.");
+    toast.success('URL copiado.');
   };
   const share = async () => {
     if (navigator.share) {
@@ -111,10 +111,10 @@ export default function QrCodePage() {
     }
   };
   const print = () => {
-    const page = window.open("", "_blank", "noopener,noreferrer");
-    if (!page) return toast.error("Permite pop-ups para imprimir.");
+    const page = window.open('', '_blank', 'noopener,noreferrer');
+    if (!page) return toast.error('Permite pop-ups para imprimir.');
     page.document.write(
-      `<html><body style="font-family:Arial;display:grid;place-items:center;min-height:100vh"><main style="text-align:center;padding:36px;border:1px solid #ddd;border-radius:16px"><h1>${name.replaceAll("<", "&lt;")}</h1><img style="width:360px;max-width:80vw" src="${png}" alt="Codigo QR"><p>${text.replaceAll("<", "&lt;")}</p><small>${publicUrl}</small></main><script>window.print()</script></body></html>`,
+      `<html><body style="font-family:Arial;display:grid;place-items:center;min-height:100vh"><main style="text-align:center;padding:36px;border:1px solid #ddd;border-radius:16px"><h1>${name.replaceAll('<', '&lt;')}</h1><img style="width:360px;max-width:80vw" src="${png}" alt="Codigo QR"><p>${text.replaceAll('<', '&lt;')}</p><small>${publicUrl}</small></main><script>window.print()</script></body></html>`,
     );
     page.document.close();
   };
@@ -198,7 +198,7 @@ export default function QrCodePage() {
                     disabled={saving || text === savedText}
                   >
                     {saving ? (
-                      "A guardar..."
+                      'A guardar...'
                     ) : (
                       <>
                         <Check className="size-4" />

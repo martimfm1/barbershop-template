@@ -1,21 +1,23 @@
-import { NextResponse } from "next/server";
-import { requirePlatformAdmin } from "@/lib/internal/platform-admin";
+import { NextResponse } from 'next/server';
+import { requirePlatformAdmin } from '@/lib/internal/platform-admin';
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const ACTIVE_STATUSES = ["pending", "scheduled"] as const;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const ACTIVE_STATUSES = ['pending', 'scheduled'] as const;
 
 export async function GET(request: Request) {
   try {
     const { admin } = await requirePlatformAdmin();
-    const barbershopId = new URL(request.url).searchParams.get("barbershopId")?.trim() ?? "";
+    const barbershopId =
+      new URL(request.url).searchParams.get('barbershopId')?.trim() ?? '';
 
     if (!UUID_RE.test(barbershopId)) {
       return NextResponse.json(
-        { ok: false, error: "barbershopId inválido." },
-        { status: 400, headers: { "Cache-Control": "no-store" } },
+        { ok: false, error: 'barbershopId inválido.' },
+        { status: 400, headers: { 'Cache-Control': 'no-store' } },
       );
     }
 
@@ -25,59 +27,84 @@ export async function GET(request: Request) {
     const startOfTomorrow = new Date(startOfToday);
     startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
 
-    const [shopResult, ownerResult, membersResult, todayResult, upcomingResult, completedResult, cancelledResult, assignmentResult] = await Promise.all([
+    const [
+      shopResult,
+      ownerResult,
+      membersResult,
+      todayResult,
+      upcomingResult,
+      completedResult,
+      cancelledResult,
+      assignmentResult,
+    ] = await Promise.all([
       // `barbershops` does not contain an email column; the tenant's contact email is the owner's email.
-      admin.from("barbershops").select("id,name,slug,created_at,address,phone").eq("id", barbershopId).maybeSingle(),
       admin
-        .from("users")
-        .select("id,email,name_complete,role")
-        .eq("barbershop_id", barbershopId)
-        .eq("role", "owner")
-        .order("created_at", { ascending: true })
+        .from('barbershops')
+        .select('id,name,slug,created_at,address,phone')
+        .eq('id', barbershopId)
+        .maybeSingle(),
+      admin
+        .from('users')
+        .select('id,email,name_complete,role')
+        .eq('barbershop_id', barbershopId)
+        .eq('role', 'owner')
+        .order('created_at', { ascending: true })
         .limit(1)
         .maybeSingle(),
-      admin.from("users").select("id", { count: "exact", head: true }).eq("barbershop_id", barbershopId),
       admin
-        .from("appointments")
-        .select("id", { count: "exact", head: true })
-        .eq("barbershop_id", barbershopId)
-        .gte("date_hour", startOfToday.toISOString())
-        .lt("date_hour", startOfTomorrow.toISOString()),
+        .from('users')
+        .select('id', { count: 'exact', head: true })
+        .eq('barbershop_id', barbershopId),
       admin
-        .from("appointments")
-        .select("id", { count: "exact", head: true })
-        .eq("barbershop_id", barbershopId)
-        .in("status", ACTIVE_STATUSES)
-        .gte("date_hour", now.toISOString()),
+        .from('appointments')
+        .select('id', { count: 'exact', head: true })
+        .eq('barbershop_id', barbershopId)
+        .gte('date_hour', startOfToday.toISOString())
+        .lt('date_hour', startOfTomorrow.toISOString()),
       admin
-        .from("appointments")
-        .select("id", { count: "exact", head: true })
-        .eq("barbershop_id", barbershopId)
-        .eq("status", "completed"),
+        .from('appointments')
+        .select('id', { count: 'exact', head: true })
+        .eq('barbershop_id', barbershopId)
+        .in('status', ACTIVE_STATUSES)
+        .gte('date_hour', now.toISOString()),
       admin
-        .from("appointments")
-        .select("id", { count: "exact", head: true })
-        .eq("barbershop_id", barbershopId)
-        .eq("status", "cancelled"),
+        .from('appointments')
+        .select('id', { count: 'exact', head: true })
+        .eq('barbershop_id', barbershopId)
+        .eq('status', 'completed'),
       admin
-        .from("barbershop_plan_assignments")
-        .select("plan,reason,assigned_at,expires_at,assigned_by")
-        .eq("barbershop_id", barbershopId)
+        .from('appointments')
+        .select('id', { count: 'exact', head: true })
+        .eq('barbershop_id', barbershopId)
+        .eq('status', 'cancelled'),
+      admin
+        .from('barbershop_plan_assignments')
+        .select('plan,reason,assigned_at,expires_at,assigned_by')
+        .eq('barbershop_id', barbershopId)
         .or(`expires_at.is.null,expires_at.gt.${now.toISOString()}`)
-        .order("assigned_at", { ascending: false })
+        .order('assigned_at', { ascending: false })
         .limit(1)
         .maybeSingle(),
     ]);
 
-    for (const result of [shopResult, ownerResult, membersResult, todayResult, upcomingResult, completedResult, cancelledResult, assignmentResult]) {
+    for (const result of [
+      shopResult,
+      ownerResult,
+      membersResult,
+      todayResult,
+      upcomingResult,
+      completedResult,
+      cancelledResult,
+      assignmentResult,
+    ]) {
       if (result.error) throw result.error;
     }
 
     const shop = shopResult.data;
     if (!shop) {
       return NextResponse.json(
-        { ok: false, error: "Barbearia não encontrada." },
-        { status: 404, headers: { "Cache-Control": "no-store" } },
+        { ok: false, error: 'Barbearia não encontrada.' },
+        { status: 404, headers: { 'Cache-Control': 'no-store' } },
       );
     }
 
@@ -93,11 +120,13 @@ export async function GET(request: Request) {
 
     if (owner?.id) {
       const { data, error } = await admin
-        .from("subscriptions")
-        .select("plan,plan_override,status,current_period_end,cancel_at_period_end,stripe_price_id,updated_at,created_at")
-        .eq("user_id", owner.id)
-        .order("updated_at", { ascending: false })
-        .order("created_at", { ascending: false })
+        .from('subscriptions')
+        .select(
+          'plan,plan_override,status,current_period_end,cancel_at_period_end,stripe_price_id,updated_at,created_at',
+        )
+        .eq('user_id', owner.id)
+        .order('updated_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -107,18 +136,31 @@ export async function GET(request: Request) {
 
     const assignment = assignmentResult.data;
     const assignmentActive = Boolean(
-      assignment && (!assignment.expires_at || new Date(assignment.expires_at).getTime() > now.getTime()),
+      assignment &&
+      (!assignment.expires_at ||
+        new Date(assignment.expires_at).getTime() > now.getTime()),
     );
     const subscriptionOverride =
-      subscription?.plan_override && ["free", "pro", "enterprise"].includes(subscription.plan_override)
+      subscription?.plan_override &&
+      ['free', 'pro', 'enterprise'].includes(subscription.plan_override)
         ? subscription.plan_override
         : null;
     const stripePlan =
-      subscription?.plan && ["pro", "enterprise"].includes(subscription.plan) && ["active", "trialing"].includes(subscription.status)
+      subscription?.plan &&
+      ['pro', 'enterprise'].includes(subscription.plan) &&
+      ['active', 'trialing'].includes(subscription.status)
         ? subscription.plan
         : null;
-    const effectivePlan = assignmentActive ? assignment!.plan : subscriptionOverride ?? stripePlan ?? "free";
-    const source = assignmentActive ? "admin" : subscriptionOverride ? "subscription_override" : stripePlan ? "stripe" : "free";
+    const effectivePlan = assignmentActive
+      ? assignment!.plan
+      : (subscriptionOverride ?? stripePlan ?? 'free');
+    const source = assignmentActive
+      ? 'admin'
+      : subscriptionOverride
+        ? 'subscription_override'
+        : stripePlan
+          ? 'stripe'
+          : 'free';
 
     return NextResponse.json(
       {
@@ -151,20 +193,20 @@ export async function GET(request: Request) {
           cancelledAppointments: cancelledResult.count ?? 0,
         },
       },
-      { headers: { "Cache-Control": "no-store" } },
+      { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (error) {
-    if (error instanceof Error && error.name === "PlatformAdminError") {
+    if (error instanceof Error && error.name === 'PlatformAdminError') {
       return NextResponse.json(
-        { ok: false, error: "Not found" },
-        { status: 404, headers: { "Cache-Control": "no-store" } },
+        { ok: false, error: 'Not found' },
+        { status: 404, headers: { 'Cache-Control': 'no-store' } },
       );
     }
 
-    console.error("[SILENTRA_ADMIN_SHOP]", error);
+    console.error('[SILENTRA_ADMIN_SHOP]', error);
     return NextResponse.json(
-      { ok: false, error: "Não foi possível carregar o tenant." },
-      { status: 500, headers: { "Cache-Control": "no-store" } },
+      { ok: false, error: 'Não foi possível carregar o tenant.' },
+      { status: 500, headers: { 'Cache-Control': 'no-store' } },
     );
   }
 }

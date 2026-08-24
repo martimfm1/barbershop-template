@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { redirect } from 'next/navigation';
 
 export default async function BillingCheckoutPage({
   searchParams,
@@ -7,8 +7,7 @@ export default async function BillingCheckoutPage({
 }) {
   const params = await searchParams;
   const query = new URLSearchParams();
-  if (params.priceId) query.set("priceId", params.priceId);
-  if (params.plan) query.set("plan", params.plan);
-  redirect(`/plans${query.toString() ? `?${query.toString()}` : ""}`);
+  if (params.priceId) query.set('priceId', params.priceId);
+  if (params.plan) query.set('plan', params.plan);
+  redirect(`/plans${query.toString() ? `?${query.toString()}` : ''}`);
 }
-

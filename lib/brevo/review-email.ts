@@ -7,16 +7,15 @@ export interface BookingReviewRequestEmailPayload {
 }
 
 export type ReviewEmailResponse =
-  | { success: true; messageId?: string }
-  | { success: false; error: string };
+  { success: true; messageId?: string } | { success: false; error: string };
 
 function escapeHtml(value: string): string {
   return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 export async function sendBookingReviewRequestEmail(
@@ -27,11 +26,11 @@ export async function sendBookingReviewRequestEmail(
 
   if (!apiKey || !senderEmail) {
     console.error(
-      "[BREVO_REVIEW_ERROR] Variáveis BREVO_API_KEY ou SENDER_EMAIL ausentes.",
+      '[BREVO_REVIEW_ERROR] Variáveis BREVO_API_KEY ou SENDER_EMAIL ausentes.',
     );
     return {
       success: false,
-      error: "Configuração do servidor de e-mail incompleta.",
+      error: 'Configuração do servidor de e-mail incompleta.',
     };
   }
 
@@ -72,12 +71,12 @@ export async function sendBookingReviewRequestEmail(
   `;
 
   try {
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
       headers: {
-        accept: "application/json",
-        "content-type": "application/json",
-        "api-key": apiKey,
+        accept: 'application/json',
+        'content-type': 'application/json',
+        'api-key': apiKey,
       },
       body: JSON.stringify({
         sender: { name: payload.barbershopName, email: senderEmail },
@@ -92,22 +91,22 @@ export async function sendBookingReviewRequestEmail(
       message?: string;
     };
     if (!response.ok) {
-      console.error("[BREVO_REVIEW_API_ERROR]", data);
+      console.error('[BREVO_REVIEW_API_ERROR]', data);
       return {
         success: false,
-        error: data.message || "Falha ao enviar o pedido de avaliação.",
+        error: data.message || 'Falha ao enviar o pedido de avaliação.',
       };
     }
 
     return { success: true, messageId: data.messageId };
   } catch (error) {
-    console.error("[BREVO_REVIEW_FETCH_ERROR]", error);
+    console.error('[BREVO_REVIEW_FETCH_ERROR]', error);
     return {
       success: false,
       error:
         error instanceof Error
           ? error.message
-          : "Erro ao comunicar com a API do Brevo.",
+          : 'Erro ao comunicar com a API do Brevo.',
     };
   }
 }

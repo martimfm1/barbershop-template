@@ -6,18 +6,18 @@ Billing is now served through one application boundary: `BillingService`. Route 
 
 ## Improvements made
 
-| Area | Change | Result |
-| --- | --- | --- |
-| Architecture | Consolidated checkout, portal, cancellation, resume and webhook behavior into `services/billing`. | Clear HTTP/application/persistence responsibilities and one source of truth. |
-| Security | Checkout accepts only configured price IDs and return URLs are restricted to `NEXT_PUBLIC_APP_URL`'s origin. | Prevents price tampering and open redirects. |
-| Security | All mutation routes derive the user from Supabase Auth; service-role access is isolated to server services. | No caller-controlled user IDs or browser service-role use. |
-| Stripe | Adds a customer-creation idempotency key, `client_reference_id`, subscription metadata, customer metadata, and uses hosted Checkout plus Billing Portal. | Safer retries and reliable customer-to-user correlation. |
-| Stripe | Uses subscription events as the read-model source, and performs idempotent `upsert` by `user_id`. | Duplicate or reordered delivery does not create duplicate records. |
-| Supabase | Adds a migration with customer/subscription uniqueness, foreign keys, indexes, and read-only RLS policies. | Safe concurrency, faster lookup paths and protected client access. |
-| Next.js | Billing routes explicitly use the Node runtime for Stripe webhooks and force dynamic subscription reads. | Avoids Edge incompatibility and cached account data. |
-| Errors | Defines typed `BillingError` codes and maps them centrally to safe HTTP responses. | Predictable API contracts without exposing provider/database errors. |
-| Logging | Webhook logs use event ID/type only; unexpected errors log error class only. | Useful operational signal without leaking PII, secrets or signed payloads. |
-| TypeScript | Removes stale `_types` imports and obsolete `redirectToCheckout`; Stripe API version matches the installed SDK types. | Billing source type-checks against current Stripe types. |
+| Area         | Change                                                                                                                                                   | Result                                                                       |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Architecture | Consolidated checkout, portal, cancellation, resume and webhook behavior into `services/billing`.                                                        | Clear HTTP/application/persistence responsibilities and one source of truth. |
+| Security     | Checkout accepts only configured price IDs and return URLs are restricted to `NEXT_PUBLIC_APP_URL`'s origin.                                             | Prevents price tampering and open redirects.                                 |
+| Security     | All mutation routes derive the user from Supabase Auth; service-role access is isolated to server services.                                              | No caller-controlled user IDs or browser service-role use.                   |
+| Stripe       | Adds a customer-creation idempotency key, `client_reference_id`, subscription metadata, customer metadata, and uses hosted Checkout plus Billing Portal. | Safer retries and reliable customer-to-user correlation.                     |
+| Stripe       | Uses subscription events as the read-model source, and performs idempotent `upsert` by `user_id`.                                                        | Duplicate or reordered delivery does not create duplicate records.           |
+| Supabase     | Adds a migration with customer/subscription uniqueness, foreign keys, indexes, and read-only RLS policies.                                               | Safe concurrency, faster lookup paths and protected client access.           |
+| Next.js      | Billing routes explicitly use the Node runtime for Stripe webhooks and force dynamic subscription reads.                                                 | Avoids Edge incompatibility and cached account data.                         |
+| Errors       | Defines typed `BillingError` codes and maps them centrally to safe HTTP responses.                                                                       | Predictable API contracts without exposing provider/database errors.         |
+| Logging      | Webhook logs use event ID/type only; unexpected errors log error class only.                                                                             | Useful operational signal without leaking PII, secrets or signed payloads.   |
+| TypeScript   | Removes stale `_types` imports and obsolete `redirectToCheckout`; Stripe API version matches the installed SDK types.                                    | Billing source type-checks against current Stripe types.                     |
 
 ## Required deployment steps
 

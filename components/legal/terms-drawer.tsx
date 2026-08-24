@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Drawer,
@@ -7,10 +7,13 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from "@/components/ui/drawer";
-import { useLanguage } from "@/context/LanguageContext";
-import { termsAndConditions } from "@/lib/legal/terms-and-conditions";
-import { CURRENT_LEGAL_UPDATE, currentTermsAddendum } from "@/lib/legal/current-legal-addendum";
+} from '@/components/ui/drawer';
+import { useLanguage } from '@/context/LanguageContext';
+import { termsAndConditions } from '@/lib/legal/terms-and-conditions';
+import {
+  CURRENT_LEGAL_UPDATE,
+  currentTermsAddendum,
+} from '@/lib/legal/current-legal-addendum';
 
 type TermsDrawerProps = {
   trigger: React.ReactNode;
@@ -21,7 +24,7 @@ export function TermsDrawer({ trigger }: TermsDrawerProps) {
   const terms = termsAndConditions[locale];
   const updatedTerms = {
     ...terms,
-    lastUpdated: locale === "pt" ? CURRENT_LEGAL_UPDATE : "August 16, 2026",
+    lastUpdated: locale === 'pt' ? CURRENT_LEGAL_UPDATE : 'August 16, 2026',
     sections: [...terms.sections, currentTermsAddendum[locale]],
   };
 
@@ -31,11 +34,11 @@ export function TermsDrawer({ trigger }: TermsDrawerProps) {
       <DrawerContent className="mx-auto max-h-[85vh] max-w-lg rounded-t-2xl border-white/10 bg-zinc-950 text-zinc-50">
         <DrawerHeader className="text-left">
           <DrawerTitle className="font-heading text-lg">
-            {t("legal.termsTitle", { defaultValue: "Terms & Conditions" })}
+            {t('legal.termsTitle', { defaultValue: 'Terms & Conditions' })}
           </DrawerTitle>
           <DrawerDescription className="text-xs text-zinc-400">
-            {t("legal.termsLastUpdated", {
-              defaultValue: "Last updated: {date}",
+            {t('legal.termsLastUpdated', {
+              defaultValue: 'Last updated: {date}',
               date: updatedTerms.lastUpdated,
             })}
           </DrawerDescription>

@@ -1,11 +1,11 @@
-import { cn } from "@/lib/utils"
+import { cn } from '@/lib/utils';
 
 export function BackgroundBeams({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-0 overflow-hidden opacity-80",
-        className
+        'pointer-events-none absolute inset-0 overflow-hidden opacity-80',
+        className,
       )}
       aria-hidden="true"
     >
@@ -15,5 +15,5 @@ export function BackgroundBeams({ className }: { className?: string }) {
       <div className="aceternity-beam aceternity-beam-three" />
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.055)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.045)_1px,transparent_1px)] bg-[size:72px_72px] [mask-image:radial-gradient(ellipse_at_center,black_12%,transparent_72%)]" />
     </div>
-  )
+  );
 }

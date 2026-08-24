@@ -1,58 +1,88 @@
-"use client";
+'use client';
 
-import dynamic from "next/dynamic";
-import { motion } from "motion/react";
-import { Loader2, Navigation } from "lucide-react";
-import type { MapPreviewProps } from "@/types/marketplace/components";
+import dynamic from 'next/dynamic';
+import { motion } from 'motion/react';
+import { Loader2, Navigation } from 'lucide-react';
+import type { MapPreviewProps } from '@/types/marketplace/components';
 
-const MapInner = dynamic(() => import("./map-inner"), {
+const MapInner = dynamic(() => import('./map-inner'), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full w-full items-center justify-center rounded-3xl bg-zinc-950 text-zinc-200" aria-label="A carregar o mapa" role="status">
+    <div
+      className="flex h-full w-full items-center justify-center rounded-3xl bg-zinc-950 text-zinc-200"
+      aria-label="A carregar o mapa"
+      role="status"
+    >
       <div className="flex items-center gap-2 text-sm font-medium">
-        <Loader2 className="size-5 animate-spin text-emerald-300" aria-hidden="true" />
+        <Loader2
+          className="size-5 animate-spin text-emerald-300"
+          aria-hidden="true"
+        />
         <span>A carregar o mapa…</span>
       </div>
     </div>
   ),
 });
 
-export function MapPreview({ shops, view, onSelectShop, userLocation }: MapPreviewProps) {
+export function MapPreview({
+  shops,
+  view,
+  onSelectShop,
+  userLocation,
+}: MapPreviewProps) {
   return (
     <motion.aside
       whileHover={{ y: -2 }}
-      transition={{ type: "spring", stiffness: 300, damping: 24 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 24 }}
       className="rounded-3xl border border-white/10 bg-zinc-950/90 p-4 text-zinc-100 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl lg:sticky lg:top-28"
       aria-label="Mapa e resultados de barbearias"
     >
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-400">Mapa</p>
-          <h3 className="mt-2 text-xl font-semibold text-zinc-50">Barbearias próximas</h3>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-zinc-400">
+            Mapa
+          </p>
+          <h3 className="mt-2 text-xl font-semibold text-zinc-50">
+            Barbearias próximas
+          </h3>
         </div>
         <span className="shrink-0 rounded-full border border-white/15 bg-white/[0.07] px-3 py-1.5 text-xs font-medium text-zinc-100">
-          {view === "grid" ? "Sincronizado" : "Mapa ativo"}
+          {view === 'grid' ? 'Sincronizado' : 'Mapa ativo'}
         </span>
       </div>
 
       <div className="relative mt-5 h-[540px] overflow-hidden rounded-3xl border border-white/15 bg-zinc-950 shadow-inner">
-        <MapInner shops={shops} onSelectShop={onSelectShop} userLocation={userLocation} />
+        <MapInner
+          shops={shops}
+          onSelectShop={onSelectShop}
+          userLocation={userLocation}
+        />
 
         <div className="pointer-events-none absolute left-4 top-4 z-[1000] inline-flex items-center gap-2 rounded-full border border-white/15 bg-zinc-950/95 px-3 py-2 text-xs font-medium text-zinc-100 shadow-lg backdrop-blur-md">
-          <Navigation className="size-3.5 text-emerald-300" aria-hidden="true" />
-          {userLocation ? "A mostrar a tua localização" : "Localização opcional"}
+          <Navigation
+            className="size-3.5 text-emerald-300"
+            aria-hidden="true"
+          />
+          {userLocation
+            ? 'A mostrar a tua localização'
+            : 'Localização opcional'}
         </div>
 
         <div className="pointer-events-none absolute bottom-4 left-4 right-4 z-[1000] rounded-2xl border border-white/15 bg-zinc-950/95 p-4 shadow-lg backdrop-blur-md">
           <div className="flex items-center justify-between gap-3 text-sm">
             <div>
-              <div className="font-semibold text-zinc-50">Resultados disponíveis</div>
+              <div className="font-semibold text-zinc-50">
+                Resultados disponíveis
+              </div>
               <div className="mt-0.5 text-xs font-medium text-zinc-300">
-                {shops.length} {shops.length === 1 ? "barbearia" : "barbearias"} no mapa
+                {shops.length} {shops.length === 1 ? 'barbearia' : 'barbearias'}{' '}
+                no mapa
               </div>
             </div>
             <div className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1.5 text-xs font-semibold text-emerald-100">
-              {userLocation ? "Ordenação por distância" : "Localização desligada"}
+              {userLocation
+                ? 'Ordenação por distância'
+                : 'Localização desligada'}
             </div>
           </div>
         </div>

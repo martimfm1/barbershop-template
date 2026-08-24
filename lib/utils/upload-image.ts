@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from '@/lib/supabase/client';
 
 interface UploadImageOptions {
   file: File;
-  bucket: "avatar" | "banner";
+  bucket: 'avatar' | 'banner';
   path: string;
   maxWidth?: number;
   quality?: number;
@@ -18,18 +18,18 @@ const MAX_SOURCE_SIZE = 10 * 1024 * 1024;
 const MAX_SOURCE_DIMENSION = 8192;
 const MAX_SOURCE_PIXELS = 40_000_000;
 const SUPPORTED_IMAGE_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "image/bmp",
-  "image/tiff",
-  "image/avif",
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/bmp',
+  'image/tiff',
+  'image/avif',
 ]);
 
 const STORAGE_BUCKETS = {
-  avatar: "avatar",
-  banner: "banner",
+  avatar: 'avatar',
+  banner: 'banner',
 } as const;
 
 /**
@@ -52,41 +52,44 @@ export async function processAndUploadImage({
       return {
         data: null,
         error: new Error(
-          "Formato de imagem não suportado. Usa JPG, JPEG, PNG, WebP, GIF, BMP, TIFF ou AVIF.",
+          'Formato de imagem não suportado. Usa JPG, JPEG, PNG, WebP, GIF, BMP, TIFF ou AVIF.',
         ),
       };
     }
 
     if (file.size <= 0) {
-      return { data: null, error: new Error("O ficheiro de imagem está vazio.") };
+      return {
+        data: null,
+        error: new Error('O ficheiro de imagem está vazio.'),
+      };
     }
 
     if (file.size > MAX_SOURCE_SIZE) {
       return {
         data: null,
-        error: new Error("A imagem é demasiado grande. O limite é 10 MB."),
+        error: new Error('A imagem é demasiado grande. O limite é 10 MB.'),
       };
     }
 
     await validateImageSignature(file);
 
     const webpBlob = await convertToWebp(file, maxWidth, quality);
-    if (webpBlob.type !== "image/webp" || webpBlob.size === 0) {
+    if (webpBlob.type !== 'image/webp' || webpBlob.size === 0) {
       return {
         data: null,
-        error: new Error("Não foi possível validar a conversão para WebP."),
+        error: new Error('Não foi possível validar a conversão para WebP.'),
       };
     }
 
     const supabase = createClient();
     const storageBucket = STORAGE_BUCKETS[bucket];
-    const webpPath = path.replace(/\.[^/.]+$/, "") + ".webp";
+    const webpPath = path.replace(/\.[^/.]+$/, '') + '.webp';
 
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(storageBucket)
       .upload(webpPath, webpBlob, {
-        contentType: "image/webp",
-        cacheControl: "31536000",
+        contentType: 'image/webp',
+        cacheControl: '31536000',
         upsert: true,
       });
 
@@ -101,7 +104,7 @@ export async function processAndUploadImage({
         data: null,
         error: new Error(
           uploadError.message ||
-            "Não foi possível carregar a imagem para o armazenamento.",
+            'Não foi possível carregar a imagem para o armazenamento.',
         ),
       };
     }
@@ -112,32 +115,32 @@ export async function processAndUploadImage({
     const publicUrl = publicUrlData.publicUrl;
 
     if (!publicUrl) {
-      console.error("[Upload Error] Supabase did not return a public URL", {
+      console.error('[Upload Error] Supabase did not return a public URL', {
         bucket: storageBucket,
         path: webpPath,
       });
       return {
         data: null,
-        error: new Error("Não foi possível obter o endereço da imagem."),
+        error: new Error('Não foi possível obter o endereço da imagem.'),
       };
     }
 
-    if (bucket === "avatar") {
+    if (bucket === 'avatar') {
       const avatarPath = /^([^/]+)\/avatar\.webp$/.exec(webpPath);
       const barbershopId = avatarPath?.[1];
       if (!barbershopId) {
-        return { data: null, error: new Error("Caminho do avatar inválido.") };
+        return { data: null, error: new Error('Caminho do avatar inválido.') };
       }
 
-      const metadataResponse = await fetch("/api/barbershops/avatar", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+      const metadataResponse = await fetch('/api/barbershops/avatar', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ avatarUrl: publicUrl }),
       });
       const metadataBody = await metadataResponse.json().catch(() => null);
 
       if (!metadataResponse.ok) {
-        console.error("[Avatar Metadata Error]", {
+        console.error('[Avatar Metadata Error]', {
           status: metadataResponse.status,
           error: metadataBody?.error ?? null,
           barbershopId,
@@ -147,13 +150,14 @@ export async function processAndUploadImage({
           .from(storageBucket)
           .remove([webpPath]);
         if (cleanupError) {
-          console.warn("[Avatar Cleanup Error]", cleanupError);
+          console.warn('[Avatar Cleanup Error]', cleanupError);
         }
 
         return {
           data: null,
           error: new Error(
-            metadataBody?.error || "Não foi possível associar o avatar à barbearia.",
+            metadataBody?.error ||
+              'Não foi possível associar o avatar à barbearia.',
           ),
         };
       }
@@ -169,13 +173,13 @@ export async function processAndUploadImage({
       error: null,
     };
   } catch (err) {
-    console.error("[Process Image Error]", err);
+    console.error('[Process Image Error]', err);
     return {
       data: null,
       error:
         err instanceof Error
           ? err
-          : new Error("Não foi possível processar a imagem."),
+          : new Error('Não foi possível processar a imagem.'),
     };
   }
 }
@@ -200,8 +204,7 @@ async function validateImageSignature(file: File): Promise<void> {
     bytes[5] === 0x61;
   const isBmp = startsWith(0x42, 0x4d);
   const isTiff =
-    startsWith(0x49, 0x49, 0x2a, 0x00) ||
-    startsWith(0x4d, 0x4d, 0x00, 0x2a);
+    startsWith(0x49, 0x49, 0x2a, 0x00) || startsWith(0x4d, 0x4d, 0x00, 0x2a);
   const isAvif =
     bytes.length >= 12 &&
     bytes[4] === 0x66 &&
@@ -215,7 +218,7 @@ async function validateImageSignature(file: File): Promise<void> {
 
   if (!(isJpeg || isPng || isWebp || isGif || isBmp || isTiff || isAvif)) {
     throw new Error(
-      "O conteúdo do ficheiro não corresponde a uma imagem suportada.",
+      'O conteúdo do ficheiro não corresponde a uma imagem suportada.',
     );
   }
 }
@@ -243,7 +246,9 @@ function convertToWebp(
         const sourceHeight = img.naturalHeight;
 
         if (!sourceWidth || !sourceHeight) {
-          fail(new Error("Não foi possível determinar as dimensões da imagem."));
+          fail(
+            new Error('Não foi possível determinar as dimensões da imagem.'),
+          );
           return;
         }
 
@@ -252,7 +257,7 @@ function convertToWebp(
           sourceHeight > MAX_SOURCE_DIMENSION ||
           sourceWidth * sourceHeight > MAX_SOURCE_PIXELS
         ) {
-          fail(new Error("As dimensões da imagem são demasiado grandes."));
+          fail(new Error('As dimensões da imagem são demasiado grandes.'));
           return;
         }
 
@@ -264,24 +269,32 @@ function convertToWebp(
           width = maxWidth;
         }
 
-        const canvas = document.createElement("canvas");
+        const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
 
-        const ctx = canvas.getContext("2d");
+        const ctx = canvas.getContext('2d');
         if (!ctx) {
-          fail(new Error("Não foi possível inicializar o processamento da imagem."));
+          fail(
+            new Error(
+              'Não foi possível inicializar o processamento da imagem.',
+            ),
+          );
           return;
         }
 
         ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, width, height);
 
         canvas.toBlob(
           (blob) => {
-            if (!blob || blob.type !== "image/webp" || blob.size === 0) {
-              fail(new Error("O navegador não conseguiu converter a imagem para WebP."));
+            if (!blob || blob.type !== 'image/webp' || blob.size === 0) {
+              fail(
+                new Error(
+                  'O navegador não conseguiu converter a imagem para WebP.',
+                ),
+              );
               return;
             }
 
@@ -290,14 +303,14 @@ function convertToWebp(
             URL.revokeObjectURL(objectUrl);
             resolve(blob);
           },
-          "image/webp",
+          'image/webp',
           Math.min(1, Math.max(0.1, quality)),
         );
       } catch (error) {
         fail(
           error instanceof Error
             ? error
-            : new Error("Falha ao processar a imagem."),
+            : new Error('Falha ao processar a imagem.'),
         );
       }
     };
@@ -305,7 +318,7 @@ function convertToWebp(
     img.onerror = () => {
       fail(
         new Error(
-          "Não foi possível ler esta imagem. O teu navegador pode não suportar este formato.",
+          'Não foi possível ler esta imagem. O teu navegador pode não suportar este formato.',
         ),
       );
     };

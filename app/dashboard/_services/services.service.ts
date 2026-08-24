@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/client";
-import { Service } from "@/types";
+import { createClient } from '@/lib/supabase/client';
+import { Service } from '@/types';
 
 const supabase = createClient();
 
@@ -19,17 +19,17 @@ export interface UpdateServicePayload {
 export const servicesService = {
   async getAll(barbershopId: string) {
     const { data, error } = await supabase
-      .from("services")
-      .select("*")
-      .eq("barbershop_id", barbershopId)
-      .order("name", { ascending: true });
+      .from('services')
+      .select('*')
+      .eq('barbershop_id', barbershopId)
+      .order('name', { ascending: true });
 
     return { data: data as Service[], error };
   },
 
   async create(payload: CreateServicePayload) {
     const { data, error } = await supabase
-      .from("services")
+      .from('services')
       .insert([payload])
       .select()
       .single();
@@ -39,9 +39,9 @@ export const servicesService = {
 
   async update(id: string, updates: UpdateServicePayload) {
     const { data, error } = await supabase
-      .from("services")
+      .from('services')
       .update(updates)
-      .eq("id", id)
+      .eq('id', id)
       .select()
       .single();
 
@@ -49,7 +49,7 @@ export const servicesService = {
   },
 
   async delete(id: string) {
-    const { error } = await supabase.from("services").delete().eq("id", id);
+    const { error } = await supabase.from('services').delete().eq('id', id);
     return { error };
-  }
+  },
 } as const;

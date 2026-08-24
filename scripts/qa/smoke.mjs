@@ -1,33 +1,33 @@
-import process from "node:process";
+import process from 'node:process';
 
-const baseUrl = (process.env.QA_BASE_URL || "http://127.0.0.1:3000").replace(
+const baseUrl = (process.env.QA_BASE_URL || 'http://127.0.0.1:3000').replace(
   /\/$/,
-  "",
+  '',
 );
 
 const routes = [
-  "/",
-  "/login",
-  "/api/health",
-  "/dashboard",
-  "/dashboard/agenda",
-  "/dashboard/clientes",
-  "/dashboard/servicos",
-  "/dashboard/equipa",
-  "/dashboard/mensagens",
-  "/dashboard/settings",
-  "/dashboard/billing",
+  '/',
+  '/login',
+  '/api/health',
+  '/dashboard',
+  '/dashboard/agenda',
+  '/dashboard/clientes',
+  '/dashboard/servicos',
+  '/dashboard/equipa',
+  '/dashboard/mensagens',
+  '/dashboard/settings',
+  '/dashboard/billing',
 ];
 
 const expectedPrivateRedirects = new Set([
-  "/dashboard",
-  "/dashboard/agenda",
-  "/dashboard/clientes",
-  "/dashboard/servicos",
-  "/dashboard/equipa",
-  "/dashboard/mensagens",
-  "/dashboard/settings",
-  "/dashboard/billing",
+  '/dashboard',
+  '/dashboard/agenda',
+  '/dashboard/clientes',
+  '/dashboard/servicos',
+  '/dashboard/equipa',
+  '/dashboard/mensagens',
+  '/dashboard/settings',
+  '/dashboard/billing',
 ]);
 
 function assert(condition, message) {
@@ -36,11 +36,11 @@ function assert(condition, message) {
 
 async function checkRoute(route) {
   const response = await fetch(`${baseUrl}${route}`, {
-    redirect: "manual",
-    headers: { "User-Agent": "Silentra-QA-Smoke/1.0" },
+    redirect: 'manual',
+    headers: { 'User-Agent': 'Silentra-QA-Smoke/1.0' },
   });
 
-  const location = response.headers.get("location");
+  const location = response.headers.get('location');
   const allowedRedirect = expectedPrivateRedirects.has(route) && location;
 
   assert(response.status < 500, `${route}: respondeu ${response.status}`);
@@ -49,17 +49,17 @@ async function checkRoute(route) {
     response.status === 200 ||
       allowedRedirect ||
       (response.status >= 300 && response.status < 400),
-    `${route}: estado inesperado ${response.status}${location ? ` -> ${location}` : ""}`,
+    `${route}: estado inesperado ${response.status}${location ? ` -> ${location}` : ''}`,
   );
 
-  if (route === "/api/health") {
+  if (route === '/api/health') {
     assert(
       response.status === 200,
       `/api/health: esperado 200, recebido ${response.status}`,
     );
     const payload = await response.json();
-    assert(payload?.ok === true, "/api/health: payload inválido");
-    assert(payload?.status === "healthy", "/api/health: status inválido");
+    assert(payload?.ok === true, '/api/health: payload inválido');
+    assert(payload?.status === 'healthy', '/api/health: status inválido');
   }
 
   return { route, status: response.status, location };
@@ -74,7 +74,7 @@ async function main() {
       results.push(await checkRoute(route));
       const result = results.at(-1);
       console.log(
-        `✓ ${result.route} (${result.status})${result.location ? ` -> ${result.location}` : ""}`,
+        `✓ ${result.route} (${result.status})${result.location ? ` -> ${result.location}` : ''}`,
       );
     } catch (error) {
       console.error(
@@ -84,7 +84,7 @@ async function main() {
     }
   }
 
-  if (process.exitCode === 1) throw new Error("Smoke QA falhou.");
+  if (process.exitCode === 1) throw new Error('Smoke QA falhou.');
 
   console.log(`\n${results.length}/${routes.length} rotas verificadas.`);
 }

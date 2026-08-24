@@ -15,7 +15,9 @@
     "qa:deps": "node scripts/qa/dependency-audit.mjs",
     "qa:api": "node scripts/qa/api-audit.mjs",
     "qa": "pnpm typecheck && pnpm lint && pnpm build && pnpm qa:api && pnpm qa:plans && pnpm qa:security",
-    "translate": "tsx scripts/translate.ts"
+    "translate": "tsx scripts/translate.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1063.0",
@@ -71,6 +73,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "prettier": "^3.9.6",
     "supabase": "^2.106.0",
     "tailwindcss": "^4",
     "tsx": "^4.19.2",

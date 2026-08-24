@@ -1,23 +1,26 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Lock } from "lucide-react";
+import * as React from 'react';
+import { Lock } from 'lucide-react';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 
 type SwitchProps = {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   disabled?: boolean;
-  size?: "sm" | "default";
+  size?: 'sm' | 'default';
   className?: string;
-} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "checked" | "onChange" | "disabled" | "className" | "onClick">;
+} & Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  'checked' | 'onChange' | 'disabled' | 'className' | 'onClick'
+>;
 
 export function Switch({
   checked,
   onCheckedChange,
   disabled = false,
-  size = "default",
+  size = 'default',
   className,
   ...rest
 }: SwitchProps) {
@@ -27,8 +30,8 @@ export function Switch({
   };
 
   const dimensions =
-    size === "sm" ? { width: 32, height: 18 } : { width: 40, height: 20 };
-  const thumbDimensions = size === "sm" ? 14 : 16;
+    size === 'sm' ? { width: 32, height: 18 } : { width: 40, height: 20 };
+  const thumbDimensions = size === 'sm' ? 14 : 16;
 
   return (
     <button
@@ -48,16 +51,16 @@ export function Switch({
         maxHeight: dimensions.height,
       }}
       className={cn(
-        "group relative inline-flex shrink-0 items-center rounded-full border outline-none transition-colors duration-200 ease-out",
-        "border-white/10 bg-white/[0.06] shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]",
-        "hover:border-white/20 hover:bg-white/[0.08]",
-        "data-[state=checked]:border-emerald-400/50 data-[state=checked]:bg-emerald-500",
-        "data-[state=checked]:shadow-[0_0_0_3px_rgb(16_185_129/0.15),inset_0_1px_2px_rgb(0_0_0/0.2)]",
-        "focus-visible:ring-2 focus-visible:ring-emerald-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950",
-        "disabled:cursor-not-allowed disabled:opacity-60",
+        'group relative inline-flex shrink-0 items-center rounded-full border outline-none transition-colors duration-200 ease-out',
+        'border-white/10 bg-white/[0.06] shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]',
+        'hover:border-white/20 hover:bg-white/[0.08]',
+        'data-[state=checked]:border-emerald-400/50 data-[state=checked]:bg-emerald-500',
+        'data-[state=checked]:shadow-[0_0_0_3px_rgb(16_185_129/0.15),inset_0_1px_2px_rgb(0_0_0/0.2)]',
+        'focus-visible:ring-2 focus-visible:ring-emerald-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
+        'disabled:cursor-not-allowed disabled:opacity-60',
         className,
       )}
-      data-state={checked ? "checked" : "unchecked"}
+      data-state={checked ? 'checked' : 'unchecked'}
     >
       {disabled && (
         <span
@@ -78,8 +81,8 @@ export function Switch({
           minHeight: thumbDimensions,
           transform: checked
             ? `translateX(${dimensions.width - thumbDimensions - 4}px)`
-            : "translateX(2px)",
-          backgroundColor: disabled ? "#d4d4d8" : "#ffffff",
+            : 'translateX(2px)',
+          backgroundColor: disabled ? '#d4d4d8' : '#ffffff',
         }}
       />
     </button>

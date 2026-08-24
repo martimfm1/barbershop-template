@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import type { FeatureKey } from "@/lib/billing/plan-features";
-import { FeatureAccessService } from "./feature-access.service";
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import type { FeatureKey } from '@/lib/billing/plan-features';
+import { FeatureAccessService } from './feature-access.service';
 
 /**
  * Reusable guard for API routes that require a specific plan feature.
@@ -18,9 +18,18 @@ export async function requireFeature(
   | { ok: true; userId: string; plan: string }
   | { ok: false; response: NextResponse }
 > {
-  const { data: { user }, error } = await (await createClient()).auth.getUser();
+  const {
+    data: { user },
+    error,
+  } = await (await createClient()).auth.getUser();
   if (error || !user) {
-    return { ok: false, response: NextResponse.json({ error: "Não autenticado." }, { status: 401 }) };
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: 'Não autenticado.' },
+        { status: 401 },
+      ),
+    };
   }
 
   const hasFeature = await FeatureAccessService.hasFeature(user.id, feature);
@@ -28,11 +37,14 @@ export async function requireFeature(
     return {
       ok: false,
       response: NextResponse.json(
-        { error: "Esta funcionalidade requer um plano pago ativo. Faz upgrade para continuar a usar." },
+        {
+          error:
+            'Esta funcionalidade requer um plano pago ativo. Faz upgrade para continuar a usar.',
+        },
         { status: 403 },
       ),
     };
   }
 
-  return { ok: true, userId: user.id, plan: "paid" };
+  return { ok: true, userId: user.id, plan: 'paid' };
 }

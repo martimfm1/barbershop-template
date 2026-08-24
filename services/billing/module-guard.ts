@@ -1,6 +1,6 @@
-import type { FeatureKey } from "@/lib/billing/plan-features";
-import { FeatureAccessService } from "./feature-access.service";
-import { getAccessPlanForRequest } from "./plan-access.guard";
+import type { FeatureKey } from '@/lib/billing/plan-features';
+import { FeatureAccessService } from './feature-access.service';
+import { getAccessPlanForRequest } from './plan-access.guard';
 
 /**
  * Server-side authorization boundary for paid modules.
@@ -15,7 +15,7 @@ export async function requireModuleFeature(feature: FeatureKey) {
     return {
       ok: false as const,
       status: 403 as const,
-      error: "FEATURE_NOT_AVAILABLE" as const,
+      error: 'FEATURE_NOT_AVAILABLE' as const,
       plan: access.plan,
       feature,
     };

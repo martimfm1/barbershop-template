@@ -1,40 +1,48 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { motion } from "framer-motion";
-import { Mail, ArrowLeft, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { getClientAuthCallbackUrl } from "@/lib/auth/email-confirmation";
-import { StarfieldBackground } from "@/components/ui/starfield";
-import { Button } from "@/components/ui/button";
-import { SiteNavbar } from "@/components/site-navbar";
+import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import {
+  Mail,
+  ArrowLeft,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+} from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { getClientAuthCallbackUrl } from '@/lib/auth/email-confirmation';
+import { StarfieldBackground } from '@/components/ui/starfield';
+import { Button } from '@/components/ui/button';
+import { SiteNavbar } from '@/components/site-navbar';
 
 export default function ConfirmEmailPage() {
   const searchParams = useSearchParams();
-  const email = searchParams.get("email") || "";
+  const email = searchParams.get('email') || '';
 
   const [isResending, setIsResending] = useState(false);
-  const [resendStatus, setResendStatus] = useState<"idle" | "success" | "error">("idle");
-  const [statusMessage, setStatusMessage] = useState("");
+  const [resendStatus, setResendStatus] = useState<
+    'idle' | 'success' | 'error'
+  >('idle');
+  const [statusMessage, setStatusMessage] = useState('');
 
   const handleResendEmail = async () => {
     if (!email) {
-      setResendStatus("error");
-      setStatusMessage("Não foi possível identificar o endereço de e-mail.");
+      setResendStatus('error');
+      setStatusMessage('Não foi possível identificar o endereço de e-mail.');
       return;
     }
 
     setIsResending(true);
-    setResendStatus("idle");
-    setStatusMessage("");
+    setResendStatus('idle');
+    setStatusMessage('');
 
     try {
       const supabase = createClient();
       const emailRedirectTo = getClientAuthCallbackUrl();
       const { error } = await supabase.auth.resend({
-        type: "signup",
+        type: 'signup',
         email,
         options: {
           emailRedirectTo,
@@ -42,21 +50,23 @@ export default function ConfirmEmailPage() {
       });
 
       if (error) {
-        console.error("[CONFIRM_EMAIL_RESEND_ERROR]", error);
-        setResendStatus("error");
+        console.error('[CONFIRM_EMAIL_RESEND_ERROR]', error);
+        setResendStatus('error');
         setStatusMessage(
-          "Não foi possível reenviar o email de confirmação. Tenta novamente dentro de alguns minutos.",
+          'Não foi possível reenviar o email de confirmação. Tenta novamente dentro de alguns minutos.',
         );
         return;
       }
 
-      setResendStatus("success");
-      setStatusMessage("Novo email de confirmação enviado. Verifica também a pasta de spam.");
-    } catch (error) {
-      console.error("[CONFIRM_EMAIL_RESEND_ERROR]", error);
-      setResendStatus("error");
+      setResendStatus('success');
       setStatusMessage(
-        "Não foi possível reenviar o email de confirmação. Tenta novamente mais tarde.",
+        'Novo email de confirmação enviado. Verifica também a pasta de spam.',
+      );
+    } catch (error) {
+      console.error('[CONFIRM_EMAIL_RESEND_ERROR]', error);
+      setResendStatus('error');
+      setStatusMessage(
+        'Não foi possível reenviar o email de confirmação. Tenta novamente mais tarde.',
       );
     } finally {
       setIsResending(false);
@@ -95,11 +105,11 @@ export default function ConfirmEmailPage() {
               )}
 
               <p className="mt-4 text-xs text-zinc-500 leading-relaxed">
-                Abre o email e clica no link de confirmação para ativares a tua conta.
-                Se não o encontrares, verifica também a pasta de spam.
+                Abre o email e clica no link de confirmação para ativares a tua
+                conta. Se não o encontrares, verifica também a pasta de spam.
               </p>
 
-              {resendStatus === "success" && (
+              {resendStatus === 'success' && (
                 <motion.div
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -111,7 +121,7 @@ export default function ConfirmEmailPage() {
                 </motion.div>
               )}
 
-              {resendStatus === "error" && (
+              {resendStatus === 'error' && (
                 <motion.div
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -131,10 +141,14 @@ export default function ConfirmEmailPage() {
                   className="h-11 w-full rounded-full border-white/10 bg-white/5 text-xs font-semibold text-zinc-200 hover:bg-white/10 hover:text-white transition-all"
                 >
                   {isResending ? (
-                    <RefreshCw className="size-4 animate-spin text-zinc-300" aria-hidden="true" />
+                    <RefreshCw
+                      className="size-4 animate-spin text-zinc-300"
+                      aria-hidden="true"
+                    />
                   ) : (
                     <span className="flex items-center justify-center gap-2">
-                      <RefreshCw className="size-3.5" aria-hidden="true" /> Reenviar email de confirmação
+                      <RefreshCw className="size-3.5" aria-hidden="true" />{' '}
+                      Reenviar email de confirmação
                     </span>
                   )}
                 </Button>
@@ -145,7 +159,8 @@ export default function ConfirmEmailPage() {
                     className="h-11 w-full rounded-full bg-zinc-50 text-xs font-bold text-zinc-950 hover:bg-white transition-all shadow-md"
                   >
                     <span className="flex items-center justify-center gap-2">
-                      <ArrowLeft className="size-4" aria-hidden="true" /> Voltar ao início de sessão
+                      <ArrowLeft className="size-4" aria-hidden="true" /> Voltar
+                      ao início de sessão
                     </span>
                   </Button>
                 </Link>

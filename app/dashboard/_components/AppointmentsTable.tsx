@@ -1,8 +1,15 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/app/state/_components/shared/StatusBadge";
-import { Appointment } from "@/types";
-import { Trash2, Check } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { StatusBadge } from '@/app/state/_components/shared/StatusBadge';
+import { Appointment } from '@/types';
+import { Trash2, Check } from 'lucide-react';
 
 interface AppointmentsTableProps {
   appointments: Appointment[];
@@ -39,23 +46,30 @@ export function AppointmentsTable({
             </TableRow>
           ) : (
             appointments.map((apt) => (
-              <TableRow key={apt.id} className="border-white/5 hover:bg-white/[0.02]">
+              <TableRow
+                key={apt.id}
+                className="border-white/5 hover:bg-white/[0.02]"
+              >
                 <TableCell className="font-medium text-white">
-                  {apt.users?.name_complete || apt.manual_name || "N/A"}
+                  {apt.users?.name_complete || apt.manual_name || 'N/A'}
                 </TableCell>
-                <TableCell className="text-zinc-300">{apt.services?.name}</TableCell>
-                <TableCell className="text-zinc-300">{apt.professionals?.name}</TableCell>
                 <TableCell className="text-zinc-300">
-                  {new Date(apt.date_hour).toLocaleString("en-US", {
-                    dateStyle: "short",
-                    timeStyle: "short",
+                  {apt.services?.name}
+                </TableCell>
+                <TableCell className="text-zinc-300">
+                  {apt.professionals?.name}
+                </TableCell>
+                <TableCell className="text-zinc-300">
+                  {new Date(apt.date_hour).toLocaleString('en-US', {
+                    dateStyle: 'short',
+                    timeStyle: 'short',
                   })}
                 </TableCell>
                 <TableCell>
                   <StatusBadge status={apt.status} />
                 </TableCell>
                 <TableCell className="text-right space-x-2">
-                  {apt.status !== "completed" && (
+                  {apt.status !== 'completed' && (
                     <Button
                       size="icon"
                       variant="ghost"

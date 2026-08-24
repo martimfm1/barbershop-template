@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { CheckCircle2, ArrowRight } from "lucide-react";
+import Link from 'next/link';
+import { CheckCircle2, ArrowRight } from 'lucide-react';
 
 export default function EmailConfirmedPage() {
   return (

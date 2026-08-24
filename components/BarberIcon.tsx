@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-export function BarberIcon({ className = "size-32" }: { className?: string }) {
+export function BarberIcon({ className = 'size-32' }: { className?: string }) {
   return (
     <div className={className}>
       <svg

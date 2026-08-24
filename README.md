@@ -53,16 +53,16 @@ O objetivo do produto é simples: permitir que um cliente faça uma marcação r
 
 O acesso às funcionalidades é controlado no servidor através dos entitlements dos planos.
 
-| Área | Free | Pro | Enterprise |
-|---|:---:|:---:|:---:|
-| Gestão de marcações | ✓ | ✓ | ✓ |
-| Clientes e serviços | ✓ | ✓ | ✓ |
-| Gestão de profissionais | ✓ | ✓ | ✓ |
-| Dashboard operacional | ✓ | ✓ | ✓ |
-| Funcionalidades avançadas | — | ✓ | ✓ |
-| Marketing e automações | — | ✓ | ✓ |
-| Analytics avançado | — | ✓ | ✓ |
-| Funcionalidades Enterprise | — | — | ✓ |
+| Área                       | Free | Pro | Enterprise |
+| -------------------------- | :--: | :-: | :--------: |
+| Gestão de marcações        |  ✓   |  ✓  |     ✓      |
+| Clientes e serviços        |  ✓   |  ✓  |     ✓      |
+| Gestão de profissionais    |  ✓   |  ✓  |     ✓      |
+| Dashboard operacional      |  ✓   |  ✓  |     ✓      |
+| Funcionalidades avançadas  |  —   |  ✓  |     ✓      |
+| Marketing e automações     |  —   |  ✓  |     ✓      |
+| Analytics avançado         |  —   |  ✓  |     ✓      |
+| Funcionalidades Enterprise |  —   |  —  |     ✓      |
 
 > As quotas e os entitlements efetivos são definidos no código e validados pelas APIs. A interface adapta-se ao plano atual do utilizador, mas nunca é usada como mecanismo de segurança.
 

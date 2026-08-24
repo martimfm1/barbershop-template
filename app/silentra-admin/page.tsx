@@ -1,13 +1,13 @@
-import { notFound } from "next/navigation";
-import type { Metadata } from "next";
-import Link from "next/link";
-import { Gift } from "lucide-react";
-import { getPlatformAdminContext } from "@/lib/internal/platform-admin";
-import ProductionConsole from "./production-console";
+import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { Gift } from 'lucide-react';
+import { getPlatformAdminContext } from '@/lib/internal/platform-admin';
+import ProductionConsole from './production-console';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  title: "Silentra Internal",
+  title: 'Silentra Internal',
   robots: { index: false, follow: false },
 };
 

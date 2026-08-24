@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,10 +8,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { StripeProvider } from "@/components/providers/StripeProvider";
-import { PaymentForm } from "./PaymentForm";
-import { ShieldCheck, Loader2 } from "lucide-react";
+} from '@/components/ui/dialog';
+import { StripeProvider } from '@/components/providers/StripeProvider';
+import { PaymentForm } from './PaymentForm';
+import { ShieldCheck, Loader2 } from 'lucide-react';
 
 interface CheckoutDialogProps {
   clientSecret: string;
@@ -56,7 +56,9 @@ export function CheckoutDialog({
             Subscrever Plano {planName}
           </DialogTitle>
           <DialogDescription className="text-sm text-zinc-400">
-            Total a pagar: <span className="font-semibold text-zinc-100">{priceAmount}</span>. Cancela a qualquer momento.
+            Total a pagar:{' '}
+            <span className="font-semibold text-zinc-100">{priceAmount}</span>.
+            Cancela a qualquer momento.
           </DialogDescription>
         </DialogHeader>
 

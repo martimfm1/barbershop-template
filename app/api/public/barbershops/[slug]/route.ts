@@ -1,19 +1,27 @@
-import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { getPublicProfileBySlug } from "@/lib/barbershops/public-profile";
-import { requireTenantAuthorization } from "@/lib/security/tenant-guard";
+import { NextResponse } from 'next/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { getPublicProfileBySlug } from '@/lib/barbershops/public-profile';
+import { requireTenantAuthorization } from '@/lib/security/tenant-guard';
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 function notFound() {
   return NextResponse.json(
-    { error: "Barbearia não encontrada." },
-    { status: 404, headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" } },
+    { error: 'Barbearia não encontrada.' },
+    {
+      status: 404,
+      headers: {
+        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+      },
+    },
   );
 }
 
-export async function GET(_request: Request, context: { params: Promise<{ slug: string }> }) {
+export async function GET(
+  _request: Request,
+  context: { params: Promise<{ slug: string }> },
+) {
   try {
     const { slug } = await context.params;
     const profile = await getPublicProfileBySlug(slug);
@@ -30,34 +38,44 @@ export async function GET(_request: Request, context: { params: Promise<{ slug: 
 
     const database = createAdminClient();
 
-    const [{ data: services, error: servicesError }, { data: reviews, error: reviewsError }] = await Promise.all([
+    const [
+      { data: services, error: servicesError },
+      { data: reviews, error: reviewsError },
+    ] = await Promise.all([
       database
-        .from("services")
-        .select("id, name, price, duration, popular")
-        .eq("barbershop_id", barbershopId)
-        .order("popular", { ascending: false })
-        .order("name", { ascending: true }),
+        .from('services')
+        .select('id, name, price, duration, popular')
+        .eq('barbershop_id', barbershopId)
+        .order('popular', { ascending: false })
+        .order('name', { ascending: true }),
       database
-        .from("reviews")
-        .select("id, client_name, rating, comment, created_at")
-        .eq("barbershop_id", profile.id)
-        .order("created_at", { ascending: false }),
+        .from('reviews')
+        .select('id, client_name, rating, comment, created_at')
+        .eq('barbershop_id', profile.id)
+        .order('created_at', { ascending: false }),
     ]);
 
     if (servicesError || reviewsError) {
-      console.error("[PUBLIC_BARBERSHOP_API_ERROR]", {
+      console.error('[PUBLIC_BARBERSHOP_API_ERROR]', {
         services: servicesError?.code ?? null,
         reviews: reviewsError?.code ?? null,
       });
       return NextResponse.json(
-        { error: "Não foi possível carregar os dados da barbearia." },
-        { status: 503, headers: { "Cache-Control": "no-store" } },
+        { error: 'Não foi possível carregar os dados da barbearia.' },
+        { status: 503, headers: { 'Cache-Control': 'no-store' } },
       );
     }
 
     const reviewItems = reviews ?? [];
     const ratingAverage = reviewItems.length
-      ? Number((reviewItems.reduce((total, review) => total + Number(review.rating || 0), 0) / reviewItems.length).toFixed(1))
+      ? Number(
+          (
+            reviewItems.reduce(
+              (total, review) => total + Number(review.rating || 0),
+              0,
+            ) / reviewItems.length
+          ).toFixed(1),
+        )
       : 0;
 
     return NextResponse.json(
@@ -66,7 +84,7 @@ export async function GET(_request: Request, context: { params: Promise<{ slug: 
           ...profile,
           services: (services ?? []).map((service) => ({
             ...service,
-            popular: profile.plan !== "free" && service.popular === true,
+            popular: profile.plan !== 'free' && service.popular === true,
           })),
           reviews: reviewItems,
           rating: ratingAverage,
@@ -75,14 +93,14 @@ export async function GET(_request: Request, context: { params: Promise<{ slug: 
       },
       {
         headers: {
-          "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+          'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
         },
       },
     );
   } catch {
     return NextResponse.json(
-      { error: "Não foi possível carregar a barbearia." },
-      { status: 503, headers: { "Cache-Control": "no-store" } },
+      { error: 'Não foi possível carregar a barbearia.' },
+      { status: 503, headers: { 'Cache-Control': 'no-store' } },
     );
   }
 }

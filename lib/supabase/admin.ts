@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from '@supabase/supabase-js';
 
 // adm superior
 
@@ -7,7 +7,7 @@ export function createAdminClient() {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error("Missing Supabase Admin environment variables.");
+    throw new Error('Missing Supabase Admin environment variables.');
   }
 
   return createClient(supabaseUrl, supabaseServiceKey, {

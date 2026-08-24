@@ -1,22 +1,32 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { LockKeyhole, Eye, EyeOff, ArrowRight } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { StarfieldBackground } from "@/components/ui/starfield";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Field, FieldContent, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Spinner } from "@/components/ui/spinner";
-import { CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { SiteNavbar } from "@/components/site-navbar";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { LockKeyhole, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { StarfieldBackground } from '@/components/ui/starfield';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Field,
+  FieldContent,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
+import { Spinner } from '@/components/ui/spinner';
+import {
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { SiteNavbar } from '@/components/site-navbar';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -27,18 +37,18 @@ export default function ResetPasswordPage() {
     setErrorMsg(null);
 
     try {
-      const res = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      router.push("/login?tab=login&reset=success");
+      router.push('/login?tab=login&reset=success');
     } catch (err: any) {
-      setErrorMsg(err.message || "Falha ao redefinir a palavra-passe.");
+      setErrorMsg(err.message || 'Falha ao redefinir a palavra-passe.');
     } finally {
       setIsSubmitting(false);
     }
@@ -85,7 +95,10 @@ export default function ResetPasswordPage() {
                 <Field>
                   <FieldGroup className="grid gap-1.5">
                     <FieldLabel>
-                      <Label htmlFor="new-password" className="text-xs font-medium text-zinc-300">
+                      <Label
+                        htmlFor="new-password"
+                        className="text-xs font-medium text-zinc-300"
+                      >
                         New Password
                       </Label>
                     </FieldLabel>
@@ -95,7 +108,7 @@ export default function ResetPasswordPage() {
                         <Input
                           id="new-password"
                           name="password"
-                          type={showPassword ? "text" : "password"}
+                          type={showPassword ? 'text' : 'password'}
                           required
                           minLength={12}
                           value={password}
@@ -106,10 +119,18 @@ export default function ResetPasswordPage() {
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          aria-label={showPassword ? "Ocultar palavra-passe" : "Mostrar palavra-passe"}
+                          aria-label={
+                            showPassword
+                              ? 'Ocultar palavra-passe'
+                              : 'Mostrar palavra-passe'
+                          }
                           className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 flex items-center justify-center text-zinc-400 hover:text-zinc-100"
                         >
-                          {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                          {showPassword ? (
+                            <EyeOff className="size-4" />
+                          ) : (
+                            <Eye className="size-4" />
+                          )}
                         </button>
                       </div>
                     </FieldContent>
@@ -121,7 +142,9 @@ export default function ResetPasswordPage() {
                   disabled={isSubmitting || password.length < 12}
                   className="h-12 w-full rounded-full bg-zinc-50 text-xs font-bold text-zinc-950 hover:bg-white transition-all shadow-md mt-1"
                 >
-                  {isSubmitting ? <Spinner className="size-4 text-zinc-950" /> : (
+                  {isSubmitting ? (
+                    <Spinner className="size-4 text-zinc-950" />
+                  ) : (
                     <span className="flex items-center justify-center gap-2">
                       Update Password <ArrowRight className="size-4" />
                     </span>

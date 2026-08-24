@@ -1,18 +1,59 @@
-"use client";
+'use client';
 
-import { Download, ShieldAlert, Store, UsersRound, Workflow } from "lucide-react";
+import {
+  Download,
+  ShieldAlert,
+  Store,
+  UsersRound,
+  Workflow,
+} from 'lucide-react';
 
 const oldWay = [
-  { icon: Download, label: "Download app", tone: "text-red-200", bg: "bg-red-500/10" },
-  { icon: UsersRound, label: "Create account", tone: "text-red-200", bg: "bg-red-500/10" },
-  { icon: ShieldAlert, label: "Verify email", tone: "text-red-200", bg: "bg-red-500/10" },
-  { icon: Workflow, label: "Recover password", tone: "text-red-200", bg: "bg-red-500/10" },
+  {
+    icon: Download,
+    label: 'Download app',
+    tone: 'text-red-200',
+    bg: 'bg-red-500/10',
+  },
+  {
+    icon: UsersRound,
+    label: 'Create account',
+    tone: 'text-red-200',
+    bg: 'bg-red-500/10',
+  },
+  {
+    icon: ShieldAlert,
+    label: 'Verify email',
+    tone: 'text-red-200',
+    bg: 'bg-red-500/10',
+  },
+  {
+    icon: Workflow,
+    label: 'Recover password',
+    tone: 'text-red-200',
+    bg: 'bg-red-500/10',
+  },
 ] as const;
 
 const silentraWay = [
-  { icon: Store, label: "Pick a service", tone: "text-emerald-200", bg: "bg-emerald-500/10" },
-  { icon: Workflow, label: "Pick a time", tone: "text-emerald-200", bg: "bg-emerald-500/10" },
-  { icon: Download, label: "Done", tone: "text-emerald-200", bg: "bg-emerald-500/10" },
+  {
+    icon: Store,
+    label: 'Pick a service',
+    tone: 'text-emerald-200',
+    bg: 'bg-emerald-500/10',
+  },
+  {
+    icon: Workflow,
+    label: 'Pick a time',
+    tone: 'text-emerald-200',
+    bg: 'bg-emerald-500/10',
+  },
+  {
+    icon: Download,
+    label: 'Done',
+    tone: 'text-emerald-200',
+    bg: 'bg-emerald-500/10',
+  },
 ] as const;
 
 export function ComparisonSection() {
@@ -27,7 +68,10 @@ export function ComparisonSection() {
           {oldWay.map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.label} className={`flex items-center gap-3 rounded-full border border-white/8 px-4 py-3 backdrop-blur-xl ${item.bg}`}>
+              <div
+                key={item.label}
+                className={`flex items-center gap-3 rounded-full border border-white/8 px-4 py-3 backdrop-blur-xl ${item.bg}`}
+              >
                 <Icon className={`size-4 ${item.tone}`} />
                 <span className="text-sm text-zinc-200">{item.label}</span>
               </div>
@@ -45,7 +89,10 @@ export function ComparisonSection() {
           {silentraWay.map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.label} className={`flex items-center gap-3 rounded-full border border-white/8 px-4 py-3 backdrop-blur-xl ${item.bg}`}>
+              <div
+                key={item.label}
+                className={`flex items-center gap-3 rounded-full border border-white/8 px-4 py-3 backdrop-blur-xl ${item.bg}`}
+              >
                 <Icon className={`size-4 ${item.tone}`} />
                 <span className="text-sm text-zinc-100">{item.label}</span>
               </div>

@@ -1,19 +1,19 @@
-import { FormEvent } from "react";
-import { toast } from "sonner";
-import { createClient } from "@/lib/supabase/client";
+import { FormEvent } from 'react';
+import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
 
 /**
  * Compatibility handler for Supabase confirmation links that still use the
  * legacy implicit flow and return access/refresh tokens in the URL fragment.
  * Fragments never reach the server, so this must be handled in the browser.
  */
-if (typeof window !== "undefined") {
-  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-  const accessToken = hash.get("access_token");
-  const refreshToken = hash.get("refresh_token");
-  const authType = hash.get("type");
+if (typeof window !== 'undefined') {
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const accessToken = hash.get('access_token');
+  const refreshToken = hash.get('refresh_token');
+  const authType = hash.get('type');
 
-  if (accessToken && refreshToken && authType === "signup") {
+  if (accessToken && refreshToken && authType === 'signup') {
     void (async () => {
       try {
         const supabase = createClient();
@@ -23,16 +23,18 @@ if (typeof window !== "undefined") {
         });
 
         if (error) {
-          console.error("[AUTH_CONFIRMATION_HASH_REJECTED]", error);
-          window.location.replace("/login?error=Link+inv%C3%A1lido+ou+expirado");
+          console.error('[AUTH_CONFIRMATION_HASH_REJECTED]', error);
+          window.location.replace(
+            '/login?error=Link+inv%C3%A1lido+ou+expirado',
+          );
           return;
         }
 
-        window.history.replaceState({}, document.title, "/login");
-        window.location.replace("/email-confirmed");
+        window.history.replaceState({}, document.title, '/login');
+        window.location.replace('/email-confirmed');
       } catch (error) {
-        console.error("[AUTH_CONFIRMATION_HASH_ERROR]", error);
-        window.location.replace("/login?error=Link+inv%C3%A1lido+ou+expirado");
+        console.error('[AUTH_CONFIRMATION_HASH_ERROR]', error);
+        window.location.replace('/login?error=Link+inv%C3%A1lido+ou+expirado');
       }
     })();
   }
@@ -62,20 +64,20 @@ export async function handleLogin({
 
   const supabase = createClient();
   const formData = new FormData(event.currentTarget);
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+  const email = formData.get('email') as string;
+  const password = formData.get('password') as string;
 
   try {
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
 
-    const contentType = res.headers.get("content-type");
+    const contentType = res.headers.get('content-type');
     let result: LoginResponse = {};
 
-    if (contentType && contentType.includes("application/json")) {
+    if (contentType && contentType.includes('application/json')) {
       result = await res.json();
     } else {
       const fallbackText = await res.text();
@@ -85,7 +87,7 @@ export async function handleLogin({
     }
 
     if (!res.ok) {
-      const errorText = result.error || "Credenciais inválidas.";
+      const errorText = result.error || 'Credenciais inválidas.';
       toast.error(errorText);
       setErrorMsg(errorText);
       return;
@@ -99,24 +101,24 @@ export async function handleLogin({
 
       if (sessionError) {
         console.error(
-          "❌ Failed to sync session on client:",
+          '❌ Failed to sync session on client:',
           sessionError.message,
         );
       }
     }
 
     if (!result.user?.barbershopId) {
-      window.location.href = "/onboarding";
+      window.location.href = '/onboarding';
     } else {
-      window.location.href = "/dashboard";
+      window.location.href = '/dashboard';
     }
   } catch (error: unknown) {
     const targetError =
       error instanceof Error
         ? error.message
-        : "Erro de ligação. Por favor, tenta novamente.";
+        : 'Erro de ligação. Por favor, tenta novamente.';
     toast.error(targetError);
-    console.error("❌ Error during login:", error);
+    console.error('❌ Error during login:', error);
     setErrorMsg(targetError);
   } finally {
     setIsSubmitting(false);
@@ -137,7 +139,7 @@ export async function handleRegister({
   setIsSubmitting,
   setErrorMsg,
   acceptedTerms,
-  termsErrorMessage = "Deves aceitar os termos e condições.",
+  termsErrorMessage = 'Deves aceitar os termos e condições.',
   onSuccess,
 }: RegisterParams) {
   event.preventDefault();
@@ -151,16 +153,16 @@ export async function handleRegister({
   setErrorMsg(null);
 
   const formData = new FormData(event.currentTarget);
-  const name = formData.get("name") as string;
-  const email = formData.get("email") as string;
-  const phone = formData.get("phone") as string;
-  const password = formData.get("password") as string;
+  const name = formData.get('name') as string;
+  const email = formData.get('email') as string;
+  const phone = formData.get('phone') as string;
+  const password = formData.get('password') as string;
 
   try {
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         name_complete: name,
@@ -170,10 +172,10 @@ export async function handleRegister({
       }),
     });
 
-    const contentType = res.headers.get("content-type");
+    const contentType = res.headers.get('content-type');
     let data: { error?: string } = {};
 
-    if (contentType && contentType.includes("application/json")) {
+    if (contentType && contentType.includes('application/json')) {
       data = await res.json();
     } else {
       const fallbackText = await res.text();
@@ -183,10 +185,10 @@ export async function handleRegister({
     }
 
     if (!res.ok) {
-      throw new Error(data.error || "Falha ao criar conta.");
+      throw new Error(data.error || 'Falha ao criar conta.');
     }
 
-    toast.success("Conta criada! Confirma o teu e-mail para continuar.");
+    toast.success('Conta criada! Confirma o teu e-mail para continuar.');
 
     if (onSuccess) {
       onSuccess();
@@ -197,9 +199,9 @@ export async function handleRegister({
     const targetError =
       error instanceof Error
         ? error.message
-        : "Erro de ligação. Por favor, tenta novamente.";
+        : 'Erro de ligação. Por favor, tenta novamente.';
     toast.error(targetError);
-    console.error("❌ Error during registration:", error);
+    console.error('❌ Error during registration:', error);
     setErrorMsg(targetError);
   } finally {
     setIsSubmitting(false);

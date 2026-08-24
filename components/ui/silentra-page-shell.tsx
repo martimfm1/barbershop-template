@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import type { ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 
 export function SilentraPageShell({
   children,
@@ -11,7 +11,13 @@ export function SilentraPageShell({
   narrow?: boolean;
 }) {
   return (
-    <main className={cn("silentra-page-shell", narrow ? "silentra-page-shell-narrow" : "", className)}>
+    <main
+      className={cn(
+        'silentra-page-shell',
+        narrow ? 'silentra-page-shell-narrow' : '',
+        className,
+      )}
+    >
       <div className="silentra-page-grid" aria-hidden="true" />
       <div className="silentra-page-content">{children}</div>
     </main>
@@ -32,11 +38,13 @@ export function SilentraPageHeader({
   className?: string;
 }) {
   return (
-    <header className={cn("silentra-page-header", className)}>
+    <header className={cn('silentra-page-header', className)}>
       <div className="min-w-0">
         {eyebrow ? <p className="silentra-eyebrow">{eyebrow}</p> : null}
         <h1 className="silentra-page-title">{title}</h1>
-        {description ? <p className="silentra-page-description">{description}</p> : null}
+        {description ? (
+          <p className="silentra-page-description">{description}</p>
+        ) : null}
       </div>
       {actions ? <div className="silentra-page-actions">{actions}</div> : null}
     </header>
@@ -50,5 +58,9 @@ export function SilentraSection({
   children: ReactNode;
   className?: string;
 }) {
-  return <section className={cn("silentra-section-block", className)}>{children}</section>;
+  return (
+    <section className={cn('silentra-section-block', className)}>
+      {children}
+    </section>
+  );
 }

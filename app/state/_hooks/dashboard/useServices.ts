@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
-import { toast } from "sonner";
-import { servicesService } from "@/app/dashboard/_services/services.service";
-import { getErrorMessage } from "@/app/dashboard/_lib/error-utils";
-import { Service } from "@/types";
+import { useState, useCallback } from 'react';
+import { toast } from 'sonner';
+import { servicesService } from '@/app/dashboard/_services/services.service';
+import { getErrorMessage } from '@/app/dashboard/_lib/error-utils';
+import { Service } from '@/types';
 
 export function useServices(
   barbershopId: string | null,
@@ -15,9 +15,9 @@ export function useServices(
     price: string | number;
     duration: string | number;
   }>({
-    name: "",
-    price: "",
-    duration: "30",
+    name: '',
+    price: '',
+    duration: '30',
   });
 
   const handleCreateService = useCallback(
@@ -26,7 +26,7 @@ export function useServices(
       if (!barbershopId) return;
 
       if (!newServiceData.name.trim() || !newServiceData.price) {
-        toast.error("Introduz o nome e o preço do serviço.");
+        toast.error('Introduz o nome e o preço do serviço.');
         return;
       }
 
@@ -41,11 +41,11 @@ export function useServices(
 
         if (error) throw error;
 
-        toast.success("Serviço criado com sucesso!");
-        setNewServiceData({ name: "", price: "", duration: "30" });
+        toast.success('Serviço criado com sucesso!');
+        setNewServiceData({ name: '', price: '', duration: '30' });
         await onRefreshData();
       } catch (error) {
-        console.error("❌ [Create Service Hook Error]:", error);
+        console.error('❌ [Create Service Hook Error]:', error);
         toast.error(getErrorMessage(error));
       } finally {
         setLoading(false);
@@ -71,11 +71,11 @@ export function useServices(
 
         if (error) throw error;
 
-        toast.success("Serviço atualizado com sucesso!");
+        toast.success('Serviço atualizado com sucesso!');
         setEditingService(null);
         await onRefreshData();
       } catch (error) {
-        console.error("❌ [Update Service Hook Error]:", error);
+        console.error('❌ [Update Service Hook Error]:', error);
         toast.error(getErrorMessage(error));
       } finally {
         setLoading(false);
@@ -90,12 +90,12 @@ export function useServices(
       try {
         const { error } = await servicesService.delete(id);
         if (error) throw error;
-        toast.success("Serviço removido.");
+        toast.success('Serviço removido.');
         await onRefreshData();
       } catch (error) {
-        console.error("❌ [Delete Service Hook Error]:", error);
+        console.error('❌ [Delete Service Hook Error]:', error);
         toast.error(
-          "Erro ao remover. Este serviço possui agendamentos vinculados.",
+          'Erro ao remover. Este serviço possui agendamentos vinculados.',
         );
       } finally {
         setLoading(false);

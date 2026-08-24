@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -22,26 +22,26 @@ import {
   ShieldCheck,
   Store,
   UserCircle2,
-} from "lucide-react";
-import { toast } from "sonner";
-import { useBarbershop } from "@/context/BarbershopContext";
-import { useFeatureAccess } from "@/hooks/useFeatureAccess";
-import { cn } from "@/lib/utils";
-import { processAndUploadImage } from "@/lib/utils/upload-image";
-import { barbershopService } from "@/app/dashboard/_services/barbershop.service";
-import { authService } from "@/app/dashboard/_services/auth.service";
-import { SettingsLocationPanel } from "@/components/dashboard/settings-location-panel";
-import { Button } from "@/components/ui/button";
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { useBarbershop } from '@/context/BarbershopContext';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { cn } from '@/lib/utils';
+import { processAndUploadImage } from '@/lib/utils/upload-image';
+import { barbershopService } from '@/app/dashboard/_services/barbershop.service';
+import { authService } from '@/app/dashboard/_services/auth.service';
+import { SettingsLocationPanel } from '@/components/dashboard/settings-location-panel';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
-import { Switch } from "@/components/ui/switch";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import { Switch } from '@/components/ui/switch';
 
 interface BarbershopConfig {
   name: string;
@@ -58,14 +58,14 @@ interface BarbershopConfig {
 }
 
 type SettingsSection =
-  | "overview"
-  | "business"
-  | "location"
-  | "hours"
-  | "appearance"
-  | "booking"
-  | "billing"
-  | "account";
+  | 'overview'
+  | 'business'
+  | 'location'
+  | 'hours'
+  | 'appearance'
+  | 'booking'
+  | 'billing'
+  | 'account';
 
 const sections: {
   id: SettingsSection;
@@ -74,79 +74,79 @@ const sections: {
   icon: typeof Settings;
 }[] = [
   {
-    id: "overview",
-    label: "Visão geral",
-    description: "Estado da configuração",
+    id: 'overview',
+    label: 'Visão geral',
+    description: 'Estado da configuração',
     icon: Settings,
   },
   {
-    id: "business",
-    label: "Negócio",
-    description: "Dados públicos",
+    id: 'business',
+    label: 'Negócio',
+    description: 'Dados públicos',
     icon: Store,
   },
   {
-    id: "location",
-    label: "Localização",
-    description: "Morada e mapa",
+    id: 'location',
+    label: 'Localização',
+    description: 'Morada e mapa',
     icon: MapPin,
   },
   {
-    id: "hours",
-    label: "Horários",
-    description: "Funcionamento",
+    id: 'hours',
+    label: 'Horários',
+    description: 'Funcionamento',
     icon: Clock3,
   },
   {
-    id: "appearance",
-    label: "Aparência",
-    description: "Logótipo e capa",
+    id: 'appearance',
+    label: 'Aparência',
+    description: 'Logótipo e capa',
     icon: ImageIcon,
   },
   {
-    id: "booking",
-    label: "Marcações",
-    description: "Regras de reserva",
+    id: 'booking',
+    label: 'Marcações',
+    description: 'Regras de reserva',
     icon: CalendarCheck2,
   },
   {
-    id: "billing",
-    label: "Plano e faturação",
-    description: "Subscrição e faturas",
+    id: 'billing',
+    label: 'Plano e faturação',
+    description: 'Subscrição e faturas',
     icon: CreditCard,
   },
   {
-    id: "account",
-    label: "Conta e segurança",
-    description: "Sessão e acesso",
+    id: 'account',
+    label: 'Conta e segurança',
+    description: 'Sessão e acesso',
     icon: ShieldCheck,
   },
 ];
 
 const DAYS_OF_WEEK = [
-  ["Monday", "Segunda-feira"],
-  ["Tuesday", "Terça-feira"],
-  ["Wednesday", "Quarta-feira"],
-  ["Thursday", "Quinta-feira"],
-  ["Friday", "Sexta-feira"],
-  ["Saturday", "Sábado"],
-  ["Sunday", "Domingo"],
+  ['Monday', 'Segunda-feira'],
+  ['Tuesday', 'Terça-feira'],
+  ['Wednesday', 'Quarta-feira'],
+  ['Thursday', 'Quinta-feira'],
+  ['Friday', 'Sexta-feira'],
+  ['Saturday', 'Sábado'],
+  ['Sunday', 'Domingo'],
 ] as const;
 const INPUT =
-  "min-h-11 rounded-xl border-white/10 bg-white/[0.04] text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-2 focus-visible:ring-emerald-500/40";
-const CARD = "border-white/10 bg-black/30 backdrop-blur-md";
+  'min-h-11 rounded-xl border-white/10 bg-white/[0.04] text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-2 focus-visible:ring-emerald-500/40';
+const CARD = 'border-white/10 bg-black/30 backdrop-blur-md';
 
 function normalize(value: Partial<BarbershopConfig>): BarbershopConfig {
   return {
     ...value,
-    name: value.name ?? "",
-    phone: value.phone ?? "",
-    address: value.address ?? "",
-    opening_time: value.opening_time ?? "09:00",
-    closing_time: value.closing_time ?? "19:00",
-    lunch_start: value.lunch_start ?? "",
-    lunch_end: value.lunch_end ?? "",
-    closed_days: value.closed_days ?? "None",
+    name: value.name ?? '',
+    phone: value.phone ?? '',
+    address: value.address ?? '',
+    opening_time: value.opening_time ?? '09:00',
+    closing_time: value.closing_time ?? '19:00',
+    lunch_start: value.lunch_start ?? '',
+    lunch_end: value.lunch_end ?? '',
+    closed_days: value.closed_days ?? 'None',
     allow_online_bookings: value.allow_online_bookings ?? true,
     auto_reminders: value.auto_reminders ?? false,
     is_public_in_directory: value.is_public_in_directory ?? true,
@@ -157,24 +157,24 @@ export default function SettingsPage() {
   const router = useRouter();
   const { barbershopId } = useBarbershop();
   const { hasFeature, loading: planLoading } = useFeatureAccess();
-  const canManageDirectoryVisibility = hasFeature("directory_visibility");
+  const canManageDirectoryVisibility = hasFeature('directory_visibility');
   const [activeSection, setActiveSection] =
-    useState<SettingsSection>("overview");
+    useState<SettingsSection>('overview');
   const [mobileSection, setMobileSection] =
-    useState<SettingsSection>("overview");
-  const [search, setSearch] = useState("");
+    useState<SettingsSection>('overview');
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [config, setConfig] = useState<BarbershopConfig>({
-    name: "",
-    phone: "",
-    address: "",
-    opening_time: "09:00",
-    closing_time: "19:00",
-    lunch_start: "12:30",
-    lunch_end: "13:30",
-    closed_days: "None",
+    name: '',
+    phone: '',
+    address: '',
+    opening_time: '09:00',
+    closing_time: '19:00',
+    lunch_start: '12:30',
+    lunch_end: '13:30',
+    closed_days: 'None',
     allow_online_bookings: true,
     auto_reminders: false,
     is_public_in_directory: true,
@@ -184,16 +184,16 @@ export default function SettingsPage() {
   );
   const [avatarTimestamp, setAvatarTimestamp] = useState(0);
   const [bannerTimestamp, setBannerTimestamp] = useState(0);
-  const [uploading, setUploading] = useState<"avatar" | "banner" | null>(null);
+  const [uploading, setUploading] = useState<'avatar' | 'banner' | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const avatarUrl =
     barbershopId && process.env.NEXT_PUBLIC_SUPABASE_URL
-      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/public/avatar/${barbershopId}/avatar.webp?t=${avatarTimestamp}`
+      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL.replace(/\/$/, '')}/storage/v1/object/public/avatar/${barbershopId}/avatar.webp?t=${avatarTimestamp}`
       : null;
   const bannerUrl =
     barbershopId && process.env.NEXT_PUBLIC_SUPABASE_URL
-      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/public/banner/${barbershopId}/banner.webp?t=${bannerTimestamp}`
+      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL.replace(/\/$/, '')}/storage/v1/object/public/banner/${barbershopId}/banner.webp?t=${bannerTimestamp}`
       : null;
 
   const fetchSettings = useCallback(async () => {
@@ -202,7 +202,7 @@ export default function SettingsPage() {
     const result = await barbershopService.getConfig(barbershopId);
     if (result.error)
       toast.error(
-        result.error.message || "Não foi possível carregar as definições.",
+        result.error.message || 'Não foi possível carregar as definições.',
       );
     else if (result.data) {
       const next = normalize(result.data);
@@ -233,20 +233,20 @@ export default function SettingsPage() {
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
   }, [config]);
   const filteredSections = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase("pt-PT");
+    const term = search.trim().toLocaleLowerCase('pt-PT');
     return !term
       ? sections
       : sections.filter((section) =>
           `${section.label} ${section.description}`
-            .toLocaleLowerCase("pt-PT")
+            .toLocaleLowerCase('pt-PT')
             .includes(term),
         );
   }, [search]);
   const currentClosedDays = useMemo(
     () =>
-      config.closed_days === "None"
+      config.closed_days === 'None'
         ? []
-        : config.closed_days.split(",").map((day) => day.trim()),
+        : config.closed_days.split(',').map((day) => day.trim()),
     [config.closed_days],
   );
 
@@ -255,68 +255,77 @@ export default function SettingsPage() {
       const next = currentClosedDays.includes(day)
         ? currentClosedDays.filter((item) => item !== day)
         : [...currentClosedDays, day];
-      return { ...current, closed_days: next.length ? next.join(",") : "None" };
+      return { ...current, closed_days: next.length ? next.join(',') : 'None' };
     });
   }
 
   async function saveSettings() {
     if (!barbershopId || !dirty) return;
-    if (config.opening_time && config.closing_time && config.opening_time >= config.closing_time) {
+    if (
+      config.opening_time &&
+      config.closing_time &&
+      config.opening_time >= config.closing_time
+    ) {
       toast.error(
-        "O horário de fecho tem de ser posterior ao horário de abertura.",
+        'O horário de fecho tem de ser posterior ao horário de abertura.',
       );
-      setActiveSection("hours");
+      setActiveSection('hours');
       return;
     }
     setSaving(true);
     const payload = Object.fromEntries(
-      Object.entries(config).filter(([key, value]) => initialConfig?.[key as keyof BarbershopConfig] !== value),
+      Object.entries(config).filter(
+        ([key, value]) =>
+          initialConfig?.[key as keyof BarbershopConfig] !== value,
+      ),
     ) as Partial<BarbershopConfig>;
     if (!canManageDirectoryVisibility) delete payload.is_public_in_directory;
     const result = await barbershopService.updateConfig(barbershopId, payload);
     setSaving(false);
     if (result.error)
       return toast.error(
-        result.error.message || "Não foi possível guardar as alterações.",
+        result.error.message || 'Não foi possível guardar as alterações.',
       );
     const next = normalize(result.data ?? config);
     setConfig(next);
     setInitialConfig(next);
-    toast.success("Alterações guardadas.");
+    toast.success('Alterações guardadas.');
   }
 
   function cancelChanges() {
     if (!initialConfig) return;
     setConfig(initialConfig);
-    toast.message("As alterações foram descartadas.");
+    toast.message('As alterações foram descartadas.');
   }
-  async function uploadImage(type: "avatar" | "banner", file: File) {
+  async function uploadImage(type: 'avatar' | 'banner', file: File) {
     if (!barbershopId) return;
     setUploading(type);
     const { error } = await processAndUploadImage({
       file,
       bucket: type,
       path: `${barbershopId}/${type}.webp`,
-      maxWidth: type === "avatar" ? 400 : 1200,
+      maxWidth: type === 'avatar' ? 400 : 1200,
       quality: 0.85,
     });
     setUploading(null);
     if (error)
-      return toast.error(error.message || "Não foi possível atualizar a imagem.");
-    if (type === "avatar") setAvatarTimestamp(Date.now());
+      return toast.error(
+        error.message || 'Não foi possível atualizar a imagem.',
+      );
+    if (type === 'avatar') setAvatarTimestamp(Date.now());
     else setBannerTimestamp(Date.now());
     toast.success(
-      type === "avatar" ? "Logótipo atualizado." : "Capa atualizada.",
+      type === 'avatar' ? 'Logótipo atualizado.' : 'Capa atualizada.',
     );
   }
   async function logout() {
     setLogoutLoading(true);
     try {
       await authService.logout();
-      router.replace("/login");
+      router.replace('/login');
       router.refresh();
     } catch {
-      toast.error("Não foi possível terminar a sessão.");
+      toast.error('Não foi possível terminar a sessão.');
       setLogoutLoading(false);
     }
   }
@@ -325,7 +334,7 @@ export default function SettingsPage() {
     setMobileSection(id);
     document
       .getElementById(`settings-${id}`)
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   if (loading || planLoading)
@@ -378,10 +387,10 @@ export default function SettingsPage() {
                   <Save className="mr-2 size-4" />
                 )}
                 {saving
-                  ? "A guardar…"
+                  ? 'A guardar…'
                   : dirty
-                    ? "Guardar alterações"
-                    : "Tudo guardado"}
+                    ? 'Guardar alterações'
+                    : 'Tudo guardado'}
               </Button>
             </div>
           </div>
@@ -408,18 +417,18 @@ export default function SettingsPage() {
                       type="button"
                       onClick={() => selectSection(section.id)}
                       className={cn(
-                        "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400",
+                        'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400',
                         activeSection === section.id
-                          ? "bg-white/8 text-zinc-100"
-                          : "text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300",
+                          ? 'bg-white/8 text-zinc-100'
+                          : 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300',
                       )}
                     >
                       <span
                         className={cn(
-                          "flex size-8 items-center justify-center rounded-lg",
+                          'flex size-8 items-center justify-center rounded-lg',
                           activeSection === section.id
-                            ? "bg-emerald-500/10 text-emerald-400"
-                            : "bg-white/[0.03] text-zinc-600",
+                            ? 'bg-emerald-500/10 text-emerald-400'
+                            : 'bg-white/[0.03] text-zinc-600',
                         )}
                       >
                         <Icon className="size-4" />
@@ -474,7 +483,7 @@ export default function SettingsPage() {
               >
                 <option value="overview">Visão geral</option>
                 {sections
-                  .filter((s) => s.id !== "overview")
+                  .filter((s) => s.id !== 'overview')
                   .map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.label}
@@ -500,7 +509,7 @@ export default function SettingsPage() {
             </div>
 
             <section id="settings-overview" className="scroll-mt-24">
-              <Card className={cn(CARD, "overflow-hidden")}>
+              <Card className={cn(CARD, 'overflow-hidden')}>
                 <div className="grid lg:grid-cols-[1.15fr_.85fr]">
                   <div className="p-5 sm:p-7">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-400">
@@ -515,7 +524,7 @@ export default function SettingsPage() {
                     </p>
                     <div className="mt-6 grid gap-3 sm:grid-cols-2">
                       {sections
-                        .filter((section) => section.id !== "overview")
+                        .filter((section) => section.id !== 'overview')
                         .slice(0, 4)
                         .map((section) => {
                           const Icon = section.icon;
@@ -689,7 +698,7 @@ export default function SettingsPage() {
                         htmlFor="settings-lunch-start"
                         className="text-sm font-medium"
                       >
-                        Início da pausa{" "}
+                        Início da pausa{' '}
                         <span className="font-normal text-zinc-600">
                           (opcional)
                         </span>
@@ -697,7 +706,7 @@ export default function SettingsPage() {
                       <Input
                         id="settings-lunch-start"
                         type="time"
-                        value={config.lunch_start ?? ""}
+                        value={config.lunch_start ?? ''}
                         onChange={(e) =>
                           setConfig((c) => ({
                             ...c,
@@ -712,7 +721,7 @@ export default function SettingsPage() {
                         htmlFor="settings-lunch-end"
                         className="text-sm font-medium"
                       >
-                        Fim da pausa{" "}
+                        Fim da pausa{' '}
                         <span className="font-normal text-zinc-600">
                           (opcional)
                         </span>
@@ -720,7 +729,7 @@ export default function SettingsPage() {
                       <Input
                         id="settings-lunch-end"
                         type="time"
-                        value={config.lunch_end ?? ""}
+                        value={config.lunch_end ?? ''}
                         onChange={(e) =>
                           setConfig((c) => ({
                             ...c,
@@ -742,19 +751,19 @@ export default function SettingsPage() {
                             type="button"
                             onClick={() => toggleClosedDay(value)}
                             className={cn(
-                              "flex min-h-11 items-center justify-between rounded-xl border px-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400",
+                              'flex min-h-11 items-center justify-between rounded-xl border px-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400',
                               active
-                                ? "border-emerald-500/30 bg-emerald-500/[0.07] text-emerald-200"
-                                : "border-white/10 bg-white/[0.02] text-zinc-400 hover:bg-white/[0.05]",
+                                ? 'border-emerald-500/30 bg-emerald-500/[0.07] text-emerald-200'
+                                : 'border-white/10 bg-white/[0.02] text-zinc-400 hover:bg-white/[0.05]',
                             )}
                           >
                             {label}
                             <span
                               className={cn(
-                                "flex size-5 items-center justify-center rounded-full border",
+                                'flex size-5 items-center justify-center rounded-full border',
                                 active
-                                  ? "border-emerald-400 bg-emerald-400 text-zinc-950"
-                                  : "border-white/15",
+                                  ? 'border-emerald-400 bg-emerald-400 text-zinc-950'
+                                  : 'border-white/15',
                               )}
                             >
                               {active ? <Check className="size-3" /> : null}
@@ -814,10 +823,10 @@ export default function SettingsPage() {
                             type="button"
                             variant="secondary"
                             onClick={() => bannerInputRef.current?.click()}
-                            disabled={uploading === "banner"}
+                            disabled={uploading === 'banner'}
                             className="min-h-10 rounded-xl bg-zinc-950/80 text-zinc-100"
                           >
-                            {uploading === "banner" ? (
+                            {uploading === 'banner' ? (
                               <Spinner className="mr-2 size-4" />
                             ) : (
                               <ImageIcon className="mr-2 size-4" />
@@ -828,10 +837,10 @@ export default function SettingsPage() {
                             type="button"
                             variant="secondary"
                             onClick={() => avatarInputRef.current?.click()}
-                            disabled={uploading === "avatar"}
+                            disabled={uploading === 'avatar'}
                             className="min-h-10 rounded-xl bg-zinc-950/80 text-zinc-100"
                           >
-                            {uploading === "avatar" ? (
+                            {uploading === 'avatar' ? (
                               <Spinner className="mr-2 size-4" />
                             ) : (
                               <Camera className="mr-2 size-4" />
@@ -849,8 +858,8 @@ export default function SettingsPage() {
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) void uploadImage("avatar", file);
-                      e.currentTarget.value = "";
+                      if (file) void uploadImage('avatar', file);
+                      e.currentTarget.value = '';
                     }}
                   />
                   <input
@@ -860,8 +869,8 @@ export default function SettingsPage() {
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) void uploadImage("banner", file);
-                      e.currentTarget.value = "";
+                      if (file) void uploadImage('banner', file);
+                      e.currentTarget.value = '';
                     }}
                   />
                 </CardContent>
@@ -872,7 +881,7 @@ export default function SettingsPage() {
               <Card className={CARD}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <CalendarCheck2 className="size-4 text-violet-400" />{" "}
+                    <CalendarCheck2 className="size-4 text-violet-400" />{' '}
                     Marcações
                   </CardTitle>
                   <CardDescription>
@@ -902,9 +911,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium">
-                        Mostrar ao público
-                      </p>
+                      <p className="text-sm font-medium">Mostrar ao público</p>
                       <p className="mt-1 text-xs leading-5 text-zinc-600 pr-12">
                         Disponível apenas nos planos Pro/Enterprise.
                       </p>
@@ -975,7 +982,7 @@ export default function SettingsPage() {
                     className="min-h-11 rounded-xl border-white/10 bg-white/[0.03] text-zinc-200 hover:bg-white/[0.06]"
                   >
                     <LogOut className="mr-2 size-4" />
-                    {logoutLoading ? "A terminar sessão…" : "Terminar sessão"}
+                    {logoutLoading ? 'A terminar sessão…' : 'Terminar sessão'}
                   </Button>
                 </CardContent>
               </Card>

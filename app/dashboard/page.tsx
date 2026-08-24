@@ -1,38 +1,38 @@
-"use client";
+'use client';
 
-import { useState, useCallback, useMemo, useEffect } from "react";
-import { useBarbershop } from "@/context/BarbershopContext";
-import { toast } from "sonner";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useBarbershop } from '@/context/BarbershopContext';
+import { toast } from 'sonner';
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
 import {
   DASHBOARD_METRIC_DESCRIPTORS,
   MetricKey,
-} from "@/app/dashboard/_constants";
-import { Appointment, Professional, Service, Client } from "@/types";
-import { appointmentService } from "@/app/dashboard/_services/appointments.service";
-import { servicesService } from "@/app/dashboard/_services/services.service";
-import { professionalService } from "@/app/dashboard/_services/professionals.service";
-import { authService } from "@/app/dashboard/_services/auth.service";
-import { useFeatureAccess } from "@/hooks/useFeatureAccess";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Spotlight } from "@/components/aceternity/spotlight";
-import { StatusBadge } from "@/app/state/_components/shared/StatusBadge";
+} from '@/app/dashboard/_constants';
+import { Appointment, Professional, Service, Client } from '@/types';
+import { appointmentService } from '@/app/dashboard/_services/appointments.service';
+import { servicesService } from '@/app/dashboard/_services/services.service';
+import { professionalService } from '@/app/dashboard/_services/professionals.service';
+import { authService } from '@/app/dashboard/_services/auth.service';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Spotlight } from '@/components/aceternity/spotlight';
+import { StatusBadge } from '@/app/state/_components/shared/StatusBadge';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
-} from "@/components/ui/chart";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+} from '@/components/ui/chart';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import {
   Users,
   Scissors,
@@ -44,8 +44,8 @@ import {
   CalendarPlus,
   ArrowRight,
   CheckCircle2,
-} from "lucide-react";
-import { PLAN_NAMES } from "@/lib/billing/plan-features";
+} from 'lucide-react';
+import { PLAN_NAMES } from '@/lib/billing/plan-features';
 
 const getDayIndex = (value: string) => (new Date(value).getDay() + 6) % 7;
 
@@ -79,8 +79,8 @@ export default function DashboardPage() {
       setProfessionals(professionalsRes.data ?? []);
       setClients(clientsRes.data ?? []);
     } catch (error) {
-      console.error("[Dashboard Sync Error]:", error);
-      toast.error("Não foi possível atualizar os dados. Tenta novamente.");
+      console.error('[Dashboard Sync Error]:', error);
+      toast.error('Não foi possível atualizar os dados. Tenta novamente.');
     } finally {
       setLoadingInitial(false);
     }
@@ -95,7 +95,7 @@ export default function DashboardPage() {
     let cancelled = false;
     void authService.getCurrentUser().then(({ data }) => {
       if (cancelled || !data) return;
-      setUserName(data.name_complete || data.email?.split("@")[0] || null);
+      setUserName(data.name_complete || data.email?.split('@')[0] || null);
     });
     return () => {
       cancelled = true;
@@ -103,17 +103,17 @@ export default function DashboardPage() {
   }, []);
 
   const chartConfig = {
-    revenue: { label: "Receita", color: "hsl(var(--chart-1))" },
-    bookings: { label: "Marcações", color: "hsl(var(--chart-2))" },
+    revenue: { label: 'Receita', color: 'hsl(var(--chart-1))' },
+    bookings: { label: 'Marcações', color: 'hsl(var(--chart-2))' },
   } satisfies ChartConfig;
 
   const dynamicChartData = useMemo(() => {
-    const days = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+    const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
     return days.map((day, index) => ({
       day,
       revenue: appointments
         .filter(
-          (a) => a.status === "completed" && getDayIndex(a.date_hour) === index,
+          (a) => a.status === 'completed' && getDayIndex(a.date_hour) === index,
         )
         .reduce((acc, a) => acc + Number(a.services?.price || 0), 0),
       bookings: appointments.filter((a) => getDayIndex(a.date_hour) === index)
@@ -123,10 +123,10 @@ export default function DashboardPage() {
 
   const metrics = useMemo(() => {
     const totalRevenue = appointments
-      .filter((a) => a.status === "completed")
+      .filter((a) => a.status === 'completed')
       .reduce((acc, app) => acc + Number(app.services?.price || 0), 0);
     const activeBookingsCount = appointments.filter(
-      (a) => a.status === "scheduled",
+      (a) => a.status === 'scheduled',
     ).length;
     const valuesMap: Record<MetricKey, string> = {
       revenue: `${totalRevenue.toFixed(2)} €`,
@@ -143,7 +143,7 @@ export default function DashboardPage() {
   const upcomingAppointments = useMemo(
     () =>
       appointments
-        .filter((a) => a.status === "scheduled" || a.status === "pending")
+        .filter((a) => a.status === 'scheduled' || a.status === 'pending')
         .sort(
           (a, b) =>
             new Date(a.date_hour).getTime() - new Date(b.date_hour).getTime(),
@@ -156,68 +156,68 @@ export default function DashboardPage() {
   const hasBusinessSetup = services.length > 0 && professionals.length > 0;
   const setupSteps = [
     {
-      label: "Adicionar um serviço",
+      label: 'Adicionar um serviço',
       done: services.length > 0,
-      href: "/dashboard/servicos",
+      href: '/dashboard/servicos',
     },
     {
-      label: "Adicionar um barbeiro",
+      label: 'Adicionar um barbeiro',
       done: professionals.length > 0,
-      href: "/dashboard/equipa",
+      href: '/dashboard/equipa',
     },
     {
-      label: "Criar a primeira marcação",
+      label: 'Criar a primeira marcação',
       done: appointments.length > 0,
-      href: "/dashboard/agenda",
+      href: '/dashboard/agenda',
     },
   ];
   const setupCompleted = setupSteps.filter((step) => step.done).length;
   const nextSetupStep = setupSteps.find((step) => !step.done);
 
   const iconVariants = {
-    emerald: "bg-emerald-500/20 text-emerald-400",
-    blue: "bg-blue-500/20 text-blue-400",
-    amber: "bg-amber-500/20 text-amber-400",
-    purple: "bg-purple-500/20 text-purple-400",
-    default: "bg-white/5 text-zinc-300",
+    emerald: 'bg-emerald-500/20 text-emerald-400',
+    blue: 'bg-blue-500/20 text-blue-400',
+    amber: 'bg-amber-500/20 text-amber-400',
+    purple: 'bg-purple-500/20 text-purple-400',
+    default: 'bg-white/5 text-zinc-300',
   } as const;
   const cardHoverVariants = {
-    emerald: "hover:border-emerald-500/40 hover:bg-emerald-500/10",
-    blue: "hover:border-blue-500/40 hover:bg-blue-500/10",
-    amber: "hover:border-amber-500/40 hover:bg-amber-500/10",
-    purple: "hover:border-purple-500/40 hover:bg-purple-500/10",
-    default: "hover:border-zinc-500/40 hover:bg-zinc-500/10",
+    emerald: 'hover:border-emerald-500/40 hover:bg-emerald-500/10',
+    blue: 'hover:border-blue-500/40 hover:bg-blue-500/10',
+    amber: 'hover:border-amber-500/40 hover:bg-amber-500/10',
+    purple: 'hover:border-purple-500/40 hover:bg-purple-500/10',
+    default: 'hover:border-zinc-500/40 hover:bg-zinc-500/10',
   } as const;
   const quickActions = [
     {
-      href: "/dashboard/agenda",
-      label: "Nova marcação",
+      href: '/dashboard/agenda',
+      label: 'Nova marcação',
       icon: CalendarPlus,
-      color: "emerald" as const,
+      color: 'emerald' as const,
     },
     {
-      href: "/dashboard/clientes",
-      label: "Clientes",
+      href: '/dashboard/clientes',
+      label: 'Clientes',
       icon: Users,
-      color: "blue" as const,
+      color: 'blue' as const,
     },
     {
-      href: "/dashboard/servicos",
-      label: "Serviços",
+      href: '/dashboard/servicos',
+      label: 'Serviços',
       icon: Scissors,
-      color: "amber" as const,
+      color: 'amber' as const,
     },
     {
-      href: "/dashboard/equipa",
-      label: "Equipa",
+      href: '/dashboard/equipa',
+      label: 'Equipa',
       icon: Briefcase,
-      color: "purple" as const,
+      color: 'purple' as const,
     },
     {
-      href: "/dashboard/stats",
-      label: "Estatísticas",
+      href: '/dashboard/stats',
+      label: 'Estatísticas',
       icon: Clock,
-      color: "blue" as const,
+      color: 'blue' as const,
     },
   ];
 
@@ -239,17 +239,17 @@ export default function DashboardPage() {
                 className="mt-1 font-heading text-2xl font-bold tracking-tight text-zinc-50 sm:text-3xl"
               >
                 {new Date().getHours() < 12
-                  ? "Bom dia"
+                  ? 'Bom dia'
                   : new Date().getHours() < 20
-                    ? "Boa tarde"
-                    : "Boa noite"}
-                {userName ? `, ${userName}` : ""} 👋
+                    ? 'Boa tarde'
+                    : 'Boa noite'}
+                {userName ? `, ${userName}` : ''} 👋
               </h1>
               <p className="mt-1 text-sm capitalize text-zinc-400">
-                {new Date().toLocaleDateString("pt-PT", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
+                {new Date().toLocaleDateString('pt-PT', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
                 })}
               </p>
             </div>
@@ -340,7 +340,7 @@ export default function DashboardPage() {
                   >
                     <span
                       className={cn(
-                        "flex size-8 shrink-0 items-center justify-center rounded-full border",
+                        'flex size-8 shrink-0 items-center justify-center rounded-full border',
                         iconVariants[action.color],
                       )}
                     >
@@ -365,8 +365,8 @@ export default function DashboardPage() {
                   <div className="flex size-12 shrink-0 flex-col items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
                     <span className="text-sm font-bold">
                       {new Date(nextAppointment.date_hour).toLocaleTimeString(
-                        "pt-PT",
-                        { hour: "2-digit", minute: "2-digit" },
+                        'pt-PT',
+                        { hour: '2-digit', minute: '2-digit' },
                       )}
                     </span>
                   </div>
@@ -380,12 +380,12 @@ export default function DashboardPage() {
                     >
                       {nextAppointment.users?.name_complete ||
                         nextAppointment.manual_name ||
-                        "Cliente"}
+                        'Cliente'}
                     </h2>
                     <p className="mt-1 truncate text-sm text-zinc-400">
-                      {nextAppointment.services?.name || "Serviço"} ·{" "}
+                      {nextAppointment.services?.name || 'Serviço'} ·{' '}
                       {nextAppointment.professionals?.name ||
-                        "Sem barbeiro atribuído"}
+                        'Sem barbeiro atribuído'}
                     </p>
                   </div>
                 </div>
@@ -393,7 +393,7 @@ export default function DashboardPage() {
                   href="/dashboard/agenda"
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-zinc-200 transition hover:border-white/20 hover:bg-white/10"
                 >
-                  Ver agenda{" "}
+                  Ver agenda{' '}
                   <ChevronRight className="size-4" aria-hidden="true" />
                 </Link>
               </div>
@@ -410,7 +410,7 @@ export default function DashboardPage() {
               </h2>
               {!loadingInitial && (
                 <span className="text-xs text-zinc-500">
-                  {services.length} serviços · {professionals.length}{" "}
+                  {services.length} serviços · {professionals.length}{' '}
                   profissionais
                 </span>
               )}
@@ -439,7 +439,7 @@ export default function DashboardPage() {
                     >
                       <Card
                         className={cn(
-                          "cursor-pointer border border-white/10 bg-white/[0.04] transition-all duration-200",
+                          'cursor-pointer border border-white/10 bg-white/[0.04] transition-all duration-200',
                           cardHoverVariants[metric.variant],
                         )}
                       >
@@ -454,7 +454,7 @@ export default function DashboardPage() {
                           </div>
                           <span
                             className={cn(
-                              "flex size-10 shrink-0 items-center justify-center rounded-full",
+                              'flex size-10 shrink-0 items-center justify-center rounded-full',
                               iconVariants[metric.variant],
                             )}
                           >
@@ -503,18 +503,18 @@ export default function DashboardPage() {
                       dataKey="day"
                       tickLine={false}
                       axisLine={false}
-                      tick={{ fill: "#a1a1aa", fontSize: 12 }}
+                      tick={{ fill: '#a1a1aa', fontSize: 12 }}
                       dy={8}
                     />
                     <YAxis
                       tickLine={false}
                       axisLine={false}
                       width={36}
-                      tick={{ fill: "#a1a1aa", fontSize: 12 }}
+                      tick={{ fill: '#a1a1aa', fontSize: 12 }}
                       allowDecimals={false}
                     />
                     <ChartTooltip
-                      cursor={{ fill: "rgba(255,255,255,0.04)" }}
+                      cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                       content={<ChartTooltipContent />}
                     />
                     <Bar
@@ -598,7 +598,7 @@ export default function DashboardPage() {
                       const nameStr =
                         appointment.users?.name_complete ||
                         appointment.manual_name ||
-                        "Cliente";
+                        'Cliente';
                       return (
                         <li
                           key={appointment.id}
@@ -606,9 +606,9 @@ export default function DashboardPage() {
                         >
                           <div className="flex size-10 shrink-0 flex-col items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
                             <span className="text-xs font-bold leading-none">
-                              {dataObj.toLocaleTimeString("pt-PT", {
-                                hour: "2-digit",
-                                minute: "2-digit",
+                              {dataObj.toLocaleTimeString('pt-PT', {
+                                hour: '2-digit',
+                                minute: '2-digit',
                               })}
                             </span>
                           </div>
@@ -617,9 +617,9 @@ export default function DashboardPage() {
                               {nameStr}
                             </p>
                             <p className="truncate text-xs text-zinc-500">
-                              {appointment.services?.name} ·{" "}
+                              {appointment.services?.name} ·{' '}
                               {appointment.professionals?.name ||
-                                "Sem barbeiro"}
+                                'Sem barbeiro'}
                             </p>
                           </div>
                           <StatusBadge status={appointment.status} />

@@ -1,15 +1,15 @@
 const required = [
-  "NEXT_PUBLIC_SUPABASE_URL",
-  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-  "SUPABASE_SERVICE_ROLE_KEY",
-  "STRIPE_SECRET_KEY",
-  "STRIPE_WEBHOOK_SECRET",
-  "BREVO_API_KEY",
+  'NEXT_PUBLIC_SUPABASE_URL',
+  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'STRIPE_SECRET_KEY',
+  'STRIPE_WEBHOOK_SECRET',
+  'BREVO_API_KEY',
 ];
 
 const publicOnly = new Set([
-  "NEXT_PUBLIC_SUPABASE_URL",
-  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  'NEXT_PUBLIC_SUPABASE_URL',
+  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
 ]);
 const placeholderPatterns = [
   /^changeme$/i,
@@ -34,7 +34,7 @@ for (const name of required) {
 }
 
 for (const [name, value] of Object.entries(process.env)) {
-  if (!name.startsWith("NEXT_PUBLIC_") || !value) continue;
+  if (!name.startsWith('NEXT_PUBLIC_') || !value) continue;
   if (
     /SECRET|SERVICE_ROLE|WEBHOOK|TOKEN|PRIVATE|PASSWORD/i.test(name) &&
     !publicOnly.has(name)
@@ -44,13 +44,13 @@ for (const [name, value] of Object.entries(process.env)) {
 }
 
 if (missing.length || placeholders.length || unsafePublicSecrets.length) {
-  console.error("Production environment validation failed.");
-  if (missing.length) console.error(`Missing: ${missing.join(", ")}`);
+  console.error('Production environment validation failed.');
+  if (missing.length) console.error(`Missing: ${missing.join(', ')}`);
   if (placeholders.length)
-    console.error(`Placeholder values: ${placeholders.join(", ")}`);
+    console.error(`Placeholder values: ${placeholders.join(', ')}`);
   if (unsafePublicSecrets.length)
     console.error(
-      `Potential public secrets: ${unsafePublicSecrets.join(", ")}`,
+      `Potential public secrets: ${unsafePublicSecrets.join(', ')}`,
     );
   process.exit(1);
 }

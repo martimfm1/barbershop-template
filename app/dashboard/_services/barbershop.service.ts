@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from '@/lib/supabase/client';
 
 export interface BarbershopConfigPayload {
   name: string;
@@ -24,21 +24,21 @@ export async function getBarbershopConfig(
   const supabase = createClient();
   try {
     const { data: barberData, error: barberError } = await supabase
-      .from("barbershops")
+      .from('barbershops')
       .select(
-        "name, phone, address, opening_time, closing_time, lunch_start, lunch_end, closed_days, allow_online_bookings, auto_reminders, is_public_in_directory, time_limit_cancellation_hours",
+        'name, phone, address, opening_time, closing_time, lunch_start, lunch_end, closed_days, allow_online_bookings, auto_reminders, is_public_in_directory, time_limit_cancellation_hours',
       )
-      .eq("id", barbershopId)
+      .eq('id', barbershopId)
       .single();
 
     if (barberError || !barberData) {
-      throw new Error(barberError?.message || "Configurações não encontradas.");
+      throw new Error(barberError?.message || 'Configurações não encontradas.');
     }
 
     const { data: shopData, error: shopError } = await supabase
-      .from("shops")
-      .select("popular_service_id")
-      .eq("barbershop_id", barbershopId)
+      .from('shops')
+      .select('popular_service_id')
+      .eq('barbershop_id', barbershopId)
       .maybeSingle();
 
     if (shopError) throw shopError;
@@ -65,13 +65,13 @@ export async function getBarbershopConfig(
       error: null,
     };
   } catch (error: unknown) {
-    console.error("[Service Exception - getBarbershopConfig]:", error);
+    console.error('[Service Exception - getBarbershopConfig]:', error);
     return {
       data: null,
       error:
         error instanceof Error
           ? error
-          : new Error("Erro desconhecido ao carregar as definições."),
+          : new Error('Erro desconhecido ao carregar as definições.'),
     };
   }
 }
@@ -83,13 +83,16 @@ export async function updateBarbershopConfig(
   const supabase = createClient();
 
   try {
-    if (!barbershopId) throw new Error("Barbearia inválida.");
-    if (Object.keys(payload).length === 0) throw new Error("Nenhuma alteração para guardar.");
+    if (!barbershopId) throw new Error('Barbearia inválida.');
+    if (Object.keys(payload).length === 0)
+      throw new Error('Nenhuma alteração para guardar.');
 
     if (payload.time_limit_cancellation_hours !== undefined) {
       const hours = Number(payload.time_limit_cancellation_hours);
       if (!Number.isInteger(hours) || hours < 0 || hours > 720) {
-        throw new Error("O prazo de cancelamento tem de estar entre 0 e 720 horas.");
+        throw new Error(
+          'O prazo de cancelamento tem de estar entre 0 e 720 horas.',
+        );
       }
     }
 
@@ -105,38 +108,44 @@ export async function updateBarbershopConfig(
         error: authError,
       } = await supabase.auth.getUser();
 
-      if (authError || !user) throw new Error("Sessão inválida. Inicia sessão novamente.");
+      if (authError || !user)
+        throw new Error('Sessão inválida. Inicia sessão novamente.');
 
-      const { error } = await supabase.rpc("set_barbershop_directory_visibility", {
-        p_actor_user_id: user.id,
-        p_barbershop_id: barbershopId,
-        p_visible: directoryVisibility,
-      });
+      const { error } = await supabase.rpc(
+        'set_barbershop_directory_visibility',
+        {
+          p_actor_user_id: user.id,
+          p_barbershop_id: barbershopId,
+          p_visible: directoryVisibility,
+        },
+      );
 
       if (error) {
-        if (error.message.includes("DIRECTORY_VISIBILITY_PRO_REQUIRED")) {
-          throw new Error("A visibilidade no diretório está disponível no plano Pro.");
+        if (error.message.includes('DIRECTORY_VISIBILITY_PRO_REQUIRED')) {
+          throw new Error(
+            'A visibilidade no diretório está disponível no plano Pro.',
+          );
         }
         throw error;
       }
     }
 
     if (Object.keys(barbershopPayload).length > 0) {
-      const { error } = await supabase.rpc("update_barbershop_config", {
+      const { error } = await supabase.rpc('update_barbershop_config', {
         p_barbershop_id: barbershopId,
         p_config: barbershopPayload,
       });
 
       if (error) {
-        console.error("[Barbershop Config RPC Error]", {
+        console.error('[Barbershop Config RPC Error]', {
           message: error.message,
           code: error.code,
           details: error.details,
           hint: error.hint,
         });
         throw new Error(
-          error.message === "barbershop update not permitted"
-            ? "Não tens permissão para alterar as definições desta barbearia."
+          error.message === 'barbershop update not permitted'
+            ? 'Não tens permissão para alterar as definições desta barbearia.'
             : error.message,
         );
       }
@@ -144,21 +153,21 @@ export async function updateBarbershopConfig(
 
     if (popularServiceId !== undefined) {
       const { error } = await supabase
-        .from("shops")
+        .from('shops')
         .update({ popular_service_id: popularServiceId })
-        .eq("barbershop_id", barbershopId);
+        .eq('barbershop_id', barbershopId);
       if (error) throw error;
     }
 
     return getBarbershopConfig(barbershopId);
   } catch (error: unknown) {
-    console.error("[Service Exception - updateBarbershopConfig]:", error);
+    console.error('[Service Exception - updateBarbershopConfig]:', error);
     return {
       data: null,
       error:
         error instanceof Error
           ? error
-          : new Error("Erro ao guardar as definições."),
+          : new Error('Erro ao guardar as definições.'),
     };
   }
 }

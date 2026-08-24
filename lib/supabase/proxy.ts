@@ -1,5 +1,5 @@
-import { createServerClient } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
 
 export async function proxySupabase(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -13,7 +13,9 @@ export async function proxySupabase(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value),
+          );
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options),
@@ -30,43 +32,43 @@ export async function proxySupabase(request: NextRequest) {
 
   if (
     !user &&
-    (pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding"))
+    (pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding'))
   ) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   if (user) {
     // Use the authenticated SSR client directly. Do not import browser-only DB
     // helpers into the request proxy because they cannot resolve this session.
     const { data: profile, error: profileError } = await supabase
-      .from("users")
-      .select("barbershop_id")
-      .eq("id", user.id)
+      .from('users')
+      .select('barbershop_id')
+      .eq('id', user.id)
       .maybeSingle();
 
     if (profileError) {
-      console.error("[AUTH_PROXY_PROFILE_LOOKUP_FAIL]", profileError.message);
+      console.error('[AUTH_PROXY_PROFILE_LOOKUP_FAIL]', profileError.message);
     }
 
     const barbershopId = profile?.barbershop_id ?? null;
 
     if (barbershopId) {
-      response.cookies.set("barbershop_id", barbershopId, {
-        path: "/",
+      response.cookies.set('barbershop_id', barbershopId, {
+        path: '/',
         httpOnly: false,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
       });
     } else {
-      response.cookies.delete("barbershop_id");
+      response.cookies.delete('barbershop_id');
     }
 
-    if (pathname.startsWith("/dashboard") && !barbershopId) {
-      return NextResponse.redirect(new URL("/onboarding", request.url));
+    if (pathname.startsWith('/dashboard') && !barbershopId) {
+      return NextResponse.redirect(new URL('/onboarding', request.url));
     }
 
-    if (pathname.startsWith("/onboarding") && barbershopId) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+    if (pathname.startsWith('/onboarding') && barbershopId) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
 

@@ -1,15 +1,22 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { Circle, MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import type { MapInnerProps } from "@/types/marketplace/components";
-import type { MarketplaceShop } from "@/types/marketplace/shops";
-import { Navigation, Star } from "lucide-react";
+import { useEffect } from 'react';
+import {
+  Circle,
+  MapContainer,
+  Marker,
+  Popup,
+  TileLayer,
+  useMap,
+} from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import type { MapInnerProps } from '@/types/marketplace/components';
+import type { MarketplaceShop } from '@/types/marketplace/shops';
+import { Navigation, Star } from 'lucide-react';
 
 const shopIcon = L.divIcon({
-  className: "custom-map-pin",
+  className: 'custom-map-pin',
   html: `
     <div class="relative flex size-10 items-center justify-center" aria-hidden="true">
       <div class="absolute -inset-1.5 rounded-full bg-emerald-300/20 blur-md"></div>
@@ -24,19 +31,28 @@ const shopIcon = L.divIcon({
 });
 
 const userIcon = L.divIcon({
-  className: "custom-user-location-pin",
+  className: 'custom-user-location-pin',
   html: `<div class="relative flex size-9 items-center justify-center" aria-hidden="true"><span class="absolute inset-0 animate-ping rounded-full bg-sky-300/25"></span><span class="relative size-4 rounded-full border-2 border-white bg-sky-500 shadow-[0_0_0_4px_rgba(14,165,233,0.16),0_6px_20px_rgba(14,165,233,0.4)]"></span></div>`,
   iconSize: [36, 36],
   iconAnchor: [18, 18],
 });
 
-function MapBoundsController({ shops, userLocation }: Pick<MapInnerProps, "shops" | "userLocation">) {
+function MapBoundsController({
+  shops,
+  userLocation,
+}: Pick<MapInnerProps, 'shops' | 'userLocation'>) {
   const map = useMap();
 
   useEffect(() => {
-    const validShops = shops.filter((shop) => Number.isFinite(shop.lat) && Number.isFinite(shop.lng));
-    const points: [number, number][] = validShops.map((shop) => [shop.lat!, shop.lng!]);
-    if (userLocation) points.push([userLocation.latitude, userLocation.longitude]);
+    const validShops = shops.filter(
+      (shop) => Number.isFinite(shop.lat) && Number.isFinite(shop.lng),
+    );
+    const points: [number, number][] = validShops.map((shop) => [
+      shop.lat!,
+      shop.lng!,
+    ]);
+    if (userLocation)
+      points.push([userLocation.latitude, userLocation.longitude]);
 
     if (points.length === 0) return;
     if (points.length === 1) {
@@ -51,7 +67,11 @@ function MapBoundsController({ shops, userLocation }: Pick<MapInnerProps, "shops
   return null;
 }
 
-export default function MapInner({ shops, onSelectShop, userLocation }: MapInnerProps) {
+export default function MapInner({
+  shops,
+  onSelectShop,
+  userLocation,
+}: MapInnerProps) {
   const defaultCenter: [number, number] = userLocation
     ? [userLocation.latitude, userLocation.longitude]
     : [38.7223, -9.1393];
@@ -138,16 +158,32 @@ export default function MapInner({ shops, onSelectShop, userLocation }: MapInner
             <Circle
               center={[userLocation.latitude, userLocation.longitude]}
               radius={45}
-              pathOptions={{ color: "#7dd3fc", fillColor: "#38bdf8", fillOpacity: 0.1, weight: 2 }}
+              pathOptions={{
+                color: '#7dd3fc',
+                fillColor: '#38bdf8',
+                fillOpacity: 0.1,
+                weight: 2,
+              }}
             />
-            <Marker position={[userLocation.latitude, userLocation.longitude]} icon={userIcon} zIndexOffset={1000}>
+            <Marker
+              position={[userLocation.latitude, userLocation.longitude]}
+              icon={userIcon}
+              zIndexOffset={1000}
+            >
               <Popup className="custom-leaflet-popup">
                 <div className="p-1">
                   <div className="flex items-center gap-2">
-                    <Navigation className="size-4 text-sky-300" aria-hidden="true" />
-                    <span className="font-semibold text-zinc-50">A tua localização</span>
+                    <Navigation
+                      className="size-4 text-sky-300"
+                      aria-hidden="true"
+                    />
+                    <span className="font-semibold text-zinc-50">
+                      A tua localização
+                    </span>
                   </div>
-                  <p className="mt-1 text-xs leading-5 text-zinc-300">Usada apenas para calcular a proximidade das barbearias.</p>
+                  <p className="mt-1 text-xs leading-5 text-zinc-300">
+                    Usada apenas para calcular a proximidade das barbearias.
+                  </p>
                 </div>
               </Popup>
             </Marker>
@@ -155,20 +191,37 @@ export default function MapInner({ shops, onSelectShop, userLocation }: MapInner
         ) : null}
 
         {shops.map((shop: MarketplaceShop) => {
-          if (!Number.isFinite(shop.lat) || !Number.isFinite(shop.lng)) return null;
+          if (!Number.isFinite(shop.lat) || !Number.isFinite(shop.lng))
+            return null;
 
           return (
-            <Marker key={shop.id} position={[shop.lat!, shop.lng!]} icon={shopIcon} keyboard>
+            <Marker
+              key={shop.id}
+              position={[shop.lat!, shop.lng!]}
+              icon={shopIcon}
+              keyboard
+            >
               <Popup className="custom-leaflet-popup">
                 <div className="p-1">
                   <div className="flex items-start justify-between gap-3 pr-2">
-                    <h5 className="font-semibold leading-5 text-zinc-50">{shop.name}</h5>
+                    <h5 className="font-semibold leading-5 text-zinc-50">
+                      {shop.name}
+                    </h5>
                     <div className="flex shrink-0 items-center gap-1 text-xs font-semibold text-amber-200">
-                      <Star className="size-3 fill-amber-300 text-amber-300" aria-hidden="true" />
+                      <Star
+                        className="size-3 fill-amber-300 text-amber-300"
+                        aria-hidden="true"
+                      />
                       <span>{shop.rating}</span>
                     </div>
                   </div>
-                  <p className="mt-2 text-xs leading-5 text-zinc-300">{shop.city}{shop.distanceKm > 0 ? ` · ${shop.distanceKm.toFixed(1)} km` : ""} · {shop.price}</p>
+                  <p className="mt-2 text-xs leading-5 text-zinc-300">
+                    {shop.city}
+                    {shop.distanceKm > 0
+                      ? ` · ${shop.distanceKm.toFixed(1)} km`
+                      : ''}{' '}
+                    · {shop.price}
+                  </p>
                   <button
                     type="button"
                     onClick={() => onSelectShop(shop)}

@@ -1,9 +1,13 @@
-import type Stripe from "stripe";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { getStripeClient } from "@/lib/stripe/server";
-import { planForPrice, PLANS, TRIAL_PERIOD_DAYS } from "@/lib/stripe/constants";
-import { PLAN_ACCESS_STATUSES, resolvePlan } from "@/lib/billing/plan-access";
-import { BillingError, type BillingPlan, type SubscriptionRecord } from "@/types/stripe";
+import type Stripe from 'stripe';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { getStripeClient } from '@/lib/stripe/server';
+import { planForPrice, PLANS, TRIAL_PERIOD_DAYS } from '@/lib/stripe/constants';
+import { PLAN_ACCESS_STATUSES, resolvePlan } from '@/lib/billing/plan-access';
+import {
+  BillingError,
+  type BillingPlan,
+  type SubscriptionRecord,
+} from '@/types/stripe';
 
 const PENDING_INVOICE_TTL_MS = 10 * 60 * 1000;
 const CHECKOUT_IDEMPOTENCY_BUCKET_MS = 10 * 60 * 1000;
@@ -23,55 +27,90 @@ type BillingAccountRow = {
   trial_started_at: string | null;
 };
 
-function stripeCustomerId(customer: string | Stripe.Customer | Stripe.DeletedCustomer): string {
-  return typeof customer === "string" ? customer : customer.id;
+function stripeCustomerId(
+  customer: string | Stripe.Customer | Stripe.DeletedCustomer,
+): string {
+  return typeof customer === 'string' ? customer : customer.id;
 }
 
-function subscriptionPeriodEnd(subscription: Stripe.Subscription): number | null {
+function subscriptionPeriodEnd(
+  subscription: Stripe.Subscription,
+): number | null {
   return subscription.items.data[0]?.current_period_end ?? null;
 }
 
 function subscriptionPlan(subscription: Stripe.Subscription): BillingPlan {
-  const priceId = subscription.items.data[0]?.price.id ?? "";
+  const priceId = subscription.items.data[0]?.price.id ?? '';
   return planForPrice(priceId) ?? PLANS.FREE;
 }
 
 function isMissingStripeResource(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "code" in error && (error as { code?: unknown }).code === "resource_missing";
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === 'resource_missing'
+  );
 }
 
 export class BarbershopStripeService {
   static async getTenantContext(userId: string): Promise<TenantContext> {
     const database = createAdminClient();
     const { data: user, error: userError } = await database
-      .from("users")
-      .select("id, email, role, barbershop_id")
-      .eq("id", userId)
+      .from('users')
+      .select('id, email, role, barbershop_id')
+      .eq('id', userId)
       .maybeSingle();
 
-    if (userError) throw new BillingError("Could not load SaaS account.", "DB_READ_FAILED");
-    if (!user?.barbershop_id || !user.email) throw new BillingError("A barbershop is required before billing can be managed.", "SUBSCRIPTION_NOT_ACTIVE");
+    if (userError)
+      throw new BillingError('Could not load SaaS account.', 'DB_READ_FAILED');
+    if (!user?.barbershop_id || !user.email)
+      throw new BillingError(
+        'A barbershop is required before billing can be managed.',
+        'SUBSCRIPTION_NOT_ACTIVE',
+      );
 
     const { data: barbershop, error: barbershopError } = await database
-      .from("barbershops")
-      .select("id, created_by")
-      .eq("id", user.barbershop_id)
+      .from('barbershops')
+      .select('id, created_by')
+      .eq('id', user.barbershop_id)
       .maybeSingle();
 
-    if (barbershopError) throw new BillingError("Could not load barbershop account.", "DB_READ_FAILED");
-    if (!barbershop || barbershop.created_by !== userId) throw new BillingError("Only the barbershop owner can manage the subscription.", "SUBSCRIPTION_NOT_ACTIVE");
+    if (barbershopError)
+      throw new BillingError(
+        'Could not load barbershop account.',
+        'DB_READ_FAILED',
+      );
+    if (!barbershop || barbershop.created_by !== userId)
+      throw new BillingError(
+        'Only the barbershop owner can manage the subscription.',
+        'SUBSCRIPTION_NOT_ACTIVE',
+      );
 
-    return { userId, email: user.email, role: String(user.role ?? ""), barbershopId: user.barbershop_id };
+    return {
+      userId,
+      email: user.email,
+      role: String(user.role ?? ''),
+      barbershopId: user.barbershop_id,
+    };
   }
 
-  static async getBillingAccount(barbershopId: string): Promise<BillingAccountRow | null> {
+  static async getBillingAccount(
+    barbershopId: string,
+  ): Promise<BillingAccountRow | null> {
     const { data, error } = await createAdminClient()
-      .from("barbershop_billing_accounts")
-      .select("barbershop_id, billing_owner_user_id, stripe_customer_id, billing_email, trial_started_at")
-      .eq("barbershop_id", barbershopId)
+      .from('barbershop_billing_accounts')
+      .select(
+        'barbershop_id, billing_owner_user_id, stripe_customer_id, billing_email, trial_started_at',
+      )
+      .eq('barbershop_id', barbershopId)
       .maybeSingle();
 
-    if (error) throw new BillingError("Could not load Stripe billing account.", "DB_READ_FAILED");
+    if (error)
+      throw new BillingError(
+        'Could not load Stripe billing account.',
+        'DB_READ_FAILED',
+      );
     return (data as BillingAccountRow | null) ?? null;
   }
 
@@ -81,69 +120,136 @@ export class BarbershopStripeService {
     const existingAccount = await this.getBillingAccount(tenant.barbershopId);
 
     if (existingAccount?.stripe_customer_id) {
-      const customer = await getStripeClient().customers.retrieve(existingAccount.stripe_customer_id);
-      if (customer.deleted) throw new BillingError("The Stripe customer was deleted and needs to be recreated.", "CUSTOMER_NOT_FOUND");
-      await getStripeClient().customers.update(existingAccount.stripe_customer_id, {
-        email: tenant.email,
-        metadata: { ...customer.metadata, app: "silentra-for-barbers", barbershop_id: tenant.barbershopId, billing_owner_user_id: tenant.userId },
-      });
+      const customer = await getStripeClient().customers.retrieve(
+        existingAccount.stripe_customer_id,
+      );
+      if (customer.deleted)
+        throw new BillingError(
+          'The Stripe customer was deleted and needs to be recreated.',
+          'CUSTOMER_NOT_FOUND',
+        );
+      await getStripeClient().customers.update(
+        existingAccount.stripe_customer_id,
+        {
+          email: tenant.email,
+          metadata: {
+            ...customer.metadata,
+            app: 'silentra-for-barbers',
+            barbershop_id: tenant.barbershopId,
+            billing_owner_user_id: tenant.userId,
+          },
+        },
+      );
       return existingAccount.stripe_customer_id;
     }
 
-    const legacy = await database.from("customers").select("stripe_customer_id, email").eq("user_id", tenant.userId).maybeSingle();
-    if (legacy.error) throw new BillingError("Could not load Stripe customer mapping.", "DB_READ_FAILED");
+    const legacy = await database
+      .from('customers')
+      .select('stripe_customer_id, email')
+      .eq('user_id', tenant.userId)
+      .maybeSingle();
+    if (legacy.error)
+      throw new BillingError(
+        'Could not load Stripe customer mapping.',
+        'DB_READ_FAILED',
+      );
 
     if (legacy.data?.stripe_customer_id) {
-      const stripeCustomer = await getStripeClient().customers.retrieve(legacy.data.stripe_customer_id);
+      const stripeCustomer = await getStripeClient().customers.retrieve(
+        legacy.data.stripe_customer_id,
+      );
       if (!stripeCustomer.deleted) {
-        const { error: writeError } = await database.from("barbershop_billing_accounts").upsert({
-          barbershop_id: tenant.barbershopId,
-          billing_owner_user_id: tenant.userId,
-          stripe_customer_id: stripeCustomer.id,
-          billing_email: tenant.email,
-        }, { onConflict: "barbershop_id" });
-        if (writeError) throw new BillingError("Could not link the Stripe customer to the barbershop.", "DB_WRITE_FAILED");
+        const { error: writeError } = await database
+          .from('barbershop_billing_accounts')
+          .upsert(
+            {
+              barbershop_id: tenant.barbershopId,
+              billing_owner_user_id: tenant.userId,
+              stripe_customer_id: stripeCustomer.id,
+              billing_email: tenant.email,
+            },
+            { onConflict: 'barbershop_id' },
+          );
+        if (writeError)
+          throw new BillingError(
+            'Could not link the Stripe customer to the barbershop.',
+            'DB_WRITE_FAILED',
+          );
         return stripeCustomer.id;
       }
     }
 
-    const customer = await getStripeClient().customers.create({
-      email: tenant.email,
-      metadata: { app: "silentra-for-barbers", barbershop_id: tenant.barbershopId, billing_owner_user_id: tenant.userId },
-    }, { idempotencyKey: `barbershop-customer:${tenant.barbershopId}` });
+    const customer = await getStripeClient().customers.create(
+      {
+        email: tenant.email,
+        metadata: {
+          app: 'silentra-for-barbers',
+          barbershop_id: tenant.barbershopId,
+          billing_owner_user_id: tenant.userId,
+        },
+      },
+      { idempotencyKey: `barbershop-customer:${tenant.barbershopId}` },
+    );
 
-    const { error: writeError } = await database.from("barbershop_billing_accounts").upsert({
-      barbershop_id: tenant.barbershopId,
-      billing_owner_user_id: tenant.userId,
-      stripe_customer_id: customer.id,
-      billing_email: tenant.email,
-    }, { onConflict: "barbershop_id" });
+    const { error: writeError } = await database
+      .from('barbershop_billing_accounts')
+      .upsert(
+        {
+          barbershop_id: tenant.barbershopId,
+          billing_owner_user_id: tenant.userId,
+          stripe_customer_id: customer.id,
+          billing_email: tenant.email,
+        },
+        { onConflict: 'barbershop_id' },
+      );
 
-    if (writeError) throw new BillingError("Could not persist Stripe billing account.", "DB_WRITE_FAILED");
+    if (writeError)
+      throw new BillingError(
+        'Could not persist Stripe billing account.',
+        'DB_WRITE_FAILED',
+      );
     return customer.id;
   }
 
-  static async getSubscriptionForBarbershop(barbershopId: string): Promise<SubscriptionRecord | null> {
+  static async getSubscriptionForBarbershop(
+    barbershopId: string,
+  ): Promise<SubscriptionRecord | null> {
     const { data, error } = await createAdminClient()
-      .from("subscriptions")
-      .select("*")
-      .eq("barbershop_id", barbershopId)
-      .order("updated_at", { ascending: false })
+      .from('subscriptions')
+      .select('*')
+      .eq('barbershop_id', barbershopId)
+      .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    if (error) throw new BillingError("Could not load barbershop subscription.", "DB_READ_FAILED");
+    if (error)
+      throw new BillingError(
+        'Could not load barbershop subscription.',
+        'DB_READ_FAILED',
+      );
     return data as SubscriptionRecord | null;
   }
 
-  static async reconcileSubscription(barbershopId: string, subscription: SubscriptionRecord | null): Promise<SubscriptionRecord | null> {
-    if (!subscription?.stripe_subscription_id || (subscription.plan_override && subscription.plan_override !== PLANS.FREE)) return subscription;
+  static async reconcileSubscription(
+    barbershopId: string,
+    subscription: SubscriptionRecord | null,
+  ): Promise<SubscriptionRecord | null> {
+    if (
+      !subscription?.stripe_subscription_id ||
+      (subscription.plan_override && subscription.plan_override !== PLANS.FREE)
+    )
+      return subscription;
 
     try {
-      const remote = await getStripeClient().subscriptions.retrieve(subscription.stripe_subscription_id);
-      const priceId = remote.items.data[0]?.price.id ?? subscription.stripe_price_id;
+      const remote = await getStripeClient().subscriptions.retrieve(
+        subscription.stripe_subscription_id,
+      );
+      const priceId =
+        remote.items.data[0]?.price.id ?? subscription.stripe_price_id;
       const stripePlan = subscriptionPlan(remote);
-      const hasAccess = (PLAN_ACCESS_STATUSES as readonly string[]).includes(remote.status) && stripePlan !== PLANS.FREE;
+      const hasAccess =
+        (PLAN_ACCESS_STATUSES as readonly string[]).includes(remote.status) &&
+        stripePlan !== PLANS.FREE;
       const nextPlan = hasAccess ? stripePlan : PLANS.FREE;
       const periodEnd = subscriptionPeriodEnd(remote);
       const updates = {
@@ -152,159 +258,361 @@ export class BarbershopStripeService {
         stripe_price_id: priceId,
         plan: nextPlan,
         status: remote.status,
-        trial_end: remote.trial_end ? new Date(remote.trial_end * 1000).toISOString() : null,
-        current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : subscription.current_period_end,
+        trial_end: remote.trial_end
+          ? new Date(remote.trial_end * 1000).toISOString()
+          : null,
+        current_period_end: periodEnd
+          ? new Date(periodEnd * 1000).toISOString()
+          : subscription.current_period_end,
         cancel_at_period_end: remote.cancel_at_period_end,
       };
 
-      const changed = subscription.plan !== updates.plan || subscription.status !== updates.status || subscription.stripe_price_id !== updates.stripe_price_id || subscription.stripe_customer_id !== updates.stripe_customer_id || subscription.trial_end !== updates.trial_end || subscription.current_period_end !== updates.current_period_end || subscription.cancel_at_period_end !== updates.cancel_at_period_end;
+      const changed =
+        subscription.plan !== updates.plan ||
+        subscription.status !== updates.status ||
+        subscription.stripe_price_id !== updates.stripe_price_id ||
+        subscription.stripe_customer_id !== updates.stripe_customer_id ||
+        subscription.trial_end !== updates.trial_end ||
+        subscription.current_period_end !== updates.current_period_end ||
+        subscription.cancel_at_period_end !== updates.cancel_at_period_end;
       if (changed) {
-        const { error } = await createAdminClient().from("subscriptions").update(updates).eq("id", subscription.id);
-        if (error) throw new BillingError("Could not reconcile subscription with Stripe.", "DB_WRITE_FAILED");
+        const { error } = await createAdminClient()
+          .from('subscriptions')
+          .update(updates)
+          .eq('id', subscription.id);
+        if (error)
+          throw new BillingError(
+            'Could not reconcile subscription with Stripe.',
+            'DB_WRITE_FAILED',
+          );
       }
       return { ...subscription, ...updates } as SubscriptionRecord;
     } catch (error) {
       if (!isMissingStripeResource(error)) throw error;
-      const { error: updateError } = await createAdminClient().from("subscriptions").update({ plan: PLANS.FREE, status: "canceled", cancel_at_period_end: false }).eq("id", subscription.id);
-      if (updateError) throw new BillingError("Could not reconcile missing Stripe subscription.", "DB_WRITE_FAILED");
-      return { ...subscription, plan: PLANS.FREE, status: "canceled", cancel_at_period_end: false } as SubscriptionRecord;
+      const { error: updateError } = await createAdminClient()
+        .from('subscriptions')
+        .update({
+          plan: PLANS.FREE,
+          status: 'canceled',
+          cancel_at_period_end: false,
+        })
+        .eq('id', subscription.id);
+      if (updateError)
+        throw new BillingError(
+          'Could not reconcile missing Stripe subscription.',
+          'DB_WRITE_FAILED',
+        );
+      return {
+        ...subscription,
+        plan: PLANS.FREE,
+        status: 'canceled',
+        cancel_at_period_end: false,
+      } as SubscriptionRecord;
     }
   }
 
   static async getEffectivePlan(userId: string): Promise<BillingPlan> {
     const database = createAdminClient();
-    const tenant = await database.from("users").select("barbershop_id").eq("id", userId).maybeSingle();
-    if (tenant.error) throw new BillingError("Could not resolve SaaS account.", "DB_READ_FAILED");
+    const tenant = await database
+      .from('users')
+      .select('barbershop_id')
+      .eq('id', userId)
+      .maybeSingle();
+    if (tenant.error)
+      throw new BillingError(
+        'Could not resolve SaaS account.',
+        'DB_READ_FAILED',
+      );
     const barbershopId = tenant.data?.barbershop_id;
     if (!barbershopId) return PLANS.FREE;
 
     const { data: assignment, error: assignmentError } = await database
-      .from("barbershop_plan_assignments")
-      .select("plan, expires_at")
-      .eq("barbershop_id", barbershopId)
+      .from('barbershop_plan_assignments')
+      .select('plan, expires_at')
+      .eq('barbershop_id', barbershopId)
       .maybeSingle();
-    if (assignmentError) throw new BillingError("Could not load barbershop plan assignment.", "DB_READ_FAILED");
-    if (assignment && (!assignment.expires_at || new Date(assignment.expires_at).getTime() > Date.now())) return assignment.plan as BillingPlan;
+    if (assignmentError)
+      throw new BillingError(
+        'Could not load barbershop plan assignment.',
+        'DB_READ_FAILED',
+      );
+    if (
+      assignment &&
+      (!assignment.expires_at ||
+        new Date(assignment.expires_at).getTime() > Date.now())
+    )
+      return assignment.plan as BillingPlan;
 
-    const subscription = await this.reconcileSubscription(barbershopId, await this.getSubscriptionForBarbershop(barbershopId));
+    const subscription = await this.reconcileSubscription(
+      barbershopId,
+      await this.getSubscriptionForBarbershop(barbershopId),
+    );
     return resolvePlan(subscription);
   }
 
-  static async createElementsCheckout(userId: string, priceId: string): Promise<{ clientSecret: string; sessionId: string }> {
+  static async createElementsCheckout(
+    userId: string,
+    priceId: string,
+  ): Promise<{ clientSecret: string; sessionId: string }> {
     const tenant = await this.getTenantContext(userId);
     const requestedPlan = planForPrice(priceId);
-    if (!requestedPlan || requestedPlan === PLANS.FREE) throw new BillingError("The requested price is not available.", "INVALID_PRICE");
+    if (!requestedPlan || requestedPlan === PLANS.FREE)
+      throw new BillingError(
+        'The requested price is not available.',
+        'INVALID_PRICE',
+      );
 
-    const existing = await this.reconcileSubscription(tenant.barbershopId, await this.getSubscriptionForBarbershop(tenant.barbershopId));
-    if (existing && existing.plan !== PLANS.FREE && (PLAN_ACCESS_STATUSES as readonly string[]).includes(existing.status)) throw new BillingError("An active subscription already exists for this barbershop.", "SUBSCRIPTION_NOT_ACTIVE");
+    const existing = await this.reconcileSubscription(
+      tenant.barbershopId,
+      await this.getSubscriptionForBarbershop(tenant.barbershopId),
+    );
+    if (
+      existing &&
+      existing.plan !== PLANS.FREE &&
+      (PLAN_ACCESS_STATUSES as readonly string[]).includes(existing.status)
+    )
+      throw new BillingError(
+        'An active subscription already exists for this barbershop.',
+        'SUBSCRIPTION_NOT_ACTIVE',
+      );
 
     const customer = await this.getOrCreateCustomer(userId);
     const canTrial = requestedPlan === PLANS.PRO && !existing;
     let appOrigin = process.env.NEXT_PUBLIC_APP_URL?.trim();
-    if (!appOrigin) appOrigin = "https://barbers.silentra.me";
-    if (!appOrigin.startsWith("http://") && !appOrigin.startsWith("https://")) appOrigin = `https://${appOrigin}`;
+    if (!appOrigin) appOrigin = 'https://barbers.silentra.me';
+    if (!appOrigin.startsWith('http://') && !appOrigin.startsWith('https://'))
+      appOrigin = `https://${appOrigin}`;
     const returnUrl = `${appOrigin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`;
     const bucket = Math.floor(Date.now() / CHECKOUT_IDEMPOTENCY_BUCKET_MS);
 
-    const session = await getStripeClient().checkout.sessions.create({
-      customer,
-      mode: "subscription",
-      ui_mode: "elements",
-      line_items: [{ price: priceId, quantity: 1 }],
-      return_url: returnUrl,
-      client_reference_id: tenant.barbershopId,
-      allow_promotion_codes: true,
-      metadata: { app: "silentra-for-barbers", user_id: tenant.userId, barbershop_id: tenant.barbershopId, stripe_customer_id: customer, plan: requestedPlan, trial_eligible: canTrial ? "true" : "false" },
-      subscription_data: { metadata: { app: "silentra-for-barbers", user_id: tenant.userId, barbershop_id: tenant.barbershopId, trial_eligible: canTrial ? "true" : "false" }, ...(canTrial ? { trial_period_days: TRIAL_PERIOD_DAYS } : {}) },
-      billing_address_collection: "required",
-      customer_update: { name: "auto", address: "auto" },
-      phone_number_collection: { enabled: true },
-      tax_id_collection: { enabled: true },
-      locale: "pt",
-    }, { idempotencyKey: `checkout-elements:${tenant.barbershopId}:${priceId}:${bucket}` });
+    const session = await getStripeClient().checkout.sessions.create(
+      {
+        customer,
+        mode: 'subscription',
+        ui_mode: 'elements',
+        line_items: [{ price: priceId, quantity: 1 }],
+        return_url: returnUrl,
+        client_reference_id: tenant.barbershopId,
+        allow_promotion_codes: true,
+        metadata: {
+          app: 'silentra-for-barbers',
+          user_id: tenant.userId,
+          barbershop_id: tenant.barbershopId,
+          stripe_customer_id: customer,
+          plan: requestedPlan,
+          trial_eligible: canTrial ? 'true' : 'false',
+        },
+        subscription_data: {
+          metadata: {
+            app: 'silentra-for-barbers',
+            user_id: tenant.userId,
+            barbershop_id: tenant.barbershopId,
+            trial_eligible: canTrial ? 'true' : 'false',
+          },
+          ...(canTrial ? { trial_period_days: TRIAL_PERIOD_DAYS } : {}),
+        },
+        billing_address_collection: 'required',
+        customer_update: { name: 'auto', address: 'auto' },
+        phone_number_collection: { enabled: true },
+        tax_id_collection: { enabled: true },
+        locale: 'pt',
+      },
+      {
+        idempotencyKey: `checkout-elements:${tenant.barbershopId}:${priceId}:${bucket}`,
+      },
+    );
 
-    if (!session.client_secret) throw new BillingError("Stripe did not return a Checkout Elements client secret.", "WEBHOOK_PROCESSING_FAILED");
+    if (!session.client_secret)
+      throw new BillingError(
+        'Stripe did not return a Checkout Elements client secret.',
+        'WEBHOOK_PROCESSING_FAILED',
+      );
     return { clientSecret: session.client_secret, sessionId: session.id };
   }
 
-  static async createCustomerPortal(userId: string, requestUrl?: string): Promise<string> {
+  static async createCustomerPortal(
+    userId: string,
+    requestUrl?: string,
+  ): Promise<string> {
     const tenant = await this.getTenantContext(userId);
     const customer = await this.getOrCreateCustomer(userId);
     let origin = process.env.NEXT_PUBLIC_APP_URL?.trim();
-    if (!origin && requestUrl) { try { origin = new URL(requestUrl).origin; } catch { /* ignore */ } }
-    if (!origin) origin = "https://barbers.silentra.me";
-    if (!origin.startsWith("http://") && !origin.startsWith("https://")) origin = `https://${origin}`;
+    if (!origin && requestUrl) {
+      try {
+        origin = new URL(requestUrl).origin;
+      } catch {
+        /* ignore */
+      }
+    }
+    if (!origin) origin = 'https://barbers.silentra.me';
+    if (!origin.startsWith('http://') && !origin.startsWith('https://'))
+      origin = `https://${origin}`;
     const returnUrl = `${origin}/dashboard/billing`;
-    const configuration = process.env.STRIPE_BILLING_PORTAL_CONFIGURATION_ID?.trim();
-    const session = await getStripeClient().billingPortal.sessions.create({ customer, return_url: returnUrl, ...(configuration ? { configuration } : {}) });
+    const configuration =
+      process.env.STRIPE_BILLING_PORTAL_CONFIGURATION_ID?.trim();
+    const session = await getStripeClient().billingPortal.sessions.create({
+      customer,
+      return_url: returnUrl,
+      ...(configuration ? { configuration } : {}),
+    });
     return session.url;
   }
 
   static async cancelAtPeriodEnd(userId: string): Promise<void> {
     const tenant = await this.getTenantContext(userId);
-    const subscription = await this.reconcileSubscription(tenant.barbershopId, await this.getSubscriptionForBarbershop(tenant.barbershopId));
-    if (!subscription?.stripe_subscription_id) throw new BillingError("No active paid subscription was found.", "SUBSCRIPTION_NOT_FOUND");
-    const updated = await getStripeClient().subscriptions.update(subscription.stripe_subscription_id, { cancel_at_period_end: true });
+    const subscription = await this.reconcileSubscription(
+      tenant.barbershopId,
+      await this.getSubscriptionForBarbershop(tenant.barbershopId),
+    );
+    if (!subscription?.stripe_subscription_id)
+      throw new BillingError(
+        'No active paid subscription was found.',
+        'SUBSCRIPTION_NOT_FOUND',
+      );
+    const updated = await getStripeClient().subscriptions.update(
+      subscription.stripe_subscription_id,
+      { cancel_at_period_end: true },
+    );
     await this.syncFromStripe(tenant.barbershopId, tenant.userId, updated);
   }
 
   static async getInvoices(userId: string) {
     const customer = await this.getOrCreateCustomer(userId);
-    const invoices = await getStripeClient().invoices.list({ customer, limit: 12 });
+    const invoices = await getStripeClient().invoices.list({
+      customer,
+      limit: 12,
+    });
     const now = Date.now();
-    return invoices.data.filter((invoice) => {
-      const pending = invoice.status === null || invoice.status === "draft" || invoice.status === "open";
-      return !pending || now - invoice.created * 1000 <= PENDING_INVOICE_TTL_MS;
-    }).map((invoice) => ({
-      id: invoice.id,
-      amount: invoice.amount_paid || invoice.amount_due,
-      currency: invoice.currency.toUpperCase(),
-      status: invoice.status,
-      date: new Date(invoice.created * 1000).toLocaleDateString("pt-PT", { day: "2-digit", month: "short", year: "numeric" }),
-      invoice_pdf: invoice.invoice_pdf,
-      hosted_invoice_url: invoice.hosted_invoice_url,
-    }));
+    return invoices.data
+      .filter((invoice) => {
+        const pending =
+          invoice.status === null ||
+          invoice.status === 'draft' ||
+          invoice.status === 'open';
+        return (
+          !pending || now - invoice.created * 1000 <= PENDING_INVOICE_TTL_MS
+        );
+      })
+      .map((invoice) => ({
+        id: invoice.id,
+        amount: invoice.amount_paid || invoice.amount_due,
+        currency: invoice.currency.toUpperCase(),
+        status: invoice.status,
+        date: new Date(invoice.created * 1000).toLocaleDateString('pt-PT', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }),
+        invoice_pdf: invoice.invoice_pdf,
+        hosted_invoice_url: invoice.hosted_invoice_url,
+      }));
   }
 
-  static async syncFromStripe(barbershopId: string, ownerUserId: string, subscription: Stripe.Subscription): Promise<void> {
+  static async syncFromStripe(
+    barbershopId: string,
+    ownerUserId: string,
+    subscription: Stripe.Subscription,
+  ): Promise<void> {
     const customer = stripeCustomerId(subscription.customer);
     const priceId = subscription.items.data[0]?.price.id;
     const periodEnd = subscriptionPeriodEnd(subscription);
-    if (!priceId || !periodEnd) throw new BillingError("Stripe subscription is missing required billing fields.", "WEBHOOK_PROCESSING_FAILED");
+    if (!priceId || !periodEnd)
+      throw new BillingError(
+        'Stripe subscription is missing required billing fields.',
+        'WEBHOOK_PROCESSING_FAILED',
+      );
 
     const database = createAdminClient();
     const { data: owner, error: ownerError } = await database
-      .from("users")
-      .select("id, email, barbershop_id, role")
-      .eq("id", ownerUserId)
+      .from('users')
+      .select('id, email, barbershop_id, role')
+      .eq('id', ownerUserId)
       .maybeSingle();
 
-    if (ownerError) throw new BillingError("Could not resolve billing owner.", "DB_READ_FAILED");
-    if (!owner || owner.barbershop_id !== barbershopId || String(owner.role ?? "").toLowerCase() !== "owner") throw new BillingError("Billing owner does not match the barbershop.", "SUBSCRIPTION_NOT_ACTIVE");
+    if (ownerError)
+      throw new BillingError(
+        'Could not resolve billing owner.',
+        'DB_READ_FAILED',
+      );
+    if (
+      !owner ||
+      owner.barbershop_id !== barbershopId ||
+      String(owner.role ?? '').toLowerCase() !== 'owner'
+    )
+      throw new BillingError(
+        'Billing owner does not match the barbershop.',
+        'SUBSCRIPTION_NOT_ACTIVE',
+      );
 
     const { data: billingAccount, error: billingAccountError } = await database
-      .from("barbershop_billing_accounts")
-      .select("stripe_customer_id, billing_owner_user_id")
-      .eq("barbershop_id", barbershopId)
+      .from('barbershop_billing_accounts')
+      .select('stripe_customer_id, billing_owner_user_id')
+      .eq('barbershop_id', barbershopId)
       .maybeSingle();
-    if (billingAccountError) throw new BillingError("Could not load Stripe billing account.", "DB_READ_FAILED");
-    if (billingAccount?.billing_owner_user_id && billingAccount.billing_owner_user_id !== ownerUserId) throw new BillingError("Billing owner mapping does not match.", "SUBSCRIPTION_NOT_ACTIVE");
-    if (billingAccount?.stripe_customer_id && billingAccount.stripe_customer_id !== customer) throw new BillingError("Stripe customer does not match the barbershop.", "SUBSCRIPTION_NOT_ACTIVE");
+    if (billingAccountError)
+      throw new BillingError(
+        'Could not load Stripe billing account.',
+        'DB_READ_FAILED',
+      );
+    if (
+      billingAccount?.billing_owner_user_id &&
+      billingAccount.billing_owner_user_id !== ownerUserId
+    )
+      throw new BillingError(
+        'Billing owner mapping does not match.',
+        'SUBSCRIPTION_NOT_ACTIVE',
+      );
+    if (
+      billingAccount?.stripe_customer_id &&
+      billingAccount.stripe_customer_id !== customer
+    )
+      throw new BillingError(
+        'Stripe customer does not match the barbershop.',
+        'SUBSCRIPTION_NOT_ACTIVE',
+      );
 
     const billingEmail = owner.email ?? null;
-    const customerWrite = await database.from("customers").upsert({ user_id: ownerUserId, stripe_customer_id: customer, email: billingEmail }, { onConflict: "user_id" });
-    if (customerWrite.error) throw new BillingError("Could not persist Stripe customer mapping.", "DB_WRITE_FAILED");
+    const customerWrite = await database
+      .from('customers')
+      .upsert(
+        {
+          user_id: ownerUserId,
+          stripe_customer_id: customer,
+          email: billingEmail,
+        },
+        { onConflict: 'user_id' },
+      );
+    if (customerWrite.error)
+      throw new BillingError(
+        'Could not persist Stripe customer mapping.',
+        'DB_WRITE_FAILED',
+      );
 
-    const billingAccountWrite = await database.from("barbershop_billing_accounts").upsert({
-      barbershop_id: barbershopId,
-      billing_owner_user_id: ownerUserId,
-      stripe_customer_id: customer,
-      billing_email: billingEmail,
-      ...(subscription.status === "trialing" ? { trial_started_at: new Date().toISOString() } : {}),
-    }, { onConflict: "barbershop_id" });
-    if (billingAccountWrite.error) throw new BillingError("Could not persist Stripe billing account.", "DB_WRITE_FAILED");
+    const billingAccountWrite = await database
+      .from('barbershop_billing_accounts')
+      .upsert(
+        {
+          barbershop_id: barbershopId,
+          billing_owner_user_id: ownerUserId,
+          stripe_customer_id: customer,
+          billing_email: billingEmail,
+          ...(subscription.status === 'trialing'
+            ? { trial_started_at: new Date().toISOString() }
+            : {}),
+        },
+        { onConflict: 'barbershop_id' },
+      );
+    if (billingAccountWrite.error)
+      throw new BillingError(
+        'Could not persist Stripe billing account.',
+        'DB_WRITE_FAILED',
+      );
 
-    const plan = (PLAN_ACCESS_STATUSES as readonly string[]).includes(subscription.status) ? planForPrice(priceId) ?? PLANS.FREE : PLANS.FREE;
+    const plan = (PLAN_ACCESS_STATUSES as readonly string[]).includes(
+      subscription.status,
+    )
+      ? (planForPrice(priceId) ?? PLANS.FREE)
+      : PLANS.FREE;
     const payload = {
       user_id: ownerUserId,
       barbershop_id: barbershopId,
@@ -313,53 +621,153 @@ export class BarbershopStripeService {
       stripe_price_id: priceId,
       plan,
       status: subscription.status,
-      trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+      trial_end: subscription.trial_end
+        ? new Date(subscription.trial_end * 1000).toISOString()
+        : null,
       current_period_end: new Date(periodEnd * 1000).toISOString(),
       cancel_at_period_end: subscription.cancel_at_period_end,
       updated_at: new Date().toISOString(),
     };
 
     const existing = await this.getSubscriptionForBarbershop(barbershopId);
-    const write = existing ? await database.from("subscriptions").update(payload).eq("id", existing.id) : await database.from("subscriptions").upsert(payload, { onConflict: "barbershop_id" });
-    if (write.error) throw new BillingError("Could not persist subscription state.", "DB_WRITE_FAILED");
+    const write = existing
+      ? await database
+          .from('subscriptions')
+          .update(payload)
+          .eq('id', existing.id)
+      : await database
+          .from('subscriptions')
+          .upsert(payload, { onConflict: 'barbershop_id' });
+    if (write.error)
+      throw new BillingError(
+        'Could not persist subscription state.',
+        'DB_WRITE_FAILED',
+      );
   }
 
-  static async findBarbershopByCustomerId(customer: string): Promise<{ barbershopId: string; ownerUserId: string } | null> {
+  static async findBarbershopByCustomerId(
+    customer: string,
+  ): Promise<{ barbershopId: string; ownerUserId: string } | null> {
     const database = createAdminClient();
-    const { data, error } = await database.from("barbershop_billing_accounts").select("barbershop_id, billing_owner_user_id").eq("stripe_customer_id", customer).maybeSingle();
-    if (error) throw new BillingError("Could not resolve Stripe customer mapping.", "DB_READ_FAILED");
+    const { data, error } = await database
+      .from('barbershop_billing_accounts')
+      .select('barbershop_id, billing_owner_user_id')
+      .eq('stripe_customer_id', customer)
+      .maybeSingle();
+    if (error)
+      throw new BillingError(
+        'Could not resolve Stripe customer mapping.',
+        'DB_READ_FAILED',
+      );
     if (data?.barbershop_id && data.billing_owner_user_id) {
-      const { data: owner, error: ownerError } = await database.from("users").select("id, barbershop_id, role").eq("id", data.billing_owner_user_id).maybeSingle();
-      if (ownerError) throw new BillingError("Could not resolve billing owner.", "DB_READ_FAILED");
-      if (owner && owner.barbershop_id === data.barbershop_id && String(owner.role ?? "").toLowerCase() === "owner") return { barbershopId: data.barbershop_id, ownerUserId: data.billing_owner_user_id };
+      const { data: owner, error: ownerError } = await database
+        .from('users')
+        .select('id, barbershop_id, role')
+        .eq('id', data.billing_owner_user_id)
+        .maybeSingle();
+      if (ownerError)
+        throw new BillingError(
+          'Could not resolve billing owner.',
+          'DB_READ_FAILED',
+        );
+      if (
+        owner &&
+        owner.barbershop_id === data.barbershop_id &&
+        String(owner.role ?? '').toLowerCase() === 'owner'
+      )
+        return {
+          barbershopId: data.barbershop_id,
+          ownerUserId: data.billing_owner_user_id,
+        };
     }
 
-    const legacy = await database.from("customers").select("user_id").eq("stripe_customer_id", customer).maybeSingle();
-    if (legacy.error) throw new BillingError("Could not resolve legacy Stripe customer mapping.", "DB_READ_FAILED");
+    const legacy = await database
+      .from('customers')
+      .select('user_id')
+      .eq('stripe_customer_id', customer)
+      .maybeSingle();
+    if (legacy.error)
+      throw new BillingError(
+        'Could not resolve legacy Stripe customer mapping.',
+        'DB_READ_FAILED',
+      );
     if (!legacy.data?.user_id) return null;
 
-    const { data: user, error: userError } = await database.from("users").select("id, barbershop_id, role").eq("id", legacy.data.user_id).maybeSingle();
-    if (userError) throw new BillingError("Could not resolve customer owner.", "DB_READ_FAILED");
-    if (!user?.barbershop_id || String(user.role ?? "").toLowerCase() !== "owner") return null;
+    const { data: user, error: userError } = await database
+      .from('users')
+      .select('id, barbershop_id, role')
+      .eq('id', legacy.data.user_id)
+      .maybeSingle();
+    if (userError)
+      throw new BillingError(
+        'Could not resolve customer owner.',
+        'DB_READ_FAILED',
+      );
+    if (
+      !user?.barbershop_id ||
+      String(user.role ?? '').toLowerCase() !== 'owner'
+    )
+      return null;
 
-    const mappingWrite = await database.from("barbershop_billing_accounts").upsert({ barbershop_id: user.barbershop_id, billing_owner_user_id: user.id, stripe_customer_id: customer }, { onConflict: "barbershop_id" });
-    if (mappingWrite.error) throw new BillingError("Could not persist Stripe customer mapping.", "DB_WRITE_FAILED");
+    const mappingWrite = await database
+      .from('barbershop_billing_accounts')
+      .upsert(
+        {
+          barbershop_id: user.barbershop_id,
+          billing_owner_user_id: user.id,
+          stripe_customer_id: customer,
+        },
+        { onConflict: 'barbershop_id' },
+      );
+    if (mappingWrite.error)
+      throw new BillingError(
+        'Could not persist Stripe customer mapping.',
+        'DB_WRITE_FAILED',
+      );
 
     return { barbershopId: user.barbershop_id, ownerUserId: user.id };
   }
 
   static async processWebhookEvent(event: Stripe.Event): Promise<void> {
-    if (!["customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted"].includes(event.type)) return;
+    if (
+      ![
+        'customer.subscription.created',
+        'customer.subscription.updated',
+        'customer.subscription.deleted',
+      ].includes(event.type)
+    )
+      return;
     const subscription = event.data.object as Stripe.Subscription;
-    const mapping = await this.findBarbershopByCustomerId(stripeCustomerId(subscription.customer));
-    if (!mapping) throw new BillingError("Webhook customer mapping was not found.", "WEBHOOK_PROCESSING_FAILED");
+    const mapping = await this.findBarbershopByCustomerId(
+      stripeCustomerId(subscription.customer),
+    );
+    if (!mapping)
+      throw new BillingError(
+        'Webhook customer mapping was not found.',
+        'WEBHOOK_PROCESSING_FAILED',
+      );
 
-    if (event.type === "customer.subscription.deleted") {
-      const { error } = await createAdminClient().from("subscriptions").update({ plan: PLANS.FREE, status: "canceled", cancel_at_period_end: false }).eq("barbershop_id", mapping.barbershopId);
-      if (error) throw new BillingError("Could not persist canceled subscription.", "DB_WRITE_FAILED");
+    if (event.type === 'customer.subscription.deleted') {
+      const { error } = await createAdminClient()
+        .from('subscriptions')
+        .update({
+          plan: PLANS.FREE,
+          status: 'canceled',
+          cancel_at_period_end: false,
+        })
+        .eq('barbershop_id', mapping.barbershopId);
+      if (error)
+        throw new BillingError(
+          'Could not persist canceled subscription.',
+          'DB_WRITE_FAILED',
+        );
       return;
     }
 
-    await this.syncFromStripe(mapping.barbershopId, mapping.ownerUserId, subscription);
+    await this.syncFromStripe(
+      mapping.barbershopId,
+      mapping.ownerUserId,
+      subscription,
+    );
   }
 }

@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
-import { toast } from "sonner";
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import {
   barbershopService,
   BarbershopConfigPayload,
-} from "@/app/dashboard/_services/barbershop.service";
-import { getErrorMessage } from "@/app/dashboard/_lib/error-utils";
+} from '@/app/dashboard/_services/barbershop.service';
+import { getErrorMessage } from '@/app/dashboard/_lib/error-utils';
 
 export function useBarbershopConfig(barbershopId: string | null) {
   const [loading, setLoading] = useState<boolean>(false);
@@ -18,7 +18,7 @@ export function useBarbershopConfig(barbershopId: string | null) {
       if (error) throw error;
       if (data) setConfig(data);
     } catch (error) {
-      console.error("❌ [Fetch Barbershop Config Error]:", error);
+      console.error('❌ [Fetch Barbershop Config Error]:', error);
       toast.error(getErrorMessage(error));
     } finally {
       setLoading(false);
@@ -29,9 +29,9 @@ export function useBarbershopConfig(barbershopId: string | null) {
     fieldsToUpdate: Partial<BarbershopConfigPayload>,
     e?: React.SyntheticEvent,
   ) => {
-    if (e && "preventDefault" in e) e.preventDefault();
+    if (e && 'preventDefault' in e) e.preventDefault();
     if (!barbershopId) {
-      toast.error("Identificador da barbearia em falta.");
+      toast.error('Identificador da barbearia em falta.');
       return;
     }
 
@@ -42,10 +42,10 @@ export function useBarbershopConfig(barbershopId: string | null) {
         fieldsToUpdate,
       );
       if (error) throw error;
-      toast.success("Configurações guardadas!");
+      toast.success('Configurações guardadas!');
       await fetchConfig();
     } catch (error) {
-      console.error("❌ [Update Barbershop Config Error]:", error);
+      console.error('❌ [Update Barbershop Config Error]:', error);
       toast.error(getErrorMessage(error));
     } finally {
       setLoading(false);
@@ -54,7 +54,7 @@ export function useBarbershopConfig(barbershopId: string | null) {
 
   const toggleClosedDay = async (dayIndex: number) => {
     if (!config || !barbershopId) return;
-    const currentDays = config.closed_days ? config.closed_days.split(",") : [];
+    const currentDays = config.closed_days ? config.closed_days.split(',') : [];
     const dayStr = dayIndex.toString();
 
     let updatedDays: string[];
@@ -64,7 +64,7 @@ export function useBarbershopConfig(barbershopId: string | null) {
       updatedDays = [...currentDays, dayStr].sort();
     }
 
-    const newClosedDaysString = updatedDays.join(",");
+    const newClosedDaysString = updatedDays.join(',');
     setLoading(true);
     try {
       const { error } = await barbershopService.updateConfig(barbershopId, {
@@ -72,9 +72,9 @@ export function useBarbershopConfig(barbershopId: string | null) {
       });
       if (error) throw error;
       setConfig({ ...config, closed_days: newClosedDaysString });
-      toast.success("Dia de descanso atualizado.");
+      toast.success('Dia de descanso atualizado.');
     } catch (error) {
-      console.error("❌ [Toggle Closed Day Error]:", error);
+      console.error('❌ [Toggle Closed Day Error]:', error);
       toast.error(getErrorMessage(error));
     } finally {
       setLoading(false);

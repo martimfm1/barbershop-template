@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata } from 'next';
 
-const SITE_URL = "https://barbers.silentra.me";
-const SITE_NAME = "Silentra";
+const SITE_URL = 'https://barbers.silentra.me';
+const SITE_NAME = 'Silentra';
 const OG_IMAGE = `/og-image.png`;
 
 // ── Shared base ──────────────────────────────────────────────────────────────
@@ -9,13 +9,13 @@ const OG_IMAGE = `/og-image.png`;
 const base = {
   siteName: SITE_NAME,
   url: SITE_URL,
-  locale: "pt_PT",
-  type: "website",
+  locale: 'pt_PT',
+  type: 'website',
   ogImage: {
     url: OG_IMAGE,
     width: 1200,
     height: 630,
-    alt: "Silentra — Gestão e agendamento online para barbearias",
+    alt: 'Silentra — Gestão e agendamento online para barbearias',
   },
 } as const;
 
@@ -25,22 +25,22 @@ export const guestMetadata: Metadata = {
   metadataBase: new URL(SITE_URL),
 
   title: {
-    default: "Silentra — Gestão e Agendamento Online para Barbearias",
-    template: "%s | Silentra",
+    default: 'Silentra — Gestão e Agendamento Online para Barbearias',
+    template: '%s | Silentra',
   },
 
   description:
-    "A plataforma de gestão para barbearias. Os teus clientes agendam em segundos pelo browser — sem app, sem conta, sem fricção.",
+    'A plataforma de gestão para barbearias. Os teus clientes agendam em segundos pelo browser — sem app, sem conta, sem fricção.',
 
   keywords: [
-    "gestão barbearia",
-    "agendamento online barbearia",
-    "sistema marcações barbearia",
-    "software barbeiro",
-    "silentra barbers",
-    "agendamento sem registo",
-    "barber saas portugal",
-    "plataforma barbeiro online",
+    'gestão barbearia',
+    'agendamento online barbearia',
+    'sistema marcações barbearia',
+    'software barbeiro',
+    'silentra barbers',
+    'agendamento sem registo',
+    'barber saas portugal',
+    'plataforma barbeiro online',
   ],
 
   authors: [{ name: SITE_NAME, url: SITE_URL }],
@@ -49,7 +49,7 @@ export const guestMetadata: Metadata = {
 
   alternates: {
     canonical: SITE_URL,
-    languages: { "pt-PT": SITE_URL },
+    languages: { 'pt-PT': SITE_URL },
   },
 
   robots: {
@@ -58,45 +58,47 @@ export const guestMetadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      "max-snippet": -1,
-      "max-image-preview": "large",
-      "max-video-preview": -1,
+      'max-snippet': -1,
+      'max-image-preview': 'large',
+      'max-video-preview': -1,
     },
   },
 
   openGraph: {
-    title: "Silentra — Gestão e Agendamento Online para Barbearias",
+    title: 'Silentra — Gestão e Agendamento Online para Barbearias',
     description:
-      "Gestão completa, faturação e agendamentos sem fricção. O cliente agenda pelo browser em segundos, sem registo nem app.",
+      'Gestão completa, faturação e agendamentos sem fricção. O cliente agenda pelo browser em segundos, sem registo nem app.',
     url: base.url,
     siteName: base.siteName,
     locale: base.locale,
-    type: "website",
+    type: 'website',
     images: [base.ogImage],
   },
 
   twitter: {
-    card: "summary_large_image",
-    site: "@silentra",
-    creator: "@silentra",
-    title: "Silentra — Agendamento Online para Barbearias",
+    card: 'summary_large_image',
+    site: '@silentra',
+    creator: '@silentra',
+    title: 'Silentra — Agendamento Online para Barbearias',
     description:
-      "O teu cliente agenda sem criar conta. Gestão completa da barbearia num único painel.",
+      'O teu cliente agenda sem criar conta. Gestão completa da barbearia num único painel.',
     images: [OG_IMAGE],
   },
 
   icons: {
     icon: [
-      { url: "/favicon.ico" },
-      { url: "/icon-2.png", sizes: "500x500", type: "image/png" },
+      { url: '/favicon.ico' },
+      { url: '/icon-2.png', sizes: '500x500', type: 'image/png' },
     ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
-    other: [{ rel: "mask-icon", url: "/safari-pinned-tab.svg", color: "#09090b" }],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
+    other: [
+      { rel: 'mask-icon', url: '/safari-pinned-tab.svg', color: '#09090b' },
+    ],
   },
 
-  manifest: "/site.webmanifest",
+  manifest: '/site.webmanifest',
 
-  category: "business",
+  category: 'business',
 };
 
 // ── Authenticated dashboard ───────────────────────────────────────────────────
@@ -106,11 +108,12 @@ export const authenticatedMetadata: Metadata = {
   metadataBase: new URL(SITE_URL),
 
   title: {
-    default: "Dashboard — Silentra",
-    template: "%s | Silentra",
+    default: 'Dashboard — Silentra',
+    template: '%s | Silentra',
   },
 
-  description: "Gere agendamentos, clientes, serviços e estatísticas da tua barbearia.",
+  description:
+    'Gere agendamentos, clientes, serviços e estatísticas da tua barbearia.',
 
   robots: {
     index: false,
@@ -119,25 +122,26 @@ export const authenticatedMetadata: Metadata = {
   },
 
   openGraph: {
-    title: "Silentra — Dashboard de Gestão para Barbearias",
-    description: "Acede ao teu painel para gerir marcações, equipa e receita da barbearia.",
+    title: 'Silentra — Dashboard de Gestão para Barbearias',
+    description:
+      'Acede ao teu painel para gerir marcações, equipa e receita da barbearia.',
     url: `${SITE_URL}/dashboard`,
     siteName: base.siteName,
     locale: base.locale,
-    type: "website",
+    type: 'website',
     images: [base.ogImage],
   },
 
   twitter: {
-    card: "summary_large_image",
-    site: "@silentra",
-    title: "Silentra — Dashboard de Gestão",
-    description: "Gere agendamentos, clientes e serviços da tua barbearia.",
+    card: 'summary_large_image',
+    site: '@silentra',
+    title: 'Silentra — Dashboard de Gestão',
+    description: 'Gere agendamentos, clientes e serviços da tua barbearia.',
     images: [OG_IMAGE],
   },
 
   icons: guestMetadata.icons,
-  manifest: "/site.webmanifest",
+  manifest: '/site.webmanifest',
 };
 
 // ── Helper ────────────────────────────────────────────────────────────────────
@@ -167,12 +171,12 @@ export function buildPageMetadata(override: {
       url,
       siteName: base.siteName,
       locale: base.locale,
-      type: "website",
+      type: 'website',
       images: [{ url: image, width: 1200, height: 630, alt: override.title }],
     },
     twitter: {
-      card: "summary_large_image",
-      site: "@silentra",
+      card: 'summary_large_image',
+      site: '@silentra',
       title: override.title,
       description: override.description,
       images: [image],

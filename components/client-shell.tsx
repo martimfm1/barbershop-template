@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Toaster } from "@/components/ui/sonner";
-import { DynamicMetadata } from "@/components/dynamic-metadata";
-import { QueryProvider } from "@/components/providers/query-provider";
+import { Toaster } from '@/components/ui/sonner';
+import { DynamicMetadata } from '@/components/dynamic-metadata';
+import { QueryProvider } from '@/components/providers/query-provider';
 
 export function ClientShell({ children }: { children: React.ReactNode }) {
   return (

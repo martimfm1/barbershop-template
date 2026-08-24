@@ -1,5 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DASHBOARD_METRIC_DESCRIPTORS, MetricKey } from "@/app/dashboard/_constants";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  DASHBOARD_METRIC_DESCRIPTORS,
+  MetricKey,
+} from '@/app/dashboard/_constants';
 
 interface DashboardMetricsProps {
   metricsData: Record<MetricKey, number | string>;

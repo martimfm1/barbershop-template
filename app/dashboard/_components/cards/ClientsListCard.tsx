@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { ClientsListCardProps } from "@/types";
+import { ClientsListCardProps } from '@/types';
 import {
   Users,
   UserPlus,
@@ -13,12 +13,12 @@ import {
   X,
   ArrowRight,
   Cake,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
-import { EmptyState } from "@/components/dashboard/EmptyState";
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import { EmptyState } from '@/components/dashboard/EmptyState';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 
 export function ClientsListCard({
   clientsCount,
@@ -61,8 +61,8 @@ export function ClientsListCard({
               </CardTitle>
               <p className="mt-1 text-sm text-zinc-500">
                 {clientsCount === 0
-                  ? "Começa pelo essencial. O histórico cresce com as marcações."
-                  : `${clientsCount} ${clientsCount === 1 ? "cliente" : "clientes"} na tua base.`}
+                  ? 'Começa pelo essencial. O histórico cresce com as marcações.'
+                  : `${clientsCount} ${clientsCount === 1 ? 'cliente' : 'clientes'} na tua base.`}
               </p>
             </div>
           </div>
@@ -80,7 +80,7 @@ export function ClientsListCard({
               {hasSearch && (
                 <button
                   type="button"
-                  onClick={() => setSearchClientQuery("")}
+                  onClick={() => setSearchClientQuery('')}
                   aria-label="Limpar pesquisa"
                   className="absolute right-1 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-lg text-zinc-500 hover:bg-white/10 hover:text-white"
                 >
@@ -93,7 +93,7 @@ export function ClientsListCard({
               className="min-h-11 rounded-lg bg-zinc-50 text-zinc-950 hover:bg-white"
             >
               <UserPlus className="mr-2 size-4" />
-              {showAddClientForm ? "Fechar" : "Adicionar cliente"}
+              {showAddClientForm ? 'Fechar' : 'Adicionar cliente'}
             </Button>
           </div>
         </div>
@@ -112,14 +112,18 @@ export function ClientsListCard({
                   Adiciona apenas o essencial
                 </p>
                 <p className="mt-1 text-xs leading-5 text-zinc-500">
-                  Nome e telemóvel chegam para começar. O resto pode ser completado mais tarde.
+                  Nome e telemóvel chegam para começar. O resto pode ser
+                  completado mais tarde.
                 </p>
               </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-[1.2fr_1fr_1.2fr_auto] md:items-end">
               <div className="grid gap-1.5">
-                <label htmlFor="new-client-name" className="text-xs font-medium text-zinc-400">
+                <label
+                  htmlFor="new-client-name"
+                  className="text-xs font-medium text-zinc-400"
+                >
                   Nome completo
                 </label>
                 <input
@@ -130,11 +134,19 @@ export function ClientsListCard({
                   placeholder="Ex.: João Silva"
                   className="min-h-11 rounded-lg border border-white/10 bg-zinc-950/70 px-3 text-sm text-white outline-none focus:border-blue-500/50"
                   value={newClientData.name_complete}
-                  onChange={(e) => setNewClientData({ ...newClientData, name_complete: e.target.value })}
+                  onChange={(e) =>
+                    setNewClientData({
+                      ...newClientData,
+                      name_complete: e.target.value,
+                    })
+                  }
                 />
               </div>
               <div className="grid gap-1.5">
-                <label htmlFor="new-client-phone" className="text-xs font-medium text-zinc-400">
+                <label
+                  htmlFor="new-client-phone"
+                  className="text-xs font-medium text-zinc-400"
+                >
                   Telemóvel
                 </label>
                 <input
@@ -146,12 +158,21 @@ export function ClientsListCard({
                   placeholder="912 345 678"
                   className="min-h-11 rounded-lg border border-white/10 bg-zinc-950/70 px-3 text-sm text-white outline-none focus:border-blue-500/50"
                   value={newClientData.num_phone}
-                  onChange={(e) => setNewClientData({ ...newClientData, num_phone: e.target.value })}
+                  onChange={(e) =>
+                    setNewClientData({
+                      ...newClientData,
+                      num_phone: e.target.value,
+                    })
+                  }
                 />
               </div>
               <div className="grid gap-1.5">
-                <label htmlFor="new-client-email" className="text-xs font-medium text-zinc-400">
-                  Email <span className="font-normal text-zinc-600">(opcional)</span>
+                <label
+                  htmlFor="new-client-email"
+                  className="text-xs font-medium text-zinc-400"
+                >
+                  Email{' '}
+                  <span className="font-normal text-zinc-600">(opcional)</span>
                 </label>
                 <input
                   id="new-client-email"
@@ -160,11 +181,26 @@ export function ClientsListCard({
                   placeholder="cliente@email.com"
                   className="min-h-11 rounded-lg border border-white/10 bg-zinc-950/70 px-3 text-sm text-white outline-none focus:border-blue-500/50"
                   value={newClientData.email}
-                  onChange={(e) => setNewClientData({ ...newClientData, email: e.target.value })}
+                  onChange={(e) =>
+                    setNewClientData({
+                      ...newClientData,
+                      email: e.target.value,
+                    })
+                  }
                 />
               </div>
-              <Button type="submit" disabled={loading} className="min-h-11 rounded-lg bg-blue-600 text-white hover:bg-blue-500">
-                {loading ? <Spinner className="size-4" /> : <>Adicionar <ArrowRight className="ml-2 size-4" /></>}
+              <Button
+                type="submit"
+                disabled={loading}
+                className="min-h-11 rounded-lg bg-blue-600 text-white hover:bg-blue-500"
+              >
+                {loading ? (
+                  <Spinner className="size-4" />
+                ) : (
+                  <>
+                    Adicionar <ArrowRight className="ml-2 size-4" />
+                  </>
+                )}
               </Button>
             </div>
           </form>
@@ -177,7 +213,7 @@ export function ClientsListCard({
               title="Não encontrámos esse cliente"
               description="Experimenta outro nome ou telemóvel."
               actionLabel="Limpar pesquisa"
-              onAction={() => setSearchClientQuery("")}
+              onAction={() => setSearchClientQuery('')}
               tone="blue"
             />
           ) : (
@@ -203,34 +239,76 @@ export function ClientsListCard({
                       {client.name_complete.slice(0, 1).toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <h3 className="truncate text-sm font-semibold text-zinc-100">{client.name_complete}</h3>
+                      <h3 className="truncate text-sm font-semibold text-zinc-100">
+                        {client.name_complete}
+                      </h3>
                       <p className="mt-1 text-xs text-zinc-500">Cliente</p>
                     </div>
                   </div>
                   <div className="mt-4 space-y-2">
-                    {client.num_phone && <p className="flex items-center gap-2 text-xs text-zinc-400"><Phone className="size-3.5 text-zinc-600" />{client.num_phone}</p>}
-                    {client.email && <p className="flex items-center gap-2 truncate text-xs text-zinc-500"><Mail className="size-3.5 text-zinc-600" />{client.email}</p>}
-                    {client.birth_date && <p className="flex items-center gap-2 text-xs text-zinc-500"><Cake className="size-3.5 text-zinc-600" />{new Date(`${client.birth_date}T12:00:00`).toLocaleDateString("pt-PT")}</p>}
+                    {client.num_phone && (
+                      <p className="flex items-center gap-2 text-xs text-zinc-400">
+                        <Phone className="size-3.5 text-zinc-600" />
+                        {client.num_phone}
+                      </p>
+                    )}
+                    {client.email && (
+                      <p className="flex items-center gap-2 truncate text-xs text-zinc-500">
+                        <Mail className="size-3.5 text-zinc-600" />
+                        {client.email}
+                      </p>
+                    )}
+                    {client.birth_date && (
+                      <p className="flex items-center gap-2 text-xs text-zinc-500">
+                        <Cake className="size-3.5 text-zinc-600" />
+                        {new Date(
+                          `${client.birth_date}T12:00:00`,
+                        ).toLocaleDateString('pt-PT')}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="mt-4 flex justify-end gap-1 border-t border-white/5 pt-3">
-                  <Button variant="ghost" size="icon" onClick={() => setEditingClient(client)} className="size-9 rounded-lg text-zinc-400 hover:bg-white/10 hover:text-white" aria-label={`Editar ${client.name_complete}`}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setEditingClient(client)}
+                    className="size-9 rounded-lg text-zinc-400 hover:bg-white/10 hover:text-white"
+                    aria-label={`Editar ${client.name_complete}`}
+                  >
                     <Pencil className="size-4" />
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="size-9 rounded-lg text-zinc-500 hover:bg-red-500/10 hover:text-red-400" aria-label={`Eliminar ${client.name_complete}`}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-9 rounded-lg text-zinc-500 hover:bg-red-500/10 hover:text-red-400"
+                        aria-label={`Eliminar ${client.name_complete}`}
+                      >
                         <Trash2 className="size-4" />
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent className="border-white/10 bg-zinc-950">
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Eliminar este cliente?</AlertDialogTitle>
-                        <AlertDialogDescription>Esta ação é permanente. Se existirem marcações associadas, o histórico deve ser preservado.</AlertDialogDescription>
+                        <AlertDialogTitle>
+                          Eliminar este cliente?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta ação é permanente. Se existirem marcações
+                          associadas, o histórico deve ser preservado.
+                        </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel className="border-white/10 bg-transparent text-white">Manter</AlertDialogCancel>
-                        <AlertDialogAction className="bg-red-600 text-white" onClick={() => handleDeleteClient(client.id)}>Eliminar</AlertDialogAction>
+                        <AlertDialogCancel className="border-white/10 bg-transparent text-white">
+                          Manter
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-red-600 text-white"
+                          onClick={() => handleDeleteClient(client.id)}
+                        >
+                          Eliminar
+                        </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>

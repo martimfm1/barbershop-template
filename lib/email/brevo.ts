@@ -1,21 +1,20 @@
 export type EmailSendResult =
-  | { success: true; messageId?: string }
-  | { success: false; error: string };
+  { success: true; messageId?: string } | { success: false; error: string };
 
 function getBrevoConfig() {
   const apiKey = process.env.BREVO_API_KEY;
   const senderEmail = process.env.SENDER_EMAIL;
-  if (!apiKey || !senderEmail) throw new Error("Brevo is not configured.");
+  if (!apiKey || !senderEmail) throw new Error('Brevo is not configured.');
   return { apiKey, senderEmail };
 }
 
 function sanitizeSenderName(name: string): string {
   return (
     name
-      .replace(/[<>\r\n]/g, " ")
-      .replace(/\s+/g, " ")
+      .replace(/[<>\r\n]/g, ' ')
+      .replace(/\s+/g, ' ')
       .trim()
-      .slice(0, 70) || "Silentra"
+      .slice(0, 70) || 'Silentra'
   );
 }
 
@@ -29,22 +28,22 @@ export async function sendBrevoEmail(input: {
   if (!input.to || !input.subject || !input.htmlContent) {
     return {
       success: false,
-      error: "Email recipient, subject and content are required.",
+      error: 'Email recipient, subject and content are required.',
     };
   }
 
   try {
     const { apiKey, senderEmail } = getBrevoConfig();
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
       headers: {
-        accept: "application/json",
-        "content-type": "application/json",
-        "api-key": apiKey,
+        accept: 'application/json',
+        'content-type': 'application/json',
+        'api-key': apiKey,
       },
       body: JSON.stringify({
         sender: {
-          name: sanitizeSenderName(input.senderName ?? "Silentra"),
+          name: sanitizeSenderName(input.senderName ?? 'Silentra'),
           email: senderEmail,
         },
         to: [
@@ -61,11 +60,11 @@ export async function sendBrevoEmail(input: {
     if (!response.ok)
       return {
         success: false,
-        error: data.message ?? "Brevo email request failed.",
+        error: data.message ?? 'Brevo email request failed.',
       };
     return { success: true, messageId: data.messageId };
   } catch (error) {
-    console.error("[BREVO_EMAIL_ERROR]", error);
-    return { success: false, error: "Unable to send email." };
+    console.error('[BREVO_EMAIL_ERROR]', error);
+    return { success: false, error: 'Unable to send email.' };
   }
 }

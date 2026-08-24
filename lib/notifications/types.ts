@@ -1,4 +1,4 @@
-export const NOTIFICATION_CHANNELS = ["email", "sms", "push"] as const;
+export const NOTIFICATION_CHANNELS = ['email', 'sms', 'push'] as const;
 export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
 
 export type NotificationRecipient = {
@@ -16,4 +16,9 @@ export type NotificationMessage = {
 
 export type NotificationResult =
   | { success: true; channel: NotificationChannel; messageId?: string }
-  | { success: false; channel: NotificationChannel; skipped?: boolean; error: string };
+  | {
+      success: false;
+      channel: NotificationChannel;
+      skipped?: boolean;
+      error: string;
+    };

@@ -1,10 +1,17 @@
-import { getCurrentUser } from "@/lib/auth";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { getCurrentUser } from '@/lib/auth';
+import { createAdminClient } from '@/lib/supabase/admin';
 
-export type TenantRole = "owner" | "admin" | "manager" | "barber" | "receptionist" | "staff";
+export type TenantRole =
+  'owner' | 'admin' | 'manager' | 'barber' | 'receptionist' | 'staff';
 
 export type TenantAuthorizationResult =
-  | { ok: true; userId: string; barbershopId: string; role: TenantRole; admin: ReturnType<typeof createAdminClient> }
+  | {
+      ok: true;
+      userId: string;
+      barbershopId: string;
+      role: TenantRole;
+      admin: ReturnType<typeof createAdminClient>;
+    }
   | { ok: false; status: 401 | 403 };
 
 /**
@@ -20,13 +27,20 @@ export async function requireTenantAuthorization(
 
   const admin = createAdminClient();
   const { data: profile, error } = await admin
-    .from("users")
-    .select("barbershop_id, role")
-    .eq("id", user.id)
+    .from('users')
+    .select('barbershop_id, role')
+    .eq('id', user.id)
     .maybeSingle();
 
-  const role = String(profile?.role ?? "").toLowerCase() as TenantRole;
-  if (error || !profile?.barbershop_id || !allowedRoles.includes(role)) return { ok: false, status: 403 };
+  const role = String(profile?.role ?? '').toLowerCase() as TenantRole;
+  if (error || !profile?.barbershop_id || !allowedRoles.includes(role))
+    return { ok: false, status: 403 };
 
-  return { ok: true, userId: user.id, barbershopId: profile.barbershop_id, role, admin };
+  return {
+    ok: true,
+    userId: user.id,
+    barbershopId: profile.barbershop_id,
+    role,
+    admin,
+  };
 }

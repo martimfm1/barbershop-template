@@ -1,40 +1,40 @@
 export function combineDatetime(dateStr: string, timeStr: string): string {
-  if (!dateStr || !timeStr) return "";
+  if (!dateStr || !timeStr) return '';
   const date = new Date(`${dateStr}T${timeStr}:00`);
-  if (isNaN(date.getTime())) return "";
+  if (isNaN(date.getTime())) return '';
   return date.toISOString();
 }
 
 export function formatDisplayDate(dateInput: string | Date): string {
-  if (!dateInput) return "";
+  if (!dateInput) return '';
   const date = new Date(dateInput);
-  if (isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("pt-PT", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
+  if (isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('pt-PT', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
   }).format(date);
 }
 
 export function formatDisplayTime(dateInput: string | Date): string {
-  if (!dateInput) return "";
+  if (!dateInput) return '';
   const date = new Date(dateInput);
-  if (isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("pt-PT", {
-    hour: "2-digit",
-    minute: "2-digit",
+  if (isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('pt-PT', {
+    hour: '2-digit',
+    minute: '2-digit',
     hour12: false,
   }).format(date);
 }
 
 export function formatDisplayDateLong(dateInput: string | Date): string {
-  if (!dateInput) return "";
+  if (!dateInput) return '';
   const date = new Date(dateInput);
-  if (isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("pt-PT", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
+  if (isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('pt-PT', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
   }).format(date);
 }
 
@@ -45,10 +45,10 @@ export function getWeekDayIndex(dateInput: string | Date): number {
 }
 
 export function getWeekDayName(dateInput: string | Date): string {
-  if (!dateInput) return "";
+  if (!dateInput) return '';
   const date = new Date(dateInput);
-  if (isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("pt-PT", { weekday: "long" }).format(date);
+  if (isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('pt-PT', { weekday: 'long' }).format(date);
 }
 
 export function isPastDateTime(dateInput: string | Date): boolean {
@@ -66,8 +66,8 @@ export function generateTimeSlots(
   if (!openingTime || !closingTime || intervalMinutes <= 0) return [];
 
   const slots: string[] = [];
-  const [startHour, startMinute] = openingTime.split(":").map(Number);
-  const [endHour, endMinute] = closingTime.split(":").map(Number);
+  const [startHour, startMinute] = openingTime.split(':').map(Number);
+  const [endHour, endMinute] = closingTime.split(':').map(Number);
 
   const start = new Date();
   start.setHours(startHour, startMinute, 0, 0);
@@ -78,8 +78,8 @@ export function generateTimeSlots(
   const current = new Date(start);
 
   while (current < end) {
-    const hours = String(current.getHours()).padStart(2, "0");
-    const minutes = String(current.getMinutes()).padStart(2, "0");
+    const hours = String(current.getHours()).padStart(2, '0');
+    const minutes = String(current.getMinutes()).padStart(2, '0');
     slots.push(`${hours}:${minutes}`);
     current.setMinutes(current.getMinutes() + intervalMinutes);
   }

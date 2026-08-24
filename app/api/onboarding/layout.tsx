@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client"; // 👈 Alterado para o cliente de browser!
-import { Spinner } from "@/components/ui/spinner";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client'; // 👈 Alterado para o cliente de browser!
+import { Spinner } from '@/components/ui/spinner';
 
 export default function OnboardingLayout({
   children,
@@ -22,19 +22,19 @@ export default function OnboardingLayout({
       } = await supabase.auth.getSession();
 
       if (!session) {
-        router.replace("/login");
+        router.replace('/login');
         return;
       }
 
       // Faz a query à tabela 'users' de forma segura pelo browser
       const { data: profile } = await supabase
-        .from("users")
-        .select("barbershop_id") // ⚠️ Atenção a esta coluna (vê a nota abaixo!)
-        .eq("id", session.user.id)
+        .from('users')
+        .select('barbershop_id') // ⚠️ Atenção a esta coluna (vê a nota abaixo!)
+        .eq('id', session.user.id)
         .maybeSingle();
 
       if (profile?.barbershop_id) {
-        router.replace("/dashboard");
+        router.replace('/dashboard');
         return;
       }
 

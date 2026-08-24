@@ -1,6 +1,11 @@
-import { createClient } from "@/lib/supabase/client";
-import { deleteRecord, insertRecord, listRecords, updateRecord } from "@/lib/db";
-import type { Appointment, Client } from "@/types";
+import { createClient } from '@/lib/supabase/client';
+import {
+  deleteRecord,
+  insertRecord,
+  listRecords,
+  updateRecord,
+} from '@/lib/db';
+import type { Appointment, Client } from '@/types';
 
 export interface FinalizeBookingPayload {
   payment_method: string;
@@ -14,9 +19,13 @@ export const appointmentService = {
   async getAll(barbershopId: string) {
     const { data, error } = await listRecords<Appointment>(
       supabase,
-      "appointments",
+      'appointments',
       { barbershop_id: barbershopId },
-      { select: "*, users (name_complete, num_phone, email, birth_date, style_notes), services (name, price), professionals (name)", orderBy: { column: "date_hour", ascending: false } },
+      {
+        select:
+          '*, users (name_complete, num_phone, email, birth_date, style_notes), services (name, price), professionals (name)',
+        orderBy: { column: 'date_hour', ascending: false },
+      },
     );
     return { data: (data ?? []) as Appointment[], error };
   },
@@ -24,7 +33,7 @@ export const appointmentService = {
   async create(payload: {
     barbershop_id: string;
     date_hour: string;
-    status: Appointment["status"];
+    status: Appointment['status'];
     client_id: string | null;
     service_id: string;
     professional_id: string;
@@ -35,13 +44,16 @@ export const appointmentService = {
     let clientEmail: string | null = null;
     if (payload.client_id) {
       const { data: client } = await supabase
-        .from("users")
-        .select("email")
-        .eq("id", payload.client_id)
-        .eq("barbershop_id", payload.barbershop_id)
-        .eq("role", "client")
+        .from('users')
+        .select('email')
+        .eq('id', payload.client_id)
+        .eq('barbershop_id', payload.barbershop_id)
+        .eq('role', 'client')
         .maybeSingle();
-      clientEmail = typeof client?.email === "string" ? client.email.trim().toLowerCase() || null : null;
+      clientEmail =
+        typeof client?.email === 'string'
+          ? client.email.trim().toLowerCase() || null
+          : null;
     }
 
     const normalizedPayload = {
@@ -57,8 +69,8 @@ export const appointmentService = {
         status: payload.status,
         service_id: payload.service_id,
         barber_id: payload.professional_id,
-        client_name: payload.manual_name ?? "",
-        client_phone: payload.manual_phone ?? "",
+        client_name: payload.manual_name ?? '',
+        client_phone: payload.manual_phone ?? '',
         manual_email: clientEmail,
         manual_birth_date: payload.manual_birth_date,
       },
@@ -66,7 +78,11 @@ export const appointmentService = {
 
     let lastError: Error | null = null;
     for (const variant of variants) {
-      const result = await insertRecord<Appointment>(supabase, "appointments", variant as Partial<Appointment>);
+      const result = await insertRecord<Appointment>(
+        supabase,
+        'appointments',
+        variant as Partial<Appointment>,
+      );
       if (!result.error) return result;
       lastError = result.error;
     }
@@ -74,16 +90,16 @@ export const appointmentService = {
   },
 
   async update(id: string, updates: Partial<Appointment>) {
-    return updateRecord<Appointment>(supabase, "appointments", id, updates);
+    return updateRecord<Appointment>(supabase, 'appointments', id, updates);
   },
 
   async delete(id: string) {
-    return deleteRecord(supabase, "appointments", id);
+    return deleteRecord(supabase, 'appointments', id);
   },
 
   async finalize(id: string, payload: FinalizeBookingPayload) {
-    return updateRecord<Appointment>(supabase, "appointments", id, {
-      status: "completed",
+    return updateRecord<Appointment>(supabase, 'appointments', id, {
+      status: 'completed',
       payment_method: payload.payment_method,
       value_products: payload.value_products,
       description_products: payload.description_products,
@@ -91,14 +107,16 @@ export const appointmentService = {
   },
 
   async getClients(barbershopId: string) {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     let query = supabase
-      .from("users")
-      .select("id, name_complete, num_phone, email, birth_date, style_notes")
-      .eq("barbershop_id", barbershopId)
-      .eq("role", "client")
-      .order("name_complete", { ascending: true });
-    if (user?.id) query = query.neq("id", user.id);
+      .from('users')
+      .select('id, name_complete, num_phone, email, birth_date, style_notes')
+      .eq('barbershop_id', barbershopId)
+      .eq('role', 'client')
+      .order('name_complete', { ascending: true });
+    if (user?.id) query = query.neq('id', user.id);
     const { data, error } = await query;
     return { data: data as Client[], error };
   },
@@ -111,18 +129,27 @@ export const appointmentService = {
     birth_date?: string | null;
     style_notes?: string;
   }) {
-    return insertRecord<Client>(supabase, "users", { ...payload, role: "client" });
+    return insertRecord<Client>(supabase, 'users', {
+      ...payload,
+      role: 'client',
+    });
   },
 
   async updateClient(id: string, updates: Partial<Client>) {
-    return updateRecord<Client>(supabase, "users", id, updates);
+    return updateRecord<Client>(supabase, 'users', id, updates);
   },
 
-  async addClientFromCompletedAppointment(barbershopId: string, appointmentId: string) {
-    const { data, error } = await supabase.rpc("add_client_from_completed_appointment", {
-      p_barbershop_id: barbershopId,
-      p_appointment_id: appointmentId,
-    });
+  async addClientFromCompletedAppointment(
+    barbershopId: string,
+    appointmentId: string,
+  ) {
+    const { data, error } = await supabase.rpc(
+      'add_client_from_completed_appointment',
+      {
+        p_barbershop_id: barbershopId,
+        p_appointment_id: appointmentId,
+      },
+    );
 
     if (error) return { data: null, alreadyExists: false, error };
 

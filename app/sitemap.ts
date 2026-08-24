@@ -1,21 +1,36 @@
-import type { MetadataRoute } from "next";
-import { supabase, listRecords } from "@/lib/db";
+import type { MetadataRoute } from 'next';
+import { supabase, listRecords } from '@/lib/db';
 
-const SITE_URL = "https://barbers.silentra.me";
+const SITE_URL = 'https://barbers.silentra.me';
 
 type ShopSitemapEntry = {
   url: string;
   lastModified: Date;
-  changeFrequency: "weekly";
+  changeFrequency: 'weekly';
   priority: number;
 };
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: SITE_URL, lastModified: now, changeFrequency: "daily", priority: 1.0 },
-    { url: `${SITE_URL}/barbershops`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
-    { url: `${SITE_URL}/plans`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
+    {
+      url: SITE_URL,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 1.0,
+    },
+    {
+      url: `${SITE_URL}/barbershops`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/plans`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.6,
+    },
   ];
 
   let dynamicShopRoutes: MetadataRoute.Sitemap = [];
@@ -28,9 +43,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       updated_at?: string;
     }>(
       supabase,
-      "shops",
+      'shops',
       {},
-      { select: "id, slug, public_profile_enabled, updated_at" },
+      { select: 'id, slug, public_profile_enabled, updated_at' },
     );
 
     if (!error && shops) {
@@ -44,11 +59,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         if (!slug || seen.has(slug)) continue;
         seen.add(slug);
 
-        const parsedLastModified = shop.updated_at ? new Date(shop.updated_at) : now;
+        const parsedLastModified = shop.updated_at
+          ? new Date(shop.updated_at)
+          : now;
         shopEntries.push({
           url: `${SITE_URL}/barbershops/${encodeURIComponent(slug)}`,
-          lastModified: Number.isNaN(parsedLastModified.getTime()) ? now : parsedLastModified,
-          changeFrequency: "weekly",
+          lastModified: Number.isNaN(parsedLastModified.getTime())
+            ? now
+            : parsedLastModified,
+          changeFrequency: 'weekly',
           priority: 0.8,
         });
       }

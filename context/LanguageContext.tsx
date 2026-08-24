@@ -1,10 +1,16 @@
-"use client";
+'use client';
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { pt } from "@/app/locales/pt";
-import { en } from "@/app/locales/en";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import { pt } from '@/app/locales/pt';
+import { en } from '@/app/locales/en';
 
-type Locale = "pt" | "en";
+type Locale = 'pt' | 'en';
 const translations = { pt, en } as const;
 
 interface LanguageContextType {
@@ -13,17 +19,23 @@ interface LanguageContextType {
   t: (key: string, variables?: Record<string, unknown>) => string;
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const LanguageContext = createContext<LanguageContextType | undefined>(
+  undefined,
+);
 
 function resolveTranslation(locale: Locale, path: string): string | undefined {
-  const value = path.split(".").reduce<unknown>((current, key) => {
-    if (current && typeof current === "object" && Object.prototype.hasOwnProperty.call(current, key)) {
+  const value = path.split('.').reduce<unknown>((current, key) => {
+    if (
+      current &&
+      typeof current === 'object' &&
+      Object.prototype.hasOwnProperty.call(current, key)
+    ) {
       return (current as Record<string, unknown>)[key];
     }
     return undefined;
   }, translations[locale]);
 
-  return typeof value === "string" ? value : undefined;
+  return typeof value === 'string' ? value : undefined;
 }
 
 function interpolate(value: string, variables?: Record<string, unknown>) {
@@ -35,21 +47,21 @@ function interpolate(value: string, variables?: Record<string, unknown>) {
 }
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("pt");
+  const [locale, setLocaleState] = useState<Locale>('pt');
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("locale");
-    if (saved === "pt" || saved === "en") setLocaleState(saved);
+    const saved = window.localStorage.getItem('locale');
+    if (saved === 'pt' || saved === 'en') setLocaleState(saved);
   }, []);
 
   useEffect(() => {
-    document.documentElement.lang = locale === "pt" ? "pt-PT" : "en";
-    document.documentElement.dir = "ltr";
+    document.documentElement.lang = locale === 'pt' ? 'pt-PT' : 'en';
+    document.documentElement.dir = 'ltr';
   }, [locale]);
 
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
-    window.localStorage.setItem("locale", newLocale);
+    window.localStorage.setItem('locale', newLocale);
   };
 
   const t = useMemo(
@@ -70,6 +82,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
 export function useLanguage() {
   const context = useContext(LanguageContext);
-  if (!context) throw new Error("useLanguage deve ser usado dentro de um LanguageProvider");
+  if (!context)
+    throw new Error('useLanguage deve ser usado dentro de um LanguageProvider');
   return context;
 }

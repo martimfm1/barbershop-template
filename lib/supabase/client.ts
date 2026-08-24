@@ -1,5 +1,5 @@
-import { createBrowserClient } from "@supabase/ssr";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 let supabaseBrowserInstance: SupabaseClient | null = null;
 
@@ -10,20 +10,16 @@ export function createClient(): SupabaseClient {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error("Configuração pública do Supabase em falta.");
+    throw new Error('Configuração pública do Supabase em falta.');
   }
 
-  supabaseBrowserInstance = createBrowserClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-      },
+  supabaseBrowserInstance = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
     },
-  );
+  });
 
   return supabaseBrowserInstance;
 }

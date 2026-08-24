@@ -1,4 +1,4 @@
-import { createClient as createBrowserClient } from "@/lib/supabase/client";
+import { createClient as createBrowserClient } from '@/lib/supabase/client';
 
 export const supabase = createBrowserClient();
 
@@ -38,7 +38,7 @@ function normalizeError(operation: string, error: unknown): Error {
   }
 
   const errorMessage =
-    typeof error === "object" && error !== null && "message" in error
+    typeof error === 'object' && error !== null && 'message' in error
       ? (error as { message: string }).message
       : JSON.stringify(error);
 
@@ -51,7 +51,7 @@ function normalizeError(operation: string, error: unknown): Error {
 
 function toResult<T>(data: T | null, error: unknown): DbResult<T> {
   if (error) {
-    return { data: null, error: normalizeError("db operation", error) };
+    return { data: null, error: normalizeError('db operation', error) };
   }
 
   return { data, error: null };
@@ -74,8 +74,8 @@ export async function getRecordById<T>(
 ): Promise<DbResult<T>> {
   const { data, error } = await supabase
     .from(table)
-    .select("*")
-    .eq("id", id)
+    .select('*')
+    .eq('id', id)
     .maybeSingle();
 
   return toResult<T>(data as T | null, error);
@@ -87,7 +87,7 @@ export async function listRecords<T>(
   filters: ListRecordFilters = {},
   options: ListRecordOptions = {},
 ): Promise<DbResult<T[]>> {
-  let query = supabase.from(table).select(options.select ?? "*");
+  let query = supabase.from(table).select(options.select ?? '*');
 
   query = applyFilters(query, filters);
 
@@ -133,7 +133,7 @@ export async function updateRecord<T>(
   const { data: updatedData, error } = await supabase
     .from(table)
     .update(data)
-    .eq("id", id)
+    .eq('id', id)
     .select()
     .maybeSingle();
 
@@ -154,7 +154,7 @@ export async function deleteRecord(
   table: string,
   id: string,
 ): Promise<DbResult<null>> {
-  const { error } = await supabase.from(table).delete().eq("id", id);
+  const { error } = await supabase.from(table).delete().eq('id', id);
 
   return toResult<null>(null, error);
 }
@@ -164,13 +164,13 @@ export async function getUserBarbershopId(
   userId: string,
 ) {
   const { data, error } = await supabase
-    .from("users")
-    .select("barbershop_id")
-    .eq("id", userId)
+    .from('users')
+    .select('barbershop_id')
+    .eq('id', userId)
     .maybeSingle();
 
   if (error) {
-    normalizeError("getUserBarbershopId", error);
+    normalizeError('getUserBarbershopId', error);
     return null;
   }
 

@@ -1,6 +1,10 @@
-import type { Dispatch, SetStateAction } from "react";
-import type { MarketplaceDateFilter, MarketplaceSortFilter, UserCoordinates } from "./filters";
-import type { MarketplaceShop } from "./shops";
+import type { Dispatch, SetStateAction } from 'react';
+import type {
+  MarketplaceDateFilter,
+  MarketplaceSortFilter,
+  UserCoordinates,
+} from './filters';
+import type { MarketplaceShop } from './shops';
 
 export interface ShopCardProps {
   shop: MarketplaceShop;
@@ -10,7 +14,7 @@ export interface ShopCardProps {
 
 export interface MapPreviewProps {
   shops: MarketplaceShop[];
-  view: "grid" | "map";
+  view: 'grid' | 'map';
   onSelectShop: (shop: MarketplaceShop) => void;
   userLocation?: UserCoordinates | null;
 }
@@ -28,8 +32,8 @@ export interface SearchFilterBarProps {
   setActiveDate: Dispatch<SetStateAction<MarketplaceDateFilter>>;
   activeFilter: MarketplaceSortFilter;
   setActiveFilter: Dispatch<SetStateAction<MarketplaceSortFilter>>;
-  view: "grid" | "map";
-  setView: Dispatch<SetStateAction<"grid" | "map">>;
+  view: 'grid' | 'map';
+  setView: Dispatch<SetStateAction<'grid' | 'map'>>;
   userLocation: UserCoordinates | null;
   setUserLocation: Dispatch<SetStateAction<UserCoordinates | null>>;
 }

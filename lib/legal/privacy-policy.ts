@@ -9,229 +9,229 @@ export type PrivacyDocument = {
   sections: PrivacySection[];
 };
 
-export const PRIVACY_LAST_UPDATED = "10 de agosto de 2026";
+export const PRIVACY_LAST_UPDATED = '10 de agosto de 2026';
 
-export const privacyPolicy: Record<"pt" | "en", PrivacyDocument> = {
+export const privacyPolicy: Record<'pt' | 'en', PrivacyDocument> = {
   pt: {
     lastUpdated: PRIVACY_LAST_UPDATED,
     intro:
-      "Esta Política de Privacidade explica como a Silentra for Barbers (" +
-      "«Silentra») trata dados pessoais quando utilizas a plataforma SaaS de gestão de barbearias, o marketplace público, as funcionalidades de reservas, comunicações, analytics e faturação.",
+      'Esta Política de Privacidade explica como a Silentra for Barbers (' +
+      '«Silentra») trata dados pessoais quando utilizas a plataforma SaaS de gestão de barbearias, o marketplace público, as funcionalidades de reservas, comunicações, analytics e faturação.',
     sections: [
       {
-        title: "1. Responsável pelo tratamento e papéis",
+        title: '1. Responsável pelo tratamento e papéis',
         paragraphs: [
-          "Para dados da conta, administração da plataforma, faturação, segurança e suporte, a Silentra atua como responsável pelo tratamento, na medida aplicável.",
-          "Para dados de clientes finais introduzidos numa reserva ou geridos pela barbearia, a barbearia é normalmente a responsável pelo tratamento e a Silentra atua como prestadora tecnológica/subcontratante, conforme a operação e a legislação aplicável.",
-          "A barbearia é responsável por definir as finalidades e por cumprir as suas obrigações de informação, base legal e exercício de direitos relativamente aos dados que introduz na plataforma.",
+          'Para dados da conta, administração da plataforma, faturação, segurança e suporte, a Silentra atua como responsável pelo tratamento, na medida aplicável.',
+          'Para dados de clientes finais introduzidos numa reserva ou geridos pela barbearia, a barbearia é normalmente a responsável pelo tratamento e a Silentra atua como prestadora tecnológica/subcontratante, conforme a operação e a legislação aplicável.',
+          'A barbearia é responsável por definir as finalidades e por cumprir as suas obrigações de informação, base legal e exercício de direitos relativamente aos dados que introduz na plataforma.',
         ],
       },
       {
-        title: "2. Dados que tratamos",
+        title: '2. Dados que tratamos',
         paragraphs: [
-          "Podemos tratar dados de conta e autenticação, incluindo nome, email, telefone, identificadores de conta, função e dados necessários à segurança da sessão.",
-          "Podemos tratar dados da barbearia, incluindo nome, contacto, morada, horários, dias de encerramento, serviços, preços, profissionais, comissões e configurações da conta.",
-          "Para reservas e gestão de clientes, podemos tratar nome, telefone, email, serviço, profissional, data e hora, estado da marcação, notas e dados introduzidos manualmente pela barbearia ou pelo cliente.",
-          "Podemos tratar avaliações, dados de utilização, registos de auditoria, informações técnicas, identificadores de sessão, dados de subscrição e informação necessária para prevenir abuso e manter a segurança.",
-          "As notificações push podem utilizar os dados técnicos necessários para manter uma subscrição do dispositivo. O envio push atualmente é usado para notificações operacionais dirigidas aos barbeiros, nomeadamente novos bookings.",
+          'Podemos tratar dados de conta e autenticação, incluindo nome, email, telefone, identificadores de conta, função e dados necessários à segurança da sessão.',
+          'Podemos tratar dados da barbearia, incluindo nome, contacto, morada, horários, dias de encerramento, serviços, preços, profissionais, comissões e configurações da conta.',
+          'Para reservas e gestão de clientes, podemos tratar nome, telefone, email, serviço, profissional, data e hora, estado da marcação, notas e dados introduzidos manualmente pela barbearia ou pelo cliente.',
+          'Podemos tratar avaliações, dados de utilização, registos de auditoria, informações técnicas, identificadores de sessão, dados de subscrição e informação necessária para prevenir abuso e manter a segurança.',
+          'As notificações push podem utilizar os dados técnicos necessários para manter uma subscrição do dispositivo. O envio push atualmente é usado para notificações operacionais dirigidas aos barbeiros, nomeadamente novos bookings.',
         ],
       },
       {
-        title: "3. Faturação e pagamentos",
+        title: '3. Faturação e pagamentos',
         paragraphs: [
-          "As subscrições e pagamentos podem ser processados através da Stripe. A Silentra mantém identificadores de cliente e subscrição necessários para gerir o estado de faturação, mas não necessita de armazenar diretamente os dados completos do cartão usados no pagamento.",
-          "O plano aplicável à conta pode ser free, pro ou enterprise. Funcionalidades, quotas e limites podem variar conforme o plano contratado e podem ser atualizados de acordo com os Termos e as condições comerciais apresentadas no momento da contratação.",
+          'As subscrições e pagamentos podem ser processados através da Stripe. A Silentra mantém identificadores de cliente e subscrição necessários para gerir o estado de faturação, mas não necessita de armazenar diretamente os dados completos do cartão usados no pagamento.',
+          'O plano aplicável à conta pode ser free, pro ou enterprise. Funcionalidades, quotas e limites podem variar conforme o plano contratado e podem ser atualizados de acordo com os Termos e as condições comerciais apresentadas no momento da contratação.',
         ],
       },
       {
-        title: "4. Comunicações e fornecedores",
+        title: '4. Comunicações e fornecedores',
         paragraphs: [
-          "A Silentra pode utilizar fornecedores especializados para alojamento, base de dados, pagamentos, email, monitorização e infraestrutura técnica. Estes fornecedores apenas recebem os dados necessários para prestar os respetivos serviços.",
-          "O envio de email transacional e de mensagens manuais por email pode ser realizado através da Brevo. O nome da barbearia pode ser utilizado como nome do remetente nas mensagens enviadas em seu nome.",
-          "O envio manual de SMS encontra-se atualmente desativado. A Silentra não deve ser considerada como estando a enviar SMS através da plataforma enquanto essa funcionalidade permanecer desativada. Se a funcionalidade for ativada no futuro, esta política poderá ser atualizada para refletir o tratamento correspondente.",
+          'A Silentra pode utilizar fornecedores especializados para alojamento, base de dados, pagamentos, email, monitorização e infraestrutura técnica. Estes fornecedores apenas recebem os dados necessários para prestar os respetivos serviços.',
+          'O envio de email transacional e de mensagens manuais por email pode ser realizado através da Brevo. O nome da barbearia pode ser utilizado como nome do remetente nas mensagens enviadas em seu nome.',
+          'O envio manual de SMS encontra-se atualmente desativado. A Silentra não deve ser considerada como estando a enviar SMS através da plataforma enquanto essa funcionalidade permanecer desativada. Se a funcionalidade for ativada no futuro, esta política poderá ser atualizada para refletir o tratamento correspondente.',
         ],
       },
       {
-        title: "5. Finalidades e bases legais",
+        title: '5. Finalidades e bases legais',
         paragraphs: [
-          "Tratamos dados para criar e administrar contas, prestar as funcionalidades contratadas, gerir reservas e clientes, enviar comunicações operacionais, processar faturação, prestar suporte, prevenir fraude e abuso, proteger a segurança e melhorar a fiabilidade da plataforma.",
-          "As bases legais podem incluir a execução de um contrato, o cumprimento de obrigações legais, interesses legítimos da Silentra ou da barbearia, e consentimento quando este seja exigido pela legislação aplicável.",
-          "As funcionalidades de marketing e mensagens devem ser utilizadas pela barbearia apenas quando esta disponha de uma base legal adequada para contactar os respetivos destinatários e cumpra as regras aplicáveis a comunicações comerciais.",
+          'Tratamos dados para criar e administrar contas, prestar as funcionalidades contratadas, gerir reservas e clientes, enviar comunicações operacionais, processar faturação, prestar suporte, prevenir fraude e abuso, proteger a segurança e melhorar a fiabilidade da plataforma.',
+          'As bases legais podem incluir a execução de um contrato, o cumprimento de obrigações legais, interesses legítimos da Silentra ou da barbearia, e consentimento quando este seja exigido pela legislação aplicável.',
+          'As funcionalidades de marketing e mensagens devem ser utilizadas pela barbearia apenas quando esta disponha de uma base legal adequada para contactar os respetivos destinatários e cumpra as regras aplicáveis a comunicações comerciais.',
         ],
       },
       {
-        title: "6. Reservas públicas e marketplace",
+        title: '6. Reservas públicas e marketplace',
         paragraphs: [
-          "O marketplace pode permitir que um cliente final pesquise uma barbearia e faça uma reserva sem criar uma conta. Os dados necessários à reserva são transmitidos à barbearia selecionada para que esta possa gerir a marcação.",
-          "A Silentra fornece a infraestrutura tecnológica e não é responsável pelo serviço de barbearia, pela qualidade do atendimento, pelos preços, pela disponibilidade efetiva ou pelo cumprimento das obrigações da barbearia perante o cliente final.",
+          'O marketplace pode permitir que um cliente final pesquise uma barbearia e faça uma reserva sem criar uma conta. Os dados necessários à reserva são transmitidos à barbearia selecionada para que esta possa gerir a marcação.',
+          'A Silentra fornece a infraestrutura tecnológica e não é responsável pelo serviço de barbearia, pela qualidade do atendimento, pelos preços, pela disponibilidade efetiva ou pelo cumprimento das obrigações da barbearia perante o cliente final.',
         ],
       },
       {
-        title: "7. Cookies, analytics e registos técnicos",
+        title: '7. Cookies, analytics e registos técnicos',
         paragraphs: [
-          "Utilizamos cookies e tecnologias equivalentes quando necessários para autenticação, segurança, preferências e funcionamento essencial da plataforma.",
-          "Podemos recolher métricas de utilização e desempenho e manter logs técnicos e de auditoria para diagnosticar erros, detetar abuso, proteger contas e melhorar o serviço. Procuramos aplicar minimização e limitar o acesso a estes dados ao necessário.",
+          'Utilizamos cookies e tecnologias equivalentes quando necessários para autenticação, segurança, preferências e funcionamento essencial da plataforma.',
+          'Podemos recolher métricas de utilização e desempenho e manter logs técnicos e de auditoria para diagnosticar erros, detetar abuso, proteger contas e melhorar o serviço. Procuramos aplicar minimização e limitar o acesso a estes dados ao necessário.',
         ],
       },
       {
-        title: "8. Partilha de dados",
+        title: '8. Partilha de dados',
         paragraphs: [
-          "Podemos partilhar dados com fornecedores que atuam por nossa conta ou prestam serviços de infraestrutura, incluindo fornecedores de cloud, base de dados, pagamentos, email e segurança.",
-          "Partilhamos com a barbearia os dados necessários para gerir reservas e clientes associados à respetiva operação. Não vendemos dados pessoais a terceiros.",
-          "Podemos divulgar dados quando tal seja exigido por lei, por autoridade competente, por ordem judicial ou quando necessário para proteger direitos, segurança e integridade da plataforma.",
+          'Podemos partilhar dados com fornecedores que atuam por nossa conta ou prestam serviços de infraestrutura, incluindo fornecedores de cloud, base de dados, pagamentos, email e segurança.',
+          'Partilhamos com a barbearia os dados necessários para gerir reservas e clientes associados à respetiva operação. Não vendemos dados pessoais a terceiros.',
+          'Podemos divulgar dados quando tal seja exigido por lei, por autoridade competente, por ordem judicial ou quando necessário para proteger direitos, segurança e integridade da plataforma.',
         ],
       },
       {
-        title: "9. Transferências internacionais",
+        title: '9. Transferências internacionais',
         paragraphs: [
-          "Alguns fornecedores podem tratar dados fora de Portugal ou do Espaço Económico Europeu. Quando aplicável, procuramos utilizar mecanismos legais adequados para transferências internacionais, incluindo decisões de adequação, cláusulas contratuais-tipo ou medidas complementares.",
+          'Alguns fornecedores podem tratar dados fora de Portugal ou do Espaço Económico Europeu. Quando aplicável, procuramos utilizar mecanismos legais adequados para transferências internacionais, incluindo decisões de adequação, cláusulas contratuais-tipo ou medidas complementares.',
         ],
       },
       {
-        title: "10. Retenção e eliminação",
+        title: '10. Retenção e eliminação',
         paragraphs: [
-          "Conservamos dados enquanto forem necessários para prestar o serviço, cumprir obrigações legais, gerir faturação, resolver litígios, prevenir fraude e manter backups operacionais.",
-          "Após o encerramento de uma conta, alguns dados podem permanecer durante períodos legalmente exigidos ou necessários para segurança, auditoria e recuperação de sistemas. Quando deixam de ser necessários, são eliminados ou anonimizados de acordo com os nossos processos de retenção.",
+          'Conservamos dados enquanto forem necessários para prestar o serviço, cumprir obrigações legais, gerir faturação, resolver litígios, prevenir fraude e manter backups operacionais.',
+          'Após o encerramento de uma conta, alguns dados podem permanecer durante períodos legalmente exigidos ou necessários para segurança, auditoria e recuperação de sistemas. Quando deixam de ser necessários, são eliminados ou anonimizados de acordo com os nossos processos de retenção.',
         ],
       },
       {
-        title: "11. Segurança",
+        title: '11. Segurança',
         paragraphs: [
-          "Aplicamos medidas técnicas e organizativas adequadas, incluindo controlo de acessos, segregação por barbearia, políticas de permissões, proteção de credenciais, validação server-side e monitorização de eventos relevantes.",
-          "Nenhum sistema é completamente seguro. Deves utilizar credenciais fortes, não partilhar palavras-passe e comunicar imediatamente qualquer utilização suspeita da conta.",
+          'Aplicamos medidas técnicas e organizativas adequadas, incluindo controlo de acessos, segregação por barbearia, políticas de permissões, proteção de credenciais, validação server-side e monitorização de eventos relevantes.',
+          'Nenhum sistema é completamente seguro. Deves utilizar credenciais fortes, não partilhar palavras-passe e comunicar imediatamente qualquer utilização suspeita da conta.',
         ],
       },
       {
-        title: "12. Direitos dos titulares",
+        title: '12. Direitos dos titulares',
         paragraphs: [
-          "Nos termos da legislação aplicável, podes exercer direitos de acesso, retificação, apagamento, limitação, oposição e portabilidade e retirar consentimento quando o tratamento se baseie em consentimento.",
-          "Os pedidos relativos a dados tratados em nome de uma barbearia podem ter de ser encaminhados para essa barbearia quando esta atuar como responsável pelo tratamento. Para questões de privacidade da Silentra, contacta contact@silentra.me.",
-          "Também podes apresentar reclamação junto da autoridade de controlo competente, incluindo a Comissão Nacional de Proteção de Dados (CNPD) em Portugal.",
+          'Nos termos da legislação aplicável, podes exercer direitos de acesso, retificação, apagamento, limitação, oposição e portabilidade e retirar consentimento quando o tratamento se baseie em consentimento.',
+          'Os pedidos relativos a dados tratados em nome de uma barbearia podem ter de ser encaminhados para essa barbearia quando esta atuar como responsável pelo tratamento. Para questões de privacidade da Silentra, contacta contact@silentra.me.',
+          'Também podes apresentar reclamação junto da autoridade de controlo competente, incluindo a Comissão Nacional de Proteção de Dados (CNPD) em Portugal.',
         ],
       },
       {
-        title: "13. Menores",
+        title: '13. Menores',
         paragraphs: [
-          "A plataforma SaaS destina-se a profissionais e representantes de barbearias com capacidade legal para contratar. Não procuramos recolher diretamente dados de menores para criação de contas. Quando uma barbearia introduz dados de clientes menores, é responsável por assegurar que possui fundamento legal para esse tratamento.",
+          'A plataforma SaaS destina-se a profissionais e representantes de barbearias com capacidade legal para contratar. Não procuramos recolher diretamente dados de menores para criação de contas. Quando uma barbearia introduz dados de clientes menores, é responsável por assegurar que possui fundamento legal para esse tratamento.',
         ],
       },
       {
-        title: "14. Alterações e contacto",
+        title: '14. Alterações e contacto',
         paragraphs: [
-          "Podemos atualizar esta política para refletir alterações legais, técnicas ou funcionais. A data da última revisão é apresentada no topo desta página.",
-          "Para questões, pedidos de direitos ou dúvidas sobre privacidade, contacta contact@silentra.me.",
+          'Podemos atualizar esta política para refletir alterações legais, técnicas ou funcionais. A data da última revisão é apresentada no topo desta página.',
+          'Para questões, pedidos de direitos ou dúvidas sobre privacidade, contacta contact@silentra.me.',
         ],
       },
     ],
   },
   en: {
-    lastUpdated: "August 10, 2026",
+    lastUpdated: 'August 10, 2026',
     intro:
-      "This Privacy Policy explains how Silentra for Barbers (" +
-      "\"Silentra\") processes personal data when you use the SaaS barbershop management platform, public marketplace, booking, communications, analytics, and billing features.",
+      'This Privacy Policy explains how Silentra for Barbers (' +
+      '"Silentra") processes personal data when you use the SaaS barbershop management platform, public marketplace, booking, communications, analytics, and billing features.',
     sections: [
       {
-        title: "1. Controller and roles",
+        title: '1. Controller and roles',
         paragraphs: [
-          "For account, platform administration, billing, security, and support data, Silentra acts as controller to the extent applicable.",
-          "For end-customer data entered through a booking or managed by a barbershop, the barbershop is generally the controller and Silentra acts as a technology provider/processor, depending on the operation and applicable law.",
-          "The barbershop is responsible for its processing purposes, lawful basis, transparency duties, and handling of data-subject requests for data it enters into the platform.",
+          'For account, platform administration, billing, security, and support data, Silentra acts as controller to the extent applicable.',
+          'For end-customer data entered through a booking or managed by a barbershop, the barbershop is generally the controller and Silentra acts as a technology provider/processor, depending on the operation and applicable law.',
+          'The barbershop is responsible for its processing purposes, lawful basis, transparency duties, and handling of data-subject requests for data it enters into the platform.',
         ],
       },
       {
-        title: "2. Data we process",
+        title: '2. Data we process',
         paragraphs: [
-          "We may process account and authentication data, including name, email, phone number, account identifiers, role, and information required to secure sessions.",
-          "We may process barbershop data, including name, contact details, address, opening hours, closed days, services, prices, professionals, commissions, and account settings.",
-          "For bookings and customer management, we may process name, phone, email, service, professional, date and time, appointment status, notes, and information entered manually by the barbershop or customer.",
-          "We may process reviews, usage data, audit records, technical information, session identifiers, subscription data, and information required to prevent abuse and maintain security.",
-          "Push notifications may use technical data required to maintain a device subscription. Push is currently used for operational notifications to barbers, including new bookings.",
+          'We may process account and authentication data, including name, email, phone number, account identifiers, role, and information required to secure sessions.',
+          'We may process barbershop data, including name, contact details, address, opening hours, closed days, services, prices, professionals, commissions, and account settings.',
+          'For bookings and customer management, we may process name, phone, email, service, professional, date and time, appointment status, notes, and information entered manually by the barbershop or customer.',
+          'We may process reviews, usage data, audit records, technical information, session identifiers, subscription data, and information required to prevent abuse and maintain security.',
+          'Push notifications may use technical data required to maintain a device subscription. Push is currently used for operational notifications to barbers, including new bookings.',
         ],
       },
       {
-        title: "3. Billing and payments",
+        title: '3. Billing and payments',
         paragraphs: [
-          "Subscriptions and payments may be processed through Stripe. Silentra retains customer and subscription identifiers required to manage billing status but does not need to store the complete payment-card details used for payment.",
-          "Accounts may use the free, pro, or enterprise plan. Features, quotas, and limits may vary by plan and may be updated in accordance with the Terms and the commercial conditions shown before purchase.",
+          'Subscriptions and payments may be processed through Stripe. Silentra retains customer and subscription identifiers required to manage billing status but does not need to store the complete payment-card details used for payment.',
+          'Accounts may use the free, pro, or enterprise plan. Features, quotas, and limits may vary by plan and may be updated in accordance with the Terms and the commercial conditions shown before purchase.',
         ],
       },
       {
-        title: "4. Communications and providers",
+        title: '4. Communications and providers',
         paragraphs: [
-          "Silentra may use specialist providers for hosting, databases, payments, email, monitoring, and technical infrastructure. Providers receive only the data required to perform their services.",
-          "Transactional and manual email may be sent through Brevo. The barbershop name may be used as the sender name for messages sent on its behalf.",
-          "Manual SMS sending is currently disabled. Silentra should not be considered to be sending SMS through the platform while this feature remains disabled. If it is enabled in the future, this policy may be updated to reflect the relevant processing.",
+          'Silentra may use specialist providers for hosting, databases, payments, email, monitoring, and technical infrastructure. Providers receive only the data required to perform their services.',
+          'Transactional and manual email may be sent through Brevo. The barbershop name may be used as the sender name for messages sent on its behalf.',
+          'Manual SMS sending is currently disabled. Silentra should not be considered to be sending SMS through the platform while this feature remains disabled. If it is enabled in the future, this policy may be updated to reflect the relevant processing.',
         ],
       },
       {
-        title: "5. Purposes and legal bases",
+        title: '5. Purposes and legal bases',
         paragraphs: [
-          "We process data to create and administer accounts, provide contracted features, manage bookings and customers, send operational communications, process billing, provide support, prevent fraud and abuse, protect security, and improve platform reliability.",
-          "Legal bases may include contract performance, legal obligations, legitimate interests of Silentra or the barbershop, and consent where required by applicable law.",
-          "Marketing and messaging features must be used by barbershops only when they have an appropriate lawful basis to contact recipients and comply with applicable commercial-communications rules.",
+          'We process data to create and administer accounts, provide contracted features, manage bookings and customers, send operational communications, process billing, provide support, prevent fraud and abuse, protect security, and improve platform reliability.',
+          'Legal bases may include contract performance, legal obligations, legitimate interests of Silentra or the barbershop, and consent where required by applicable law.',
+          'Marketing and messaging features must be used by barbershops only when they have an appropriate lawful basis to contact recipients and comply with applicable commercial-communications rules.',
         ],
       },
       {
-        title: "6. Public bookings and marketplace",
+        title: '6. Public bookings and marketplace',
         paragraphs: [
-          "The marketplace may allow an end customer to discover a barbershop and book without creating an account. Required booking data is provided to the selected barbershop so it can manage the appointment.",
+          'The marketplace may allow an end customer to discover a barbershop and book without creating an account. Required booking data is provided to the selected barbershop so it can manage the appointment.',
           "Silentra provides the technology infrastructure and is not responsible for the barbershop service, quality, pricing, actual availability, or the barbershop's obligations toward its customers.",
         ],
       },
       {
-        title: "7. Cookies, analytics, and technical logs",
+        title: '7. Cookies, analytics, and technical logs',
         paragraphs: [
-          "We use cookies and equivalent technologies where needed for authentication, security, preferences, and essential platform functionality.",
-          "We may collect usage and performance metrics and maintain technical and audit logs to diagnose errors, detect abuse, protect accounts, and improve the service. We seek to minimize data and restrict access to what is necessary.",
+          'We use cookies and equivalent technologies where needed for authentication, security, preferences, and essential platform functionality.',
+          'We may collect usage and performance metrics and maintain technical and audit logs to diagnose errors, detect abuse, protect accounts, and improve the service. We seek to minimize data and restrict access to what is necessary.',
         ],
       },
       {
-        title: "8. Data sharing",
+        title: '8. Data sharing',
         paragraphs: [
-          "We may share data with providers acting on our behalf or providing infrastructure services, including cloud, database, payment, email, and security providers.",
-          "We share with a barbershop the data needed to manage bookings and customers associated with its operation. We do not sell personal data to third parties.",
-          "We may disclose data when required by law, competent authorities, court order, or when necessary to protect rights, security, and platform integrity.",
+          'We may share data with providers acting on our behalf or providing infrastructure services, including cloud, database, payment, email, and security providers.',
+          'We share with a barbershop the data needed to manage bookings and customers associated with its operation. We do not sell personal data to third parties.',
+          'We may disclose data when required by law, competent authorities, court order, or when necessary to protect rights, security, and platform integrity.',
         ],
       },
       {
-        title: "9. International transfers",
+        title: '9. International transfers',
         paragraphs: [
-          "Some providers may process data outside Portugal or the European Economic Area. Where applicable, we seek to use appropriate legal transfer mechanisms, including adequacy decisions, standard contractual clauses, or supplementary measures.",
+          'Some providers may process data outside Portugal or the European Economic Area. Where applicable, we seek to use appropriate legal transfer mechanisms, including adequacy decisions, standard contractual clauses, or supplementary measures.',
         ],
       },
       {
-        title: "10. Retention and deletion",
+        title: '10. Retention and deletion',
         paragraphs: [
-          "We retain data for as long as necessary to provide the service, comply with legal obligations, manage billing, resolve disputes, prevent fraud, and maintain operational backups.",
-          "After an account is closed, some data may remain for legally required periods or as necessary for security, auditing, and system recovery. When no longer required, it is deleted or anonymized under our retention processes.",
+          'We retain data for as long as necessary to provide the service, comply with legal obligations, manage billing, resolve disputes, prevent fraud, and maintain operational backups.',
+          'After an account is closed, some data may remain for legally required periods or as necessary for security, auditing, and system recovery. When no longer required, it is deleted or anonymized under our retention processes.',
         ],
       },
       {
-        title: "11. Security",
+        title: '11. Security',
         paragraphs: [
-          "We apply appropriate technical and organizational measures, including access controls, barbershop-level segregation, permission policies, credential protection, server-side validation, and monitoring of relevant events.",
-          "No system is completely secure. You should use strong credentials, never share passwords, and report suspected account activity immediately.",
+          'We apply appropriate technical and organizational measures, including access controls, barbershop-level segregation, permission policies, credential protection, server-side validation, and monitoring of relevant events.',
+          'No system is completely secure. You should use strong credentials, never share passwords, and report suspected account activity immediately.',
         ],
       },
       {
-        title: "12. Data-subject rights",
+        title: '12. Data-subject rights',
         paragraphs: [
-          "Subject to applicable law, you may exercise rights of access, rectification, erasure, restriction, objection, and portability, and withdraw consent where processing is based on consent.",
-          "Requests relating to data processed on behalf of a barbershop may need to be directed to that barbershop when it acts as controller. For Silentra privacy matters, contact contact@silentra.me.",
-          "You may also lodge a complaint with the competent supervisory authority, including the Portuguese Data Protection Authority (CNPD).",
+          'Subject to applicable law, you may exercise rights of access, rectification, erasure, restriction, objection, and portability, and withdraw consent where processing is based on consent.',
+          'Requests relating to data processed on behalf of a barbershop may need to be directed to that barbershop when it acts as controller. For Silentra privacy matters, contact contact@silentra.me.',
+          'You may also lodge a complaint with the competent supervisory authority, including the Portuguese Data Protection Authority (CNPD).',
         ],
       },
       {
-        title: "13. Children",
+        title: '13. Children',
         paragraphs: [
           "The SaaS platform is intended for professionals and authorized barbershop representatives with legal capacity to contract. We do not seek to collect children's data for account creation. When a barbershop enters data relating to minors, it is responsible for ensuring a lawful basis for that processing.",
         ],
       },
       {
-        title: "14. Changes and contact",
+        title: '14. Changes and contact',
         paragraphs: [
-          "We may update this policy to reflect legal, technical, or functional changes. The last revision date is shown at the top of this page.",
-          "For questions, rights requests, or privacy concerns, contact contact@silentra.me.",
+          'We may update this policy to reflect legal, technical, or functional changes. The last revision date is shown at the top of this page.',
+          'For questions, rights requests, or privacy concerns, contact contact@silentra.me.',
         ],
       },
     ],

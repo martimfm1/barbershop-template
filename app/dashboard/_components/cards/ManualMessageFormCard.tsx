@@ -1,14 +1,27 @@
-"use client";
+'use client';
 
 // utils
-import { ManualMessageFormProps } from "@/types";
+import { ManualMessageFormProps } from '@/types';
 
 // UI
-import { MessageCircle } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { MessageCircle } from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 
 export function ManualMessageForm({
   clients,
@@ -33,7 +46,10 @@ export function ManualMessageForm({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-3 items-end">
+        <form
+          onSubmit={onSubmit}
+          className="grid gap-4 md:grid-cols-3 items-end"
+        >
           <div className="grid gap-2">
             <label className="text-xs text-zinc-400">Select Client</label>
             <Select
@@ -74,7 +90,9 @@ export function ManualMessageForm({
               <SelectContent className="bg-zinc-900 border-white/10 text-white cursor-pointer">
                 <SelectGroup>
                   <SelectItem value="custom">Custom Message (Blank)</SelectItem>
-                  <SelectItem value="reminder_tomorrow">Booking Reminder (Tomorrow)</SelectItem>
+                  <SelectItem value="reminder_tomorrow">
+                    Booking Reminder (Tomorrow)
+                  </SelectItem>
                   <SelectItem value="miss_you">Reactivation Message</SelectItem>
                 </SelectGroup>
               </SelectContent>
@@ -95,7 +113,7 @@ export function ManualMessageForm({
                   phone: e.target.value,
                 })
               }
-              disabled={reminderClientId !== "manual"}
+              disabled={reminderClientId !== 'manual'}
             />
           </div>
 
@@ -119,11 +137,18 @@ export function ManualMessageForm({
           <div className="md:col-span-3 flex justify-end">
             <Button
               type="submit"
-              disabled={sendingMessage || !manualMessage.text || !manualMessage.phone}
+              disabled={
+                sendingMessage || !manualMessage.text || !manualMessage.phone
+              }
               variant="ghost"
               className="bg-green-600 hover:bg-green-500 text-white px-6 cursor-pointer"
             >
-              {sendingMessage ? <Spinner className="mr-2" /> : <MessageCircle className="mr-2 size-4" />} Send message
+              {sendingMessage ? (
+                <Spinner className="mr-2" />
+              ) : (
+                <MessageCircle className="mr-2 size-4" />
+              )}{' '}
+              Send message
             </Button>
           </div>
         </form>

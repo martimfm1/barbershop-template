@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 
 export function CtaSection() {
   return (
@@ -15,15 +15,22 @@ export function CtaSection() {
             Encontra o teu próximo serviço ou leva a tua barbearia mais longe.
           </h2>
           <p className="mt-4 max-w-xl text-sm leading-6 text-zinc-400">
-            Marca em segundos numa barbearia parceira ou cria o espaço da tua barbearia na plataforma e gere tudo num só lugar.
+            Marca em segundos numa barbearia parceira ou cria o espaço da tua
+            barbearia na plataforma e gere tudo num só lugar.
           </p>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-          <Link href="/barbershops" className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-zinc-50 px-5 text-sm font-medium text-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.34),0_18px_55px_rgba(255,255,255,0.08)] transition-transform hover:-translate-y-0.5">
+          <Link
+            href="/barbershops"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-zinc-50 px-5 text-sm font-medium text-zinc-950 shadow-[0_0_0_1px_rgba(255,255,255,0.34),0_18px_55px_rgba(255,255,255,0.08)] transition-transform hover:-translate-y-0.5"
+          >
             Marcar um serviço <ArrowRight className="size-4" />
           </Link>
-          <Link href="/registo" className="inline-flex h-12 items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 text-sm font-medium text-zinc-100 transition-colors hover:border-emerald-400/40 hover:bg-emerald-500/10">
+          <Link
+            href="/registo"
+            className="inline-flex h-12 items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 text-sm font-medium text-zinc-100 transition-colors hover:border-emerald-400/40 hover:bg-emerald-500/10"
+          >
             Criar a minha barbearia
           </Link>
         </div>

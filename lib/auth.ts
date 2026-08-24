@@ -1,5 +1,5 @@
-import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createClient as createServerSupabaseClient } from '@/lib/supabase/server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Resolves the authenticated user for API requests.
@@ -13,10 +13,10 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
  */
 export async function getCurrentUser(req?: Request) {
   try {
-    const authHeader = req?.headers.get("Authorization");
+    const authHeader = req?.headers.get('Authorization');
 
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.slice("Bearer ".length).trim();
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice('Bearer '.length).trim();
       if (!token) return null;
 
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -27,18 +27,24 @@ export async function getCurrentUser(req?: Request) {
         auth: { persistSession: false, autoRefreshToken: false },
       });
 
-      const { data: { user }, error } = await supabase.auth.getUser(token);
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser(token);
       if (!error && user) return user;
     }
 
     // Normal Next.js dashboard requests authenticate through the SSR cookie.
     const supabase = await createServerSupabaseClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
     if (error || !user) return null;
 
     return user;
   } catch (error) {
-    console.error("Erro ao autenticar utilizador:", error);
+    console.error('Erro ao autenticar utilizador:', error);
     return null;
   }
 }

@@ -1,5 +1,8 @@
-import { createAdminClient } from "@/lib/supabase/admin";
-import { getPublicProfileBySlug, isValidPublicProfileSlug } from "@/lib/barbershops/public-profile";
+import { createAdminClient } from '@/lib/supabase/admin';
+import {
+  getPublicProfileBySlug,
+  isValidPublicProfileSlug,
+} from '@/lib/barbershops/public-profile';
 
 interface LoyaltyTenant {
   barbershopId: string;
@@ -9,21 +12,21 @@ async function isLoyaltyEnabled(
   barbershopId: string,
   plan: string | null | undefined,
 ): Promise<boolean> {
-  if (!["pro", "enterprise"].includes(String(plan ?? "").toLowerCase())) {
+  if (!['pro', 'enterprise'].includes(String(plan ?? '').toLowerCase())) {
     return false;
   }
 
   const admin = createAdminClient();
   const { data, error } = await admin
-    .from("loyalty_settings")
-    .select("enabled")
-    .eq("barbershop_id", barbershopId)
+    .from('loyalty_settings')
+    .select('enabled')
+    .eq('barbershop_id', barbershopId)
     .maybeSingle();
 
   if (error) {
-    console.error("[LOYALTY_TENANT_ERROR]", {
-      operation: "settings_lookup",
-      code: error.code ?? "UNKNOWN",
+    console.error('[LOYALTY_TENANT_ERROR]', {
+      operation: 'settings_lookup',
+      code: error.code ?? 'UNKNOWN',
     });
     return false;
   }
@@ -52,9 +55,9 @@ export async function getLoyaltyTenantBySlug(
       ? { barbershopId }
       : null;
   } catch (error) {
-    console.error("[LOYALTY_TENANT_ERROR]", {
-      operation: "public_profile_resolution",
-      code: error instanceof Error ? error.name : "UNKNOWN",
+    console.error('[LOYALTY_TENANT_ERROR]', {
+      operation: 'public_profile_resolution',
+      code: error instanceof Error ? error.name : 'UNKNOWN',
     });
     return null;
   }

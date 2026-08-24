@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 function normalized(value: string | null | undefined) {
   return value?.trim().toLowerCase() || null;
@@ -21,7 +21,9 @@ export async function getPlatformAdminContext() {
   if (!allowedUserId && !allowedEmail) return null;
 
   const userMatches = allowedUserId ? user.id === allowedUserId : false;
-  const emailMatches = allowedEmail ? normalized(user.email) === allowedEmail : false;
+  const emailMatches = allowedEmail
+    ? normalized(user.email) === allowedEmail
+    : false;
 
   if (!userMatches && !emailMatches) return null;
 
@@ -34,8 +36,8 @@ export async function getPlatformAdminContext() {
 export async function requirePlatformAdmin() {
   const context = await getPlatformAdminContext();
   if (!context) {
-    const error = new Error("PLATFORM_ADMIN_REQUIRED");
-    error.name = "PlatformAdminError";
+    const error = new Error('PLATFORM_ADMIN_REQUIRED');
+    error.name = 'PlatformAdminError';
     throw error;
   }
   return context;

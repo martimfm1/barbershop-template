@@ -1,21 +1,25 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { generateTimeSlots } from "@/app/barbershops/utils/booking-slots";
-import { isSafePublicBookingDate, UUID_PATTERN } from "@/lib/validation";
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { generateTimeSlots } from '@/app/barbershops/utils/booking-slots';
+import { isSafePublicBookingDate, UUID_PATTERN } from '@/lib/validation';
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id: shopId } = await params;
     const { searchParams } = new URL(request.url);
-    const dateParam = searchParams.get("date");
+    const dateParam = searchParams.get('date');
 
-    if (!UUID_PATTERN.test(shopId) || !dateParam || !isSafePublicBookingDate(dateParam)) {
+    if (
+      !UUID_PATTERN.test(shopId) ||
+      !dateParam ||
+      !isSafePublicBookingDate(dateParam)
+    ) {
       return NextResponse.json(
         { error: "O parâmetro 'date' é obrigatório no formato YYYY-MM-DD" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -25,8 +29,9 @@ export async function GET(
     const supabase = await createClient();
 
     const { data: shop, error } = await supabase
-      .from("shops")
-      .select(`
+      .from('shops')
+      .select(
+        `
         id,
         barbershops (
           name,
@@ -34,12 +39,16 @@ export async function GET(
           closing_time,
           off_days
         )
-      `)
-      .eq("id", shopId)
+      `,
+      )
+      .eq('id', shopId)
       .single();
 
     if (error || !shop) {
-      return NextResponse.json({ error: "Barbearia não encontrada" }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Barbearia não encontrada' },
+        { status: 404 },
+      );
     }
 
     const barbershop = Array.isArray(shop.barbershops)
@@ -55,19 +64,19 @@ export async function GET(
           shopId,
           date: dateParam,
           isClosed: true,
-          message: "A barbearia está encerada/de folga neste dia.",
+          message: 'A barbearia está encerada/de folga neste dia.',
           slots: [],
         },
-        { headers: { "Cache-Control": "private, no-cache" } }
+        { headers: { 'Cache-Control': 'private, no-cache' } },
       );
     }
 
     const openTime = barbershop?.opening_time
       ? barbershop.opening_time.substring(0, 5)
-      : "09:00";
+      : '09:00';
     const closeTime = barbershop?.closing_time
       ? barbershop.closing_time.substring(0, 5)
-      : "19:00";
+      : '19:00';
 
     const slots = generateTimeSlots(openTime, closeTime, 30);
 
@@ -78,10 +87,13 @@ export async function GET(
         isClosed: false,
         slots,
       },
-      { headers: { "Cache-Control": "private, no-cache" } }
+      { headers: { 'Cache-Control': 'private, no-cache' } },
     );
   } catch (error) {
-    console.error("[API_SLOTS_ERROR]", error);
-    return NextResponse.json({ error: "Erro interno ao processar horários" }, { status: 500 });
+    console.error('[API_SLOTS_ERROR]', error);
+    return NextResponse.json(
+      { error: 'Erro interno ao processar horários' },
+      { status: 500 },
+    );
   }
 }

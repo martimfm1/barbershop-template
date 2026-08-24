@@ -6,7 +6,7 @@ export interface Client {
   email?: string;
   birth_date?: string | null;
   style_notes?: string;
-  role?: "owner" | "admin" | "barber" | "client" | string;
+  role?: 'owner' | 'admin' | 'barber' | 'client' | string;
 }
 
 export interface Service {
@@ -27,17 +27,23 @@ export interface Professional {
 export interface Appointment {
   id: string;
   date_hour: string;
-  status: "pending" | "scheduled" | "completed" | "cancelled";
+  status: 'pending' | 'scheduled' | 'completed' | 'cancelled';
   manual_name?: string | null;
   manual_phone?: string | null;
   manual_birth_date?: string | null;
   value_products?: number;
   description_products?: string;
-  payment_method?: "mbway" | "card" | string;
+  payment_method?: 'mbway' | 'card' | string;
   client_id?: string | null;
   service_id?: string | null;
   professional_id?: string | null;
-  users?: { name_complete: string; num_phone: string; email?: string; birth_date?: string | null; style_notes?: string };
+  users?: {
+    name_complete: string;
+    num_phone: string;
+    email?: string;
+    birth_date?: string | null;
+    style_notes?: string;
+  };
   services?: { name: string; price: number };
   professionals?: { name: string };
 }

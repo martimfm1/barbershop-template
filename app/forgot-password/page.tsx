@@ -1,37 +1,37 @@
-"use client";
+'use client';
 
-import { useState, useId } from "react";
-import Link from "next/link";
-import { ArrowLeft, ArrowRight, Mail, Info, CheckCircle2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { StarfieldBackground } from "@/components/ui/starfield";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useState, useId } from 'react';
+import Link from 'next/link';
+import { ArrowLeft, ArrowRight, Mail, Info, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { StarfieldBackground } from '@/components/ui/starfield';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Field,
   FieldContent,
   FieldGroup,
   FieldLabel,
-} from "@/components/ui/field";
+} from '@/components/ui/field';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
   TooltipProvider,
-} from "@/components/ui/tooltip";
-import { Spinner } from "@/components/ui/spinner";
+} from '@/components/ui/tooltip';
+import { Spinner } from '@/components/ui/spinner';
 import {
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { SiteNavbar } from "@/components/site-navbar";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { SiteNavbar } from '@/components/site-navbar';
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSent, setIsSent] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -47,20 +47,20 @@ export default function ForgotPasswordPage() {
     setErrorMsg(null);
 
     try {
-      const response = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: normalizedEmail }),
       });
 
       if (!response.ok) {
-        throw new Error("Não foi possível processar o pedido.");
+        throw new Error('Não foi possível processar o pedido.');
       }
 
       setIsSent(true);
     } catch {
       setErrorMsg(
-        "Não foi possível processar o pedido. Tenta novamente daqui a pouco.",
+        'Não foi possível processar o pedido. Tenta novamente daqui a pouco.',
       );
     } finally {
       setIsSubmitting(false);
@@ -77,7 +77,7 @@ export default function ForgotPasswordPage() {
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, ease: "easeOut" }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
                 className="w-full border border-white/10 bg-zinc-950/85 shadow-2xl shadow-black/80 backdrop-blur-xl rounded-2xl focus-within:border-white/20 transition-colors"
               >
                 <CardHeader className="gap-2 pb-2 px-5 sm:px-6 pt-6 sm:pt-7">
@@ -88,13 +88,13 @@ export default function ForgotPasswordPage() {
                   </div>
                   <CardTitle className="font-heading text-xl sm:text-2xl text-zinc-50 tracking-tight mt-1">
                     {isSent
-                      ? "Verifica o teu email"
-                      : "Redefinir palavra-passe"}
+                      ? 'Verifica o teu email'
+                      : 'Redefinir palavra-passe'}
                   </CardTitle>
                   <CardDescription className="text-xs text-zinc-400 leading-relaxed">
                     {isSent
                       ? `Se existir uma conta associada a ${email}, enviámos instruções para definir uma nova palavra-passe.`
-                      : "Indica o email da tua conta e enviaremos instruções para redefinir a palavra-passe."}
+                      : 'Indica o email da tua conta e enviaremos instruções para redefinir a palavra-passe.'}
                   </CardDescription>
                 </CardHeader>
 
@@ -179,7 +179,7 @@ export default function ForgotPasswordPage() {
                             <Spinner className="size-4 text-zinc-950" />
                           ) : (
                             <span className="flex items-center justify-center gap-2">
-                              Enviar instruções{" "}
+                              Enviar instruções{' '}
                               <ArrowRight className="size-4" />
                             </span>
                           )}

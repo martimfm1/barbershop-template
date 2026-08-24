@@ -1,7 +1,7 @@
-import Link from "next/link";
-import { SiteNavbar } from "@/components/site-navbar";
-import { MyBookingsPage } from "@/components/customer-portal/my-bookings-page";
-import { LoyaltySummary } from "@/components/customer-portal/loyalty-summary";
+import Link from 'next/link';
+import { SiteNavbar } from '@/components/site-navbar';
+import { MyBookingsPage } from '@/components/customer-portal/my-bookings-page';
+import { LoyaltySummary } from '@/components/customer-portal/loyalty-summary';
 
 export default function CustomerBookingsPage() {
   return (
@@ -17,7 +17,10 @@ export default function CustomerBookingsPage() {
       </div>
 
       <footer className="relative z-[1] mx-auto flex max-w-6xl items-center justify-center border-t border-white/[0.06] px-4 py-8 text-xs text-zinc-600 sm:px-6 lg:px-8">
-        <Link href="/barbershops" className="transition-colors hover:text-zinc-400">
+        <Link
+          href="/barbershops"
+          className="transition-colors hover:text-zinc-400"
+        >
           Explorar barbearias
         </Link>
       </footer>

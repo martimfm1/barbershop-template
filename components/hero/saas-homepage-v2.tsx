@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useMemo, useState } from "react";
-import { motion } from "motion/react";
+import Link from 'next/link';
+import { useMemo, useState } from 'react';
+import { motion } from 'motion/react';
 import {
   ArrowRight,
   BarChart3,
@@ -18,13 +18,13 @@ import {
   Sparkles,
   Store,
   UsersRound,
-} from "lucide-react";
-import { useSubscription } from "@/hooks/useSubscription";
+} from 'lucide-react';
+import { useSubscription } from '@/hooks/useSubscription';
 
-type ServiceName = "Corte + Barba" | "Corte" | "Barba";
+type ServiceName = 'Corte + Barba' | 'Corte' | 'Barba';
 type DemoService = { name: ServiceName; duration: string; price: string };
 type Plan = {
-  name: "Free" | "Pro" | "Enterprise";
+  name: 'Free' | 'Pro' | 'Enterprise';
   price: string;
   subtitle: string;
   recommended: boolean;
@@ -32,48 +32,48 @@ type Plan = {
 };
 
 const services: readonly DemoService[] = [
-  { name: "Corte + Barba", duration: "45 min", price: "20 €" },
-  { name: "Corte", duration: "30 min", price: "15 €" },
-  { name: "Barba", duration: "20 min", price: "10 €" },
+  { name: 'Corte + Barba', duration: '45 min', price: '20 €' },
+  { name: 'Corte', duration: '30 min', price: '15 €' },
+  { name: 'Barba', duration: '20 min', price: '10 €' },
 ];
 
-const slots = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30"] as const;
+const slots = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30'] as const;
 
 const plans: readonly Plan[] = [
   {
-    name: "Free",
-    price: "0 €",
-    subtitle: "Para começar",
+    name: 'Free',
+    price: '0 €',
+    subtitle: 'Para começar',
     recommended: false,
     features: [
-      "Agendamentos ilimitados",
-      "Clientes e serviços ilimitados",
-      "Reservas online + QR",
-      "1 barbeiro / localização",
+      'Agendamentos ilimitados',
+      'Clientes e serviços ilimitados',
+      'Reservas online + QR',
+      '1 barbeiro / localização',
     ],
   },
   {
-    name: "Pro",
-    price: "9,90 €",
-    subtitle: "Para crescer",
+    name: 'Pro',
+    price: '9,90 €',
+    subtitle: 'Para crescer',
     recommended: true,
     features: [
-      "Até 5 barbeiros",
-      "CRM e estatísticas avançadas",
-      "Campanhas e automações",
-      "Fidelização e seguimentos",
+      'Até 5 barbeiros',
+      'CRM e estatísticas avançadas',
+      'Campanhas e automações',
+      'Fidelização e seguimentos',
     ],
   },
   {
-    name: "Enterprise",
-    price: "29,90 €",
-    subtitle: "Para escalar",
+    name: 'Enterprise',
+    price: '29,90 €',
+    subtitle: 'Para escalar',
     recommended: false,
     features: [
-      "Barbeiros e localizações ilimitados",
-      "Permissões e gestão global",
-      "POS, stock e comissões",
-      "Relatórios empresariais avançados",
+      'Barbeiros e localizações ilimitados',
+      'Permissões e gestão global',
+      'POS, stock e comissões',
+      'Relatórios empresariais avançados',
     ],
   },
 ];
@@ -81,57 +81,57 @@ const plans: readonly Plan[] = [
 const features = [
   {
     icon: CalendarDays,
-    label: "Operação",
-    title: "Agenda que respeita a realidade",
-    text: "Serviços, duração, profissionais, folgas, pausas, bloqueios e conflitos são considerados no fluxo de marcação.",
+    label: 'Operação',
+    title: 'Agenda que respeita a realidade',
+    text: 'Serviços, duração, profissionais, folgas, pausas, bloqueios e conflitos são considerados no fluxo de marcação.',
   },
   {
     icon: UsersRound,
-    label: "Equipa",
-    title: "Permissões sem confusão",
-    text: "Owner, administradores e barbeiros partilham o plano da barbearia, enquanto cada membro recebe apenas o acesso autorizado.",
+    label: 'Equipa',
+    title: 'Permissões sem confusão',
+    text: 'Owner, administradores e barbeiros partilham o plano da barbearia, enquanto cada membro recebe apenas o acesso autorizado.',
   },
   {
     icon: Store,
-    label: "Presença",
-    title: "Uma página pública para vender",
-    text: "Serviços, equipa, avaliações e reservas ficam ligados numa página pública simples de partilhar.",
+    label: 'Presença',
+    title: 'Uma página pública para vender',
+    text: 'Serviços, equipa, avaliações e reservas ficam ligados numa página pública simples de partilhar.',
   },
   {
     icon: QrCode,
-    label: "Aquisição",
-    title: "QR pronto para o mundo real",
-    text: "Cada barbearia tem um QR único para colocar no balcão, cartões, montras ou redes sociais.",
+    label: 'Aquisição',
+    title: 'QR pronto para o mundo real',
+    text: 'Cada barbearia tem um QR único para colocar no balcão, cartões, montras ou redes sociais.',
   },
   {
     icon: Gift,
-    label: "Retenção",
-    title: "Fidelização que dá uma razão para voltar",
-    text: "Cria pontos e recompensas para transformar clientes ocasionais em clientes recorrentes.",
+    label: 'Retenção',
+    title: 'Fidelização que dá uma razão para voltar',
+    text: 'Cria pontos e recompensas para transformar clientes ocasionais em clientes recorrentes.',
   },
   {
     icon: Megaphone,
-    label: "Marketing",
-    title: "Campanhas e automações",
-    text: "Comunicação e tarefas repetitivas deixam de depender de trabalho manual todos os dias.",
+    label: 'Marketing',
+    title: 'Campanhas e automações',
+    text: 'Comunicação e tarefas repetitivas deixam de depender de trabalho manual todos os dias.',
   },
   {
     icon: BarChart3,
-    label: "Decisão",
-    title: "Estatísticas para gerir melhor",
-    text: "A atividade da operação torna-se informação útil para acompanhar evolução e tomar decisões.",
+    label: 'Decisão',
+    title: 'Estatísticas para gerir melhor',
+    text: 'A atividade da operação torna-se informação útil para acompanhar evolução e tomar decisões.',
   },
   {
     icon: BellRing,
-    label: "Relacionamento",
-    title: "Clientes acompanhados",
-    text: "Marcações, lembretes, seguimentos e gestão por email mantêm o cliente ligado à barbearia.",
+    label: 'Relacionamento',
+    title: 'Clientes acompanhados',
+    text: 'Marcações, lembretes, seguimentos e gestão por email mantêm o cliente ligado à barbearia.',
   },
   {
     icon: ShieldCheck,
-    label: "Controlo",
-    title: "Segurança no centro",
-    text: "Isolamento por barbearia, permissões server-side e validações críticas protegem dados e operações.",
+    label: 'Controlo',
+    title: 'Segurança no centro',
+    text: 'Isolamento por barbearia, permissões server-side e validações críticas protegem dados e operações.',
   },
 ] as const;
 
@@ -163,7 +163,7 @@ export function SaaSHomepageV2() {
   const [selectedService, setSelectedService] = useState<ServiceName>(
     services[0].name,
   );
-  const [selectedSlot, setSelectedSlot] = useState<string | null>("10:00");
+  const [selectedSlot, setSelectedSlot] = useState<string | null>('10:00');
   const service = useMemo(
     () => services.find((item) => item.name === selectedService) ?? services[0],
     [selectedService],
@@ -265,7 +265,7 @@ export function SaaSHomepageV2() {
                             setSelectedSlot(null);
                           }}
                           aria-pressed={active}
-                          className={`flex min-h-14 items-center justify-between border px-3.5 text-left transition ${active ? "border-white/20 bg-white/[0.06]" : "border-white/8 bg-white/[0.025] hover:bg-white/[0.045]"}`}
+                          className={`flex min-h-14 items-center justify-between border px-3.5 text-left transition ${active ? 'border-white/20 bg-white/[0.06]' : 'border-white/8 bg-white/[0.025] hover:bg-white/[0.045]'}`}
                         >
                           <div>
                             <p className="text-sm font-medium text-zinc-100">
@@ -302,7 +302,7 @@ export function SaaSHomepageV2() {
                           type="button"
                           onClick={() => setSelectedSlot(slot)}
                           aria-pressed={active}
-                          className={`min-h-10 border text-xs font-medium transition ${active ? "border-emerald-400/30 bg-emerald-400/[0.10] text-emerald-200" : "border-white/8 bg-white/[0.025] text-zinc-300 hover:bg-white/[0.05]"}`}
+                          className={`min-h-10 border text-xs font-medium transition ${active ? 'border-emerald-400/30 bg-emerald-400/[0.10] text-emerald-200' : 'border-white/8 bg-white/[0.025] text-zinc-300 hover:bg-white/[0.05]'}`}
                         >
                           {slot}
                         </button>
@@ -315,8 +315,8 @@ export function SaaSHomepageV2() {
                     <div>
                       <p className="text-xs text-zinc-500">Resumo</p>
                       <p className="mt-1 text-sm text-zinc-200">
-                        {service.name} · {service.duration} ·{" "}
-                        {selectedSlot ?? "Escolhe uma hora"}
+                        {service.name} · {service.duration} ·{' '}
+                        {selectedSlot ?? 'Escolhe uma hora'}
                       </p>
                     </div>
                     <Link
@@ -329,7 +329,7 @@ export function SaaSHomepageV2() {
                 </div>
               </div>
               <div className="mt-2 grid grid-cols-3 gap-2">
-                {["Serviço", "Horário", "Confirmação"].map((item, index) => (
+                {['Serviço', 'Horário', 'Confirmação'].map((item, index) => (
                   <div
                     key={item}
                     className="border border-white/8 bg-white/[0.02] px-2.5 py-2.5 text-[11px] text-zinc-500"
@@ -388,7 +388,7 @@ export function SaaSHomepageV2() {
               key={title}
               initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-70px" }}
+              viewport={{ once: true, margin: '-70px' }}
               transition={{ duration: 0.4, delay: index * 0.02 }}
               className="border border-white/10 bg-zinc-900/40 p-5 transition hover:border-white/20 hover:bg-white/[0.035] sm:p-6"
             >
@@ -419,9 +419,9 @@ export function SaaSHomepageV2() {
           </h2>
           <div className="mt-7 space-y-3">
             {[
-              "O cliente consulta todas as marcações associadas ao mesmo email.",
-              "Pode cancelar dentro da janela definida pela barbearia.",
-              "Pode reagendar para horários que respeitam a operação real.",
+              'O cliente consulta todas as marcações associadas ao mesmo email.',
+              'Pode cancelar dentro da janela definida pela barbearia.',
+              'Pode reagendar para horários que respeitam a operação real.',
             ].map((text) => (
               <div
                 key={text}
@@ -448,9 +448,9 @@ export function SaaSHomepageV2() {
           </h2>
           <div className="mt-7 space-y-3">
             {[
-              "Todos os membros herdam as funcionalidades do plano do tenant.",
-              "Owner, admin e barbeiro podem ter acessos diferentes.",
-              "Barbeiros ligados à equipa contam corretamente para a quota do plano.",
+              'Todos os membros herdam as funcionalidades do plano do tenant.',
+              'Owner, admin e barbeiro podem ter acessos diferentes.',
+              'Barbeiros ligados à equipa contam corretamente para a quota do plano.',
             ].map((text) => (
               <div
                 key={text}
@@ -479,30 +479,28 @@ export function SaaSHomepageV2() {
         <div className="mt-10 grid gap-3 lg:grid-cols-3">
           {plans.map((planItem) => {
             const tierKey = planItem.name.toLowerCase() as
-              | "free"
-              | "pro"
-              | "enterprise";
+              'free' | 'pro' | 'enterprise';
             const isCurrentPlan = isAuthenticated && currentPlan === tierKey;
 
-            let label = "Mudar para este plano";
-            let href = "/plans";
+            let label = 'Mudar para este plano';
+            let href = '/plans';
             let isDisabled = false;
 
             if (!isAuthenticated) {
-              href = "/registo";
+              href = '/registo';
               label =
-                tierKey === "free"
-                  ? "Começar gratuitamente"
-                  : "Criar conta para começar";
+                tierKey === 'free'
+                  ? 'Começar gratuitamente'
+                  : 'Criar conta para começar';
             } else if (isCurrentPlan) {
-              label = "Plano atual";
+              label = 'Plano atual';
               isDisabled = true;
             }
 
             return (
               <article
                 key={planItem.name}
-                className={`relative border p-5 sm:p-6 ${planItem.recommended ? "border-emerald-400/30 bg-emerald-400/[0.055]" : "border-white/10 bg-zinc-900/35"}`}
+                className={`relative border p-5 sm:p-6 ${planItem.recommended ? 'border-emerald-400/30 bg-emerald-400/[0.055]' : 'border-white/10 bg-zinc-900/35'}`}
               >
                 {planItem.recommended ? (
                   <span className="absolute right-4 top-4 border border-emerald-400/20 bg-emerald-400/[0.08] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200">
@@ -518,10 +516,10 @@ export function SaaSHomepageV2() {
                 <p className="mt-5 text-3xl font-semibold tracking-tight text-white">
                   {planItem.price}
                   <span className="text-sm font-normal text-zinc-500">
-                    {planItem.name === "Free" ? "" : " / mês"}
+                    {planItem.name === 'Free' ? '' : ' / mês'}
                   </span>
                 </p>
-                {planItem.name === "Pro" ? (
+                {planItem.name === 'Pro' ? (
                   <p className="mt-2 text-xs font-semibold text-emerald-300/90">
                     14 dias grátis para novos utilizadores.
                   </p>
@@ -549,9 +547,9 @@ export function SaaSHomepageV2() {
                   <Link
                     href={href}
                     aria-disabled={authLoading}
-                    className={`mt-7 inline-flex min-h-11 w-full items-center justify-center gap-2 text-sm font-semibold ${planItem.recommended ? "bg-white text-zinc-950 hover:bg-emerald-300" : "border border-white/10 bg-white/[0.04] text-white hover:bg-white/10"} ${authLoading ? "pointer-events-none opacity-60" : ""}`}
+                    className={`mt-7 inline-flex min-h-11 w-full items-center justify-center gap-2 text-sm font-semibold ${planItem.recommended ? 'bg-white text-zinc-950 hover:bg-emerald-300' : 'border border-white/10 bg-white/[0.04] text-white hover:bg-white/10'} ${authLoading ? 'pointer-events-none opacity-60' : ''}`}
                   >
-                    {authLoading ? "A carregar…" : label}
+                    {authLoading ? 'A carregar…' : label}
                     <ArrowRight className="size-4" />
                   </Link>
                 )}
@@ -560,7 +558,7 @@ export function SaaSHomepageV2() {
           })}
         </div>
         <p className="mt-5 text-xs text-zinc-600">
-          Os limites e funcionalidades completos estão disponíveis em{" "}
+          Os limites e funcionalidades completos estão disponíveis em{' '}
           <Link
             href="/plans"
             className="text-zinc-400 underline-offset-4 hover:underline"

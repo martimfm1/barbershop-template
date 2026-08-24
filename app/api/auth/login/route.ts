@@ -1,25 +1,25 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
   try {
     const body: unknown = await request.json();
-    if (typeof body !== "object" || body === null) {
-      return NextResponse.json({ error: "Pedido inválido." }, { status: 400 });
+    if (typeof body !== 'object' || body === null) {
+      return NextResponse.json({ error: 'Pedido inválido.' }, { status: 400 });
     }
 
     const email =
-      "email" in body && typeof body.email === "string"
+      'email' in body && typeof body.email === 'string'
         ? body.email.trim().toLowerCase()
-        : "";
+        : '';
     const password =
-      "password" in body && typeof body.password === "string"
+      'password' in body && typeof body.password === 'string'
         ? body.password
-        : "";
+        : '';
 
     if (!email || !password || email.length > 254 || password.length > 128) {
       return NextResponse.json(
-        { error: "Email e palavra-passe são obrigatórios." },
+        { error: 'Email e palavra-passe são obrigatórios.' },
         { status: 400 },
       );
     }
@@ -31,21 +31,21 @@ export async function POST(request: Request) {
 
     if (authError || !authData.user) {
       return NextResponse.json(
-        { error: "Credenciais inválidas." },
+        { error: 'Credenciais inválidas.' },
         { status: 401 },
       );
     }
 
     const { data: profile, error: profileError } = await supabase
-      .from("users")
-      .select("id, name_complete, barbershop_id, role")
-      .eq("id", authData.user.id)
+      .from('users')
+      .select('id, name_complete, barbershop_id, role')
+      .eq('id', authData.user.id)
       .maybeSingle();
 
     if (profileError) {
-      console.error("[LOGIN_PROFILE_ERROR]", profileError.message);
+      console.error('[LOGIN_PROFILE_ERROR]', profileError.message);
       return NextResponse.json(
-        { error: "Não foi possível carregar o perfil da conta." },
+        { error: 'Não foi possível carregar o perfil da conta.' },
         { status: 500 },
       );
     }
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
           : {
               id: authData.user.id,
               name_complete:
-                typeof authData.user.user_metadata?.name_complete === "string"
+                typeof authData.user.user_metadata?.name_complete === 'string'
                   ? authData.user.user_metadata.name_complete
                   : null,
               barbershop_id: null,
@@ -73,16 +73,16 @@ export async function POST(request: Request) {
       },
       {
         status: 200,
-        headers: { "Cache-Control": "no-store" },
+        headers: { 'Cache-Control': 'no-store' },
       },
     );
   } catch (error) {
     console.error(
-      "[LOGIN_ERROR]",
-      error instanceof Error ? error.name : "unknown",
+      '[LOGIN_ERROR]',
+      error instanceof Error ? error.name : 'unknown',
     );
     return NextResponse.json(
-      { error: "Ocorreu um erro interno no início de sessão." },
+      { error: 'Ocorreu um erro interno no início de sessão.' },
       { status: 500 },
     );
   }

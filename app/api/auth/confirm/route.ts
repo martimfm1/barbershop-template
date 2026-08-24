@@ -1,19 +1,23 @@
-import { type EmailOtpType } from "@supabase/supabase-js";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { type EmailOtpType } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
 
-const allowedTypes = new Set<EmailOtpType>(["email"]);
+const allowedTypes = new Set<EmailOtpType>(['email']);
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
-  const tokenHash = requestUrl.searchParams.get("token_hash");
-  const typeValue = requestUrl.searchParams.get("type");
+  const tokenHash = requestUrl.searchParams.get('token_hash');
+  const typeValue = requestUrl.searchParams.get('type');
   const origin = requestUrl.origin;
 
-  if (!tokenHash || !typeValue || !allowedTypes.has(typeValue as EmailOtpType)) {
+  if (
+    !tokenHash ||
+    !typeValue ||
+    !allowedTypes.has(typeValue as EmailOtpType)
+  ) {
     return NextResponse.redirect(
-      new URL("/login?error=Link+de+confirmação+inválido+ou+expirado", origin),
+      new URL('/login?error=Link+de+confirmação+inválido+ou+expirado', origin),
     );
   }
 
@@ -45,15 +49,15 @@ export async function GET(request: Request) {
   });
 
   if (error) {
-    console.warn("[AUTH_EMAIL_CONFIRM_REJECTED]", {
+    console.warn('[AUTH_EMAIL_CONFIRM_REJECTED]', {
       code: error.code,
       status: error.status,
     });
 
     return NextResponse.redirect(
-      new URL("/login?error=Link+de+confirmação+inválido+ou+expirado", origin),
+      new URL('/login?error=Link+de+confirmação+inválido+ou+expirado', origin),
     );
   }
 
-  return NextResponse.redirect(new URL("/email-confirmed", origin));
+  return NextResponse.redirect(new URL('/email-confirmed', origin));
 }

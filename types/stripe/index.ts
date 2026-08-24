@@ -1,6 +1,6 @@
-import type Stripe from "stripe";
+import type Stripe from 'stripe';
 
-export type BillingPlan = "free" | "pro" | "enterprise";
+export type BillingPlan = 'free' | 'pro' | 'enterprise';
 export type SubscriptionStatus = Stripe.Subscription.Status;
 
 export interface SubscriptionRecord {
@@ -34,17 +34,17 @@ export class BillingError extends Error {
     public readonly context?: Record<string, unknown>,
   ) {
     super(message);
-    this.name = "BillingError";
+    this.name = 'BillingError';
   }
 }
 
 export type BillingErrorCode =
-  | "BILLING_NOT_CONFIGURED"
-  | "INVALID_PRICE"
-  | "CUSTOMER_NOT_FOUND"
-  | "SUBSCRIPTION_NOT_FOUND"
-  | "SUBSCRIPTION_NOT_ACTIVE"
-  | "DB_READ_FAILED"
-  | "DB_WRITE_FAILED"
-  | "WEBHOOK_VERIFICATION_FAILED"
-  | "WEBHOOK_PROCESSING_FAILED";
+  | 'BILLING_NOT_CONFIGURED'
+  | 'INVALID_PRICE'
+  | 'CUSTOMER_NOT_FOUND'
+  | 'SUBSCRIPTION_NOT_FOUND'
+  | 'SUBSCRIPTION_NOT_ACTIVE'
+  | 'DB_READ_FAILED'
+  | 'DB_WRITE_FAILED'
+  | 'WEBHOOK_VERIFICATION_FAILED'
+  | 'WEBHOOK_PROCESSING_FAILED';

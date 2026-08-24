@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import Link from 'next/link';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   Check,
@@ -18,18 +18,18 @@ import {
   Smartphone,
   Sparkles,
   X,
-} from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 
 type Campaign = {
   id: string;
   name: string;
-  channel: "email" | "sms";
+  channel: 'email' | 'sms';
   subject: string | null;
   body: string;
   status: string;
@@ -41,48 +41,60 @@ const MAX_BODY_LENGTH = 10000;
 
 function formatStatus(status: string) {
   const labels: Record<string, string> = {
-    draft: "Rascunho",
-    scheduled: "Agendada",
-    sending: "A enviar",
-    sent: "Enviada",
-    failed: "Falhou",
-    cancelled: "Cancelada",
+    draft: 'Rascunho',
+    scheduled: 'Agendada',
+    sending: 'A enviar',
+    sent: 'Enviada',
+    failed: 'Falhou',
+    cancelled: 'Cancelada',
   };
   return labels[status] ?? status;
 }
 
 function statusClass(status: string) {
-  if (status === "sent") return "border-emerald-400/20 bg-emerald-400/10 text-emerald-300";
-  if (status === "scheduled") return "border-sky-400/20 bg-sky-400/10 text-sky-300";
-  if (status === "failed") return "border-red-400/20 bg-red-400/10 text-red-300";
-  return "border-white/10 bg-white/[0.03] text-zinc-300";
+  if (status === 'sent')
+    return 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300';
+  if (status === 'scheduled')
+    return 'border-sky-400/20 bg-sky-400/10 text-sky-300';
+  if (status === 'failed')
+    return 'border-red-400/20 bg-red-400/10 text-red-300';
+  return 'border-white/10 bg-white/[0.03] text-zinc-300';
 }
 
 export default function MarketingPage() {
   const { hasFeature, loading: accessLoading } = useFeatureAccess();
-  const allowed = hasFeature("marketing_campaigns");
+  const allowed = hasFeature('marketing_campaigns');
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [open, setOpen] = useState(false);
-  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>(
+    'desktop',
+  );
   const [form, setForm] = useState({
-    name: "",
-    channel: "email" as "email" | "sms",
-    subject: "",
-    body: "",
+    name: '',
+    channel: 'email' as 'email' | 'sms',
+    subject: '',
+    body: '',
   });
 
   const load = useCallback(async () => {
     if (!allowed) return;
     setLoading(true);
     try {
-      const response = await fetch("/api/marketing/campaigns", { cache: "no-store" });
+      const response = await fetch('/api/marketing/campaigns', {
+        cache: 'no-store',
+      });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Não foi possível carregar as campanhas.");
+      if (!response.ok)
+        throw new Error(
+          data.error ?? 'Não foi possível carregar as campanhas.',
+        );
       setCampaigns(data.campaigns ?? []);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao carregar campanhas.");
+      toast.error(
+        error instanceof Error ? error.message : 'Erro ao carregar campanhas.',
+      );
     } finally {
       setLoading(false);
     }
@@ -93,9 +105,10 @@ export default function MarketingPage() {
   }, [load]);
 
   const preview = useMemo(() => {
-    const fallbackName = form.name.trim() || "Nova campanha";
-    const fallbackSubject = form.subject.trim() || "Assunto da campanha";
-    const fallbackBody = form.body.trim() || "A tua mensagem vai aparecer aqui enquanto escreves.";
+    const fallbackName = form.name.trim() || 'Nova campanha';
+    const fallbackSubject = form.subject.trim() || 'Assunto da campanha';
+    const fallbackBody =
+      form.body.trim() || 'A tua mensagem vai aparecer aqui enquanto escreves.';
     return {
       name: fallbackName,
       subject: fallbackSubject,
@@ -104,8 +117,8 @@ export default function MarketingPage() {
   }, [form]);
 
   function openComposer() {
-    setForm({ name: "", channel: "email", subject: "", body: "" });
-    setPreviewMode("desktop");
+    setForm({ name: '', channel: 'email', subject: '', body: '' });
+    setPreviewMode('desktop');
     setOpen(true);
   }
 
@@ -118,19 +131,22 @@ export default function MarketingPage() {
     event.preventDefault();
     setCreating(true);
     try {
-      const response = await fetch("/api/marketing/campaigns", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/marketing/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Não foi possível criar a campanha.");
-      toast.success("Campanha criada como rascunho.");
+      if (!response.ok)
+        throw new Error(data.error ?? 'Não foi possível criar a campanha.');
+      toast.success('Campanha criada como rascunho.');
       setCampaigns((current) => [data.campaign, ...current]);
-      setForm({ name: "", channel: "email", subject: "", body: "" });
+      setForm({ name: '', channel: 'email', subject: '', body: '' });
       setOpen(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao criar campanha.");
+      toast.error(
+        error instanceof Error ? error.message : 'Erro ao criar campanha.',
+      );
     } finally {
       setCreating(false);
     }
@@ -146,7 +162,9 @@ export default function MarketingPage() {
             <CardContent className="flex flex-col items-center gap-5 py-16 text-center">
               <Lock className="h-8 w-8 text-primary" />
               <h1 className="text-2xl font-semibold">Campanhas de marketing</h1>
-              <p className="text-muted-foreground">Crie campanhas segmentadas de email e SMS com o plano Pro.</p>
+              <p className="text-muted-foreground">
+                Crie campanhas segmentadas de email e SMS com o plano Pro.
+              </p>
               <Button asChild>
                 <Link href="/dashboard/billing">Fazer upgrade</Link>
               </Button>
@@ -166,9 +184,12 @@ export default function MarketingPage() {
               <Sparkles className="h-3.5 w-3.5" />
               Marketing · Pro
             </div>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Campanhas</h1>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+              Campanhas
+            </h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
-              Cria uma mensagem, escolhe o canal e vê imediatamente como ela será apresentada ao cliente.
+              Cria uma mensagem, escolhe o canal e vê imediatamente como ela
+              será apresentada ao cliente.
             </p>
           </div>
 
@@ -189,33 +210,43 @@ export default function MarketingPage() {
         <section className="grid gap-3 md:grid-cols-3">
           {[
             {
-              step: "01",
-              title: "Define a campanha",
-              description: "Dá-lhe um nome interno para conseguires identificá-la depois.",
+              step: '01',
+              title: 'Define a campanha',
+              description:
+                'Dá-lhe um nome interno para conseguires identificá-la depois.',
               icon: Sparkles,
             },
             {
-              step: "02",
-              title: "Escolhe o canal",
-              description: "Email permite assunto + mensagem; SMS é focado numa mensagem curta.",
+              step: '02',
+              title: 'Escolhe o canal',
+              description:
+                'Email permite assunto + mensagem; SMS é focado numa mensagem curta.',
               icon: Send,
             },
             {
-              step: "03",
-              title: "Revê antes de guardar",
-              description: "O preview atualiza-se enquanto escreves para evitares surpresas.",
+              step: '03',
+              title: 'Revê antes de guardar',
+              description:
+                'O preview atualiza-se enquanto escreves para evitares surpresas.',
               icon: Eye,
             },
           ].map(({ step, title, description, icon: Icon }) => (
-            <div key={step} className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5">
+            <div
+              key={step}
+              className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5"
+            >
               <div className="flex items-start gap-3">
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-primary">
                   <Icon className="size-4" />
                 </div>
                 <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Passo {step}</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                    Passo {step}
+                  </div>
                   <p className="mt-1 text-sm font-semibold">{title}</p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    {description}
+                  </p>
                 </div>
               </div>
             </div>
@@ -234,10 +265,17 @@ export default function MarketingPage() {
                     </span>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Os dados abaixo servem para preparar a campanha. O nome interno não é enviado aos clientes.
+                    Os dados abaixo servem para preparar a campanha. O nome
+                    interno não é enviado aos clientes.
                   </p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={closeComposer} aria-label="Fechar editor" disabled={creating}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={closeComposer}
+                  aria-label="Fechar editor"
+                  disabled={creating}
+                >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -245,43 +283,74 @@ export default function MarketingPage() {
 
             <CardContent className="p-0">
               <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)]">
-                <form onSubmit={createCampaign} className="space-y-6 border-b border-white/10 p-5 sm:p-7 lg:border-b-0 lg:border-r">
+                <form
+                  onSubmit={createCampaign}
+                  className="space-y-6 border-b border-white/10 p-5 sm:p-7 lg:border-b-0 lg:border-r"
+                >
                   <section className="space-y-4">
                     <div>
                       <div className="flex items-center gap-2 text-sm font-semibold">
-                        <span className="flex size-6 items-center justify-center rounded-full bg-white text-[11px] text-zinc-950">1</span>
+                        <span className="flex size-6 items-center justify-center rounded-full bg-white text-[11px] text-zinc-950">
+                          1
+                        </span>
                         Configuração
                       </div>
-                      <p className="mt-1 pl-8 text-xs text-muted-foreground">Começa pelo contexto da campanha. Isto ajuda-te a organizá-la internamente.</p>
+                      <p className="mt-1 pl-8 text-xs text-muted-foreground">
+                        Começa pelo contexto da campanha. Isto ajuda-te a
+                        organizá-la internamente.
+                      </p>
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <label htmlFor="campaign-name" className="text-sm font-medium">Nome interno</label>
+                        <label
+                          htmlFor="campaign-name"
+                          className="text-sm font-medium"
+                        >
+                          Nome interno
+                        </label>
                         <Input
                           id="campaign-name"
                           className="mt-1.5"
                           value={form.name}
                           maxLength={120}
-                          onChange={(e) => setForm({ ...form, name: e.target.value })}
+                          onChange={(e) =>
+                            setForm({ ...form, name: e.target.value })
+                          }
                           placeholder="Ex.: Campanha de aniversário"
                           required
                         />
-                        <p className="mt-1.5 text-[11px] text-muted-foreground">Só aparece no teu painel.</p>
+                        <p className="mt-1.5 text-[11px] text-muted-foreground">
+                          Só aparece no teu painel.
+                        </p>
                       </div>
 
                       <div>
-                        <label htmlFor="campaign-channel" className="text-sm font-medium">Canal</label>
+                        <label
+                          htmlFor="campaign-channel"
+                          className="text-sm font-medium"
+                        >
+                          Canal
+                        </label>
                         <select
                           id="campaign-channel"
                           className="mt-1.5 flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary"
                           value={form.channel}
-                          onChange={(e) => setForm({ ...form, channel: e.target.value as "email" | "sms", subject: e.target.value === "sms" ? "" : form.subject })}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              channel: e.target.value as 'email' | 'sms',
+                              subject:
+                                e.target.value === 'sms' ? '' : form.subject,
+                            })
+                          }
                         >
                           <option value="email">Email</option>
                           <option value="sms">SMS</option>
                         </select>
-                        <p className="mt-1.5 text-[11px] text-muted-foreground">Escolhe onde a mensagem será recebida.</p>
+                        <p className="mt-1.5 text-[11px] text-muted-foreground">
+                          Escolhe onde a mensagem será recebida.
+                        </p>
                       </div>
                     </div>
                   </section>
@@ -289,50 +358,80 @@ export default function MarketingPage() {
                   <section className="space-y-4 border-t border-white/10 pt-6">
                     <div>
                       <div className="flex items-center gap-2 text-sm font-semibold">
-                        <span className="flex size-6 items-center justify-center rounded-full bg-white text-[11px] text-zinc-950">2</span>
+                        <span className="flex size-6 items-center justify-center rounded-full bg-white text-[11px] text-zinc-950">
+                          2
+                        </span>
                         Conteúdo
                       </div>
-                      <p className="mt-1 pl-8 text-xs text-muted-foreground">Escreve como falarias com um cliente real. O preview acompanha cada alteração.</p>
+                      <p className="mt-1 pl-8 text-xs text-muted-foreground">
+                        Escreve como falarias com um cliente real. O preview
+                        acompanha cada alteração.
+                      </p>
                     </div>
 
-                    {form.channel === "email" && (
+                    {form.channel === 'email' && (
                       <div>
                         <div className="flex items-center justify-between gap-3">
-                          <label htmlFor="campaign-subject" className="text-sm font-medium">Assunto</label>
-                          <span className="text-[11px] text-muted-foreground">{form.subject.length}/200</span>
+                          <label
+                            htmlFor="campaign-subject"
+                            className="text-sm font-medium"
+                          >
+                            Assunto
+                          </label>
+                          <span className="text-[11px] text-muted-foreground">
+                            {form.subject.length}/200
+                          </span>
                         </div>
                         <Input
                           id="campaign-subject"
                           className="mt-1.5"
                           value={form.subject}
                           maxLength={200}
-                          onChange={(e) => setForm({ ...form, subject: e.target.value })}
+                          onChange={(e) =>
+                            setForm({ ...form, subject: e.target.value })
+                          }
                           placeholder="Ex.: Temos uma surpresa para ti"
                           required
                         />
-                        <p className="mt-1.5 text-[11px] text-muted-foreground">É a primeira linha que o cliente verá no email.</p>
+                        <p className="mt-1.5 text-[11px] text-muted-foreground">
+                          É a primeira linha que o cliente verá no email.
+                        </p>
                       </div>
                     )}
 
                     <div>
                       <div className="flex items-center justify-between gap-3">
-                        <label htmlFor="campaign-body" className="text-sm font-medium">Mensagem</label>
-                        <span className={`text-[11px] ${form.body.length > 9000 ? "text-amber-400" : "text-muted-foreground"}`}>{form.body.length}/{MAX_BODY_LENGTH}</span>
+                        <label
+                          htmlFor="campaign-body"
+                          className="text-sm font-medium"
+                        >
+                          Mensagem
+                        </label>
+                        <span
+                          className={`text-[11px] ${form.body.length > 9000 ? 'text-amber-400' : 'text-muted-foreground'}`}
+                        >
+                          {form.body.length}/{MAX_BODY_LENGTH}
+                        </span>
                       </div>
                       <Textarea
                         id="campaign-body"
                         className="mt-1.5 min-h-40 resize-y"
                         value={form.body}
                         maxLength={MAX_BODY_LENGTH}
-                        onChange={(e) => setForm({ ...form, body: e.target.value })}
-                        placeholder={form.channel === "email" ? "Olá! Temos uma novidade para ti..." : "Olá! Temos uma novidade para ti..."}
+                        onChange={(e) =>
+                          setForm({ ...form, body: e.target.value })
+                        }
+                        placeholder={
+                          form.channel === 'email'
+                            ? 'Olá! Temos uma novidade para ti...'
+                            : 'Olá! Temos uma novidade para ti...'
+                        }
                         required
                       />
                       <p className="mt-1.5 text-[11px] text-muted-foreground">
-                        {form.channel === "email"
-                          ? "Mantém a mensagem clara, curta e com uma ação evidente."
-                          : "SMS funciona melhor com uma mensagem direta e fácil de ler num só momento."
-                        }
+                        {form.channel === 'email'
+                          ? 'Mantém a mensagem clara, curta e com uma ação evidente.'
+                          : 'SMS funciona melhor com uma mensagem direta e fácil de ler num só momento.'}
                       </p>
                     </div>
                   </section>
@@ -341,18 +440,38 @@ export default function MarketingPage() {
                     <div className="flex gap-3">
                       <Info className="mt-0.5 size-4 shrink-0 text-sky-300" />
                       <div>
-                        <p className="text-sm font-semibold text-sky-100">Antes de guardar</p>
+                        <p className="text-sm font-semibold text-sky-100">
+                          Antes de guardar
+                        </p>
                         <p className="mt-1 text-xs leading-5 text-sky-100/65">
-                          Esta ação cria a campanha como <strong className="text-sky-100">rascunho</strong>. Usa o preview para confirmar o conteúdo antes de a utilizares noutro fluxo.
+                          Esta ação cria a campanha como{' '}
+                          <strong className="text-sky-100">rascunho</strong>.
+                          Usa o preview para confirmar o conteúdo antes de a
+                          utilizares noutro fluxo.
                         </p>
                       </div>
                     </div>
                   </section>
 
                   <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                    <Button type="button" variant="ghost" onClick={closeComposer} disabled={creating}>Cancelar</Button>
-                    <Button type="submit" disabled={creating} className="sm:min-w-44">
-                      {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={closeComposer}
+                      disabled={creating}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={creating}
+                      className="sm:min-w-44"
+                    >
+                      {creating ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="mr-2 h-4 w-4" />
+                      )}
                       Guardar rascunho
                     </Button>
                   </div>
@@ -366,20 +485,22 @@ export default function MarketingPage() {
                           <Eye className="size-4 text-primary" />
                           Preview ao vivo
                         </div>
-                        <p className="mt-1 text-xs text-muted-foreground">É assim que a mensagem ficará visualmente.</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          É assim que a mensagem ficará visualmente.
+                        </p>
                       </div>
                       <div className="inline-flex w-fit rounded-lg border border-white/10 bg-white/[0.03] p-1">
                         <button
                           type="button"
-                          onClick={() => setPreviewMode("desktop")}
-                          className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition ${previewMode === "desktop" ? "bg-white text-zinc-950" : "text-zinc-400 hover:text-zinc-200"}`}
+                          onClick={() => setPreviewMode('desktop')}
+                          className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition ${previewMode === 'desktop' ? 'bg-white text-zinc-950' : 'text-zinc-400 hover:text-zinc-200'}`}
                         >
                           <Monitor className="size-3.5" /> Desktop
                         </button>
                         <button
                           type="button"
-                          onClick={() => setPreviewMode("mobile")}
-                          className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition ${previewMode === "mobile" ? "bg-white text-zinc-950" : "text-zinc-400 hover:text-zinc-200"}`}
+                          onClick={() => setPreviewMode('mobile')}
+                          className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition ${previewMode === 'mobile' ? 'bg-white text-zinc-950' : 'text-zinc-400 hover:text-zinc-200'}`}
                         >
                           <Smartphone className="size-3.5" /> Mobile
                         </button>
@@ -387,37 +508,55 @@ export default function MarketingPage() {
                     </div>
 
                     <div className="flex justify-center rounded-2xl border border-white/10 bg-zinc-900/80 p-4 sm:p-6">
-                      {form.channel === "email" ? (
-                        <div className={`w-full overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-950 shadow-2xl transition-all ${previewMode === "mobile" ? "max-w-[320px]" : "max-w-[520px]"}`}>
+                      {form.channel === 'email' ? (
+                        <div
+                          className={`w-full overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-950 shadow-2xl transition-all ${previewMode === 'mobile' ? 'max-w-[320px]' : 'max-w-[520px]'}`}
+                        >
                           <div className="border-b border-zinc-800 bg-zinc-900 px-4 py-3">
                             <div className="flex items-center gap-2 text-[10px] text-zinc-500">
                               <Mail className="size-3.5" />
                               Email preview
                             </div>
-                            <p className="mt-1 truncate text-xs text-zinc-300">Para: cliente@exemplo.pt</p>
+                            <p className="mt-1 truncate text-xs text-zinc-300">
+                              Para: cliente@exemplo.pt
+                            </p>
                           </div>
                           <div className="space-y-4 bg-white p-5 text-zinc-900 sm:p-6">
                             <div>
-                              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">{preview.name}</p>
-                              <h3 className="mt-2 text-lg font-bold leading-tight">{preview.subject}</h3>
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
+                                {preview.name}
+                              </p>
+                              <h3 className="mt-2 text-lg font-bold leading-tight">
+                                {preview.subject}
+                              </h3>
                             </div>
-                            <div className="whitespace-pre-wrap text-sm leading-6 text-zinc-700">{preview.body}</div>
-                            <div className="rounded-xl bg-zinc-100 p-3 text-[11px] text-zinc-500">Mensagem de exemplo da tua barbearia.</div>
+                            <div className="whitespace-pre-wrap text-sm leading-6 text-zinc-700">
+                              {preview.body}
+                            </div>
+                            <div className="rounded-xl bg-zinc-100 p-3 text-[11px] text-zinc-500">
+                              Mensagem de exemplo da tua barbearia.
+                            </div>
                           </div>
                         </div>
                       ) : (
-                        <div className={`rounded-[28px] border border-zinc-700 bg-zinc-950 p-3 shadow-2xl transition-all ${previewMode === "mobile" ? "w-full max-w-[300px]" : "w-full max-w-[440px]"}`}>
+                        <div
+                          className={`rounded-[28px] border border-zinc-700 bg-zinc-950 p-3 shadow-2xl transition-all ${previewMode === 'mobile' ? 'w-full max-w-[300px]' : 'w-full max-w-[440px]'}`}
+                        >
                           <div className="overflow-hidden rounded-[22px] border border-zinc-800 bg-zinc-900">
                             <div className="flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3 text-[10px] text-zinc-500">
                               <span>Mensagens</span>
                               <MessageSquare className="size-3.5" />
                             </div>
                             <div className="min-h-64 bg-zinc-900 p-4">
-                              <div className="mb-3 text-center text-[10px] text-zinc-600">Hoje, agora</div>
+                              <div className="mb-3 text-center text-[10px] text-zinc-600">
+                                Hoje, agora
+                              </div>
                               <div className="ml-auto max-w-[86%] rounded-2xl rounded-br-md bg-primary px-4 py-3 text-sm leading-5 text-primary-foreground shadow-lg">
                                 {preview.body}
                               </div>
-                              <div className="mt-2 text-right text-[9px] text-zinc-600">Enviado pela barbearia</div>
+                              <div className="mt-2 text-right text-[9px] text-zinc-600">
+                                Enviado pela barbearia
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -426,14 +565,19 @@ export default function MarketingPage() {
 
                     <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
                       <div className="flex gap-3">
-                        {form.channel === "email" ? <Mail className="mt-0.5 size-4 text-zinc-400" /> : <MessageSquare className="mt-0.5 size-4 text-zinc-400" />}
+                        {form.channel === 'email' ? (
+                          <Mail className="mt-0.5 size-4 text-zinc-400" />
+                        ) : (
+                          <MessageSquare className="mt-0.5 size-4 text-zinc-400" />
+                        )}
                         <div>
-                          <p className="text-sm font-semibold">O que este preview mostra?</p>
+                          <p className="text-sm font-semibold">
+                            O que este preview mostra?
+                          </p>
                           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                            {form.channel === "email"
-                              ? "Vês o assunto e o corpo da mensagem num layout semelhante ao de um email real. O nome interno continua apenas no teu painel."
-                              : "Vês a mensagem num contexto de conversa para perceberes rapidamente o tamanho e a leitura em mobile."
-                            }
+                            {form.channel === 'email'
+                              ? 'Vês o assunto e o corpo da mensagem num layout semelhante ao de um email real. O nome interno continua apenas no teu painel.'
+                              : 'Vês a mensagem num contexto de conversa para perceberes rapidamente o tamanho e a leitura em mobile.'}
                           </p>
                         </div>
                       </div>
@@ -449,37 +593,69 @@ export default function MarketingPage() {
           <CardHeader className="flex-row items-center justify-between gap-4">
             <div>
               <CardTitle>Campanhas recentes</CardTitle>
-              <p className="mt-1 text-xs text-muted-foreground">Os teus rascunhos e campanhas ficam reunidos aqui.</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Os teus rascunhos e campanhas ficam reunidos aqui.
+              </p>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => void load()} disabled={loading} aria-label="Atualizar campanhas">
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => void load()}
+              disabled={loading}
+              aria-label="Atualizar campanhas"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
+              />
             </Button>
           </CardHeader>
           <CardContent>
             {loading && !campaigns.length ? (
               <div className="flex h-40 items-center justify-center text-muted-foreground">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                A carregar campanhas…
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />A carregar
+                campanhas…
               </div>
             ) : campaigns.length ? (
               <div className="space-y-2">
                 {campaigns.map((campaign) => (
-                  <div key={campaign.id} className="group flex flex-col gap-4 rounded-2xl border border-transparent p-4 transition hover:border-white/10 hover:bg-white/[0.02] sm:flex-row sm:items-center sm:justify-between">
+                  <div
+                    key={campaign.id}
+                    className="group flex flex-col gap-4 rounded-2xl border border-transparent p-4 transition hover:border-white/10 hover:bg-white/[0.02] sm:flex-row sm:items-center sm:justify-between"
+                  >
                     <div className="flex min-w-0 items-start gap-3">
                       <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-primary">
-                        {campaign.channel === "email" ? <Mail className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
+                        {campaign.channel === 'email' ? (
+                          <Mail className="h-4 w-4" />
+                        ) : (
+                          <MessageSquare className="h-4 w-4" />
+                        )}
                       </div>
                       <div className="min-w-0">
                         <p className="truncate font-medium">{campaign.name}</p>
                         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                          <span>{campaign.channel === "email" ? "Email" : "SMS"}</span>
+                          <span>
+                            {campaign.channel === 'email' ? 'Email' : 'SMS'}
+                          </span>
                           <span>·</span>
-                          <span>{new Date(campaign.created_at).toLocaleDateString("pt-PT")}</span>
-                          {campaign.subject && <><span>·</span><span className="max-w-[240px] truncate">{campaign.subject}</span></>}
+                          <span>
+                            {new Date(campaign.created_at).toLocaleDateString(
+                              'pt-PT',
+                            )}
+                          </span>
+                          {campaign.subject && (
+                            <>
+                              <span>·</span>
+                              <span className="max-w-[240px] truncate">
+                                {campaign.subject}
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
-                    <span className={`w-fit rounded-full border px-3 py-1 text-xs font-medium ${statusClass(campaign.status)}`}>
+                    <span
+                      className={`w-fit rounded-full border px-3 py-1 text-xs font-medium ${statusClass(campaign.status)}`}
+                    >
                       {formatStatus(campaign.status)}
                     </span>
                   </div>
@@ -491,7 +667,10 @@ export default function MarketingPage() {
                   <Send className="size-5 text-muted-foreground" />
                 </div>
                 <p className="mt-4 font-medium">Ainda não existem campanhas</p>
-                <p className="mt-1 text-sm text-muted-foreground">Cria a primeira campanha e confirma o conteúdo no preview antes de a guardares.</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Cria a primeira campanha e confirma o conteúdo no preview
+                  antes de a guardares.
+                </p>
                 <Button className="mt-5" onClick={openComposer}>
                   <Plus className="mr-2 h-4 w-4" />
                   Criar campanha

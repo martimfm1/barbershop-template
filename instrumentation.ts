@@ -1,5 +1,5 @@
 export async function register() {
-  if (process.env.NODE_ENV !== "production") return;
+  if (process.env.NODE_ENV !== 'production') return;
 
   const noop = () => undefined;
   console.log = noop;

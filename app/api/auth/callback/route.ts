@@ -1,10 +1,10 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
 
 function getSafeNext(value: string | null): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/email-confirmed";
+  if (!value || !value.startsWith('/') || value.startsWith('//')) {
+    return '/email-confirmed';
   }
 
   return value;
@@ -12,8 +12,8 @@ function getSafeNext(value: string | null): string {
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get("code");
-  const next = getSafeNext(requestUrl.searchParams.get("next"));
+  const code = requestUrl.searchParams.get('code');
+  const next = getSafeNext(requestUrl.searchParams.get('next'));
   const origin = requestUrl.origin;
 
   if (code) {
@@ -45,13 +45,13 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL(next, origin));
     }
 
-    console.warn("[AUTH_CALLBACK_REJECTED]", {
+    console.warn('[AUTH_CALLBACK_REJECTED]', {
       code: error.code,
       status: error.status,
     });
   }
 
   return NextResponse.redirect(
-    new URL("/login?error=Link+inv%C3%A1lido+ou+expirado", origin),
+    new URL('/login?error=Link+inv%C3%A1lido+ou+expirado', origin),
   );
 }

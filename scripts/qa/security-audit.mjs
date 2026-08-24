@@ -1,26 +1,35 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from 'node:child_process';
 
 const sourceFiles = execFileSync(
-  "git",
-  ["ls-files", "*.ts", "*.tsx", "*.js", "*.mjs", "*.sql"],
-  { encoding: "utf8" },
+  'git',
+  ['ls-files', '*.ts', '*.tsx', '*.js', '*.mjs', '*.sql'],
+  { encoding: 'utf8' },
 )
   .split(/\r?\n/)
   .map((file) => file.trim())
   .filter(Boolean)
-  .filter((file) => !file.startsWith("scripts/qa/"));
+  .filter((file) => !file.startsWith('scripts/qa/'));
 
 const patterns = [
-  { label: "service role exposta ao cliente", pattern: /NEXT_PUBLIC_[A-Z0-9_]*(SERVICE_ROLE|SECRET)/i },
   {
-    label: "segredo hardcoded",
-    pattern: /(?:sk_(?:live|test)_[A-Za-z0-9]+|whsec_[A-Za-z0-9]+|xkeysib-[A-Za-z0-9-]+|service_role\s*:\s*["'`][^"'`\n]+["'`]|service_role\s*=\s*[^\s#]+)/i,
+    label: 'service role exposta ao cliente',
+    pattern: /NEXT_PUBLIC_[A-Z0-9_]*(SERVICE_ROLE|SECRET)/i,
   },
-  { label: "stack trace enviado para resposta HTTP", pattern: /NextResponse\.json\([\s\S]{0,220}?(?:stack|error\.stack)/i },
+  {
+    label: 'segredo hardcoded',
+    pattern:
+      /(?:sk_(?:live|test)_[A-Za-z0-9]+|whsec_[A-Za-z0-9]+|xkeysib-[A-Za-z0-9-]+|service_role\s*:\s*["'`][^"'`\n]+["'`]|service_role\s*=\s*[^\s#]+)/i,
+  },
+  {
+    label: 'stack trace enviado para resposta HTTP',
+    pattern: /NextResponse\.json\([\s\S]{0,220}?(?:stack|error\.stack)/i,
+  },
 ];
 
-const sensitiveIdentifierPattern = /(?:userId|barbershopId|customerId|stripeCustomerId|subscriptionId|stripeSubscriptionId|sessionId|email|phone|address)\s*[:=]/i;
-const secretIdentifierPattern = /(?:secret|service_role|password|token|apiKey|authorization)\s*[:=]/i;
+const sensitiveIdentifierPattern =
+  /(?:userId|barbershopId|customerId|stripeCustomerId|subscriptionId|stripeSubscriptionId|sessionId|email|phone|address)\s*[:=]/i;
+const secretIdentifierPattern =
+  /(?:secret|service_role|password|token|apiKey|authorization)\s*[:=]/i;
 
 function extractConsoleArguments(source) {
   const results = [];
@@ -37,13 +46,13 @@ function extractConsoleArguments(source) {
       const char = source[index];
       if (quote) {
         if (escaped) escaped = false;
-        else if (char === "\\") escaped = true;
+        else if (char === '\\') escaped = true;
         else if (char === quote) quote = null;
         continue;
       }
-      if (char === "\"" || char === "'" || char === "`") quote = char;
-      else if (char === "(") depth += 1;
-      else if (char === ")") depth -= 1;
+      if (char === '"' || char === "'" || char === '`') quote = char;
+      else if (char === '(') depth += 1;
+      else if (char === ')') depth -= 1;
     }
     results.push(source.slice(match.index, index));
   }
@@ -54,7 +63,9 @@ function extractConsoleArguments(source) {
 const findings = [];
 
 for (const file of sourceFiles) {
-  const source = execFileSync("git", ["show", `HEAD:${file}`], { encoding: "utf8" });
+  const source = execFileSync('git', ['show', `HEAD:${file}`], {
+    encoding: 'utf8',
+  });
 
   for (const item of patterns) {
     if (item.pattern.test(source)) findings.push(`${item.label}: ${file}`);
@@ -73,9 +84,11 @@ for (const file of sourceFiles) {
 }
 
 if (findings.length) {
-  console.error("Static security audit failed:");
+  console.error('Static security audit failed:');
   for (const finding of findings) console.error(`- ${finding}`);
   process.exit(1);
 }
 
-console.log(`Static security audit passed (${sourceFiles.length} tracked source files checked).`);
+console.log(
+  `Static security audit passed (${sourceFiles.length} tracked source files checked).`,
+);

@@ -1,11 +1,11 @@
-import { notFound } from "next/navigation";
-import type { Metadata } from "next";
-import { getPlatformAdminContext } from "@/lib/internal/platform-admin";
-import PlatformAdminConsole from "./platform-admin-console";
+import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
+import { getPlatformAdminContext } from '@/lib/internal/platform-admin';
+import PlatformAdminConsole from './platform-admin-console';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  title: "Silentra Internal",
+  title: 'Silentra Internal',
   robots: { index: false, follow: false },
 };
 

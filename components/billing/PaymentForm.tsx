@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 import {
   PaymentElement,
   useStripe,
   useElements,
-} from "@stripe/react-stripe-js";
-import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+} from '@stripe/react-stripe-js';
+import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface PaymentFormProps {
   onSuccess: () => void;
@@ -36,13 +36,15 @@ export function PaymentForm({ onSuccess, onCancel }: PaymentFormProps) {
       confirmParams: {
         return_url: `${window.location.origin}/dashboard`,
       },
-      redirect: "if_required",
+      redirect: 'if_required',
     });
 
     if (error) {
-      setErrorMessage(error.message ?? "Ocorreu um erro ao processar o pagamento.");
+      setErrorMessage(
+        error.message ?? 'Ocorreu um erro ao processar o pagamento.',
+      );
       setIsLoading(false);
-    } else if (paymentIntent && paymentIntent.status === "succeeded") {
+    } else if (paymentIntent && paymentIntent.status === 'succeeded') {
       setIsLoading(false);
       setIsSuccess(true);
       setTimeout(() => {
@@ -59,8 +61,12 @@ export function PaymentForm({ onSuccess, onCancel }: PaymentFormProps) {
         <div className="flex size-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
           <CheckCircle2 className="size-8 animate-bounce" />
         </div>
-        <h3 className="mt-4 text-xl font-semibold text-zinc-50">Pagamento Confirmado!</h3>
-        <p className="mt-1 text-sm text-zinc-400">A tua subscrição já se encontra ativa.</p>
+        <h3 className="mt-4 text-xl font-semibold text-zinc-50">
+          Pagamento Confirmado!
+        </h3>
+        <p className="mt-1 text-sm text-zinc-400">
+          A tua subscrição já se encontra ativa.
+        </p>
       </div>
     );
   }
@@ -69,7 +75,7 @@ export function PaymentForm({ onSuccess, onCancel }: PaymentFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6">
       <PaymentElement
         options={{
-          layout: "tabs",
+          layout: 'tabs',
         }}
       />
 

@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import { Globe2, Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { Switch } from "@/components/ui/switch";
-import { createClient } from "@/lib/supabase/client";
-import { useBarbershop } from "@/context/BarbershopContext";
+import { useCallback, useEffect, useState } from 'react';
+import { Globe2, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
+import { createClient } from '@/lib/supabase/client';
+import { useBarbershop } from '@/context/BarbershopContext';
 
 export function BarbershopVisibilitySetting() {
   const { barbershopId } = useBarbershop();
@@ -19,14 +19,14 @@ export function BarbershopVisibilitySetting() {
     setLoading(true);
     const supabase = createClient();
     const { data, error } = await supabase
-      .from("barbershops")
-      .select("is_public_in_directory")
-      .eq("id", barbershopId)
+      .from('barbershops')
+      .select('is_public_in_directory')
+      .eq('id', barbershopId)
       .single();
 
     if (error) {
-      console.error("[BARBERSHOP_VISIBILITY_LOAD]", error);
-      toast.error("Não foi possível carregar a visibilidade da barbearia.");
+      console.error('[BARBERSHOP_VISIBILITY_LOAD]', error);
+      toast.error('Não foi possível carregar a visibilidade da barbearia.');
     } else {
       setIsVisible(data?.is_public_in_directory ?? true);
     }
@@ -47,23 +47,23 @@ export function BarbershopVisibilitySetting() {
 
     const supabase = createClient();
     const { error } = await supabase
-      .from("barbershops")
+      .from('barbershops')
       .update({ is_public_in_directory: nextValue })
-      .eq("id", barbershopId);
+      .eq('id', barbershopId);
 
     setSaving(false);
 
     if (error) {
-      console.error("[BARBERSHOP_VISIBILITY_UPDATE]", error);
+      console.error('[BARBERSHOP_VISIBILITY_UPDATE]', error);
       setIsVisible(previousValue);
-      toast.error("Não foi possível atualizar a visibilidade.");
+      toast.error('Não foi possível atualizar a visibilidade.');
       return;
     }
 
     toast.success(
       nextValue
-        ? "A tua barbearia voltou a aparecer no diretório."
-        : "A tua barbearia deixou de aparecer no diretório.",
+        ? 'A tua barbearia voltou a aparecer no diretório.'
+        : 'A tua barbearia deixou de aparecer no diretório.',
     );
   };
 
@@ -79,13 +79,17 @@ export function BarbershopVisibilitySetting() {
               Visibilidade no diretório
             </h2>
             <p className="mt-1 max-w-2xl text-xs leading-5 text-zinc-400">
-              Controla se a tua barbearia aparece em <strong className="font-medium text-zinc-300">/barbearias</strong>, onde os clientes podem descobrir e agendar serviços.
+              Controla se a tua barbearia aparece em{' '}
+              <strong className="font-medium text-zinc-300">/barbearias</strong>
+              , onde os clientes podem descobrir e agendar serviços.
             </p>
           </div>
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          {loading || saving ? <Loader2 className="size-4 animate-spin text-zinc-500" /> : null}
+          {loading || saving ? (
+            <Loader2 className="size-4 animate-spin text-zinc-500" />
+          ) : null}
           <Switch
             checked={isVisible}
             disabled={loading || saving || !barbershopId}
@@ -97,8 +101,8 @@ export function BarbershopVisibilitySetting() {
 
       <div className="mt-4 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-xs text-zinc-500">
         {isVisible
-          ? "Visível: a tua barbearia pode aparecer nos resultados públicos."
-          : "Oculta: a tua barbearia não aparece no diretório público, mas o teu link direto continua disponível."}
+          ? 'Visível: a tua barbearia pode aparecer nos resultados públicos.'
+          : 'Oculta: a tua barbearia não aparece no diretório público, mas o teu link direto continua disponível.'}
       </div>
     </section>
   );

@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useBarbershop } from "@/context/BarbershopContext";
-import { toast } from "sonner";
-import Link from "next/link";
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useBarbershop } from '@/context/BarbershopContext';
+import { toast } from 'sonner';
+import Link from 'next/link';
 
 // SERVICES
-import { appointmentService } from "@/app/dashboard/_services/appointments.service";
+import { appointmentService } from '@/app/dashboard/_services/appointments.service';
 
 // UI COMPONENTS
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // RECHARTS
 import {
@@ -26,7 +26,7 @@ import {
   Tooltip as RechartsTooltip,
   CartesianGrid,
   Legend,
-} from "recharts";
+} from 'recharts';
 
 // ICONS
 import {
@@ -39,15 +39,15 @@ import {
   Receipt,
   Store,
   RefreshCw,
-} from "lucide-react";
-import { Appointment } from "@/types";
+} from 'lucide-react';
+import { Appointment } from '@/types';
 
 const CHART_PALETTE = [
-  "#10b981", // Emerald
-  "#38bdf8", // Sky
-  "#8b5cf6", // Purple
-  "#f59e0b", // Amber
-  "#ec4899", // Pink
+  '#10b981', // Emerald
+  '#38bdf8', // Sky
+  '#8b5cf6', // Purple
+  '#f59e0b', // Amber
+  '#ec4899', // Pink
 ];
 
 interface TooltipEntry {
@@ -66,9 +66,10 @@ interface ChartTooltipProps {
 function CustomChartTooltip({ active, payload, label }: ChartTooltipProps) {
   if (active && payload && payload.length) {
     const item = payload[0];
-    const displayLabel = typeof label === "string" && label.length > 0
-      ? label
-      : item.name ?? item.payload?.name ?? "";
+    const displayLabel =
+      typeof label === 'string' && label.length > 0
+        ? label
+        : (item.name ?? item.payload?.name ?? '');
     return (
       <div
         role="tooltip"
@@ -76,7 +77,9 @@ function CustomChartTooltip({ active, payload, label }: ChartTooltipProps) {
       >
         <p className="text-xs font-medium text-zinc-400">{displayLabel}</p>
         <p className="mt-0.5 text-sm font-bold text-zinc-100">
-          {typeof item.value === "number" ? `${item.value.toFixed(2)}€` : item.value}
+          {typeof item.value === 'number'
+            ? `${item.value.toFixed(2)}€`
+            : item.value}
         </p>
       </div>
     );
@@ -98,8 +101,8 @@ export default function StatsPage() {
       if (res.error) throw res.error;
       setAppointments(res.data || []);
     } catch (error) {
-      console.error("❌ [Stats Fetch Error]:", error);
-      toast.error("Erro ao processar métricas de faturação.");
+      console.error('❌ [Stats Fetch Error]:', error);
+      toast.error('Erro ao processar métricas de faturação.');
     } finally {
       setLoading(false);
     }
@@ -112,7 +115,7 @@ export default function StatsPage() {
   }, [barbershopId, fetchStatsData]);
 
   const analytics = useMemo(() => {
-    const completedApps = appointments.filter((a) => a.status === "completed");
+    const completedApps = appointments.filter((a) => a.status === 'completed');
 
     let totalRevenue = 0;
     const serviceCounts: Record<
@@ -124,10 +127,10 @@ export default function StatsPage() {
 
     completedApps.forEach((app) => {
       const price = Number(app.services?.price || 0);
-      const serviceName = app.services?.name || "Outros";
+      const serviceName = app.services?.name || 'Outros';
       const serviceId = app.service_id || null;
-      const paymentMethod = app.payment_method || "Não Especificado";
-      const barberName = app.professionals?.name || "Casa / Geral";
+      const paymentMethod = app.payment_method || 'Não Especificado';
+      const barberName = app.professionals?.name || 'Casa / Geral';
 
       totalRevenue += price;
 
@@ -154,7 +157,7 @@ export default function StatsPage() {
     const avgTicket =
       completedApps.length > 0 ? totalRevenue / completedApps.length : 0;
 
-    let mostPopularService = "Sem registos";
+    let mostPopularService = 'Sem registos';
     let mostPopularServiceId: string | null = null;
     let maxCount = 0;
 
@@ -222,7 +225,10 @@ export default function StatsPage() {
             aria-label="Atualizar métricas"
             className="min-h-[44px] bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 text-zinc-200 border border-white/10 text-xs sm:text-sm px-3 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
           >
-            <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" />
+            <RefreshCw
+              className={`size-4 ${loading ? 'animate-spin' : ''}`}
+              aria-hidden="true"
+            />
             <span className="sr-only sm:not-sr-only sm:ml-2">Atualizar</span>
           </Button>
           <Link href="/dashboard" className="flex-1 sm:flex-none">
@@ -230,7 +236,8 @@ export default function StatsPage() {
               variant="ghost"
               className="w-full sm:w-auto min-h-[44px] bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 text-zinc-200 border border-white/10 text-xs sm:text-sm gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
             >
-              <ArrowLeft className="size-4" aria-hidden="true" /> Voltar ao Painel
+              <ArrowLeft className="size-4" aria-hidden="true" /> Voltar ao
+              Painel
             </Button>
           </Link>
         </div>
@@ -273,7 +280,10 @@ export default function StatsPage() {
                 <CardHeader className="pb-1 p-4">
                   <dt className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     <span>Faturação Total</span>
-                    <Receipt className="size-4 text-emerald-400" aria-hidden="true" />
+                    <Receipt
+                      className="size-4 text-emerald-400"
+                      aria-hidden="true"
+                    />
                   </dt>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
@@ -287,7 +297,10 @@ export default function StatsPage() {
                 <CardHeader className="pb-1 p-4">
                   <dt className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     <span>Ticket Médio</span>
-                    <DollarSign className="size-4 text-zinc-100" aria-hidden="true" />
+                    <DollarSign
+                      className="size-4 text-zinc-100"
+                      aria-hidden="true"
+                    />
                   </dt>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
@@ -301,11 +314,17 @@ export default function StatsPage() {
                 <CardHeader className="pb-1 p-4">
                   <dt className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     <span>Mais Solicitado</span>
-                    <Scissors className="size-4 text-purple-400" aria-hidden="true" />
+                    <Scissors
+                      className="size-4 text-purple-400"
+                      aria-hidden="true"
+                    />
                   </dt>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <dd className="text-lg font-semibold text-zinc-100 truncate" title={analytics.insights.mostPopular}>
+                  <dd
+                    className="text-lg font-semibold text-zinc-100 truncate"
+                    title={analytics.insights.mostPopular}
+                  >
                     {analytics.insights.mostPopular}
                   </dd>
                 </CardContent>
@@ -315,13 +334,18 @@ export default function StatsPage() {
                 <CardHeader className="pb-1 p-4">
                   <dt className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
                     <span>Serviços Concluídos</span>
-                    <CheckCircle className="size-4 text-sky-400" aria-hidden="true" />
+                    <CheckCircle
+                      className="size-4 text-sky-400"
+                      aria-hidden="true"
+                    />
                   </dt>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                   <dd className="text-2xl font-bold text-sky-400">
-                    {analytics.insights.completedCount}{" "}
-                    <span className="text-xs font-normal text-zinc-500">cortes</span>
+                    {analytics.insights.completedCount}{' '}
+                    <span className="text-xs font-normal text-zinc-500">
+                      cortes
+                    </span>
                   </dd>
                 </CardContent>
               </Card>
@@ -359,7 +383,11 @@ export default function StatsPage() {
               <Card className="border border-white/10 bg-zinc-900/60 shadow-lg flex flex-col justify-between">
                 <CardHeader className="p-4 border-b border-white/5">
                   <CardTitle className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-                    <Wallet className="size-4 text-amber-400" aria-hidden="true" /> Fluxo por Método (€)
+                    <Wallet
+                      className="size-4 text-amber-400"
+                      aria-hidden="true"
+                    />{' '}
+                    Fluxo por Método (€)
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="h-[220px] sm:h-[260px] p-2 pt-4">
@@ -370,10 +398,10 @@ export default function StatsPage() {
                   ) : (
                     <>
                       <div className="sr-only">
-                        Tabela de métodos de pagamento:{" "}
+                        Tabela de métodos de pagamento:{' '}
                         {analytics.paymentStats
                           .map((s) => `${s.name}: ${s.value.toFixed(2)}€`)
-                          .join(", ")}
+                          .join(', ')}
                       </div>
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
@@ -390,7 +418,9 @@ export default function StatsPage() {
                             {analytics.paymentStats.map((_, index) => (
                               <Cell
                                 key={index}
-                                fill={CHART_PALETTE[index % CHART_PALETTE.length]}
+                                fill={
+                                  CHART_PALETTE[index % CHART_PALETTE.length]
+                                }
                                 stroke="transparent"
                               />
                             ))}
@@ -402,7 +432,9 @@ export default function StatsPage() {
                             iconType="circle"
                             iconSize={8}
                             formatter={(value: string) => (
-                              <span className="text-xs text-zinc-400">{value}</span>
+                              <span className="text-xs text-zinc-400">
+                                {value}
+                              </span>
                             )}
                           />
                         </PieChart>
@@ -427,10 +459,10 @@ export default function StatsPage() {
                   ) : (
                     <>
                       <div className="sr-only">
-                        Faturação por barbeiro:{" "}
+                        Faturação por barbeiro:{' '}
                         {analytics.professionalStats
                           .map((s) => `${s.name}: ${s.value.toFixed(2)}€`)
-                          .join(", ")}
+                          .join(', ')}
                       </div>
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart
@@ -446,17 +478,19 @@ export default function StatsPage() {
                             dataKey="name"
                             tickLine={false}
                             axisLine={false}
-                            tick={{ fill: "#a1a1aa", fontSize: 11 }}
+                            tick={{ fill: '#a1a1aa', fontSize: 11 }}
                             dy={6}
                             interval={0}
                             tickFormatter={(value: string) =>
-                              value.length > 12 ? `${value.slice(0, 12)}…` : value
+                              value.length > 12
+                                ? `${value.slice(0, 12)}…`
+                                : value
                             }
                           />
                           <YAxis
                             tickLine={false}
                             axisLine={false}
-                            tick={{ fill: "#a1a1aa", fontSize: 11 }}
+                            tick={{ fill: '#a1a1aa', fontSize: 11 }}
                             tickFormatter={(value: number) => `${value}€`}
                           />
                           <RechartsTooltip content={<CustomChartTooltip />} />
@@ -489,10 +523,10 @@ export default function StatsPage() {
                   ) : (
                     <>
                       <div className="sr-only">
-                        Serviços mais rentáveis:{" "}
+                        Serviços mais rentáveis:{' '}
                         {analytics.serviceStats
                           .map((s) => `${s.name}: ${s.value.toFixed(2)}€`)
-                          .join(", ")}
+                          .join(', ')}
                       </div>
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart
@@ -512,14 +546,16 @@ export default function StatsPage() {
                             tickLine={false}
                             axisLine={false}
                             width={85}
-                            tick={{ fill: "#a1a1aa", fontSize: 10 }}
+                            tick={{ fill: '#a1a1aa', fontSize: 10 }}
                             tickFormatter={(value: string) =>
-                              value.length > 14 ? `${value.slice(0, 14)}…` : value
+                              value.length > 14
+                                ? `${value.slice(0, 14)}…`
+                                : value
                             }
                           />
                           <RechartsTooltip
                             content={<CustomChartTooltip />}
-                            cursor={{ fill: "rgba(255,255,255,0.04)" }}
+                            cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                           />
                           <Bar
                             dataKey="value"
