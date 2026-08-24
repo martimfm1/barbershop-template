@@ -39,6 +39,7 @@ export const appointmentService = {
         .select("email")
         .eq("id", payload.client_id)
         .eq("barbershop_id", payload.barbershop_id)
+        .eq("role", "client")
         .maybeSingle();
       clientEmail = typeof client?.email === "string" ? client.email.trim().toLowerCase() || null : null;
     }
@@ -95,6 +96,7 @@ export const appointmentService = {
       .from("users")
       .select("id, name_complete, num_phone, email, birth_date, style_notes")
       .eq("barbershop_id", barbershopId)
+      .eq("role", "client")
       .order("name_complete", { ascending: true });
     if (user?.id) query = query.neq("id", user.id);
     const { data, error } = await query;
@@ -109,7 +111,7 @@ export const appointmentService = {
     birth_date?: string | null;
     style_notes?: string;
   }) {
-    return insertRecord<Client>(supabase, "users", payload);
+    return insertRecord<Client>(supabase, "users", { ...payload, role: "client" });
   },
 
   async updateClient(id: string, updates: Partial<Client>) {
