@@ -13,6 +13,7 @@ export interface BarbershopConfigPayload {
   lunch_start?: string;
   lunch_end?: string;
   is_public_in_directory?: boolean;
+  time_limit_cancellation_hours?: number;
 }
 
 export type ServiceResponse<T> = { data: T | null; error: Error | null };
@@ -25,7 +26,7 @@ export async function getBarbershopConfig(
     const { data: barberData, error: barberError } = await supabase
       .from("barbershops")
       .select(
-        "name, phone, address, opening_time, closing_time, lunch_start, lunch_end, closed_days, allow_online_bookings, auto_reminders, is_public_in_directory",
+        "name, phone, address, opening_time, closing_time, lunch_start, lunch_end, closed_days, allow_online_bookings, auto_reminders, is_public_in_directory, time_limit_cancellation_hours",
       )
       .eq("id", barbershopId)
       .single();
@@ -55,6 +56,10 @@ export async function getBarbershopConfig(
         allow_online_bookings: barberData.allow_online_bookings ?? undefined,
         auto_reminders: barberData.auto_reminders ?? undefined,
         is_public_in_directory: barberData.is_public_in_directory ?? undefined,
+        time_limit_cancellation_hours: Math.max(
+          0,
+          Math.min(720, Number(barberData.time_limit_cancellation_hours ?? 24)),
+        ),
         popular_service_id: shopData?.popular_service_id ?? null,
       },
       error: null,
@@ -80,6 +85,13 @@ export async function updateBarbershopConfig(
   try {
     if (!barbershopId) throw new Error("Barbearia inválida.");
     if (Object.keys(payload).length === 0) throw new Error("Nenhuma alteração para guardar.");
+
+    if (payload.time_limit_cancellation_hours !== undefined) {
+      const hours = Number(payload.time_limit_cancellation_hours);
+      if (!Number.isInteger(hours) || hours < 0 || hours > 720) {
+        throw new Error("O prazo de cancelamento tem de estar entre 0 e 720 horas.");
+      }
+    }
 
     const directoryVisibility = payload.is_public_in_directory;
     const popularServiceId = payload.popular_service_id;
