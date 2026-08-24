@@ -6,6 +6,7 @@ export interface Client {
   email?: string;
   birth_date?: string | null;
   style_notes?: string;
+  role?: "owner" | "admin" | "barber" | "client" | string;
 }
 
 export interface Service {
