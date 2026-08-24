@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { BarChart3, Megaphone, Settings, Sparkles, Heart, CreditCard, LayoutDashboard, CalendarDays, Users, Scissors, Briefcase, MessageCircle, Menu, X, Lock, QrCode, type LucideIcon } from "lucide-react";
+import { BarChart3, Megaphone, Settings, Sparkles, Heart, CreditCard, LayoutDashboard, CalendarDays, Users, Scissors, Briefcase, MessageCircle, Menu, X, Lock, QrCode, type LucideIcon, CalendarCheck2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
@@ -20,9 +20,7 @@ type BrandAvatarProps = { mobile?: boolean; avatarUrl: string | null };
 function BrandAvatar({ mobile = false, avatarUrl }: BrandAvatarProps) {
   return (
     <span className={cn("relative flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] text-zinc-100", mobile ? "size-8" : "size-9")}>
-      {avatarUrl ? (
-        <Image src={avatarUrl} alt="Avatar da barbearia" fill sizes={mobile ? "32px" : "36px"} className="object-cover" unoptimized />
-      ) : <BarberIcon className={cn(mobile ? "size-4" : "size-5")} aria-hidden="true" />}
+      {avatarUrl ? <Image src={avatarUrl} alt="Avatar da barbearia" fill sizes={mobile ? "32px" : "36px"} className="object-cover" unoptimized /> : <BarberIcon className={cn(mobile ? "size-4" : "size-5")} aria-hidden="true" />}
     </span>
   );
 }
@@ -50,6 +48,7 @@ export function DashboardSidebar() {
     { href: "/dashboard/pos", label: t("dashboard.pos"), icon: CreditCard, feature: "pos" },
     { href: "/dashboard/billing", label: t("dashboard.billing"), icon: CreditCard },
     { href: "/dashboard/settings", label: t("dashboard.settings"), icon: Settings },
+    { href: "/dashboard/settings/booking", label: "Regras de marcações", icon: CalendarCheck2 },
   ];
 
   const mobilePrimary = items.slice(0, 4);
