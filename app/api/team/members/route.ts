@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireTenantAuthorization } from "@/services/modules/tenant-authorization";
 
 const TEAM_VIEW_ROLES = ["owner", "admin", "manager"] as const;
+const TEAM_MEMBER_ROLES = ["owner", "admin", "manager", "barber", "receptionist", "staff"] as const;
 const DEFAULT_PERMISSIONS: Record<string, boolean> = {
   dashboard: true,
   agenda: true,
@@ -53,7 +54,9 @@ export async function GET(request: Request) {
   }
 
   const [{ data: members, error: membersError }, { data: permissionRows, error: permissionsError }, { data: inviteRows, error: invitesError }, { data: professionals, error: professionalsError }, { data: teamCount, error: teamCountError }, { data: teamLimit, error: teamLimitError }] = await Promise.all([
-    tenant.admin.from("users").select("id, name_complete, email, num_phone, role").eq("barbershop_id", tenant.barbershopId),
+    // Clients share the public.users table with team members, but must never be
+    // exposed through the team-management surface or treated as a team seat.
+    tenant.admin.from("users").select("id, name_complete, email, num_phone, role").eq("barbershop_id", tenant.barbershopId).in("role", [...TEAM_MEMBER_ROLES]),
     tenant.admin.from("barbershop_member_permissions").select("user_id, permissions").eq("barbershop_id", tenant.barbershopId),
     tenant.admin.from("barbershop_invite_codes").select("used_by, used_at").eq("barbershop_id", tenant.barbershopId).not("used_by", "is", null),
     tenant.admin.from("professionals").select("id, user_id, name, commission_percentage, active").eq("barbershop_id", tenant.barbershopId),
