@@ -99,7 +99,7 @@ export function AppointmentDetailDialog({ appointment, open, onOpenChange }: Pro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         aria-describedby="appointment-detail-description"
-        className="flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-5xl flex-col gap-0 overflow-hidden rounded-2xl border-white/10 bg-zinc-950 p-0 text-white shadow-[0_30px_120px_rgba(0,0,0,0.55)] sm:max-h-[calc(100dvh-2rem)] sm:w-[min(94vw,64rem)] sm:rounded-3xl"
+        className="flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-6xl flex-col gap-0 overflow-hidden rounded-2xl border-white/10 bg-zinc-950 p-0 text-white shadow-[0_30px_120px_rgba(0,0,0,0.55)] sm:max-h-[calc(100dvh-2rem)] sm:w-[min(94vw,72rem)] sm:rounded-3xl"
       >
         <DialogHeader className="shrink-0 border-b border-white/8 bg-zinc-950/95 px-4 py-4 backdrop-blur-xl sm:px-6 sm:py-5">
           <div className="pr-9">
@@ -126,7 +126,7 @@ export function AppointmentDetailDialog({ appointment, open, onOpenChange }: Pro
         </DialogHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-6">
-          <div className="space-y-6 xl:grid xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-8 xl:space-y-0">
+          <div className="space-y-6 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-8 lg:space-y-0">
             <div className="min-w-0 space-y-6">
               <Section title="Marcação">
                 <div className="grid gap-2.5 sm:grid-cols-2">
@@ -170,7 +170,7 @@ export function AppointmentDetailDialog({ appointment, open, onOpenChange }: Pro
               ) : null}
             </div>
 
-            <div className="min-w-0 xl:sticky xl:top-0">
+            <div className="min-w-0 lg:sticky lg:top-0">
               <PaymentSummary appointment={appointment} servicePrice={servicePrice} extra={extra} total={total} />
             </div>
           </div>
