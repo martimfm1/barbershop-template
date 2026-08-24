@@ -142,14 +142,14 @@ export function DashboardSidebar() {
       icon: CreditCard,
     },
     {
-      href: '/dashboard/settings',
-      label: t('dashboard.settings'),
-      icon: Settings,
-    },
-    {
       href: '/dashboard/settings/booking',
       label: 'Regras de marcações',
       icon: CalendarCheck2,
+    },
+    {
+      href: '/dashboard/settings',
+      label: t('dashboard.settings'),
+      icon: Settings,
     },
   ];
 

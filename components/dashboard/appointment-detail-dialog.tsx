@@ -155,7 +155,7 @@ export function AppointmentDetailDialog({
         aria-describedby="appointment-detail-description"
         className="!max-w-6xl flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden rounded-2xl border-white/10 bg-zinc-950 p-0 text-white shadow-[0_30px_120px_rgba(0,0,0,0.55)] sm:max-h-[calc(100dvh-2rem)] sm:w-[min(94vw,72rem)] sm:rounded-3xl"
       >
-        <DialogHeader className="shrink-0 border-b border-white/8 bg-zinc-950/95 px-4 py-4 backdrop-blur-xl sm:px-6 sm:py-5">
+        <DialogHeader className="shrink-0 border-b border-white/10 px-4 py-4 backdrop-blur-xl sm:px-6 sm:py-5">
           <div className="pr-9">
             <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
