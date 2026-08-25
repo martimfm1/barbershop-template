@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import {
   moduleErrorResponse,
   requireModuleContext,
 } from '@/services/modules/authorization';
 
 export const runtime = 'nodejs';
+
+type AdminClient = ReturnType<typeof createAdminClient>;
 
 const DEFAULT_NAME = 'Campanha de aniversário';
 const DEFAULT_SUBJECT = 'Feliz aniversário, {{nome}}! 🎉';
@@ -22,10 +25,12 @@ function getAvatarUrl(barbershopId: string) {
   return `${supabaseUrl}/storage/v1/object/public/avatar/${barbershopId}/avatar.webp`;
 }
 
-async function getBirthdayCampaign(admin: ReturnType<typeof import('@/lib/supabase/admin').createAdminClient>, barbershopId: string) {
+async function getBirthdayCampaign(admin: AdminClient, barbershopId: string) {
   const { data, error } = await admin
     .from('marketing_campaigns')
-    .select('id,name,active,subject,body,trigger_type,birthday_offset_days,status,created_at,updated_at')
+    .select(
+      'id,name,active,subject,body,trigger_type,birthday_offset_days,status,created_at,updated_at',
+    )
     .eq('barbershop_id', barbershopId)
     .eq('trigger_type', 'birthday')
     .order('created_at', { ascending: false })
@@ -41,9 +46,9 @@ export async function GET() {
       'marketing_campaigns',
       'marketing',
     );
-    const [{ data: campaign, error: campaignError }, { data: shop, error: shopError }] =
+    const [{ data: campaign }, { data: shop, error: shopError }] =
       await Promise.all([
-        getBirthdayCampaign(admin, barbershopId).then((data) => ({ data, error: null })),
+        getBirthdayCampaign(admin, barbershopId).then((data) => ({ data })),
         admin
           .from('barbershops')
           .select('name')
@@ -51,7 +56,6 @@ export async function GET() {
           .maybeSingle(),
       ]);
 
-    if (campaignError) throw campaignError;
     if (shopError) throw shopError;
 
     return NextResponse.json({
@@ -106,7 +110,11 @@ export async function PATCH(request: Request) {
     const enabled = body?.enabled === true;
     const birthdayOffsetDays = Number(body?.birthdayOffsetDays ?? 0);
 
-    if (!Number.isInteger(birthdayOffsetDays) || birthdayOffsetDays < -365 || birthdayOffsetDays > 365) {
+    if (
+      !Number.isInteger(birthdayOffsetDays) ||
+      birthdayOffsetDays < -365 ||
+      birthdayOffsetDays > 365
+    ) {
       return NextResponse.json(
         { error: 'A data relativa ao aniversário é inválida.' },
         { status: 400 },
@@ -131,17 +139,21 @@ export async function PATCH(request: Request) {
           active: enabled,
           status: enabled ? 'scheduled' : 'draft',
         })
-        .select('id,name,active,subject,body,trigger_type,birthday_offset_days,status,created_at,updated_at')
+        .select(
+          'id,name,active,subject,body,trigger_type,birthday_offset_days,status,created_at,updated_at',
+        )
         .single();
       if (error) throw error;
-      return NextResponse.json({ automation: {
-        id: data.id,
-        enabled: data.active,
-        subject: data.subject,
-        body: data.body,
-        triggerType: data.trigger_type,
-        birthdayOffsetDays: data.birthday_offset_days,
-      }});
+      return NextResponse.json({
+        automation: {
+          id: data.id,
+          enabled: data.active,
+          subject: data.subject,
+          body: data.body,
+          triggerType: data.trigger_type,
+          birthdayOffsetDays: data.birthday_offset_days,
+        },
+      });
     }
 
     const { data, error } = await admin
@@ -156,17 +168,21 @@ export async function PATCH(request: Request) {
       })
       .eq('id', existing.id)
       .eq('barbershop_id', barbershopId)
-      .select('id,name,active,subject,body,trigger_type,birthday_offset_days,status,created_at,updated_at')
+      .select(
+        'id,name,active,subject,body,trigger_type,birthday_offset_days,status,created_at,updated_at',
+      )
       .single();
     if (error) throw error;
-    return NextResponse.json({ automation: {
-      id: data.id,
-      enabled: data.active,
-      subject: data.subject,
-      body: data.body,
-      triggerType: data.trigger_type,
-      birthdayOffsetDays: data.birthday_offset_days,
-    }});
+    return NextResponse.json({
+      automation: {
+        id: data.id,
+        enabled: data.active,
+        subject: data.subject,
+        body: data.body,
+        triggerType: data.trigger_type,
+        birthdayOffsetDays: data.birthday_offset_days,
+      },
+    });
   } catch (error) {
     const response = moduleErrorResponse(error);
     if (response) return response;
