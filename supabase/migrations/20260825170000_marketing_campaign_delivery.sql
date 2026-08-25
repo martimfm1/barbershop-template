@@ -19,6 +19,9 @@ alter table public.marketing_campaign_recipients
   add column if not exists delivered_at timestamptz,
   add column if not exists failed_at timestamptz;
 
+alter table public.marketing_campaign_recipients
+  drop constraint if exists marketing_campaign_recipients_campaign_id_client_id_key;
+
 alter table public.marketing_campaigns drop constraint if exists marketing_campaigns_trigger_type_check;
 alter table public.marketing_campaigns
   add constraint marketing_campaigns_trigger_type_check
@@ -47,7 +50,7 @@ create unique index if not exists marketing_campaign_recipient_run_unique_idx
   on public.marketing_campaign_recipients(campaign_id, client_id, run_key);
 
 create index if not exists marketing_campaigns_scheduler_idx
-  on public.marketing_campaigns(active, trigger_type, next_run_at)
+  on public.marketing_campaigns(active, trigger_type, status, next_run_at)
   where active = true;
 
 create index if not exists marketing_campaign_recipients_retry_idx
