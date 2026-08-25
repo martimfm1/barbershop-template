@@ -1,8 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
-import { sendMarketingEmail } from '@/lib/marketing/brevo';
-import { sendBrevoSms } from '@/lib/marketing/brevo';
+import { sendMarketingEmail, sendBrevoSms } from '@/lib/marketing/brevo';
 
-const MAX_PER_RUN = 100;
+const MAX_RECIPIENTS_PER_BATCH = 100;
 const MAX_ATTEMPTS = 3;
 
 type Campaign = {
@@ -17,7 +16,6 @@ type Campaign = {
   interval_unit: 'hours' | 'days' | null;
   event_name: string | null;
   next_run_at: string | null;
-  last_run_at: string | null;
 };
 
 function escapeHtml(value: string) {
@@ -41,47 +39,40 @@ function emailHtml(body: string, shopName: string) {
 }
 
 function nextInterval(value: number, unit: 'hours' | 'days') {
-  const ms = unit === 'days' ? value * 86400000 : value * 3600000;
-  return new Date(Date.now() + ms).toISOString();
+  return new Date(Date.now() + (unit === 'days' ? value * 86400000 : value * 3600000)).toISOString();
 }
 
-async function loadCampaign(campaignId: string): Promise<Campaign> {
+async function getCampaign(campaignId: string): Promise<Campaign> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from('marketing_campaigns')
-    .select('id,barbershop_id,name,channel,subject,body,trigger_type,interval_value,interval_unit,event_name,next_run_at,last_run_at')
+    .select('id,barbershop_id,name,channel,subject,body,trigger_type,interval_value,interval_unit,event_name,next_run_at')
     .eq('id', campaignId)
     .maybeSingle();
   if (error || !data) throw new Error(error?.message ?? 'Campaign not found.');
   return data as Campaign;
 }
 
-export async function dispatchCampaign(campaignId: string, runKey = crypto.randomUUID()) {
+export async function queueCampaign(campaignId: string, runKey = crypto.randomUUID()) {
   const admin = createAdminClient();
-  const campaign = await loadCampaign(campaignId);
-
-  const { data: shop } = await admin
-    .from('barbershops')
-    .select('name,slug')
-    .eq('id', campaign.barbershop_id)
-    .maybeSingle();
-
+  const campaign = await getCampaign(campaignId);
   const recipientField = campaign.channel === 'email' ? 'email' : 'num_phone';
-  const { data: clients, error: clientsError } = await admin
+
+  const { data: clients, error: clientsError, count } = await admin
     .from('users')
-    .select('id,name_complete,email,num_phone')
+    .select('id,name_complete,email,num_phone', { count: 'exact' })
     .eq('barbershop_id', campaign.barbershop_id)
     .eq('role', 'client')
     .not(recipientField, 'is', null)
-    .limit(MAX_PER_RUN);
+    .limit(5000);
   if (clientsError) throw clientsError;
 
   if (!clients?.length) {
-    await admin.from('marketing_campaigns').update({ status: 'completed', completed_at: new Date().toISOString(), total_recipients: 0 }).eq('id', campaign.id);
-    return { campaignId, runKey, processed: 0, sent: 0, failed: 0 };
+    await admin.from('marketing_campaigns').update({ status: 'completed', completed_at: new Date().toISOString(), total_recipients: 0, sent_count: 0, failed_count: 0, last_run_at: new Date().toISOString() }).eq('id', campaign.id);
+    return { campaignId, runKey, queued: 0, total: count ?? 0 };
   }
 
-  const { data: insertedRecipients, error: recipientError } = await admin
+  const { error: recipientError } = await admin
     .from('marketing_campaign_recipients')
     .upsert(
       clients.map((client) => ({
@@ -91,60 +82,105 @@ export async function dispatchCampaign(campaignId: string, runKey = crypto.rando
         run_key: runKey,
         status: 'queued',
         attempts: 0,
+        next_attempt_at: new Date().toISOString(),
       })),
       { onConflict: 'campaign_id,client_id,run_key', ignoreDuplicates: true },
-    )
-    .select('id,client_id,destination,status,attempts');
+    );
   if (recipientError) throw recipientError;
+
+  await admin
+    .from('marketing_campaigns')
+    .update({ status: 'sending', last_run_at: new Date().toISOString(), total_recipients: clients.length, sent_count: 0, failed_count: 0, completed_at: null, updated_at: new Date().toISOString() })
+    .eq('id', campaign.id);
+
+  return { campaignId, runKey, queued: clients.length, total: count ?? clients.length };
+}
+
+export async function processQueuedCampaignRecipients(limit = MAX_RECIPIENTS_PER_BATCH) {
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+  const { data: recipients, error } = await admin
+    .from('marketing_campaign_recipients')
+    .select('id,campaign_id,client_id,destination,attempts')
+    .eq('status', 'queued')
+    .or(`next_attempt_at.is.null,next_attempt_at.lte.${now}`)
+    .order('created_at', { ascending: true })
+    .limit(limit);
+  if (error) throw error;
+  if (!recipients?.length) return { processed: 0, sent: 0, failed: 0 };
 
   let sent = 0;
   let failed = 0;
-  const shopName = shop?.name?.trim() || 'A tua barbearia';
-  const bookingUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://barbers.silentra.me'}/barbershops/${shop?.slug ?? campaign.barbershop_id}`;
 
-  for (const recipient of insertedRecipients ?? []) {
-    if (recipient.status === 'sent') continue;
-    const client = clients.find((item) => item.id === recipient.client_id);
-    if (!client) continue;
+  for (const recipient of recipients) {
+    const attempts = Number(recipient.attempts ?? 0) + 1;
+    const claim = await admin
+      .from('marketing_campaign_recipients')
+      .update({ status: 'sending', attempts, error_message: null })
+      .eq('id', recipient.id)
+      .eq('status', 'queued')
+      .select('id')
+      .maybeSingle();
+    if (claim.error || !claim.data) continue;
 
-    const name = client.name_complete?.trim() || 'Cliente';
-    const body = token(campaign.body, { nome: name, barbearia: shopName, bookingUrl });
-    const subject = token(campaign.subject?.trim() || `${campaign.name} — ${shopName}`, { nome: name, barbearia: shopName, bookingUrl });
+    try {
+      const campaign = await getCampaign(recipient.campaign_id);
+      const [{ data: client }, { data: shop }] = await Promise.all([
+        admin.from('users').select('name_complete,email,num_phone').eq('id', recipient.client_id).eq('barbershop_id', campaign.barbershop_id).maybeSingle(),
+        admin.from('barbershops').select('name,slug').eq('id', campaign.barbershop_id).maybeSingle(),
+      ]);
 
-    await admin.from('marketing_campaign_recipients').update({ status: 'sending', attempts: (recipient.attempts ?? 0) + 1, error_message: null }).eq('id', recipient.id);
+      if (!client) {
+        await admin.from('marketing_campaign_recipients').update({ status: 'skipped', error_message: 'Client not found.' }).eq('id', recipient.id);
+        continue;
+      }
 
-    const result = campaign.channel === 'email'
-      ? await sendMarketingEmail({ to: recipient.destination, toName: name, subject, html: emailHtml(body, shopName), senderName: shopName })
-      : await sendBrevoSms({ to: recipient.destination, content: body, sender: process.env.BREVO_SMS_SENDER ?? shopName });
+      const name = client.name_complete?.trim() || 'Cliente';
+      const shopName = shop?.name?.trim() || 'A tua barbearia';
+      const bookingUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://barbers.silentra.me'}/barbershops/${shop?.slug ?? campaign.barbershop_id}`;
+      const body = token(campaign.body, { nome: name, barbearia: shopName, bookingUrl });
+      const subject = token(campaign.subject?.trim() || `${campaign.name} — ${shopName}`, { nome: name, barbearia: shopName, bookingUrl });
 
-    if (result.success) {
-      sent++;
-      await admin.from('marketing_campaign_recipients').update({ status: 'sent', sent_at: new Date().toISOString(), provider_message_id: result.messageId ?? null, error_message: null }).eq('id', recipient.id);
-    } else {
+      const result = campaign.channel === 'email'
+        ? await sendMarketingEmail({ to: recipient.destination, toName: name, subject, html: emailHtml(body, shopName), senderName: shopName })
+        : await sendBrevoSms({ to: recipient.destination, content: body, sender: process.env.BREVO_SMS_SENDER ?? shopName });
+
+      if (result.success) {
+        sent++;
+        await admin.from('marketing_campaign_recipients').update({ status: 'sent', sent_at: new Date().toISOString(), delivered_at: new Date().toISOString(), provider_message_id: result.messageId ?? null, error_message: null, next_attempt_at: null }).eq('id', recipient.id);
+      } else {
+        failed++;
+        await admin.from('marketing_campaign_recipients').update({ status: attempts >= MAX_ATTEMPTS ? 'failed' : 'queued', failed_at: attempts >= MAX_ATTEMPTS ? new Date().toISOString() : null, next_attempt_at: attempts >= MAX_ATTEMPTS ? null : new Date(Date.now() + attempts * 60000).toISOString(), error_message: result.error }).eq('id', recipient.id);
+      }
+    } catch (error) {
       failed++;
-      const attempts = (recipient.attempts ?? 0) + 1;
-      await admin.from('marketing_campaign_recipients').update({ status: attempts >= MAX_ATTEMPTS ? 'failed' : 'queued', failed_at: attempts >= MAX_ATTEMPTS ? new Date().toISOString() : null, next_attempt_at: attempts >= MAX_ATTEMPTS ? null : new Date(Date.now() + attempts * 60000).toISOString(), error_message: result.error }).eq('id', recipient.id);
+      await admin.from('marketing_campaign_recipients').update({ status: attempts >= MAX_ATTEMPTS ? 'failed' : 'queued', failed_at: attempts >= MAX_ATTEMPTS ? new Date().toISOString() : null, next_attempt_at: attempts >= MAX_ATTEMPTS ? null : new Date(Date.now() + attempts * 60000).toISOString(), error_message: error instanceof Error ? error.message : String(error) }).eq('id', recipient.id);
     }
   }
 
-  const pending = (clients?.length ?? 0) >= MAX_PER_RUN;
-  const update: Record<string, unknown> = {
-    last_run_at: new Date().toISOString(),
-    total_recipients: clients.length,
-    sent_count: sent,
-    failed_count: failed,
-    status: pending ? 'sending' : failed && !sent ? 'completed' : 'completed',
-    completed_at: pending ? null : new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-  if (campaign.trigger_type === 'interval' && campaign.interval_value && campaign.interval_unit) {
-    update.next_run_at = nextInterval(campaign.interval_value, campaign.interval_unit);
-    update.active = true;
-    update.status = 'scheduled';
-  }
-  await admin.from('marketing_campaigns').update(update).eq('id', campaign.id);
+  const campaignIds = [...new Set(recipients.map((item) => item.campaign_id))];
+  for (const campaignId of campaignIds) {
+    const [{ count: queued }, { count: sending }, { count: sentForCampaign }, { count: failedForCampaign }] = await Promise.all([
+      admin.from('marketing_campaign_recipients').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('status', 'queued'),
+      admin.from('marketing_campaign_recipients').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('status', 'sending'),
+      admin.from('marketing_campaign_recipients').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('status', 'sent'),
+      admin.from('marketing_campaign_recipients').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('status', 'failed'),
+    ]);
 
-  return { campaignId, runKey, processed: clients.length, sent, failed, pending };
+    const complete = (queued ?? 0) === 0 && (sending ?? 0) === 0;
+    const campaign = await getCampaign(campaignId);
+    const update: Record<string, unknown> = { sent_count: sentForCampaign ?? 0, failed_count: failedForCampaign ?? 0, updated_at: new Date().toISOString() };
+    if (complete) {
+      update.completed_at = new Date().toISOString();
+      update.status = campaign.trigger_type === 'interval' ? 'scheduled' : 'completed';
+      if (campaign.trigger_type === 'interval' && campaign.interval_value && campaign.interval_unit) update.next_run_at = nextInterval(campaign.interval_value, campaign.interval_unit);
+    } else {
+      update.status = 'sending';
+    }
+    await admin.from('marketing_campaigns').update(update).eq('id', campaignId);
+  }
+
+  return { processed: recipients.length, sent, failed };
 }
 
 export async function dispatchMarketingEvent(input: { barbershopId: string; eventName: string; clientId?: string | null }) {
@@ -158,14 +194,12 @@ export async function dispatchMarketingEvent(input: { barbershopId: string; even
     .eq('event_name', input.eventName)
     .limit(50);
   if (error) throw error;
-  if (!campaigns?.length) return { triggered: 0 };
-
-  let triggered = 0;
-  for (const campaign of campaigns) {
-    await dispatchCampaign(campaign.id, `event:${input.eventName}:${input.clientId ?? crypto.randomUUID()}:${Date.now()}`);
-    triggered++;
+  let queued = 0;
+  for (const campaign of campaigns ?? []) {
+    await queueCampaign(campaign.id, `event:${input.eventName}:${input.clientId ?? 'all'}:${Date.now()}:${crypto.randomUUID()}`);
+    queued++;
   }
-  return { triggered };
+  return { triggered: queued };
 }
 
 export async function processScheduledCampaigns(limit = 25) {
@@ -174,19 +208,14 @@ export async function processScheduledCampaigns(limit = 25) {
     .from('marketing_campaigns')
     .select('id')
     .eq('active', true)
-    .in('trigger_type', ['interval'])
+    .eq('trigger_type', 'interval')
     .lte('next_run_at', new Date().toISOString())
     .limit(limit);
   if (error) throw error;
-
   let processed = 0;
   for (const campaign of campaigns ?? []) {
-    try {
-      await dispatchCampaign(campaign.id, `scheduled:${campaign.id}:${new Date().toISOString().slice(0, 13)}`);
-      processed++;
-    } catch (error) {
-      console.error('[MARKETING_SCHEDULER_CAMPAIGN]', { campaignId: campaign.id, error });
-    }
+    await queueCampaign(campaign.id, `scheduled:${campaign.id}:${Date.now()}:${crypto.randomUUID()}`);
+    processed++;
   }
   return { processed };
 }
