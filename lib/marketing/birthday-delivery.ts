@@ -198,10 +198,15 @@ async function sendBirthdayMessage(input: {
           });
 
     if (result.success) return result;
-    if (attempt < MAX_ATTEMPTS) await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+    if (attempt < MAX_ATTEMPTS) {
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+    }
   }
 
-  return { success: false as const, error: 'Birthday campaign delivery failed after retries.' };
+  return {
+    success: false as const,
+    error: 'Birthday campaign delivery failed after retries.',
+  };
 }
 
 export async function processBirthdayCampaignDelivery(limit = MAX_CAMPAIGNS) {
@@ -222,6 +227,8 @@ export async function processBirthdayCampaignDelivery(limit = MAX_CAMPAIGNS) {
     const birthdayDate = lisbonDate(-(campaign.birthday_offset_days ?? 0));
     const monthDay = birthdayDate.slice(5);
     const destinationField = campaign.channel === 'email' ? 'email' : 'num_phone';
+    let campaignSent = 0;
+    let campaignFailed = 0;
 
     const { data: clients, error: clientsError } = await admin
       .from('users')
@@ -237,22 +244,38 @@ export async function processBirthdayCampaignDelivery(limit = MAX_CAMPAIGNS) {
       (client) => String(client.birth_date ?? '').slice(5) === monthDay,
     );
 
+    const { data: shop, error: shopError } = await admin
+      .from('barbershops')
+      .select('name,slug')
+      .eq('id', campaign.barbershop_id)
+      .maybeSingle();
+    if (shopError || !shop) throw shopError ?? new Error('Barbershop not found.');
+
     for (const client of matching) {
       const destination = campaign.channel === 'email' ? client.email : client.num_phone;
       if (typeof destination !== 'string' || !destination.trim()) continue;
 
-      const voucher = await issueVoucher({
-        campaign,
-        clientId: client.id,
-        birthdayDate,
-      });
+      const voucher = await issueVoucher({ campaign, clientId: client.id, birthdayDate });
       if (voucher) vouchersIssued++;
 
       const runKey = `birthday:${birthdayDate}`;
-      const { data: recipient, error: recipientError } = await admin
+      const { data: existingRecipient } = await admin
         .from('marketing_campaign_recipients')
-        .upsert(
-          {
+        .select('id,status,provider_message_id,voucher_id')
+        .eq('campaign_id', campaign.id)
+        .eq('client_id', client.id)
+        .eq('run_key', runKey)
+        .maybeSingle();
+
+      if (existingRecipient?.status === 'sent' || existingRecipient?.status === 'delivered') {
+        continue;
+      }
+
+      let recipientId = existingRecipient?.id ?? null;
+      if (!recipientId) {
+        const { data: createdRecipient, error: recipientError } = await admin
+          .from('marketing_campaign_recipients')
+          .insert({
             campaign_id: campaign.id,
             client_id: client.id,
             destination,
@@ -261,27 +284,32 @@ export async function processBirthdayCampaignDelivery(limit = MAX_CAMPAIGNS) {
             status: 'sending',
             attempts: 1,
             next_attempt_at: null,
-          },
-          { onConflict: 'campaign_id,client_id,run_key', ignoreDuplicates: false },
-        )
-        .select('id,status,provider_message_id')
-        .single();
-      if (recipientError || !recipient) throw recipientError ?? new Error('Unable to create birthday recipient.');
-      if (recipient.status === 'sent' || recipient.status === 'delivered') continue;
+          })
+          .select('id')
+          .maybeSingle();
+        if (recipientError) throw recipientError;
+        recipientId = createdRecipient?.id ?? null;
+      } else {
+        await admin
+          .from('marketing_campaign_recipients')
+          .update({
+            destination,
+            voucher_id: voucher?.id ?? existingRecipient.voucher_id ?? null,
+            status: 'sending',
+            attempts: Number(existingRecipient.status === 'failed' ? 1 : 1),
+            next_attempt_at: null,
+            error_message: null,
+          })
+          .eq('id', recipientId);
+      }
 
+      if (!recipientId) throw new Error('Unable to create birthday recipient.');
       recipientsProcessed++;
-      const clientName = String(client.name_complete ?? '').trim() || 'Cliente';
-      const { data: shop, error: shopError } = await admin
-        .from('barbershops')
-        .select('name,slug')
-        .eq('id', campaign.barbershop_id)
-        .maybeSingle();
-      if (shopError || !shop) throw shopError ?? new Error('Barbershop not found.');
 
       const result = await sendBirthdayMessage({
         campaign,
         destination,
-        clientName,
+        clientName: String(client.name_complete ?? '').trim() || 'Cliente',
         shopName: String(shop.name ?? '').trim() || 'A tua barbearia',
         shopSlug: shop.slug,
         voucher,
@@ -289,6 +317,7 @@ export async function processBirthdayCampaignDelivery(limit = MAX_CAMPAIGNS) {
 
       if (result.success) {
         sent++;
+        campaignSent++;
         await admin
           .from('marketing_campaign_recipients')
           .update({
@@ -297,9 +326,10 @@ export async function processBirthdayCampaignDelivery(limit = MAX_CAMPAIGNS) {
             provider_message_id: result.messageId ?? null,
             error_message: null,
           })
-          .eq('id', recipient.id);
+          .eq('id', recipientId);
       } else {
         failed++;
+        campaignFailed++;
         await admin
           .from('marketing_campaign_recipients')
           .update({
@@ -307,17 +337,17 @@ export async function processBirthdayCampaignDelivery(limit = MAX_CAMPAIGNS) {
             failed_at: new Date().toISOString(),
             error_message: result.error,
           })
-          .eq('id', recipient.id);
+          .eq('id', recipientId);
       }
     }
 
     await admin
       .from('marketing_campaigns')
       .update({
-        status: failed > 0 ? 'completed' : 'completed',
+        status: 'completed',
         total_recipients: matching.length,
-        sent_count: sent,
-        failed_count: failed,
+        sent_count: campaignSent,
+        failed_count: campaignFailed,
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
