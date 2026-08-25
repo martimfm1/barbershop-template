@@ -40,8 +40,9 @@ export const appointmentService = {
     manual_name: string | null;
     manual_phone: string | null;
     manual_birth_date: string | null;
+    manual_email?: string | null;
   }) {
-    let clientEmail: string | null = null;
+    let clientEmail = payload.manual_email?.trim().toLowerCase() || null;
     if (payload.client_id) {
       const { data: client } = await supabase
         .from('users')
@@ -50,10 +51,9 @@ export const appointmentService = {
         .eq('barbershop_id', payload.barbershop_id)
         .eq('role', 'client')
         .maybeSingle();
-      clientEmail =
-        typeof client?.email === 'string'
-          ? client.email.trim().toLowerCase() || null
-          : null;
+      if (typeof client?.email === 'string') {
+        clientEmail = client.email.trim().toLowerCase() || clientEmail;
+      }
     }
 
     const normalizedPayload = {
