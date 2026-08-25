@@ -17,6 +17,7 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ appointmentId: string }> },
 ) {
+  void request;
   try {
     const { appointmentId } = await context.params;
     const supabase = await createClient();
@@ -65,11 +66,22 @@ export async function POST(
     if (appointment.status !== 'pending')
       return NextResponse.json(
         {
-          success: false,
-          error: 'Esta marcação já foi processada.',
+          success: appointment.status === 'scheduled',
+          error:
+            appointment.status === 'scheduled'
+              ? undefined
+              : 'Esta marcação já foi processada.',
           alreadyConfirmed: appointment.status === 'scheduled',
+          appointment:
+            appointment.status === 'scheduled'
+              ? {
+                  id: appointment.id,
+                  status: appointment.status,
+                  date_hour: appointment.date_hour,
+                }
+              : undefined,
         },
-        { status: 409 },
+        { status: appointment.status === 'scheduled' ? 200 : 409 },
       );
 
     const [
@@ -150,33 +162,45 @@ export async function POST(
     let emailError: string | null = null;
 
     if (recipientEmail) {
-      const appointmentDate = new Date(appointment.date_hour);
-      const localDate = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Europe/Lisbon',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      }).format(appointmentDate);
-      const localTime = new Intl.DateTimeFormat('en-GB', {
-        timeZone: 'Europe/Lisbon',
-        hour: '2-digit',
-        minute: '2-digit',
-        hourCycle: 'h23',
-      }).format(appointmentDate);
-      const result = await sendBookingConfirmationEmail({
-        to: recipientEmail,
-        clientName: recipientName,
-        serviceName: service?.name || 'Serviço',
-        date: localDate,
-        time: localTime,
-        durationMinutes: Number(appointment.duration_minutes ?? 45),
-        appointmentId: appointment.id,
-        barbershopId: profile.barbershop_id,
-        barbershopName: barbershop.name,
-        barbershopAddress: barbershop.address || 'Endereço sob consulta',
-      });
-      emailSent = result.success;
-      if (!result.success) emailError = result.error;
+      try {
+        const appointmentDate = new Date(appointment.date_hour);
+        const localDate = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Europe/Lisbon',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).format(appointmentDate);
+        const localTime = new Intl.DateTimeFormat('en-GB', {
+          timeZone: 'Europe/Lisbon',
+          hour: '2-digit',
+          minute: '2-digit',
+          hourCycle: 'h23',
+        }).format(appointmentDate);
+        const result = await sendBookingConfirmationEmail({
+          to: recipientEmail,
+          clientName: recipientName,
+          serviceName: service?.name || 'Serviço',
+          date: localDate,
+          time: localTime,
+          durationMinutes: Number(appointment.duration_minutes ?? 45),
+          appointmentId: appointment.id,
+          barbershopId: profile.barbershop_id,
+          barbershopName: barbershop.name,
+          barbershopAddress: barbershop.address || 'Endereço sob consulta',
+        });
+        emailSent = result.success;
+        if (!result.success) emailError = result.error;
+      } catch (emailException) {
+        emailError =
+          emailException instanceof Error
+            ? emailException.message
+            : String(emailException);
+        console.error('[APPOINTMENT_CONFIRM_EMAIL_ERROR]', {
+          appointmentId,
+          email: recipientEmail,
+          error: emailError,
+        });
+      }
     }
 
     void dispatchAppointmentAutomations('booking_created', {
