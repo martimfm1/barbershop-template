@@ -5,33 +5,50 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 function authorized(request: Request) {
-  const expected = process.env.CRON_SECRET;
-  return Boolean(
-    expected &&
-      (request.headers.get('authorization') === `Bearer ${expected}` ||
-        request.headers.get('x-cron-secret') === expected),
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return false;
+  return (
+    request.headers.get('authorization') === `Bearer ${secret}` ||
+    request.headers.get('x-cron-secret') === secret
   );
 }
 
 export async function GET(request: Request) {
-  if (!authorized(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!authorized(request)) {
+    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  }
 
   const requestId = crypto.randomUUID();
+  const startedAt = Date.now();
   try {
     const scheduled = await processScheduledCampaigns(25);
     const delivery = await processQueuedCampaignRecipients(100);
     const result = {
       ok: true,
       requestId,
-      scheduled: scheduled.processed,
-      processed: delivery.processed,
+      scheduledCampaigns: scheduled.processed,
+      queuedRecipientsProcessed: delivery.processed,
       sent: delivery.sent,
       failed: delivery.failed,
+      durationMs: Date.now() - startedAt,
     };
-    console.info('[MARKETING_CRON_COMPLETED]', result);
-    return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } });
+    console.info('[MARKETING_CRON] completed', result);
+    return NextResponse.json(result, {
+      headers: { 'Cache-Control': 'no-store' },
+    });
   } catch (error) {
-    console.error('[MARKETING_CRON_FAILED]', { requestId, error });
-    return NextResponse.json({ ok: false, requestId, error: 'Marketing worker failed' }, { status: 500 });
+    console.error('[MARKETING_CRON] failed', {
+      requestId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        requestId,
+        error: 'Marketing worker failed',
+        durationMs: Date.now() - startedAt,
+      },
+      { status: 500 },
+    );
   }
 }
