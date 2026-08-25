@@ -53,18 +53,23 @@ async function getCampaign(campaignId: string): Promise<Campaign> {
   return data as Campaign;
 }
 
-export async function queueCampaign(campaignId: string, runKey = crypto.randomUUID()) {
+export async function queueCampaign(
+  campaignId: string,
+  runKey = crypto.randomUUID(),
+  targetClientId?: string | null,
+) {
   const admin = createAdminClient();
   const campaign = await getCampaign(campaignId);
   const recipientField = campaign.channel === 'email' ? 'email' : 'num_phone';
 
-  const { data: clients, error: clientsError, count } = await admin
+  let query = admin
     .from('users')
     .select('id,name_complete,email,num_phone', { count: 'exact' })
     .eq('barbershop_id', campaign.barbershop_id)
     .eq('role', 'client')
-    .not(recipientField, 'is', null)
-    .limit(5000);
+    .not(recipientField, 'is', null);
+  if (targetClientId) query = query.eq('id', targetClientId);
+  const { data: clients, error: clientsError, count } = await query.limit(targetClientId ? 1 : 5000);
   if (clientsError) throw clientsError;
 
   if (!clients?.length) {
@@ -196,7 +201,7 @@ export async function dispatchMarketingEvent(input: { barbershopId: string; even
   if (error) throw error;
   let queued = 0;
   for (const campaign of campaigns ?? []) {
-    await queueCampaign(campaign.id, `event:${input.eventName}:${input.clientId ?? 'all'}:${Date.now()}:${crypto.randomUUID()}`);
+    await queueCampaign(campaign.id, `event:${input.eventName}:${input.clientId ?? 'all'}:${Date.now()}:${crypto.randomUUID()}`, input.clientId ?? undefined);
     queued++;
   }
   return { triggered: queued };
