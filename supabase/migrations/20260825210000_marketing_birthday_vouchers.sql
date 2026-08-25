@@ -5,6 +5,16 @@ alter table public.marketing_campaigns
   add column if not exists birthday_reward_type text not null default 'none',
   add column if not exists birthday_reward_service_id uuid references public.services(id) on delete set null;
 
+alter table public.marketing_campaign_recipients
+  add column if not exists voucher_id uuid;
+
+alter table public.marketing_campaign_recipients
+  drop constraint if exists marketing_campaign_recipients_voucher_fk;
+
+alter table public.marketing_campaign_recipients
+  add constraint marketing_campaign_recipients_voucher_fk
+  foreign key (voucher_id) references public.marketing_campaign_vouchers(id) on delete set null;
+
 alter table public.marketing_campaigns
   drop constraint if exists marketing_campaigns_birthday_reward_type_check;
 
@@ -36,9 +46,11 @@ create table if not exists public.marketing_campaign_vouchers (
 
 create index if not exists marketing_campaign_vouchers_client_idx
   on public.marketing_campaign_vouchers(barbershop_id, client_id, status, expires_at);
-
 create index if not exists marketing_campaign_vouchers_campaign_idx
   on public.marketing_campaign_vouchers(campaign_id, birthday_date);
+create index if not exists marketing_campaign_recipients_voucher_idx
+  on public.marketing_campaign_recipients(voucher_id)
+  where voucher_id is not null;
 
 alter table public.marketing_campaign_vouchers enable row level security;
 revoke all on public.marketing_campaign_vouchers from anon, authenticated;
@@ -75,38 +87,17 @@ alter table public.marketing_campaigns
   );
 
 insert into public.marketing_campaigns (
-  barbershop_id,
-  created_by,
-  name,
-  channel,
-  subject,
-  body,
-  segment,
-  status,
-  trigger_type,
-  birthday_offset_days,
-  birthday_reward_type,
-  active
+  barbershop_id, created_by, name, channel, subject, body, segment,
+  status, trigger_type, birthday_offset_days, birthday_reward_type, active
 )
 select
-  a.barbershop_id,
-  b.created_by,
-  'Aniversários',
-  'email',
-  a.subject,
-  a.body,
-  '{}'::jsonb,
-  'scheduled',
-  'birthday',
-  0,
-  'none',
-  a.enabled
+  a.barbershop_id, b.created_by, 'Aniversários', 'email', a.subject, a.body, '{}'::jsonb,
+  'scheduled', 'birthday', 0, 'none', a.enabled
 from public.birthday_email_automations a
 join public.barbershops b on b.id = a.barbershop_id
 where a.enabled = true
   and not exists (
-    select 1
-    from public.marketing_campaigns c
+    select 1 from public.marketing_campaigns c
     where c.barbershop_id = a.barbershop_id
       and c.trigger_type = 'birthday'
       and c.name = 'Aniversários'
