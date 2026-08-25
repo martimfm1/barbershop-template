@@ -2,11 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { ArrowRight, Check, Loader2 } from 'lucide-react';
-import {
-  PricingCard,
-  type PricingDestination,
-} from '@/components/billing/PricingCard';
+import { ArrowRight, Check, CircleCheck, Loader2, ShieldCheck } from 'lucide-react';
+import { PricingCard, type PricingDestination } from '@/components/billing/PricingCard';
 import { PLAN_DESCRIPTIONS } from '@/lib/billing/plan-features';
 
 type BillingPrice = {
@@ -14,6 +11,7 @@ type BillingPrice = {
   plan: 'pro' | 'enterprise' | null;
   interval: 'month' | 'year' | null;
 };
+
 const HERO_FEATURES = {
   free: [
     'Agendamentos ilimitados',
@@ -42,66 +40,76 @@ export function PricingSection({
 }) {
   const [prices, setPrices] = useState<BillingPrice[]>([]);
   const [loadingPrices, setLoadingPrices] = useState(true);
+
   useEffect(() => {
     let cancelled = false;
+
     const loadPrices = async () => {
       try {
-        const response = await fetch('/api/stripe/prices', {
-          cache: 'no-store',
-        });
-        const body = (await response.json().catch(() => ({}))) as {
-          data?: BillingPrice[];
-        };
+        const response = await fetch('/api/stripe/prices', { cache: 'no-store' });
+        const body = (await response.json().catch(() => ({}))) as { data?: BillingPrice[] };
         if (!cancelled) setPrices(Array.isArray(body.data) ? body.data : []);
       } finally {
         if (!cancelled) setLoadingPrices(false);
       }
     };
+
     void loadPrices();
     return () => {
       cancelled = true;
     };
   }, []);
-  const proPriceId = prices.find(
-    (price) => price.plan === 'pro' && price.interval === 'month',
-  )?.id;
-  const enterprisePriceId = prices.find(
-    (price) => price.plan === 'enterprise' && price.interval === 'month',
-  )?.id;
+
+  const proPriceId = prices.find((price) => price.plan === 'pro' && price.interval === 'month')?.id;
+  const enterprisePriceId = prices.find((price) => price.plan === 'enterprise' && price.interval === 'month')?.id;
+
   return (
-    <section id="precos" className="space-y-7">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-400/80">
-            Preços simples
-          </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-zinc-50 sm:text-4xl">
-            Começa grátis. Tens 1 mês de Pro com o código TRIALPRO.
+    <section id="precos" className="space-y-8">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div className="max-w-3xl">
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-200">
+            <ShieldCheck className="size-3.5" aria-hidden="true" /> Decisão e checkout
+          </div>
+          <h2 className="mt-4 text-3xl font-semibold leading-tight tracking-[-0.045em] text-zinc-50 sm:text-4xl lg:text-5xl">
+            Escolhe o plano. O próximo passo é sempre o checkout.
           </h2>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400 sm:text-base">
-            O Free continua sem cartão. Para novos utilizadores elegíveis, o
-            primeiro mês de Pro é oferecido com o código TRIALPRO e a primeira
-            cobrança só acontece depois desse período.
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
+            Compara o essencial, escolhe a fase certa da tua barbearia e continua sem saltos de página desnecessários. O pagamento acontece na experiência de checkout da Silentra.
           </p>
         </div>
         <Link
-          href="/plans#precos"
-          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-zinc-100 transition hover:border-emerald-400/30 hover:bg-emerald-500/10 hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+          href="#comparacao"
+          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-zinc-100 transition hover:border-white/20 hover:bg-white/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
         >
-          Comparar planos <ArrowRight className="size-4" />
+          Ver comparação <ArrowRight className="size-4" />
         </Link>
       </div>
+
+      <div className="grid gap-2 sm:grid-cols-3" aria-label="Passos para aderir à Silentra">
+        {[
+          ['01', 'Escolhe', 'Compara os planos e encontra o nível certo.'],
+          ['02', 'Checkout', 'Revê os dados e conclui o pagamento dentro da Silentra.'],
+          ['03', 'Ativa', 'A subscrição fica ligada à tua barbearia e respetiva equipa.'],
+        ].map(([step, title, text]) => (
+          <div key={step} className="rounded-2xl border border-white/8 bg-white/[0.02] p-4 sm:p-5">
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-semibold tracking-[0.2em] text-emerald-300">{step}</span>
+              <p className="text-sm font-semibold text-zinc-100">{title}</p>
+            </div>
+            <p className="mt-2 text-xs leading-5 text-zinc-500">{text}</p>
+          </div>
+        ))}
+      </div>
+
       {loadingPrices ? (
         <div className="grid gap-4 lg:grid-cols-3">
           {[0, 1, 2].map((item) => (
             <div
               key={item}
-              className="flex min-h-[500px] items-center justify-center rounded-2xl border border-white/10 bg-zinc-900/70 text-zinc-500"
+              className="flex min-h-[480px] items-center justify-center rounded-2xl border border-white/10 bg-zinc-900/70 text-zinc-500"
+              aria-hidden="true"
             >
-              <Loader2
-                className="size-5 animate-spin"
-                aria-label="A carregar preços"
-              />
+              <Loader2 className="size-5 animate-spin" />
             </div>
           ))}
         </div>
@@ -137,31 +145,19 @@ export function PricingSection({
           />
         </div>
       )}
+
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="border border-white/10 bg-white/[0.025] px-5 py-4">
-          <p className="flex items-center gap-2 text-sm font-semibold text-zinc-100">
-            <Check className="size-4 text-emerald-400" /> Free sem risco
-          </p>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">
-            Começa gratuitamente e sem período experimental obrigatório.
-          </p>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5">
+          <p className="flex items-center gap-2 text-sm font-semibold text-zinc-100"><CircleCheck className="size-4 text-emerald-400" /> Free sem cartão</p>
+          <p className="mt-2 text-xs leading-5 text-zinc-500">Começa a operar sem pagamento obrigatório.</p>
         </div>
-        <div className="border border-emerald-500/20 bg-emerald-500/[0.045] px-5 py-4">
-          <p className="text-sm font-semibold text-emerald-300">
-            1 mês de Pro com TRIALPRO
-          </p>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">
-            Oferta automática para novos membros elegíveis.
-          </p>
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.045] p-5">
+          <p className="flex items-center gap-2 text-sm font-semibold text-emerald-200"><Check className="size-4 text-emerald-300" /> Oferta Pro para elegíveis</p>
+          <p className="mt-2 text-xs leading-5 text-zinc-500">A oferta aplicável é validada no fluxo de checkout.</p>
         </div>
-        <div className="border border-white/10 bg-white/[0.025] px-5 py-4">
-          <p className="text-sm font-semibold text-zinc-100">
-            Enterprise · 29,99 €/mês
-          </p>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">
-            Preço mensal fixo para equipas, várias localizações e controlo
-            operacional avançado.
-          </p>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5">
+          <p className="flex items-center gap-2 text-sm font-semibold text-zinc-100"><ShieldCheck className="size-4 text-emerald-400" /> Faturação transparente</p>
+          <p className="mt-2 text-xs leading-5 text-zinc-500">A subscrição pertence à barbearia e é processada pela Stripe.</p>
         </div>
       </div>
     </section>
