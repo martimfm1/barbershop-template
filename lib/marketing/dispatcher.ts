@@ -197,6 +197,11 @@ export async function processQueuedCampaignRecipients(limit = MAX_RECIPIENTS_PER
 }
 
 export async function dispatchMarketingEvent(input: { barbershopId: string; eventName: string; clientId?: string | null }) {
+  if (!input.clientId) {
+    console.warn('[MARKETING_EVENT_SKIPPED_NO_CLIENT]', { barbershopId: input.barbershopId, eventName: input.eventName });
+    return { triggered: 0 };
+  }
+
   const admin = createAdminClient();
   const { data: campaigns, error } = await admin
     .from('marketing_campaigns')
@@ -209,7 +214,7 @@ export async function dispatchMarketingEvent(input: { barbershopId: string; even
   if (error) throw error;
   let queued = 0;
   for (const campaign of campaigns ?? []) {
-    await queueCampaign(campaign.id, `event:${input.eventName}:${input.clientId ?? 'all'}:${Date.now()}:${crypto.randomUUID()}`, input.clientId ?? undefined);
+    await queueCampaign(campaign.id, `event:${input.eventName}:${input.clientId}:${Date.now()}:${crypto.randomUUID()}`, input.clientId);
     queued++;
   }
   return { triggered: queued };
