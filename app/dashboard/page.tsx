@@ -103,8 +103,8 @@ export default function DashboardPage() {
   }, []);
 
   const chartConfig = {
-    revenue: { label: 'Receita', color: 'hsl(var(--chart-1))' },
-    bookings: { label: 'Marcações', color: 'hsl(var(--chart-2))' },
+    revenue: { label: 'Receita', color: '#34d399' },
+    bookings: { label: 'Marcações', color: '#60a5fa' },
   } satisfies ChartConfig;
 
   const dynamicChartData = useMemo(() => {
@@ -492,7 +492,8 @@ export default function DashboardPage() {
                   <BarChart
                     data={dynamicChartData}
                     margin={{ top: 10, right: 10, left: -12, bottom: 0 }}
-                    barGap={6}
+                    barGap={8}
+                    barCategoryGap="24%"
                   >
                     <CartesianGrid
                       vertical={false}
@@ -514,20 +515,20 @@ export default function DashboardPage() {
                       allowDecimals={false}
                     />
                     <ChartTooltip
-                      cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                      cursor={{ fill: 'rgba(255,255,255,0.06)' }}
                       content={<ChartTooltipContent />}
                     />
                     <Bar
                       dataKey="revenue"
                       name="Receita"
-                      fill="var(--color-revenue)"
+                      fill="#34d399"
                       radius={[6, 6, 2, 2]}
                       maxBarSize={22}
                     />
                     <Bar
                       dataKey="bookings"
                       name="Marcações"
-                      fill="var(--color-bookings)"
+                      fill="#60a5fa"
                       radius={[6, 6, 2, 2]}
                       maxBarSize={22}
                     />
@@ -540,17 +541,17 @@ export default function DashboardPage() {
               >
                 <span className="inline-flex items-center gap-2">
                   <span
-                    className="size-2 rounded-full bg-[hsl(var(--chart-1))]"
+                    className="size-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.45)]"
                     aria-hidden="true"
                   />
-                  Receita
+                  <span className="text-zinc-300">Receita</span>
                 </span>
                 <span className="inline-flex items-center gap-2">
                   <span
-                    className="size-2 rounded-full bg-[hsl(var(--chart-2))]"
+                    className="size-2.5 rounded-full bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.4)]"
                     aria-hidden="true"
                   />
-                  Marcações
+                  <span className="text-zinc-300">Marcações</span>
                 </span>
               </div>
             </Card>
@@ -579,62 +580,49 @@ export default function DashboardPage() {
                       aria-hidden="true"
                     />
                     <p className="mt-3 text-sm font-medium text-zinc-300">
-                      A agenda está livre.
+                      Tudo tranquilo por agora
                     </p>
-                    <p className="mt-1 text-xs leading-5 text-zinc-500">
-                      Cria uma marcação para começares a organizar o dia.
+                    <p className="mt-1 text-xs text-zinc-500">
+                      As próximas marcações vão aparecer aqui.
                     </p>
-                    <Link
-                      href="/dashboard/agenda"
-                      className="mt-4 inline-flex items-center gap-2 rounded-xl bg-zinc-50 px-4 py-2.5 text-sm font-semibold text-zinc-950"
-                    >
-                      Criar marcação <ArrowRight className="size-4" />
-                    </Link>
                   </div>
                 ) : (
-                  <ul className="space-y-2">
-                    {upcomingAppointments.map((appointment) => {
-                      const dataObj = new Date(appointment.date_hour);
-                      const nameStr =
-                        appointment.users?.name_complete ||
-                        appointment.manual_name ||
-                        'Cliente';
-                      return (
-                        <li
-                          key={appointment.id}
-                          className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3"
-                        >
-                          <div className="flex size-10 shrink-0 flex-col items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
-                            <span className="text-xs font-bold leading-none">
-                              {dataObj.toLocaleTimeString('pt-PT', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </span>
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-zinc-100">
-                              {nameStr}
-                            </p>
-                            <p className="truncate text-xs text-zinc-500">
-                              {appointment.services?.name} ·{' '}
-                              {appointment.professionals?.name ||
-                                'Sem barbeiro'}
-                            </p>
-                          </div>
-                          <StatusBadge status={appointment.status} />
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <div className="space-y-2">
+                    {upcomingAppointments.map((appointment) => (
+                      <Link
+                        key={appointment.id}
+                        href="/dashboard/agenda"
+                        className="group flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.025] p-3 transition hover:border-white/10 hover:bg-white/[0.05]"
+                      >
+                        <div className="flex size-11 shrink-0 flex-col items-center justify-center rounded-xl border border-white/10 bg-white/[0.035]">
+                          <span className="text-xs font-semibold text-zinc-200">
+                            {new Date(appointment.date_hour).toLocaleTimeString(
+                              'pt-PT',
+                              { hour: '2-digit', minute: '2-digit' },
+                            )}
+                          </span>
+                          <span className="text-[10px] text-zinc-500">
+                            {new Date(appointment.date_hour).toLocaleDateString(
+                              'pt-PT',
+                              { day: '2-digit', month: '2-digit' },
+                            )}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-zinc-200">
+                            {appointment.users?.name_complete ||
+                              appointment.manual_name ||
+                              'Cliente'}
+                          </p>
+                          <p className="mt-0.5 truncate text-xs text-zinc-500">
+                            {appointment.services?.name || 'Serviço'}
+                          </p>
+                        </div>
+                        <ChevronRight className="size-4 shrink-0 text-zinc-600 transition group-hover:translate-x-0.5 group-hover:text-zinc-300" />
+                      </Link>
+                    ))}
+                  </div>
                 )}
-                <Link
-                  href="/dashboard/agenda"
-                  className="mt-4 flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] text-sm font-medium text-zinc-200 transition-colors hover:border-white/20 hover:bg-white/10"
-                >
-                  <CalendarDays className="size-4" aria-hidden="true" />
-                  Ver agenda completa
-                </Link>
               </CardContent>
             </Card>
           </section>
