@@ -18,32 +18,31 @@ alter table public.marketing_campaigns
   add column if not exists birthday_reward_service_id uuid;
 
 alter table public.marketing_campaigns
+  drop constraint if exists marketing_campaigns_interval_value_repair_check,
+  drop constraint if exists marketing_campaigns_interval_unit_repair_check,
+  drop constraint if exists marketing_campaigns_trigger_type_repair_check,
+  drop constraint if exists marketing_campaigns_birthday_offset_repair_check,
+  drop constraint if exists marketing_campaigns_birthday_reward_type_repair_check;
+
+alter table public.marketing_campaigns
   add constraint marketing_campaigns_interval_value_repair_check
-  check (interval_value is null or interval_value between 1 and 3650);
-
-alter table public.marketing_campaigns
+  check (interval_value is null or interval_value between 1 and 3650),
   add constraint marketing_campaigns_interval_unit_repair_check
-  check (interval_unit is null or interval_unit in ('hours', 'days'));
-
-alter table public.marketing_campaigns
+  check (interval_unit is null or interval_unit in ('hours', 'days')),
   add constraint marketing_campaigns_trigger_type_repair_check
-  check (trigger_type in ('manual', 'interval', 'event', 'birthday'));
-
-alter table public.marketing_campaigns
+  check (trigger_type in ('manual', 'interval', 'event', 'birthday')),
   add constraint marketing_campaigns_birthday_offset_repair_check
-  check (birthday_offset_days between -365 and 365);
-
-alter table public.marketing_campaigns
+  check (birthday_offset_days between -365 and 365),
   add constraint marketing_campaigns_birthday_reward_type_repair_check
   check (birthday_reward_type in ('none', 'free_service'));
 
--- FK is intentionally guarded so repeated deployments remain safe.
 do $$
 begin
   if not exists (
     select 1
     from pg_constraint
     where conname = 'marketing_campaigns_birthday_reward_service_fkey'
+      and conrelid = 'public.marketing_campaigns'::regclass
   ) then
     alter table public.marketing_campaigns
       add constraint marketing_campaigns_birthday_reward_service_fkey
@@ -51,8 +50,6 @@ begin
       references public.services(id)
       on delete set null;
   end if;
-exception
-  when duplicate_object then null;
 end $$;
 
 create index if not exists marketing_campaigns_automation_idx
