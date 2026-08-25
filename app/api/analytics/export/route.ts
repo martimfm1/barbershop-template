@@ -2,21 +2,10 @@ import { NextResponse } from 'next/server';
 import { requireModuleContext } from '@/services/modules/authorization';
 import { PLANS } from '@/lib/stripe/constants';
 
-const CSV_SEPARATOR = ';';
-const CSV_BOM = '\ufeff';
-
 type ExportType = 'appointments' | 'clients' | 'pos';
-
 type RowRecord = Record<string, unknown>;
 
-function csvEscape(value: unknown) {
-  const text = value === null || value === undefined ? '' : String(value);
-  return `"${text.replace(/"/g, '""')}"`;
-}
-
-function csv(rows: unknown[][]) {
-  return `${CSV_BOM}${rows.map((row) => row.map(csvEscape).join(CSV_SEPARATOR)).join('\r\n')}\r\n`;
-}
+type Stat = { label: string; value: string };
 
 function date(value: string | null, fallback: Date) {
   const parsed = value ? new Date(value) : fallback;
@@ -49,15 +38,14 @@ function formatDate(value: unknown) {
   if (!value) return '';
   const parsed = new Date(String(value));
   if (Number.isNaN(parsed.getTime())) return '';
-  return new Intl.DateTimeFormat('pt-PT', {
-    dateStyle: 'short',
-  }).format(parsed);
+  return new Intl.DateTimeFormat('pt-PT', { dateStyle: 'short' }).format(parsed);
 }
 
 function money(value: unknown) {
-  if (value === null || value === undefined || value === '') return '';
-  const amount = Number(value);
-  return Number.isFinite(amount) ? amount.toFixed(2).replace('.', ',') : '';
+  const amount = Number(value ?? 0);
+  return Number.isFinite(amount)
+    ? new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(amount)
+    : '0,00 €';
 }
 
 function relationRecord(value: unknown): RowRecord | null {
@@ -68,10 +56,137 @@ function relationRecord(value: unknown): RowRecord | null {
   return value && typeof value === 'object' ? (value as RowRecord) : null;
 }
 
-function response(filename: string, rows: unknown[][]) {
-  return new NextResponse(csv(rows), {
+function escapeHtml(value: unknown) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function reportHtml({
+  title,
+  subtitle,
+  period,
+  stats,
+  headers,
+  rows,
+}: {
+  title: string;
+  subtitle: string;
+  period: string;
+  stats: Stat[];
+  headers: string[];
+  rows: unknown[][];
+}) {
+  const generatedAt = new Intl.DateTimeFormat('pt-PT', {
+    dateStyle: 'long',
+    timeStyle: 'short',
+  }).format(new Date());
+
+  const statsHtml = stats
+    .map(
+      (stat) => `
+        <div class="stat">
+          <span>${escapeHtml(stat.label)}</span>
+          <strong>${escapeHtml(stat.value)}</strong>
+        </div>`,
+    )
+    .join('');
+
+  const headerHtml = headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('');
+  const rowsHtml = rows.length
+    ? rows
+        .map(
+          (row) => `<tr>${row.map((value) => `<td>${escapeHtml(value)}</td>`).join('')}</tr>`,
+        )
+        .join('')
+    : `<tr><td colspan="${headers.length}" class="empty">Sem dados para o período selecionado.</td></tr>`;
+
+  return `<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Silentra — ${escapeHtml(title)}</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #f4f5f7;
+    color: #17181b;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .page { max-width: 1180px; margin: 0 auto; padding: 36px 24px 56px; }
+  .topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:24px; margin-bottom:28px; }
+  .brand { font-size:14px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:#0f8f68; }
+  h1 { margin:8px 0 6px; font-size:32px; letter-spacing:-.04em; }
+  .subtitle { margin:0; color:#656b75; font-size:14px; }
+  .period { text-align:right; font-size:13px; color:#656b75; }
+  .period strong { display:block; margin-top:4px; color:#17181b; font-size:14px; }
+  .stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:24px; }
+  .stat { background:#fff; border:1px solid #e1e5e9; border-radius:16px; padding:18px; }
+  .stat span { display:block; color:#6b717b; font-size:12px; margin-bottom:8px; }
+  .stat strong { display:block; font-size:22px; letter-spacing:-.03em; }
+  .table-wrap { background:#fff; border:1px solid #e1e5e9; border-radius:18px; overflow:hidden; box-shadow:0 8px 30px rgba(20,25,30,.05); }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; background:#f7f8f9; color:#5e6670; font-size:11px; text-transform:uppercase; letter-spacing:.08em; padding:12px 14px; border-bottom:1px solid #e1e5e9; white-space:nowrap; }
+  td { padding:12px 14px; border-bottom:1px solid #edf0f2; vertical-align:top; }
+  tr:last-child td { border-bottom:0; }
+  .empty { text-align:center; padding:48px; color:#7b828b; }
+  .footer { display:flex; justify-content:space-between; gap:20px; margin-top:18px; color:#8a9098; font-size:11px; }
+  .notice { margin-top:18px; padding:12px 14px; border-radius:12px; background:#eaf8f2; color:#226b53; border:1px solid #cdeee1; font-size:12px; }
+  @media (max-width: 800px) {
+    .page { padding:24px 14px 40px; }
+    .topbar { flex-direction:column; }
+    .period { text-align:left; }
+    .stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .table-wrap { overflow:auto; }
+    table { min-width:760px; }
+  }
+  @media print {
+    body { background:#fff; }
+    .page { max-width:none; padding:0; }
+    .table-wrap { box-shadow:none; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="topbar">
+    <div>
+      <div class="brand">Silentra</div>
+      <h1>${escapeHtml(title)}</h1>
+      <p class="subtitle">${escapeHtml(subtitle)}</p>
+    </div>
+    <div class="period">
+      Período
+      <strong>${escapeHtml(period)}</strong>
+    </div>
+  </header>
+  <section class="stats">${statsHtml}</section>
+  <section class="table-wrap">
+    <table>
+      <thead><tr>${headerHtml}</tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  </section>
+  <div class="notice">Relatório gerado pela Silentra. Pode imprimir ou guardar esta página como PDF para arquivo, partilha ou contabilidade.</div>
+  <footer class="footer">
+    <span>Gerado em ${escapeHtml(generatedAt)}</span>
+    <span>silentra.me</span>
+  </footer>
+</main>
+</body>
+</html>`;
+}
+
+function response(filename: string, html: string) {
+  return new NextResponse(html, {
     headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Type': 'text/html; charset=utf-8',
       'Content-Disposition': `attachment; filename="${filename}"`,
       'Cache-Control': 'no-store',
     },
@@ -96,6 +211,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Invalid date range' }, { status: 400 });
     }
 
+    const period = `${formatDate(from)} — ${formatDate(to)}`;
     const fromLabel = from.toISOString().slice(0, 10);
     const toLabel = to.toISOString().slice(0, 10);
 
@@ -109,19 +225,35 @@ export async function GET(request: Request) {
         .limit(10000);
       if (error) throw error;
 
-      return response(`silentra-clientes-${fromLabel}-${toLabel}.csv`, [
-        ['Relatório', 'Clientes'],
-        ['Período', `${fromLabel} a ${toLabel}`],
-        [],
-        ['Nome', 'Email', 'Telefone', 'Data de nascimento', 'Cliente desde'],
-        ...(data ?? []).map((row) => [
-          row.name_complete,
-          row.email,
-          row.num_phone,
-          formatDate(row.birth_date),
-          formatDate(row.created_at),
-        ]),
+      const rows = (data ?? []).map((row) => [
+        row.name_complete,
+        row.email,
+        row.num_phone,
+        formatDate(row.birth_date),
+        formatDate(row.created_at),
       ]);
+      const createdInPeriod = (data ?? []).filter((row) => {
+        const created = new Date(String(row.created_at));
+        return created >= from && created <= to;
+      }).length;
+      const withBirthDate = (data ?? []).filter((row) => Boolean(row.birth_date)).length;
+
+      return response(
+        `silentra-relatorio-clientes-${fromLabel}-${toLabel}.html`,
+        reportHtml({
+          title: 'Relatório de clientes',
+          subtitle: 'Base de clientes da barbearia para gestão e acompanhamento.',
+          period,
+          stats: [
+            { label: 'Clientes totais', value: String(data?.length ?? 0) },
+            { label: 'Novos no período', value: String(createdInPeriod) },
+            { label: 'Com data de nascimento', value: String(withBirthDate) },
+            { label: 'Cobertura de dados', value: `${data?.length ? Math.round((withBirthDate / data.length) * 100) : 0}%` },
+          ],
+          headers: ['Nome', 'Email', 'Telefone', 'Data de nascimento', 'Cliente desde'],
+          rows,
+        }),
+      );
     }
 
     if (type === 'appointments') {
@@ -137,42 +269,44 @@ export async function GET(request: Request) {
         .limit(20000);
       if (error) throw error;
 
-      return response(`silentra-marcacoes-${fromLabel}-${toLabel}.csv`, [
-        ['Relatório', 'Marcações'],
-        ['Período', `${fromLabel} a ${toLabel}`],
-        [],
-        [
-          'Data e hora',
-          'Estado',
-          'Cliente',
-          'Email',
-          'Telefone',
-          'Serviço',
-          'Preço do serviço (€)',
-          'Produtos (€)',
-          'Total (€)',
-          'Pagamento',
-          'Profissional',
-        ],
-        ...(data ?? []).map((row: RowRecord) => {
-          const service = relationRecord(row.service);
-          const servicePrice = Number(service?.price ?? 0);
-          const products = Number(row.value_products ?? 0);
-          return [
-            formatDateTime(row.date_hour),
-            row.status,
-            row.manual_name,
-            row.manual_email,
-            row.manual_phone,
-            service?.name,
-            money(servicePrice),
-            money(products),
-            money(servicePrice + products),
-            row.payment_method,
-            relationRecord(row.professional)?.name,
-          ];
+      let revenue = 0;
+      let completed = 0;
+      let cancelled = 0;
+      const rows = (data ?? []).map((row: RowRecord) => {
+        const service = relationRecord(row.service);
+        const servicePrice = Number(service?.price ?? 0);
+        const products = Number(row.value_products ?? 0);
+        const total = servicePrice + products;
+        revenue += Number.isFinite(total) ? total : 0;
+        if (String(row.status).toLowerCase() === 'completed') completed += 1;
+        if (String(row.status).toLowerCase() === 'cancelled') cancelled += 1;
+        return [
+          formatDateTime(row.date_hour),
+          row.status,
+          row.manual_name,
+          service?.name,
+          relationRecord(row.professional)?.name,
+          money(total),
+          row.payment_method,
+        ];
+      });
+
+      return response(
+        `silentra-relatorio-marcacoes-${fromLabel}-${toLabel}.html`,
+        reportHtml({
+          title: 'Relatório de marcações',
+          subtitle: 'Visão operacional das marcações e receita estimada dos serviços registados.',
+          period,
+          stats: [
+            { label: 'Marcações', value: String(data?.length ?? 0) },
+            { label: 'Concluídas', value: String(completed) },
+            { label: 'Canceladas', value: String(cancelled) },
+            { label: 'Receita registada', value: money(revenue) },
+          ],
+          headers: ['Data e hora', 'Estado', 'Cliente', 'Serviço', 'Profissional', 'Total', 'Pagamento'],
+          rows,
         }),
-      ]);
+      );
     }
 
     if (type === 'pos') {
@@ -193,28 +327,37 @@ export async function GET(request: Request) {
         .limit(20000);
       if (error) throw error;
 
-      return response(`silentra-financeiro-pos-${fromLabel}-${toLabel}.csv`, [
-        ['Relatório', 'POS / Financeiro'],
-        ['Período', `${fromLabel} a ${toLabel}`],
-        [],
-        ['Data e hora', 'Subtotal (€)', 'Desconto (€)', 'Total (€)', 'Pagamento', 'Estado'],
-        ...(data ?? []).map((row) => [
-          formatDateTime(row.created_at),
-          money(row.subtotal),
-          money(row.discount),
-          money(row.total),
-          row.payment_method,
-          row.status,
-        ]),
-      ]);
+      const totalRevenue = (data ?? []).reduce((sum, row) => sum + Number(row.total ?? 0), 0);
+      const totalDiscount = (data ?? []).reduce((sum, row) => sum + Number(row.discount ?? 0), 0);
+
+      return response(
+        `silentra-relatorio-financeiro-${fromLabel}-${toLabel}.html`,
+        reportHtml({
+          title: 'Relatório financeiro',
+          subtitle: 'Resumo das transações POS com detalhe por pagamento e estado.',
+          period,
+          stats: [
+            { label: 'Transações', value: String(data?.length ?? 0) },
+            { label: 'Receita', value: money(totalRevenue) },
+            { label: 'Descontos', value: money(totalDiscount) },
+            { label: 'Ticket médio', value: money(data?.length ? totalRevenue / data.length : 0) },
+          ],
+          headers: ['Data e hora', 'Subtotal', 'Desconto', 'Total', 'Pagamento', 'Estado'],
+          rows: (data ?? []).map((row) => [
+            formatDateTime(row.created_at),
+            money(row.subtotal),
+            money(row.discount),
+            money(row.total),
+            row.payment_method,
+            row.status,
+          ]),
+        }),
+      );
     }
 
     return NextResponse.json({ error: 'Unsupported export type' }, { status: 400 });
   } catch (error) {
     console.error('[ANALYTICS_EXPORT]', error);
-    return NextResponse.json(
-      { error: 'Unable to export analytics' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Unable to export analytics' }, { status: 500 });
   }
 }
