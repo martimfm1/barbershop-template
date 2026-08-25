@@ -165,16 +165,16 @@ async function sendBirthdayMessage(input: {
   const variables = {
     nome: input.clientName,
     barbearia: input.shopName,
-    booking_url: bookingUrl,
-    voucher_code: input.voucher?.code,
-    voucher_expires_at: input.voucher
+    bookingUrl,
+    voucherCode: input.voucher?.code,
+    voucherExpiresAt: input.voucher
       ? new Date(input.voucher.expires_at).toLocaleDateString('pt-PT')
       : undefined,
   };
 
   let body = renderTokens(input.campaign.body, variables);
   if (input.voucher?.code && !body.includes(input.voucher.code)) {
-    body += `\n\n🎁 Voucher de aniversário\nCódigo: ${input.voucher.code}\nVálido até ${variables.voucher_expires_at}.`;
+    body += `\n\n🎁 Voucher de aniversário\nCódigo: ${input.voucher.code}\nVálido até ${variables.voucherExpiresAt}.`;
   }
   const subject = renderTokens(
     input.campaign.subject?.trim() || `${input.campaign.name} — ${input.shopName}`,
@@ -232,7 +232,7 @@ export async function processBirthdayCampaignDelivery(limit = MAX_CAMPAIGNS) {
 
     const { data: clients, error: clientsError } = await admin
       .from('users')
-      .select(`id,name_complete,birth_date,${destinationField}`)
+      .select('id,name_complete,birth_date,email,num_phone')
       .eq('barbershop_id', campaign.barbershop_id)
       .eq('role', 'client')
       .not('birth_date', 'is', null)
@@ -290,13 +290,15 @@ export async function processBirthdayCampaignDelivery(limit = MAX_CAMPAIGNS) {
         if (recipientError) throw recipientError;
         recipientId = createdRecipient?.id ?? null;
       } else {
+        const currentRecipient = existingRecipient;
+        if (!currentRecipient) throw new Error('Unable to resolve existing birthday recipient.');
         await admin
           .from('marketing_campaign_recipients')
           .update({
             destination,
-            voucher_id: voucher?.id ?? existingRecipient.voucher_id ?? null,
+            voucher_id: voucher?.id ?? currentRecipient.voucher_id ?? null,
             status: 'sending',
-            attempts: Number(existingRecipient.status === 'failed' ? 1 : 1),
+            attempts: 1,
             next_attempt_at: null,
             error_message: null,
           })
