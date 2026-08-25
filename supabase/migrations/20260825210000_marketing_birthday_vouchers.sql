@@ -5,19 +5,8 @@ alter table public.marketing_campaigns
   add column if not exists birthday_reward_type text not null default 'none',
   add column if not exists birthday_reward_service_id uuid references public.services(id) on delete set null;
 
-alter table public.marketing_campaign_recipients
-  add column if not exists voucher_id uuid;
-
-alter table public.marketing_campaign_recipients
-  drop constraint if exists marketing_campaign_recipients_voucher_fk;
-
-alter table public.marketing_campaign_recipients
-  add constraint marketing_campaign_recipients_voucher_fk
-  foreign key (voucher_id) references public.marketing_campaign_vouchers(id) on delete set null;
-
 alter table public.marketing_campaigns
   drop constraint if exists marketing_campaigns_birthday_reward_type_check;
-
 alter table public.marketing_campaigns
   add constraint marketing_campaigns_birthday_reward_type_check
   check (birthday_reward_type in ('none','free_service'));
@@ -44,6 +33,15 @@ create table if not exists public.marketing_campaign_vouchers (
     check (reward_type <> 'free_service' or service_id is not null)
 );
 
+alter table public.marketing_campaign_recipients
+  add column if not exists voucher_id uuid;
+
+alter table public.marketing_campaign_recipients
+  drop constraint if exists marketing_campaign_recipients_voucher_fk;
+alter table public.marketing_campaign_recipients
+  add constraint marketing_campaign_recipients_voucher_fk
+  foreign key (voucher_id) references public.marketing_campaign_vouchers(id) on delete set null;
+
 create index if not exists marketing_campaign_vouchers_client_idx
   on public.marketing_campaign_vouchers(barbershop_id, client_id, status, expires_at);
 create index if not exists marketing_campaign_vouchers_campaign_idx
@@ -62,25 +60,17 @@ alter table public.marketing_campaigns
   add constraint marketing_campaigns_trigger_config_check
   check (
     (trigger_type = 'manual'
-      and interval_value is null
-      and interval_unit is null
-      and event_name is null)
+      and interval_value is null and interval_unit is null and event_name is null)
     or
     (trigger_type = 'interval'
-      and interval_value is not null
-      and interval_unit is not null
-      and event_name is null)
+      and interval_value is not null and interval_unit is not null and event_name is null)
     or
     (trigger_type = 'event'
-      and event_name is not null
-      and length(trim(event_name)) between 1 and 80
-      and interval_value is null
-      and interval_unit is null)
+      and event_name is not null and length(trim(event_name)) between 1 and 80
+      and interval_value is null and interval_unit is null)
     or
     (trigger_type = 'birthday'
-      and interval_value is null
-      and interval_unit is null
-      and event_name is null
+      and interval_value is null and interval_unit is null and event_name is null
       and birthday_offset_days between -365 and 365
       and birthday_reward_type in ('none','free_service')
       and (birthday_reward_type = 'none' or birthday_reward_service_id is not null))
