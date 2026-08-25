@@ -45,10 +45,25 @@ export async function dispatchAppointmentAutomations(
 
     let email = event.manualEmail?.trim().toLowerCase() ?? '';
     let name = event.manualName?.trim() ?? 'Cliente';
-    if ((!email || !name) && event.clientId) {
-      const { data: client } = await admin.from('users').select('email,name_complete').eq('id', event.clientId).eq('barbershop_id', event.barbershopId).maybeSingle();
+    let clientId = event.clientId ?? null;
+
+    if (clientId) {
+      const { data: client } = await admin
+        .from('users')
+        .select('email,name_complete')
+        .eq('id', clientId)
+        .eq('barbershop_id', event.barbershopId)
+        .maybeSingle();
       email = email || client?.email?.trim().toLowerCase() || '';
       name = name || client?.name_complete?.trim() || 'Cliente';
+    } else {
+      const { data: appointment } = await admin
+        .from('appointments')
+        .select('client_id')
+        .eq('id', event.appointmentId)
+        .eq('barbershop_id', event.barbershopId)
+        .maybeSingle();
+      clientId = appointment?.client_id ?? null;
     }
 
     for (const rule of rules ?? []) {
@@ -79,7 +94,7 @@ export async function dispatchAppointmentAutomations(
     await dispatchMarketingEvent({
       barbershopId: event.barbershopId,
       eventName: trigger,
-      clientId: event.clientId ?? null,
+      clientId,
     });
   } catch (error) {
     console.error('[AUTOMATION_APPOINTMENT_DISPATCH]', { trigger, appointmentId: event.appointmentId, error });
