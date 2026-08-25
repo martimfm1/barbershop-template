@@ -16,7 +16,7 @@ const faqs = [
   ],
   [
     'Como funciona a oferta do Pro?',
-    'Novos utilizadores elegíveis recebem o primeiro mês de Barbers Pro grátis com o código TRIALPRO. Depois desse mês inicia-se a cobrança normal, salvo cancelamento.',
+    'Novos utilizadores elegíveis recebem a oferta aplicável no checkout. A primeira cobrança só acontece de acordo com as condições apresentadas durante a compra.',
   ],
   [
     'Como são tratados os pagamentos?',
@@ -24,7 +24,7 @@ const faqs = [
   ],
   [
     'O que acontece se cancelar?',
-    'Manténs o acesso ao plano atual até ao final do período de faturação em curso.',
+    'Manténs o acesso ao plano atual até ao final do período de faturação em curso, de acordo com as condições da subscrição.',
   ],
 ] as const;
 
@@ -41,11 +41,10 @@ export default function PlansPage() {
               Planos Silentra
             </span>
             <h1 className="mt-5 text-[2.45rem] font-semibold leading-[1] tracking-[-0.055em] sm:text-5xl">
-              Escolhe o nível de operação que a tua barbearia precisa agora.
+              Escolhe o plano. Compara. Faz o checkout.
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
-              Esta é a página de decisão da Silentra: compara, escolhe e inicia
-              o checkout sem sair do funil.
+              Esta é a página de decisão da Silentra. Aqui encontras a comparação completa e, quando estiveres pronto, inicias o checkout sem sair do funil.
             </p>
             <div className="mt-6 grid gap-2 text-xs text-zinc-500 sm:flex sm:flex-wrap sm:gap-x-5">
               <span className="inline-flex items-center gap-2">
@@ -53,8 +52,8 @@ export default function PlansPage() {
                 Free disponível sem cartão
               </span>
               <span className="inline-flex items-center gap-2">
-                <CheckCircle2 className="size-3.5 text-emerald-300" />1 mês de
-                Pro com TRIALPRO para novos utilizadores
+                <CheckCircle2 className="size-3.5 text-emerald-300" />
+                Oferta Pro para novos utilizadores elegíveis
               </span>
               <span className="inline-flex items-center gap-2">
                 <CheckCircle2 className="size-3.5 text-emerald-300" />
@@ -72,24 +71,24 @@ export default function PlansPage() {
           <PricingSection destination="checkout" />
         </section>
 
-        <section className="mt-10 rounded-[2rem] border border-white/10 bg-white/[0.02] p-5 sm:mt-14 sm:p-8">
+        <section id="comparacao" className="mt-10 scroll-mt-24 rounded-[2rem] border border-white/10 bg-white/[0.02] p-5 sm:mt-14 sm:p-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
                 Comparação completa
               </p>
               <h2 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-white sm:text-3xl">
-                Vê exatamente o que muda entre planos.
+                Confirma a decisão antes de comprar.
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
-                Compara funcionalidades e limites antes de iniciar o checkout.
+                Compara funcionalidades e limites numa única vista. Depois volta aos cards acima para iniciar o checkout.
               </p>
             </div>
             <Link
-              href="/registo"
-              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 bg-white px-4 text-sm font-semibold text-zinc-950"
+              href="#precos"
+              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-zinc-100 hover:bg-white/[0.07]"
             >
-              Começar grátis <ArrowRight className="size-4" />
+              Voltar aos planos <ArrowRight className="size-4" />
             </Link>
           </div>
           <div className="mt-7 overflow-x-auto">
@@ -112,10 +111,7 @@ export default function PlansPage() {
                 key={question}
                 className="border border-white/10 bg-zinc-900/45 p-5 transition hover:border-white/20 hover:bg-white/[0.035]"
               >
-                <CircleHelp
-                  className="size-5 text-emerald-300"
-                  aria-hidden="true"
-                />
+                <CircleHelp className="size-5 text-emerald-300" aria-hidden="true" />
                 <h2 className="mt-4 font-semibold text-zinc-100">{question}</h2>
                 <p className="mt-2 text-sm leading-6 text-zinc-400">{answer}</p>
               </article>
@@ -130,11 +126,10 @@ export default function PlansPage() {
                 Próximo passo
               </p>
               <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white">
-                Escolhe um plano e continua para o checkout.
+                Escolhe um plano acima e continua para o checkout.
               </p>
               <p className="mt-2 text-sm leading-6 text-zinc-500">
-                O pagamento é processado pela Stripe dentro da experiência
-                Silentra.
+                O checkout é a única etapa de pagamento; depois a subscrição fica associada à barbearia.
               </p>
             </div>
             <Link
