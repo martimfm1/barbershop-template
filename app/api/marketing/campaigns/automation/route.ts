@@ -41,9 +41,8 @@ export async function GET() {
 
     const { data: services, error: serviceError } = await admin
       .from('services')
-      .select('id,name,price,duration,active')
+      .select('id,name,price,duration')
       .eq('barbershop_id', barbershopId)
-      .eq('active', true)
       .order('name', { ascending: true });
 
     if (serviceError) {
@@ -190,7 +189,6 @@ export async function PATCH(request: NextRequest) {
           .select('id')
           .eq('id', rewardServiceId)
           .eq('barbershop_id', barbershopId)
-          .eq('active', true)
           .maybeSingle();
         if (serviceError) throw serviceError;
         if (!service) {
