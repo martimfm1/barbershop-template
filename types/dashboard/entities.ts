@@ -30,6 +30,7 @@ export interface Appointment {
   status: 'pending' | 'scheduled' | 'completed' | 'cancelled';
   manual_name?: string | null;
   manual_phone?: string | null;
+  manual_email?: string | null;
   manual_birth_date?: string | null;
   value_products?: number;
   description_products?: string;
