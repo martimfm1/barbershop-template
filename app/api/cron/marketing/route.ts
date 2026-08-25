@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
-import { processQueuedCampaignRecipients, processScheduledCampaigns } from '@/lib/marketing/dispatcher';
+import {
+  processBirthdayCampaigns,
+  processQueuedCampaignRecipients,
+  processScheduledCampaigns,
+} from '@/lib/marketing/dispatcher';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,11 +25,14 @@ export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
   const startedAt = Date.now();
   try {
+    const birthdays = await processBirthdayCampaigns(25);
     const scheduled = await processScheduledCampaigns(25);
     const delivery = await processQueuedCampaignRecipients(100);
     const result = {
       ok: true,
       requestId,
+      birthdayCampaignsProcessed: birthdays.processed,
+      birthdayDate: birthdays.date,
       scheduledCampaigns: scheduled.processed,
       queuedRecipientsProcessed: delivery.processed,
       sent: delivery.sent,
