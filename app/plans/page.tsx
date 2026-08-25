@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import {
   CheckCircle2,
   CircleHelp,
@@ -8,6 +9,24 @@ import Link from 'next/link';
 import { SiteNavbar } from '@/components/site-navbar';
 import { PricingSection } from '@/components/hero/pricing-section';
 import { PlanComparison } from '@/components/billing/plan-comparison';
+
+export const metadata: Metadata = {
+  title: 'Planos e Preços para Barbearias | Silentra',
+  description:
+    'Compara os planos da Silentra, funcionalidades, limites e preços para escolher a solução de gestão ideal para a tua barbearia.',
+  alternates: {
+    canonical: 'https://barbers.silentra.me/plans',
+  },
+  openGraph: {
+    title: 'Planos e Preços para Barbearias | Silentra',
+    description:
+      'Compara planos, funcionalidades e preços da Silentra para gerir a tua barbearia.',
+    url: 'https://barbers.silentra.me/plans',
+    siteName: 'Silentra',
+    locale: 'pt_PT',
+    type: 'website',
+  },
+};
 
 const faqs = [
   [
