@@ -3,7 +3,7 @@ export type EmailSendResult =
 
 function getBrevoConfig() {
   const apiKey = process.env.BREVO_API_KEY;
-  const senderEmail = process.env.SENDER_EMAIL;
+  const senderEmail = process.env.SENDER_EMAIL ?? process.env.BREVO_FROM_EMAIL;
   if (!apiKey || !senderEmail) throw new Error('Brevo is not configured.');
   return { apiKey, senderEmail };
 }
@@ -43,7 +43,7 @@ export async function sendBrevoEmail(input: {
       },
       body: JSON.stringify({
         sender: {
-          name: sanitizeSenderName(input.senderName ?? 'Silentra'),
+          name: sanitizeSenderName(input.senderName ?? process.env.BREVO_FROM_NAME ?? 'Silentra'),
           email: senderEmail,
         },
         to: [
