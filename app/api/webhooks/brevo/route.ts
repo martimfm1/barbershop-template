@@ -12,7 +12,7 @@ function authorized(request: NextRequest) {
   return authorization === `Bearer ${secret}` || headerSecret === secret;
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest, forcedChannel?: 'email' | 'sms') {
   if (!authorized(request)) {
     console.warn('[BREVO_WEBHOOK] unauthorized');
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
@@ -26,10 +26,11 @@ export async function POST(request: NextRequest) {
   for (const payload of payloads) {
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)) continue;
     const normalized = payload as Record<string, unknown>;
-    const channel =
+    const channel = forcedChannel ?? (
       typeof normalized.channel === 'string' && normalized.channel.toLowerCase() === 'sms'
         ? 'sms'
-        : 'email';
+        : 'email'
+    );
     try {
       const result = await applyProviderDeliveryEvent({ channel, payload: normalized });
       processed += 1;
