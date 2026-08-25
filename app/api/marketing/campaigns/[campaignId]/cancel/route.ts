@@ -49,7 +49,7 @@ export async function POST(
 
     if (campaignUpdateError) throw campaignUpdateError;
 
-    const { count: cancelledRecipients, error: recipientError } = await admin
+    const { error: recipientUpdateError } = await admin
       .from('marketing_campaign_recipients')
       .update({
         status: 'cancelled',
@@ -57,10 +57,17 @@ export async function POST(
         error_message: 'Campanha cancelada pelo utilizador.',
       })
       .eq('campaign_id', campaignId)
-      .eq('status', 'queued')
-      .select('id', { count: 'exact', head: true });
+      .eq('status', 'queued');
 
-    if (recipientError) throw recipientError;
+    if (recipientUpdateError) throw recipientUpdateError;
+
+    const { count: cancelledRecipients, error: recipientCountError } = await admin
+      .from('marketing_campaign_recipients')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', campaignId)
+      .eq('status', 'cancelled');
+
+    if (recipientCountError) throw recipientCountError;
 
     return NextResponse.json({
       ok: true,
