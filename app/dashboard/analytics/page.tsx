@@ -8,6 +8,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Download,
+  FileSpreadsheet,
   Lock,
   RefreshCw,
   TrendingDown,
@@ -54,21 +55,34 @@ type Analytics = {
     locations: { locationId: string; transactions: number; revenue: number }[];
   };
 };
+
 function money(value: number) {
   return new Intl.NumberFormat('pt-PT', {
     style: 'currency',
     currency: 'EUR',
   }).format(value);
 }
+
 function dateInput(date: Date) {
   return date.toISOString().slice(0, 10);
 }
+
 function downloadUrl(
   type: 'appointments' | 'clients' | 'pos',
   from: string,
   to: string,
 ) {
   return `/api/analytics/export?type=${type}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+}
+
+function humanDate(value: string) {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('pt-PT', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
 }
 
 export default function AnalyticsPage() {
@@ -80,6 +94,7 @@ export default function AnalyticsPage() {
   const [to, setTo] = useState(() => dateInput(new Date()));
   const [data, setData] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(false);
+
   const load = useCallback(async () => {
     if (!allowed) return;
     setLoading(true);
@@ -89,10 +104,9 @@ export default function AnalyticsPage() {
         { cache: 'no-store' },
       );
       const json = await response.json();
-      if (!response.ok)
-        throw new Error(
-          json.error ?? 'Não foi possível carregar os analytics.',
-        );
+      if (!response.ok) {
+        throw new Error(json.error ?? 'Não foi possível carregar os analytics.');
+      }
       setData(json as Analytics);
     } catch (error) {
       toast.error(
@@ -102,19 +116,25 @@ export default function AnalyticsPage() {
       setLoading(false);
     }
   }, [allowed, from, to]);
+
   useEffect(() => {
     void load();
   }, [load]);
+
   const maxRevenue = useMemo(
     () => Math.max(...(data?.revenueByDay.map((item) => item.value) ?? [1]), 1),
     [data],
   );
   const maxAgeGroup = useMemo(
     () =>
-      Math.max(...(data?.clientAgeGroups.map((item) => item.count) ?? [1]), 1),
+      Math.max(
+        ...(data?.clientAgeGroups.map((item) => item.count) ?? [1]),
+        1,
+      ),
     [data],
   );
-  if (accessLoading)
+
+  if (accessLoading) {
     return (
       <main className="min-h-screen bg-background p-8">
         <div className="mx-auto max-w-7xl space-y-4">
@@ -123,7 +143,9 @@ export default function AnalyticsPage() {
         </div>
       </main>
     );
-  if (!allowed)
+  }
+
+  if (!allowed) {
     return (
       <main className="min-h-screen bg-background px-4 py-24">
         <div className="mx-auto max-w-xl">
@@ -142,6 +164,8 @@ export default function AnalyticsPage() {
         </div>
       </main>
     );
+  }
+
   return (
     <main className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-6">
@@ -164,13 +188,11 @@ export default function AnalyticsPage() {
             </Link>
           </Button>
         </header>
+
         <Card>
           <CardContent className="flex flex-col gap-4 py-4 sm:flex-row sm:items-end">
             <div className="flex-1">
-              <label
-                className="text-xs text-muted-foreground"
-                htmlFor="analytics-from"
-              >
+              <label className="text-xs text-muted-foreground" htmlFor="analytics-from">
                 De
               </label>
               <Input
@@ -182,10 +204,7 @@ export default function AnalyticsPage() {
               />
             </div>
             <div className="flex-1">
-              <label
-                className="text-xs text-muted-foreground"
-                htmlFor="analytics-to"
-              >
+              <label className="text-xs text-muted-foreground" htmlFor="analytics-to">
                 Até
               </label>
               <Input
@@ -197,13 +216,12 @@ export default function AnalyticsPage() {
               />
             </div>
             <Button onClick={() => void load()} disabled={loading}>
-              <RefreshCw
-                className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`}
-              />
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
           </CardContent>
         </Card>
+
         {loading && !data ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Skeleton className="h-28" />
@@ -215,35 +233,16 @@ export default function AnalyticsPage() {
           data && (
             <>
               <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Metric
-                  title="Receita"
-                  value={money(data.overview.revenue)}
-                  icon={<Wallet className="h-4 w-4" />}
-                  change={data.overview.revenueChangePercent}
-                />
-                <Metric
-                  title="Marcações"
-                  value={String(data.overview.appointments)}
-                  icon={<CalendarDays className="h-4 w-4" />}
-                />
-                <Metric
-                  title="Clientes novos"
-                  value={String(data.overview.newClients)}
-                  icon={<Users className="h-4 w-4" />}
-                />
-                <Metric
-                  title="Cancelamentos"
-                  value={`${data.overview.cancellationRate.toFixed(1)}%`}
-                  icon={<CheckCircle2 className="h-4 w-4" />}
-                />
+                <Metric title="Receita" value={money(data.overview.revenue)} icon={<Wallet className="h-4 w-4" />} change={data.overview.revenueChangePercent} />
+                <Metric title="Marcações" value={String(data.overview.appointments)} icon={<CalendarDays className="h-4 w-4" />} />
+                <Metric title="Clientes novos" value={String(data.overview.newClients)} icon={<Users className="h-4 w-4" />} />
+                <Metric title="Cancelamentos" value={`${data.overview.cancellationRate.toFixed(1)}%`} icon={<CheckCircle2 className="h-4 w-4" />} />
               </section>
+
               <section className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5" />
-                      Receita diária
-                    </CardTitle>
+                    <CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5" />Receita diária</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {data.revenueByDay.length === 0 ? (
@@ -252,17 +251,8 @@ export default function AnalyticsPage() {
                       <>
                         <div className="flex h-64 min-w-0 items-end gap-1 overflow-hidden">
                           {data.revenueByDay.map((item) => (
-                            <div
-                              key={item.date}
-                              className="group flex h-full min-w-0 flex-1 flex-col justify-end"
-                              title={`${item.date}: ${money(item.value)}`}
-                            >
-                              <div
-                                className="min-h-1 rounded-t bg-primary/80 transition-colors group-hover:bg-primary"
-                                style={{
-                                  height: `${Math.max((item.value / maxRevenue) * 100, item.value ? 3 : 0)}%`,
-                                }}
-                              />
+                            <div key={item.date} className="group flex h-full min-w-0 flex-1 flex-col justify-end" title={`${item.date}: ${money(item.value)}`}>
+                              <div className="min-h-1 rounded-t bg-primary/80 transition-colors group-hover:bg-primary" style={{ height: `${Math.max((item.value / maxRevenue) * 100, item.value ? 3 : 0)}%` }} />
                             </div>
                           ))}
                         </div>
@@ -275,36 +265,20 @@ export default function AnalyticsPage() {
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Resumo operacional</CardTitle>
-                  </CardHeader>
+                  <CardHeader><CardTitle>Resumo operacional</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
-                    <Stat
-                      label="Concluídas"
-                      value={data.overview.completedAppointments}
-                    />
-                    <Stat
-                      label="Agendadas"
-                      value={data.overview.scheduledAppointments}
-                    />
-                    <Stat
-                      label="Canceladas"
-                      value={data.overview.cancelledAppointments}
-                    />
-                    <Stat
-                      label="Clientes ativos"
-                      value={data.overview.activeClientsInPeriod}
-                    />
+                    <Stat label="Concluídas" value={data.overview.completedAppointments} />
+                    <Stat label="Agendadas" value={data.overview.scheduledAppointments} />
+                    <Stat label="Canceladas" value={data.overview.cancelledAppointments} />
+                    <Stat label="Clientes ativos" value={data.overview.activeClientsInPeriod} />
                   </CardContent>
                 </Card>
               </section>
+
               <Card>
                 <CardHeader>
                   <CardTitle>Perfil etário dos clientes</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Clientes únicos com data de nascimento conhecida que tiveram
-                    serviços concluídos no período.
-                  </p>
+                  <p className="text-sm text-muted-foreground">Clientes únicos com data de nascimento conhecida que tiveram serviços concluídos no período.</p>
                 </CardHeader>
                 <CardContent>
                   {data.clientAgeGroups.length === 0 ? (
@@ -312,159 +286,103 @@ export default function AnalyticsPage() {
                   ) : (
                     <div className="space-y-4">
                       {data.clientAgeGroups.map((item) => (
-                        <div
-                          key={item.label}
-                          className="grid gap-2 sm:grid-cols-[100px_1fr_48px] sm:items-center"
-                        >
-                          <span className="text-sm text-muted-foreground">
-                            {item.label}
-                          </span>
+                        <div key={item.label} className="grid gap-2 sm:grid-cols-[100px_1fr_48px] sm:items-center">
+                          <span className="text-sm text-muted-foreground">{item.label}</span>
                           <div className="h-2 overflow-hidden rounded-full bg-muted">
-                            <div
-                              className="h-full rounded-full bg-primary transition-all"
-                              style={{
-                                width: `${Math.max((item.count / maxAgeGroup) * 100, 4)}%`,
-                              }}
-                            />
+                            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.max((item.count / maxAgeGroup) * 100, 4)}%` }} />
                           </div>
-                          <span className="text-right text-sm font-semibold">
-                            {item.count}
-                          </span>
+                          <span className="text-right text-sm font-semibold">{item.count}</span>
                         </div>
                       ))}
                     </div>
                   )}
                 </CardContent>
               </Card>
+
               <section className="grid gap-6 lg:grid-cols-2">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Serviços mais vendidos</CardTitle>
-                  </CardHeader>
+                  <CardHeader><CardTitle>Serviços mais vendidos</CardTitle></CardHeader>
                   <CardContent className="space-y-3">
-                    {data.topServices.length ? (
-                      data.topServices.map((item) => (
-                        <div
-                          key={item.name}
-                          className="flex items-center justify-between gap-4 rounded-xl border border-border p-3"
-                        >
-                          <div className="min-w-0">
-                            <p className="truncate font-medium">{item.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {item.count} marcações
-                            </p>
-                          </div>
-                          <span className="shrink-0 font-semibold">
-                            {money(item.revenue)}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <Empty />
-                    )}
+                    {data.topServices.length ? data.topServices.map((item) => (
+                      <div key={item.name} className="flex items-center justify-between gap-4 rounded-xl border border-border p-3">
+                        <div className="min-w-0"><p className="truncate font-medium">{item.name}</p><p className="text-xs text-muted-foreground">{item.count} marcações</p></div>
+                        <span className="shrink-0 font-semibold">{money(item.revenue)}</span>
+                      </div>
+                    )) : <Empty />}
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Performance dos profissionais</CardTitle>
-                  </CardHeader>
+                  <CardHeader><CardTitle>Performance dos profissionais</CardTitle></CardHeader>
                   <CardContent className="space-y-3">
-                    {data.professionals.length ? (
-                      data.professionals.map((item) => (
-                        <div
-                          key={item.name}
-                          className="flex items-center justify-between gap-4 rounded-xl border border-border p-3"
-                        >
-                          <div className="min-w-0">
-                            <p className="truncate font-medium">{item.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {item.appointments} marcações
-                            </p>
-                          </div>
-                          <span className="shrink-0 font-semibold">
-                            {money(item.revenue)}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <Empty />
-                    )}
+                    {data.professionals.length ? data.professionals.map((item) => (
+                      <div key={item.name} className="flex items-center justify-between gap-4 rounded-xl border border-border p-3">
+                        <div className="min-w-0"><p className="truncate font-medium">{item.name}</p><p className="text-xs text-muted-foreground">{item.appointments} marcações</p></div>
+                        <span className="shrink-0 font-semibold">{money(item.revenue)}</span>
+                      </div>
+                    )) : <Empty />}
                   </CardContent>
                 </Card>
               </section>
+
               <section>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Download className="h-5 w-5" />
-                      Exportar dados
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      Downloads úteis para contabilidade, CRM e análise fora do
-                      Silentra.
-                    </p>
+                <Card className="overflow-hidden">
+                  <CardHeader className="border-b border-border bg-muted/20">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2"><Download className="h-5 w-5" />Exportar dados úteis</CardTitle>
+                        <p className="mt-1 text-sm text-muted-foreground">Ficheiros CSV preparados para Excel e Google Sheets, sem IDs internos desnecessários.</p>
+                      </div>
+                      <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground">
+                        <FileSpreadsheet className="h-3.5 w-3.5" />
+                        {humanDate(from)} — {humanDate(to)}
+                      </div>
+                    </div>
                   </CardHeader>
-                  <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    <a
+                  <CardContent className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 sm:p-6">
+                    <ExportCard
                       href={downloadUrl('appointments', from, to)}
-                      className="rounded-xl border p-4 transition hover:bg-muted/30"
-                    >
-                      <p className="font-medium">Marcações CSV</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Horários, estado, cliente, serviço e profissional.
-                      </p>
-                    </a>
-                    <a
+                      eyebrow="Operação"
+                      title="Marcações"
+                      description="Data, estado, cliente, serviço, profissional, pagamento e total."
+                      icon={<CalendarDays className="h-5 w-5" />}
+                      cta="Exportar marcações"
+                    />
+                    <ExportCard
                       href={downloadUrl('clients', from, to)}
-                      className="rounded-xl border p-4 transition hover:bg-muted/30"
-                    >
-                      <p className="font-medium">Clientes CSV</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Contactos e dados de CRM disponíveis.
-                      </p>
-                    </a>
+                      eyebrow="CRM"
+                      title="Clientes"
+                      description="Contactos, data de nascimento e data de registo para gestão de clientes."
+                      icon={<Users className="h-5 w-5" />}
+                      cta="Exportar clientes"
+                    />
                     {plan === 'enterprise' ? (
-                      <a
+                      <ExportCard
                         href={downloadUrl('pos', from, to)}
-                        className="rounded-xl border p-4 transition hover:bg-muted/30"
-                      >
-                        <p className="font-medium">POS CSV</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Transações, descontos, pagamentos e localizações.
-                        </p>
-                      </a>
+                        eyebrow="Financeiro"
+                        title="POS"
+                        description="Subtotal, descontos, total, pagamento e estado das transações."
+                        icon={<Wallet className="h-5 w-5" />}
+                        cta="Exportar financeiro"
+                      />
                     ) : (
-                      <div className="rounded-xl border border-dashed p-4">
-                        <p className="font-medium text-muted-foreground">
-                          POS CSV
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Disponível no Enterprise.
-                        </p>
+                      <div className="rounded-2xl border border-dashed border-border bg-muted/10 p-5 opacity-75">
+                        <div className="flex items-center gap-3"><div className="flex size-10 items-center justify-center rounded-xl bg-muted text-muted-foreground"><Wallet className="h-5 w-5" /></div><div><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Financeiro</p><h3 className="font-semibold">POS</h3></div></div>
+                        <p className="mt-4 text-sm leading-5 text-muted-foreground">Exportação financeira disponível no plano Enterprise.</p>
+                        <Button asChild variant="outline" className="mt-5 w-full"><Link href="/plans">Ver Enterprise</Link></Button>
                       </div>
                     )}
                   </CardContent>
                 </Card>
               </section>
+
               {data.enterprise && (
                 <section>
                   <Card>
-                    <CardHeader>
-                      <CardTitle>Enterprise · visão financeira</CardTitle>
-                    </CardHeader>
+                    <CardHeader><CardTitle>Enterprise · visão financeira</CardTitle></CardHeader>
                     <CardContent className="grid gap-4 sm:grid-cols-3">
-                      <Stat
-                        label="Receita POS"
-                        value={money(data.enterprise.posRevenue)}
-                      />
-                      <Stat
-                        label="Transações POS"
-                        value={data.enterprise.posTransactions}
-                      />
-                      <Stat
-                        label="Receita combinada"
-                        value={money(data.enterprise.combinedRevenue)}
-                      />
+                      <Stat label="Receita POS" value={money(data.enterprise.posRevenue)} />
+                      <Stat label="Transações POS" value={data.enterprise.posTransactions} />
+                      <Stat label="Receita combinada" value={money(data.enterprise.combinedRevenue)} />
                     </CardContent>
                   </Card>
                 </section>
@@ -476,6 +394,35 @@ export default function AnalyticsPage() {
     </main>
   );
 }
+
+function ExportCard({
+  href,
+  eyebrow,
+  title,
+  description,
+  icon,
+  cta,
+}: {
+  href: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  cta: string;
+}) {
+  return (
+    <div className="group rounded-2xl border border-border bg-background p-5 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">{icon}</div>
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{eyebrow}</span>
+      </div>
+      <h3 className="mt-5 text-base font-semibold">{title}</h3>
+      <p className="mt-2 min-h-10 text-sm leading-5 text-muted-foreground">{description}</p>
+      <Button asChild className="mt-5 w-full"><a href={href}><Download className="mr-2 h-4 w-4" />{cta}</a></Button>
+    </div>
+  );
+}
+
 function Metric({
   title,
   value,
@@ -498,14 +445,8 @@ function Metric({
       <CardContent>
         <p className="text-2xl font-semibold">{value}</p>
         {change !== undefined && change !== null && (
-          <p
-            className={`mt-1 flex items-center text-xs ${change >= 0 ? 'text-emerald-500' : 'text-red-500'}`}
-          >
-            {change >= 0 ? (
-              <TrendingUp className="mr-1 h-3 w-3" />
-            ) : (
-              <TrendingDown className="mr-1 h-3 w-3" />
-            )}
+          <p className={`mt-1 flex items-center text-xs ${change >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+            {change >= 0 ? <TrendingUp className="mr-1 h-3 w-3" /> : <TrendingDown className="mr-1 h-3 w-3" />}
             {Math.abs(change).toFixed(1)}% vs período anterior
           </p>
         )}
@@ -513,6 +454,7 @@ function Metric({
     </Card>
   );
 }
+
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0">
@@ -521,10 +463,7 @@ function Stat({ label, value }: { label: string; value: string | number }) {
     </div>
   );
 }
+
 function Empty() {
-  return (
-    <p className="py-8 text-center text-sm text-muted-foreground">
-      Sem dados para o período selecionado.
-    </p>
-  );
+  return <p className="py-8 text-center text-sm text-muted-foreground">Sem dados para o período selecionado.</p>;
 }
