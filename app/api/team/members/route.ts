@@ -76,8 +76,6 @@ export async function GET(request: Request) {
     { data: teamCount, error: teamCountError },
     { data: teamLimit, error: teamLimitError },
   ] = await Promise.all([
-    // Clients share the public.users table with team members, but must never be
-    // exposed through the team-management surface or treated as a team seat.
     tenant.admin
       .from('users')
       .select('id, name_complete, email, num_phone, role')
@@ -154,6 +152,12 @@ export async function GET(request: Request) {
     );
   });
 
+  const professionalCount = (professionals ?? []).length;
+  const professionalActiveCount = (professionals ?? []).filter(
+    (professional) => professional.active !== false,
+  ).length;
+  const professionalLimit = Number(teamLimit ?? 1);
+
   return NextResponse.json(
     {
       members: orderedMembers.map((member) => ({
@@ -174,6 +178,12 @@ export async function GET(request: Request) {
         used: Number(teamCount ?? 0),
         limit: Number(teamLimit ?? 1),
         unlimited: Number(teamLimit ?? 1) >= 2147483647,
+      },
+      barberSeats: {
+        used: professionalCount,
+        active: professionalActiveCount,
+        limit: professionalLimit,
+        unlimited: professionalLimit >= 2147483647,
       },
     },
     { headers: { 'Cache-Control': 'no-store' } },
