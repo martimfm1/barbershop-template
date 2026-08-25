@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { POST as handleBrevoWebhook } from '@/app/api/webhooks/brevo/route';
+import { handleBrevoWebhook } from '@/app/api/webhooks/brevo/route';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
