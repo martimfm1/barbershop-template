@@ -12,7 +12,17 @@ function authorized(request: NextRequest) {
   return authorization === `Bearer ${secret}` || headerSecret === secret;
 }
 
-export async function POST(request: NextRequest, forcedChannel?: 'email' | 'sms') {
+function resolveChannel(payload: Record<string, unknown>): 'email' | 'sms' {
+  const channel = typeof payload.channel === 'string' ? payload.channel.toLowerCase() : '';
+  if (channel === 'sms') return 'sms';
+
+  const eventType = typeof payload.event === 'string' ? payload.event.toLowerCase() : '';
+  if (eventType.startsWith('sms')) return 'sms';
+
+  return 'email';
+}
+
+export async function POST(request: NextRequest) {
   if (!authorized(request)) {
     console.warn('[BREVO_WEBHOOK] unauthorized');
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
@@ -25,14 +35,16 @@ export async function POST(request: NextRequest, forcedChannel?: 'email' | 'sms'
 
   for (const payload of payloads) {
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)) continue;
+
     const normalized = payload as Record<string, unknown>;
-    const channel = forcedChannel ?? (
-      typeof normalized.channel === 'string' && normalized.channel.toLowerCase() === 'sms'
-        ? 'sms'
-        : 'email'
-    );
+    const channel = resolveChannel(normalized);
+
     try {
-      const result = await applyProviderDeliveryEvent({ channel, payload: normalized });
+      const result = await applyProviderDeliveryEvent({
+        channel,
+        payload: normalized,
+      });
+
       processed += 1;
       if (result.matched) matched += 1;
     } catch (error) {
