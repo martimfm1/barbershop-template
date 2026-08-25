@@ -10,6 +10,8 @@ const EVENTS = [
   'booking_cancelled',
 ] as const;
 const MODES = ['manual', 'interval', 'event', 'birthday'] as const;
+const CAMPAIGN_SELECT =
+  'id,name,channel,trigger_type,interval_value,interval_unit,next_run_at,event_name,birthday_offset_days,birthday_reward_type,birthday_reward_service_id,active,status,updated_at';
 
 export async function GET() {
   try {
@@ -17,37 +19,66 @@ export async function GET() {
       'marketing_campaigns',
       'marketing',
     );
-    const [{ data: campaigns, error: campaignError }, { data: services, error: serviceError }] =
-      await Promise.all([
-        admin
-          .from('marketing_campaigns')
-          .select(
-            'id,name,channel,trigger_type,interval_value,interval_unit,next_run_at,event_name,birthday_offset_days,birthday_reward_type,birthday_reward_service_id,active,status',
-          )
-          .eq('barbershop_id', barbershopId)
-          .order('created_at', { ascending: false }),
-        admin
-          .from('services')
-          .select('id,name,price,duration,active')
-          .eq('barbershop_id', barbershopId)
-          .eq('active', true)
-          .order('name', { ascending: true }),
-      ]);
 
-    if (campaignError) throw campaignError;
-    if (serviceError) throw serviceError;
+    const { data: campaigns, error: campaignError } = await admin
+      .from('marketing_campaigns')
+      .select(CAMPAIGN_SELECT)
+      .eq('barbershop_id', barbershopId)
+      .order('created_at', { ascending: false });
 
-    return NextResponse.json({
-      ok: true,
-      campaigns: campaigns ?? [],
-      events: EVENTS,
-      services: services ?? [],
-    });
+    if (campaignError) {
+      console.error('[MARKETING_AUTOMATION_CAMPAIGNS_GET]', campaignError);
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'A configuração de automações ainda não está disponível na base de dados.',
+          code: campaignError.code ?? 'AUTOMATION_SCHEMA_ERROR',
+          details: campaignError.message,
+        },
+        { status: 500 },
+      );
+    }
+
+    const { data: services, error: serviceError } = await admin
+      .from('services')
+      .select('id,name,price,duration,active')
+      .eq('barbershop_id', barbershopId)
+      .eq('active', true)
+      .order('name', { ascending: true });
+
+    if (serviceError) {
+      console.error('[MARKETING_AUTOMATION_SERVICES_GET]', serviceError);
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'Não foi possível carregar os serviços disponíveis para recompensas.',
+          code: serviceError.code ?? 'AUTOMATION_SERVICES_ERROR',
+          details: serviceError.message,
+        },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json(
+      {
+        ok: true,
+        campaigns: campaigns ?? [],
+        events: EVENTS,
+        services: services ?? [],
+        meta: { generatedAt: new Date().toISOString() },
+      },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
   } catch (error) {
     const response = moduleErrorResponse(error);
     if (response) return response;
+    console.error('[MARKETING_AUTOMATION_GET]', error);
     return NextResponse.json(
-      { ok: false, error: 'Unable to load campaign automation settings.' },
+      {
+        ok: false,
+        error: 'Não foi possível carregar as definições de automação.',
+        code: 'AUTOMATION_LOAD_FAILED',
+      },
       { status: 500 },
     );
   }
@@ -69,7 +100,7 @@ export async function PATCH(request: NextRequest) {
 
     if (!id || !MODES.includes(mode as (typeof MODES)[number])) {
       return NextResponse.json(
-        { error: 'Invalid automation configuration.' },
+        { error: 'Configuração de automação inválida.' },
         { status: 400 },
       );
     }
@@ -89,7 +120,7 @@ export async function PATCH(request: NextRequest) {
         !['hours', 'days'].includes(String(unit))
       ) {
         return NextResponse.json(
-          { error: 'Interval inválido.' },
+          { error: 'Intervalo inválido.' },
           { status: 400 },
         );
       }
@@ -135,10 +166,7 @@ export async function PATCH(request: NextRequest) {
 
       if (!Number.isInteger(offset) || offset < -365 || offset > 365) {
         return NextResponse.json(
-          {
-            error:
-              'O desvio do aniversário deve estar entre -365 e 365 dias.',
-          },
+          { error: 'O desvio do aniversário deve estar entre -365 e 365 dias.' },
           { status: 400 },
         );
       }
@@ -157,13 +185,14 @@ export async function PATCH(request: NextRequest) {
             { status: 400 },
           );
         }
-        const { data: service } = await admin
+        const { data: service, error: serviceError } = await admin
           .from('services')
           .select('id')
           .eq('id', rewardServiceId)
           .eq('barbershop_id', barbershopId)
           .eq('active', true)
           .maybeSingle();
+        if (serviceError) throw serviceError;
         if (!service) {
           return NextResponse.json(
             { error: 'O serviço selecionado não pertence a esta barbearia.' },
@@ -178,7 +207,8 @@ export async function PATCH(request: NextRequest) {
       patch.event_name = null;
       patch.birthday_offset_days = offset;
       patch.birthday_reward_type = rewardType;
-      patch.birthday_reward_service_id = rewardType === 'free_service' ? rewardServiceId : null;
+      patch.birthday_reward_service_id =
+        rewardType === 'free_service' ? rewardServiceId : null;
       patch.active = true;
       patch.status = 'scheduled';
     } else {
@@ -198,9 +228,7 @@ export async function PATCH(request: NextRequest) {
       .update(patch)
       .eq('id', id)
       .eq('barbershop_id', barbershopId)
-      .select(
-        'id,name,channel,trigger_type,interval_value,interval_unit,next_run_at,event_name,birthday_offset_days,birthday_reward_type,birthday_reward_service_id,active,status',
-      )
+      .select(CAMPAIGN_SELECT)
       .maybeSingle();
 
     if (error) throw error;
