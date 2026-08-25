@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Ban, Loader2, RefreshCw, Send, Trash2 } from 'lucide-react';
+import { Ban, Loader2, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 
 const ACTIVE_STATES = ['scheduled', 'sending'] as const;
+const VISIBLE_STATES = ['scheduled', 'sending', 'cancelled'] as const;
 
 type Campaign = {
   id: string;
@@ -32,9 +33,11 @@ export function CampaignLifecycleActions() {
       const response = await fetch('/api/marketing/campaigns', { cache: 'no-store' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? 'Não foi possível carregar os envios.');
-      setCampaigns((data.campaigns ?? []).filter((campaign: Campaign) =>
-        [...ACTIVE_STATES, 'cancelled'].includes(campaign.status as never),
-      ));
+      setCampaigns(
+        (data.campaigns ?? []).filter((campaign: Campaign) =>
+          VISIBLE_STATES.includes(campaign.status as (typeof VISIBLE_STATES)[number]),
+        ),
+      );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erro ao carregar os envios.');
     } finally {
