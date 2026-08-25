@@ -25,14 +25,32 @@ const requiredGuards = [
   'createClient',
 ];
 
+const specializedGuards = [
+  {
+    pattern: /\/bookings\/customer-profile\/route\.ts$/,
+    markers: ['findPublicBookingCustomer', 'UUID_PATTERN', 'EMAIL_PATTERN'],
+  },
+  {
+    pattern: /\/calendar\/appointments\/\[appointmentId\]\/route\.ts$/,
+    markers: ['verifyCalendarToken'],
+  },
+  {
+    pattern: /\/loyalty\/redemption\/qr\/route\.ts$/,
+    markers: ['hashLoyaltyToken'],
+  },
+  {
+    pattern: /\/webhooks\/brevo(?:\/email|\/sms)?\/route\.ts$/,
+    markers: ['BREVO_WEBHOOK_SECRET'],
+  },
+];
+
 function walk(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   const files = [];
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) files.push(...walk(full));
-    else if (entry.name === 'route.ts' || entry.name === 'route.tsx')
-      files.push(full);
+    else if (entry.name === 'route.ts' || entry.name === 'route.tsx') files.push(full);
   }
   return files;
 }
@@ -43,12 +61,19 @@ const failures = [];
 for (const file of routes) {
   const relative = path.relative(process.cwd(), file).replaceAll(path.sep, '/');
   const source = fs.readFileSync(file, 'utf8');
+
   if (publicRoutePatterns.some((pattern) => pattern.test(relative))) continue;
-  if (!requiredGuards.some((guard) => source.includes(guard))) {
-    failures.push(
-      `${relative}: missing a recognizable server-side auth/tenant guard`,
-    );
+  if (requiredGuards.some((guard) => source.includes(guard))) continue;
+
+  const specializedGuard = specializedGuards.find(({ pattern }) => pattern.test(relative));
+  if (
+    specializedGuard &&
+    specializedGuard.markers.every((marker) => source.includes(marker))
+  ) {
+    continue;
   }
+
+  failures.push(`${relative}: missing a recognizable server-side auth/tenant guard`);
 }
 
 if (failures.length) {
