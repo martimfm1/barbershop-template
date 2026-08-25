@@ -1,24 +1,58 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 
-const POSITIVE_EVENTS = new Set(['delivered', 'delivery', 'sent']);
-const OPEN_EVENTS = new Set(['opened', 'open']);
+const POSITIVE_EVENTS = new Set(['delivered', 'delivery', 'accepted', 'sent']);
+const OPEN_EVENTS = new Set(['opened', 'open', 'uniqueopened', 'firstopening']);
 const CLICK_EVENTS = new Set(['click', 'clicked']);
-const UNSUBSCRIBE_EVENTS = new Set(['unsubscribed', 'unsubscribe', 'list_unsubscribe']);
-const FAILURE_EVENTS = new Set(['hard_bounce', 'soft_bounce', 'bounce', 'blocked', 'failed', 'error', 'invalid_email']);
+const UNSUBSCRIBE_EVENTS = new Set([
+  'unsubscribed',
+  'unsubscribe',
+  'list_unsubscribe',
+  'unsub',
+]);
+const FAILURE_EVENTS = new Set([
+  'hard_bounce',
+  'soft_bounce',
+  'hardbounce',
+  'softbounce',
+  'bounce',
+  'blocked',
+  'failed',
+  'error',
+  'invalid_email',
+  'invalid',
+  'rejected',
+  'skip',
+  'deferred',
+  'spam',
+  'complaint',
+]);
 
 function normalizeEvent(value: unknown) {
   return typeof value === 'string' ? value.trim().toLowerCase() : '';
 }
 
 function parseProviderMessageId(payload: Record<string, unknown>) {
-  const candidates = [payload['message-id'], payload.messageId, payload['message_id'], payload.id];
-  const value = candidates.find((item) => typeof item === 'string' || typeof item === 'number');
+  const candidates = [
+    payload['message-id'],
+    payload.messageId,
+    payload['message_id'],
+    payload.id,
+  ];
+  const value = candidates.find(
+    (item) => typeof item === 'string' || typeof item === 'number',
+  );
   if (value === undefined || value === null) return null;
   return String(value).trim().replace(/^<|>$/g, '');
 }
 
 function parseOccurredAt(payload: Record<string, unknown>) {
-  const candidates = [payload.date, payload.timestamp, payload.ts_event, payload.ts, payload.occurred_at];
+  const candidates = [
+    payload.date,
+    payload.timestamp,
+    payload.ts_event,
+    payload.ts,
+    payload.occurred_at,
+  ];
   for (const value of candidates) {
     if (typeof value === 'number') {
       const date = new Date(value < 1e12 ? value * 1000 : value);
@@ -32,23 +66,49 @@ function parseOccurredAt(payload: Record<string, unknown>) {
   return new Date().toISOString();
 }
 
-async function refreshCampaignMetrics(admin: ReturnType<typeof createAdminClient>, campaignId: string) {
+async function refreshCampaignMetrics(
+  admin: ReturnType<typeof createAdminClient>,
+  campaignId: string,
+) {
   const [sent, delivered, failed, opened, clicked] = await Promise.all([
-    admin.from('marketing_campaign_recipients').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).in('status', ['sent', 'delivered']),
-    admin.from('marketing_campaign_recipients').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('status', 'delivered'),
-    admin.from('marketing_campaign_recipients').select('id', { count: 'exact', head: true }).eq('campaign_id', campaignId).eq('status', 'failed'),
-    admin.from('marketing_campaign_recipients').select('id', { count: 'exact', head: true }).not('opened_at', 'is', null),
-    admin.from('marketing_campaign_recipients').select('id', { count: 'exact', head: true }).not('clicked_at', 'is', null),
+    admin
+      .from('marketing_campaign_recipients')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', campaignId)
+      .in('status', ['sent', 'delivered']),
+    admin
+      .from('marketing_campaign_recipients')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', campaignId)
+      .eq('status', 'delivered'),
+    admin
+      .from('marketing_campaign_recipients')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', campaignId)
+      .eq('status', 'failed'),
+    admin
+      .from('marketing_campaign_recipients')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', campaignId)
+      .not('opened_at', 'is', null),
+    admin
+      .from('marketing_campaign_recipients')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', campaignId)
+      .not('clicked_at', 'is', null),
   ]);
 
-  const { error } = await admin.from('marketing_campaigns').update({
-    sent_count: sent.count ?? 0,
-    delivered_count: delivered.count ?? 0,
-    failed_count: failed.count ?? 0,
-    opened_count: opened.count ?? 0,
-    clicked_count: clicked.count ?? 0,
-    updated_at: new Date().toISOString(),
-  }).eq('id', campaignId);
+  const { error } = await admin
+    .from('marketing_campaigns')
+    .update({
+      sent_count: sent.count ?? 0,
+      delivered_count: delivered.count ?? 0,
+      failed_count: failed.count ?? 0,
+      opened_count: opened.count ?? 0,
+      clicked_count: clicked.count ?? 0,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', campaignId);
   if (error) throw error;
 }
 
@@ -57,13 +117,22 @@ export async function applyProviderDeliveryEvent(input: {
   payload: Record<string, unknown>;
 }) {
   const admin = createAdminClient();
-  const eventType = normalizeEvent(input.payload.event ?? input.payload.type ?? input.payload.status);
+  const eventType = normalizeEvent(
+    input.payload.event ?? input.payload.type ?? input.payload.status,
+  );
   if (!eventType) throw new Error('Provider event type is missing.');
 
   const providerMessageId = parseProviderMessageId(input.payload);
   const occurredAt = parseOccurredAt(input.payload);
-  const email = typeof input.payload.email === 'string' ? input.payload.email.trim().toLowerCase() : null;
-  const recipientValue = typeof input.payload.recipient === 'string' ? input.payload.recipient.trim() : null;
+  const email =
+    typeof input.payload.email === 'string'
+      ? input.payload.email.trim().toLowerCase()
+      : null;
+  const recipientValue = (() => {
+    const candidates = [input.payload.recipient, input.payload.to, input.payload.phone_number];
+    const value = candidates.find((item) => typeof item === 'string');
+    return typeof value === 'string' ? value.trim() : null;
+  })();
 
   let recipient: { id: string; campaign_id: string; barbershop_id: string } | null = null;
 
@@ -106,7 +175,11 @@ export async function applyProviderDeliveryEvent(input: {
   if (eventError && eventError.code !== '23505') throw eventError;
 
   if (!recipient) {
-    return { matched: false, duplicate: eventError?.code === '23505', eventId: eventRow?.id ?? null };
+    return {
+      matched: false,
+      duplicate: eventError?.code === '23505',
+      eventId: eventRow?.id ?? null,
+    };
   }
 
   const update: Record<string, unknown> = {
@@ -128,6 +201,7 @@ export async function applyProviderDeliveryEvent(input: {
     update.error_message = 'Recipient unsubscribed.';
   } else if (FAILURE_EVENTS.has(eventType)) {
     update.status = 'failed';
+    update.error_message = eventType;
   }
 
   const { error: recipientError } = await admin
@@ -138,5 +212,10 @@ export async function applyProviderDeliveryEvent(input: {
 
   await refreshCampaignMetrics(admin, recipient.campaign_id);
 
-  return { matched: true, duplicate: eventError?.code === '23505', eventId: eventRow?.id ?? null, recipientId: recipient.id };
+  return {
+    matched: true,
+    duplicate: eventError?.code === '23505',
+    eventId: eventRow?.id ?? null,
+    recipientId: recipient.id,
+  };
 }
