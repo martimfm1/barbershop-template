@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Clock3, Send, Zap } from 'lucide-react';
+import { Cake, Clock3, Send, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 
@@ -15,43 +15,60 @@ type Campaign = {
   id: string;
   name: string;
   channel: 'email' | 'sms';
-  trigger_type: 'manual' | 'interval' | 'event';
+  trigger_type: 'manual' | 'interval' | 'event' | 'birthday';
   interval_value: number | null;
   interval_unit: 'hours' | 'days' | null;
   event_name: string | null;
+  birthday_offset_days: number | null;
   next_run_at: string | null;
   active: boolean;
   status: string;
 };
 
+const MODE_LABELS = {
+  manual: 'Manual',
+  interval: 'A cada intervalo',
+  event: 'Depois de uma ação',
+  birthday: 'No aniversário do cliente',
+} as const;
+
 export function CampaignControls() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selected, setSelected] = useState('');
-  const [mode, setMode] = useState<'manual' | 'interval' | 'event'>('manual');
+  const [mode, setMode] = useState<Campaign['trigger_type']>('manual');
   const [intervalValue, setIntervalValue] = useState('24');
   const [intervalUnit, setIntervalUnit] = useState<'hours' | 'days'>('hours');
   const [eventName, setEventName] = useState('booking_created');
+  const [birthdayOffset, setBirthdayOffset] = useState('0');
   const [events, setEvents] = useState<string[]>(Object.keys(EVENT_LABELS));
   const [busy, setBusy] = useState(false);
 
   async function load() {
-    const response = await fetch('/api/marketing/campaigns/automation', { cache: 'no-store' });
+    const response = await fetch('/api/marketing/campaigns/automation', {
+      cache: 'no-store',
+    });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error ?? 'Não foi possível carregar as automações.');
+    if (!response.ok)
+      throw new Error(data.error ?? 'Não foi possível carregar as campanhas.');
     setCampaigns(data.campaigns ?? []);
     setEvents(data.events ?? Object.keys(EVENT_LABELS));
-    const first = data.campaigns?.[0];
+    const first = data.campaigns?.[0] as Campaign | undefined;
     if (first && !selected) {
       setSelected(first.id);
       setMode(first.trigger_type ?? 'manual');
       setIntervalValue(String(first.interval_value ?? 24));
       setIntervalUnit(first.interval_unit ?? 'hours');
       setEventName(first.event_name ?? 'booking_created');
+      setBirthdayOffset(String(first.birthday_offset_days ?? 0));
     }
   }
 
   useEffect(() => {
-    load().catch((error) => toast.error(error instanceof Error ? error.message : 'Erro ao carregar campanhas.'));
+    load().catch((error) =>
+      toast.error(
+        error instanceof Error ? error.message : 'Erro ao carregar campanhas.',
+      ),
+    );
   }, []);
 
   useEffect(() => {
@@ -61,19 +78,25 @@ export function CampaignControls() {
     setIntervalValue(String(campaign.interval_value ?? 24));
     setIntervalUnit(campaign.interval_unit ?? 'hours');
     setEventName(campaign.event_name ?? 'booking_created');
+    setBirthdayOffset(String(campaign.birthday_offset_days ?? 0));
   }, [selected, campaigns]);
 
   async function sendAll() {
     if (!selected) return toast.error('Seleciona uma campanha.');
     setBusy(true);
     try {
-      const response = await fetch(`/api/marketing/campaigns/${selected}/send`, { method: 'POST' });
+      const response = await fetch(`/api/marketing/campaigns/${selected}/send`, {
+        method: 'POST',
+      });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? 'Não foi possível iniciar o envio.');
+      if (!response.ok)
+        throw new Error(data.error ?? 'Não foi possível iniciar o envio.');
       toast.success(`${data.queued ?? 0} destinatários colocados na fila.`);
       await load();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Erro ao iniciar o envio.');
+      toast.error(
+        error instanceof Error ? error.message : 'Erro ao iniciar o envio.',
+      );
     } finally {
       setBusy(false);
     }
@@ -92,14 +115,22 @@ export function CampaignControls() {
           intervalValue: Number(intervalValue),
           intervalUnit,
           eventName,
+          birthdayOffsetDays: Number(birthdayOffset),
         }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? 'Não foi possível guardar a automação.');
-      toast.success(mode === 'manual' ? 'Envio manual configurado.' : 'Automação guardada.');
+      if (!response.ok)
+        throw new Error(data.error ?? 'Não foi possível guardar a automação.');
+      toast.success(
+        mode === 'manual'
+          ? 'Envio manual configurado.'
+          : 'Automação da campanha guardada.',
+      );
       await load();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Erro ao guardar automação.');
+      toast.error(
+        error instanceof Error ? error.message : 'Erro ao guardar automação.',
+      );
     } finally {
       setBusy(false);
     }
@@ -111,10 +142,10 @@ export function CampaignControls() {
         <div>
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Zap className="size-4 text-primary" />
-            Envio das campanhas
+            Delivery das campanhas
           </div>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Podes enviar uma campanha imediatamente ou deixá-la correr automaticamente.
+            A campanha é o centro da comunicação. Escolhe quando é que ela deve disparar.
           </p>
         </div>
 
@@ -141,15 +172,19 @@ export function CampaignControls() {
       {selected && (
         <div className="mt-4 grid gap-3 border-t border-white/10 pt-4 lg:grid-cols-[180px_1fr_auto] lg:items-end">
           <div>
-            <label className="text-xs font-medium text-zinc-300">Modo</label>
+            <label className="text-xs font-medium text-zinc-300">Quando enviar</label>
             <select
               value={mode}
-              onChange={(event) => setMode(event.target.value as typeof mode)}
+              onChange={(event) =>
+                setMode(event.target.value as Campaign['trigger_type'])
+              }
               className="mt-1.5 h-10 w-full rounded-md border border-white/10 bg-zinc-950 px-3 text-sm"
             >
-              <option value="manual">Manual</option>
-              <option value="interval">A cada intervalo</option>
-              <option value="event">Depois de uma ação</option>
+              {Object.entries(MODE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -170,7 +205,9 @@ export function CampaignControls() {
                 <label className="text-xs font-medium text-zinc-300">Unidade</label>
                 <select
                   value={intervalUnit}
-                  onChange={(event) => setIntervalUnit(event.target.value as typeof intervalUnit)}
+                  onChange={(event) =>
+                    setIntervalUnit(event.target.value as typeof intervalUnit)
+                  }
                   className="mt-1.5 h-10 w-full rounded-md border border-white/10 bg-zinc-950 px-3 text-sm"
                 >
                   <option value="hours">Horas</option>
@@ -187,9 +224,31 @@ export function CampaignControls() {
                 className="mt-1.5 h-10 w-full rounded-md border border-white/10 bg-zinc-950 px-3 text-sm"
               >
                 {events.map((event) => (
-                  <option key={event} value={event}>{EVENT_LABELS[event] ?? event}</option>
+                  <option key={event} value={event}>
+                    {EVENT_LABELS[event] ?? event}
+                  </option>
                 ))}
               </select>
+            </div>
+          ) : mode === 'birthday' ? (
+            <div className="grid grid-cols-[auto_1fr] items-end gap-3 rounded-xl border border-amber-400/15 bg-amber-400/[0.04] p-2">
+              <div className="flex size-10 items-center justify-center rounded-lg border border-amber-400/15 bg-amber-400/10 text-amber-300">
+                <Cake className="size-4" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-zinc-300">
+                  Momento do envio
+                </label>
+                <select
+                  value={birthdayOffset}
+                  onChange={(event) => setBirthdayOffset(event.target.value)}
+                  className="mt-1.5 h-10 w-full rounded-md border border-white/10 bg-zinc-950 px-3 text-sm"
+                >
+                  <option value="-1">1 dia antes</option>
+                  <option value="0">No próprio dia</option>
+                  <option value="1">1 dia depois</option>
+                </select>
+              </div>
             </div>
           ) : (
             <div className="flex min-h-10 items-center rounded-md border border-white/10 bg-black/10 px-3 text-xs text-zinc-500">
