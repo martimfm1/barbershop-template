@@ -8,7 +8,6 @@ import {
   BarChart3,
   Megaphone,
   Settings,
-  Sparkles,
   Heart,
   CreditCard,
   LayoutDashboard,
@@ -117,12 +116,6 @@ export function DashboardSidebar() {
       label: t('dashboard.marketing'),
       icon: Megaphone,
       feature: 'marketing_campaigns',
-    },
-    {
-      href: '/dashboard/automations',
-      label: t('dashboard.automations'),
-      icon: Sparkles,
-      feature: 'automated_followups',
     },
     {
       href: '/dashboard/loyalty',
