@@ -4,6 +4,7 @@ import {
   processQueuedCampaignRecipients,
   processScheduledCampaigns,
 } from '@/lib/marketing/dispatcher';
+import { processBirthdayCampaignDelivery } from '@/lib/marketing/birthday-delivery';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,14 +26,22 @@ export async function GET(request: Request) {
   const requestId = crypto.randomUUID();
   const startedAt = Date.now();
   try {
-    const birthdays = await processBirthdayCampaigns(25);
+    // The legacy birthday queue is intentionally no longer dispatched here.
+    // Birthday campaigns are handled end-to-end by the Marketing engine so
+    // voucher issuance and delivery stay atomic from the barber's point of view.
+    const birthdayLegacy = await processBirthdayCampaigns(25);
+    const birthdays = await processBirthdayCampaignDelivery(25);
     const scheduled = await processScheduledCampaigns(25);
     const delivery = await processQueuedCampaignRecipients(100);
     const result = {
       ok: true,
       requestId,
-      birthdayCampaignsProcessed: birthdays.processed,
-      birthdayDate: birthdays.date,
+      legacyBirthdayCampaignsProcessed: birthdayLegacy.processed,
+      birthdayCampaignsProcessed: birthdays.campaignsProcessed,
+      birthdayRecipientsProcessed: birthdays.recipientsProcessed,
+      birthdaySent: birthdays.sent,
+      birthdayFailed: birthdays.failed,
+      birthdayVouchersIssued: birthdays.vouchersIssued,
       scheduledCampaigns: scheduled.processed,
       queuedRecipientsProcessed: delivery.processed,
       sent: delivery.sent,
