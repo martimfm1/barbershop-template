@@ -53,11 +53,7 @@ async function getCampaign(campaignId: string): Promise<Campaign> {
   return data as Campaign;
 }
 
-export async function queueCampaign(
-  campaignId: string,
-  runKey = crypto.randomUUID(),
-  targetClientId?: string | null,
-) {
+export async function queueCampaign(campaignId: string, runKey = crypto.randomUUID(), targetClientId?: string | null) {
   const admin = createAdminClient();
   const campaign = await getCampaign(campaignId);
   const recipientField = campaign.channel === 'email' ? 'email' : 'num_phone';
@@ -73,7 +69,19 @@ export async function queueCampaign(
   if (clientsError) throw clientsError;
 
   if (!clients?.length) {
-    await admin.from('marketing_campaigns').update({ status: 'completed', completed_at: new Date().toISOString(), total_recipients: 0, sent_count: 0, failed_count: 0, last_run_at: new Date().toISOString() }).eq('id', campaign.id);
+    const next = campaign.trigger_type === 'interval' && campaign.interval_value && campaign.interval_unit
+      ? nextInterval(campaign.interval_value, campaign.interval_unit)
+      : null;
+    await admin.from('marketing_campaigns').update({
+      status: next ? 'scheduled' : 'completed',
+      next_run_at: next,
+      completed_at: next ? null : new Date().toISOString(),
+      total_recipients: 0,
+      sent_count: 0,
+      failed_count: 0,
+      last_run_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq('id', campaign.id);
     return { campaignId, runKey, queued: 0, total: count ?? 0 };
   }
 
@@ -95,7 +103,7 @@ export async function queueCampaign(
 
   await admin
     .from('marketing_campaigns')
-    .update({ status: 'sending', last_run_at: new Date().toISOString(), total_recipients: clients.length, sent_count: 0, failed_count: 0, completed_at: null, updated_at: new Date().toISOString() })
+    .update({ status: 'sending', last_run_at: new Date().toISOString(), total_recipients: clients.length, sent_count: 0, failed_count: 0, completed_at: null, next_run_at: null, updated_at: new Date().toISOString() })
     .eq('id', campaign.id);
 
   return { campaignId, runKey, queued: clients.length, total: count ?? clients.length };
@@ -214,6 +222,7 @@ export async function processScheduledCampaigns(limit = 25) {
     .select('id')
     .eq('active', true)
     .eq('trigger_type', 'interval')
+    .eq('status', 'scheduled')
     .lte('next_run_at', new Date().toISOString())
     .limit(limit);
   if (error) throw error;
