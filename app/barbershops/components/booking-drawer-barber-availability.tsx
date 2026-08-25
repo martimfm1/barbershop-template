@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   Check,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -44,6 +45,15 @@ const DAY_INDEX: Record<string, number> = {
   sábado: 6,
 };
 type Step = 1 | 2 | 3 | 4;
+type CustomerProfileStatus =
+  | 'idle'
+  | 'checking'
+  | 'has_birth_date'
+  | 'needs_birth_date'
+  | 'not_found'
+  | 'error';
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function nextDays(count = 7): BookingDayOption[] {
   const today = new Date();
@@ -130,7 +140,10 @@ export function BookingDrawerBarberAvailability({
   const [email, setEmail] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [birthDateIso, setBirthDateIso] = useState('');
+  const [customerProfileStatus, setCustomerProfileStatus] =
+    useState<CustomerProfileStatus>('idle');
   const controllerRef = useRef<AbortController | null>(null);
+  const customerProfileControllerRef = useRef<AbortController | null>(null);
   const cacheRef = useRef(
     new Map<string, { data: MarketplaceBookingResponse; timestamp: number }>(),
   );
@@ -156,6 +169,11 @@ export function BookingDrawerBarberAvailability({
   const selectedDateClosed = shopClosedDays.has(
     new Date(`${currentDay.dateStr}T12:00:00`).getDay(),
   );
+  const hasStoredBirthDate = customerProfileStatus === 'has_birth_date';
+  const profileCheckValidInput =
+    Boolean(shop) &&
+    EMAIL_PATTERN.test(email.trim()) &&
+    phone.replace(/\D/g, '').length >= 7;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -178,8 +196,10 @@ export function BookingDrawerBarberAvailability({
     setEmail('');
     setBirthDate('');
     setBirthDateIso('');
+    setCustomerProfileStatus('idle');
     cacheRef.current.clear();
     controllerRef.current?.abort();
+    customerProfileControllerRef.current?.abort();
   }, [isOpen, selectedServiceId]);
 
   useEffect(() => {
@@ -254,6 +274,55 @@ export function BookingDrawerBarberAvailability({
     selectedDateClosed,
   ]);
 
+  useEffect(() => {
+    if (!isOpen || step !== 3) return;
+
+    if (!profileCheckValidInput) {
+      customerProfileControllerRef.current?.abort();
+      setCustomerProfileStatus('idle');
+      return;
+    }
+
+    const timeout = window.setTimeout(async () => {
+      customerProfileControllerRef.current?.abort();
+      const controller = new AbortController();
+      customerProfileControllerRef.current = controller;
+      setCustomerProfileStatus('checking');
+
+      try {
+        const response = await fetch('/api/bookings/customer-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          cache: 'no-store',
+          body: JSON.stringify({
+            shopId: shop?.id,
+            email: email.trim(),
+            phone: phone.trim(),
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+          throw new Error(
+            data.error || 'Não foi possível verificar os teus dados.',
+          );
+        }
+        if (data.matched && data.hasBirthDate) {
+          setCustomerProfileStatus('has_birth_date');
+        } else if (data.matched) {
+          setCustomerProfileStatus('needs_birth_date');
+        } else {
+          setCustomerProfileStatus('not_found');
+        }
+      } catch (reason) {
+        if (reason instanceof Error && reason.name === 'AbortError') return;
+        setCustomerProfileStatus('error');
+      }
+    }, 450);
+
+    return () => window.clearTimeout(timeout);
+  }, [email, phone, isOpen, step, profileCheckValidInput, shop]);
+
   function selectSlot(slot: string) {
     setSelectedSlot(slot);
     setProfessional('any');
@@ -269,8 +338,10 @@ export function BookingDrawerBarberAvailability({
 
   async function submit() {
     if (!shop || !service || !selectedSlot) return;
-    if (!name.trim() || !phone.trim() || !email.trim() || !birthDateIso)
+    if (!name.trim() || !phone.trim() || !email.trim())
       return toast.error('Preenche todos os campos obrigatórios.');
+    if (!hasStoredBirthDate && !birthDateIso)
+      return toast.error('Indica a tua data de nascimento.');
     setSubmitting(true);
     setError('');
     try {
@@ -286,7 +357,7 @@ export function BookingDrawerBarberAvailability({
           customerName: name.trim(),
           customerPhone: phone.trim(),
           customerEmail: email.trim(),
-          customerBirthDate: birthDateIso,
+          customerBirthDate: birthDateIso || null,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -660,28 +731,50 @@ export function BookingDrawerBarberAvailability({
                     className="min-h-12 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-white outline-none focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20"
                   />
                 </label>
-                <label className="block">
-                  <span className="mb-1.5 block text-xs font-medium text-zinc-400">
-                    Data de nascimento
-                  </span>
-                  <input
-                    value={birthDate}
-                    onChange={(e) => {
-                      const parsed = parseBirthDate(e.target.value);
-                      setBirthDate(parsed.display);
-                      setBirthDateIso(parsed.iso);
-                    }}
-                    inputMode="numeric"
-                    autoComplete="bday"
-                    placeholder="DD/MM/AAAA"
-                    aria-describedby="birth-help"
-                    className="min-h-12 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-white outline-none focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20"
-                  />
-                  <p id="birth-help" className="mt-1 text-[11px] text-zinc-500">
-                    Formato: dia/mês/ano. Usamos a data para funcionalidades
-                    como fidelização e aniversários.
-                  </p>
-                </label>
+
+                {customerProfileStatus === 'checking' && (
+                  <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.025] p-3 text-xs text-zinc-400">
+                    <Loader2 className="size-4 animate-spin text-emerald-300" />
+                    A verificar se já tens os dados de cliente registados…
+                  </div>
+                )}
+
+                {hasStoredBirthDate && (
+                  <div className="flex items-start gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-4">
+                    <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-300" />
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-100">
+                        Data de nascimento já registada
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-emerald-100/70">
+                        Encontrámos o teu perfil com este email e telefone. Não precisas de voltar a indicar a data de nascimento.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {!hasStoredBirthDate && (
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-medium text-zinc-400">
+                      Data de nascimento
+                    </span>
+                    <input
+                      value={birthDate}
+                      onChange={(e) => handleBirthDate(e.target.value)}
+                      inputMode="numeric"
+                      autoComplete="bday"
+                      placeholder="DD/MM/AAAA"
+                      aria-describedby="birth-help"
+                      className="min-h-12 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-white outline-none focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20"
+                    />
+                    <p id="birth-help" className="mt-1 text-[11px] text-zinc-500">
+                      {customerProfileStatus === 'needs_birth_date'
+                        ? 'Encontrámos o teu perfil, mas falta a data de nascimento.'
+                        : 'Formato: dia/mês/ano. Usamos a data para funcionalidades como fidelização e aniversários.'}
+                    </p>
+                  </label>
+                )}
+
                 <div className="grid grid-cols-2 gap-2 pt-2">
                   <Button
                     type="button"
@@ -699,7 +792,8 @@ export function BookingDrawerBarberAvailability({
                       !name.trim() ||
                       !phone.trim() ||
                       !email.trim() ||
-                      !birthDateIso
+                      (!hasStoredBirthDate && !birthDateIso) ||
+                      customerProfileStatus === 'checking'
                     }
                     onClick={() => void submit()}
                   >
