@@ -28,7 +28,7 @@ export async function findPublicBookingCustomer(input: {
     .select('id,birth_date,num_phone')
     .eq('barbershop_id', input.barbershopId)
     .eq('role', 'client')
-    .ilike('email', normalizedEmail)
+    .eq('email', normalizedEmail)
     .limit(20);
 
   if (error) throw error;
