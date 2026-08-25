@@ -19,7 +19,7 @@ type Campaign = {
 };
 
 function escapeHtml(value: string) {
-  return value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char] ?? char);
+  return value.replace(/[&<>\"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char] ?? char);
 }
 
 function token(value: string, vars: { nome: string; barbearia: string; bookingUrl: string }) {
@@ -160,7 +160,14 @@ export async function processQueuedCampaignRecipients(limit = MAX_RECIPIENTS_PER
 
       if (result.success) {
         sent++;
-        await admin.from('marketing_campaign_recipients').update({ status: 'sent', sent_at: new Date().toISOString(), delivered_at: new Date().toISOString(), provider_message_id: result.messageId ?? null, error_message: null, next_attempt_at: null }).eq('id', recipient.id);
+        await admin.from('marketing_campaign_recipients').update({
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+          delivered_at: null,
+          provider_message_id: result.messageId ?? null,
+          error_message: null,
+          next_attempt_at: null,
+        }).eq('id', recipient.id);
       } else {
         failed++;
         await admin.from('marketing_campaign_recipients').update({ status: attempts >= MAX_ATTEMPTS ? 'failed' : 'queued', failed_at: attempts >= MAX_ATTEMPTS ? new Date().toISOString() : null, next_attempt_at: attempts >= MAX_ATTEMPTS ? null : new Date(Date.now() + attempts * 60000).toISOString(), error_message: result.error }).eq('id', recipient.id);
