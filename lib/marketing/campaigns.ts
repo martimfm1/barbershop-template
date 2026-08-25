@@ -10,6 +10,14 @@ export const CAMPAIGN_STATUSES = [
 ] as const;
 export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
 
+export const CAMPAIGN_TRIGGER_TYPES = [
+  'manual',
+  'interval',
+  'event',
+  'birthday',
+] as const;
+export type CampaignTriggerType = (typeof CAMPAIGN_TRIGGER_TYPES)[number];
+
 export const MARKETING_PLAN = 'pro' as const;
 
 export function isMarketingChannel(value: unknown): value is MarketingChannel {
@@ -23,6 +31,15 @@ export function isCampaignStatus(value: unknown): value is CampaignStatus {
   return (
     typeof value === 'string' &&
     (CAMPAIGN_STATUSES as readonly string[]).includes(value)
+  );
+}
+
+export function isCampaignTriggerType(
+  value: unknown,
+): value is CampaignTriggerType {
+  return (
+    typeof value === 'string' &&
+    (CAMPAIGN_TRIGGER_TYPES as readonly string[]).includes(value)
   );
 }
 
