@@ -1,0 +1,33 @@
+name: Marketing Cron
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  process-marketing:
+    name: Process marketing queue
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Invoke production marketing worker
+        env:
+          MARKETING_CRON_URL: ${{ secrets.MARKETING_CRON_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${MARKETING_CRON_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
+            echo "MARKETING_CRON_URL and CRON_SECRET GitHub secrets are required."
+            exit 1
+          fi
+          curl --fail-with-body --silent --show-error \
+            --retry 2 \
+            --retry-delay 2 \
+            --max-time 120 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "x-cron-secret: ${CRON_SECRET}" \
+            "${MARKETING_CRON_URL}"
