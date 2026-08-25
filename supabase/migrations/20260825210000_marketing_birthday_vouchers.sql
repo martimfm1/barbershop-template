@@ -1,6 +1,7 @@
 begin;
 
 alter table public.marketing_campaigns
+  add column if not exists birthday_last_run_date date,
   add column if not exists birthday_reward_type text not null default 'none',
   add column if not exists birthday_reward_service_id uuid references public.services(id) on delete set null;
 
@@ -73,7 +74,6 @@ alter table public.marketing_campaigns
       and (birthday_reward_type = 'none' or birthday_reward_service_id is not null))
   );
 
--- Migrate the legacy birthday email configuration into Marketing Campaigns.
 insert into public.marketing_campaigns (
   barbershop_id,
   created_by,
