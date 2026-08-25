@@ -157,6 +157,7 @@ export async function GET(request: Request) {
     (professional) => professional.active !== false,
   ).length;
   const professionalLimit = Number(teamLimit ?? 1);
+  const unlimited = professionalLimit >= 2147483647;
 
   return NextResponse.json(
     {
@@ -174,7 +175,16 @@ export async function GET(request: Request) {
           ...(permissionsByUser.get(member.id) ?? {}),
         },
       })),
+      // `seats` is intentionally the barber/professional quota consumed by the
+      // dashboard's team management UI. This is the same pool enforced when a
+      // professional profile is created.
       seats: {
+        used: professionalCount,
+        limit: professionalLimit,
+        unlimited,
+      },
+      // Keep the actual membership count available for permission/member views.
+      teamSeats: {
         used: Number(teamCount ?? 0),
         limit: Number(teamLimit ?? 1),
         unlimited: Number(teamLimit ?? 1) >= 2147483647,
@@ -183,7 +193,7 @@ export async function GET(request: Request) {
         used: professionalCount,
         active: professionalActiveCount,
         limit: professionalLimit,
-        unlimited: professionalLimit >= 2147483647,
+        unlimited,
       },
     },
     { headers: { 'Cache-Control': 'no-store' } },
