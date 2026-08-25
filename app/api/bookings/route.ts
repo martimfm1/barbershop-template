@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendBookingConfirmationEmail } from '@/lib/brevo/brevo';
 import { dispatchAppointmentAutomations } from '@/lib/automations/dispatch-appointment';
+import { findPublicBookingCustomer } from '@/lib/bookings/public-customer-profile';
 import {
   isRecord,
   isSafePublicBookingDate,
@@ -135,7 +136,7 @@ export async function POST(request: Request) {
     const name = normalizeText(customerName, 120);
     const phone = normalizeText(customerPhone, 30);
     const email = normalizeText(customerEmail, 254)?.toLowerCase();
-    const birthDate =
+    const birthDateInput =
       typeof customerBirthDate === 'string' ? customerBirthDate.trim() : '';
     const bookingDate =
       typeof date === 'string' ? date : new Date().toISOString().slice(0, 10);
@@ -153,8 +154,6 @@ export async function POST(request: Request) {
       !phone ||
       !email ||
       !EMAIL_PATTERN.test(email) ||
-      !birthDate ||
-      !isValidBirthDate(birthDate) ||
       !isSafePublicBookingDate(bookingDate) ||
       !isValidTime(bookingTime) ||
       (normalizedProfessionalId && !UUID_PATTERN.test(normalizedProfessionalId))
@@ -163,7 +162,7 @@ export async function POST(request: Request) {
         {
           success: false,
           error:
-            'Confirma os dados, incluindo a data de nascimento, e escolhe uma data e hora válidas.',
+            'Confirma os dados, email, telefone e escolhe uma data e hora válidas.',
         },
         { status: 400 },
       );
@@ -198,6 +197,64 @@ export async function POST(request: Request) {
       );
     }
     const barbershopId = shop.barbershop_id;
+
+    let birthDate = '';
+    let existingCustomerId: string | null = null;
+    try {
+      const existingCustomer = await findPublicBookingCustomer({
+        barbershopId,
+        email,
+        phone,
+      });
+      existingCustomerId = existingCustomer?.id ?? null;
+      if (existingCustomer?.birthDate) {
+        birthDate = existingCustomer.birthDate;
+      } else if (birthDateInput && isValidBirthDate(birthDateInput)) {
+        birthDate = birthDateInput;
+      }
+    } catch (error) {
+      console.error(
+        '[API_BOOKING_CUSTOMER_LOOKUP_ERROR]',
+        error instanceof Error ? error.name : 'UNKNOWN',
+      );
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Não foi possível verificar os dados do cliente.',
+        },
+        { status: 503 },
+      );
+    }
+
+    if (!birthDate || !isValidBirthDate(birthDate))
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Precisamos da tua data de nascimento para concluir a marcação.',
+        },
+        { status: 400 },
+      );
+
+    if (existingCustomerId && !birthDateInput) {
+      // The client already has a birth date stored in the barbershop profile.
+      // No need to expose that value back to the browser.
+    } else if (existingCustomerId && birthDateInput) {
+      const { error: birthDateUpdateError } = await admin
+        .from('users')
+        .update({ birth_date: birthDate })
+        .eq('id', existingCustomerId)
+        .eq('barbershop_id', barbershopId)
+        .eq('role', 'client')
+        .is('birth_date', null);
+      if (birthDateUpdateError) {
+        console.error(
+          '[API_BOOKING_CUSTOMER_BIRTHDATE_UPDATE_ERROR]',
+          birthDateUpdateError.code ?? 'UNKNOWN',
+        );
+      }
+    }
+
     const shopRelation = Array.isArray(shop.barbershops)
       ? shop.barbershops[0]
       : shop.barbershops;
