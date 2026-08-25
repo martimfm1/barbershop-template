@@ -40,7 +40,7 @@ const specializedGuards = [
   },
   {
     pattern: /\/webhooks\/brevo(?:\/email|\/sms)?\/route\.ts$/,
-    markers: ['BREVO_WEBHOOK_SECRET'],
+    markers: ['handleBrevoWebhook'],
   },
 ];
 
