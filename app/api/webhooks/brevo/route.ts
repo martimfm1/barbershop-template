@@ -22,7 +22,10 @@ function resolveChannel(payload: Record<string, unknown>): 'email' | 'sms' {
   return 'email';
 }
 
-export async function POST(request: NextRequest) {
+export async function handleBrevoWebhook(
+  request: NextRequest,
+  channelOverride?: 'email' | 'sms',
+) {
   if (!authorized(request)) {
     console.warn('[BREVO_WEBHOOK] unauthorized');
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
@@ -37,7 +40,7 @@ export async function POST(request: NextRequest) {
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)) continue;
 
     const normalized = payload as Record<string, unknown>;
-    const channel = resolveChannel(normalized);
+    const channel = channelOverride ?? resolveChannel(normalized);
 
     try {
       const result = await applyProviderDeliveryEvent({
@@ -56,4 +59,8 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ ok: true, processed, matched });
+}
+
+export async function POST(request: NextRequest) {
+  return handleBrevoWebhook(request);
 }
