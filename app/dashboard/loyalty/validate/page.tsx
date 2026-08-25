@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { BrowserQRCodeReader } from '@zxing/browser';
 import {
   ArrowLeft,
   Camera,
@@ -25,6 +26,7 @@ export default function LoyaltyValidationPage() {
   const [status, setStatus] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const scannerControlsRef = useRef<{ stop: () => void } | null>(null);
 
   useEffect(() => {
     fetch('/api/barbershops/public-profile', { cache: 'no-store' })
@@ -38,8 +40,11 @@ export default function LoyaltyValidationPage() {
         setStatus('Não foi possível carregar a barbearia.');
         toast.error('Não foi possível carregar a página pública.');
       });
-    return () =>
+    return () => {
+      scannerControlsRef.current?.stop();
+      scannerControlsRef.current = null;
       streamRef.current?.getTracks().forEach((track) => track.stop());
+    };
   }, []);
 
   async function validate(value = identifier) {
@@ -74,75 +79,69 @@ export default function LoyaltyValidationPage() {
   }
 
   async function startCamera() {
-    try {
-      if (!('BarcodeDetector' in window)) {
-        toast.error(
-          'O teu navegador não suporta leitura QR automática. Usa o código manual.',
-        );
-        setStatus(
-          'Leitura QR indisponível neste navegador. Usa o código manual.',
-        );
-        return;
-      }
-      const detector = new (
-        window as unknown as {
-          BarcodeDetector: new (options?: { formats?: string[] }) => {
-            detect: (
-              source: HTMLVideoElement,
-            ) => Promise<Array<{ rawValue?: string }>>;
-          };
-        }
-      ).BarcodeDetector({ formats: ['qr_code'] });
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false,
-      });
-      streamRef.current = stream;
-      setCameraOpen(true);
-      setStatus('Câmara aberta. Aponta-a para o QR da recompensa.');
-      requestAnimationFrame(() => {
-        if (videoRef.current) videoRef.current.srcObject = stream;
-      });
+    if (busy || cameraOpen) return;
 
-      const scan = async () => {
-        if (
-          !streamRef.current ||
-          !videoRef.current ||
-          videoRef.current.readyState < 2
-        ) {
-          if (streamRef.current) requestAnimationFrame(scan);
-          return;
-        }
-        try {
-          const codes = await detector.detect(videoRef.current);
-          const value = codes.find((item) => item.rawValue)?.rawValue;
-          if (value) {
-            setIdentifier(value);
-            await validate(value);
-            return;
-          }
-        } catch {
-          // Camera frame can occasionally fail while autofocus is adjusting.
-        }
-        if (streamRef.current) window.setTimeout(() => void scan(), 350);
-      };
-      void scan();
-    } catch {
-      toast.error('Não foi possível aceder à câmara. Usa o código manual.');
-      setStatus('Não foi possível aceder à câmara. Usa o código manual.');
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      const message =
+        'A leitura QR requer uma ligação segura (HTTPS) e acesso à câmara.';
+      toast.error(message);
+      setStatus(message);
+      return;
+    }
+
+    try {
+      setCameraOpen(true);
+      setStatus('A abrir a câmara…');
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+      const video = videoRef.current;
+      if (!video) throw new Error('Pré-visualização da câmara indisponível.');
+
+      const reader = new BrowserQRCodeReader();
+      const controls = await reader.decodeFromConstraints(
+        {
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        },
+        video,
+        (result) => {
+          if (!result || busy) return;
+          const value = result.getText().trim();
+          if (!value) return;
+          setIdentifier(value);
+          void validate(value);
+        },
+      );
+
+      scannerControlsRef.current = controls;
+      streamRef.current = video.srcObject instanceof MediaStream ? video.srcObject : null;
+      setStatus('Câmara aberta. Aponta-a para o QR da recompensa.');
+    } catch (error) {
+      stopCamera();
+      const message =
+        error instanceof DOMException && error.name === 'NotAllowedError'
+          ? 'Acesso à câmara bloqueado. Permite a câmara nas definições do navegador e tenta novamente.'
+          : error instanceof DOMException && error.name === 'NotFoundError'
+            ? 'Não foi encontrada uma câmara disponível neste dispositivo.'
+            : 'Não foi possível aceder à câmara. Usa o código manual.';
+      toast.error(message);
+      setStatus(message);
     }
   }
 
   function stopCamera() {
+    scannerControlsRef.current?.stop();
+    scannerControlsRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     setCameraOpen(false);
     setStatus((current) =>
-      current === 'Câmara aberta. Aponta-a para o QR da recompensa.'
+      current === 'Câmara aberta. Aponta-a para o QR da recompensa.' ||
+      current === 'A abrir a câmara…'
         ? 'Câmara fechada. Podes usar o código manual.'
         : current,
     );
