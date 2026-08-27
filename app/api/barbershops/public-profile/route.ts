@@ -39,15 +39,7 @@ export async function GET() {
       .eq('barbershop_id', tenant.barbershopId)
       .maybeSingle();
     if (shopError) throw new BillingError('Não foi possível carregar o perfil público.', 'DB_READ_FAILED');
-    return NextResponse.json({
-      data: {
-        ...shop,
-        amenities: normalizeBarbershopAmenities(shop?.amenities),
-        plan,
-        canCustomizeSlug: planSupportsCustomSlug(plan),
-        canCustomizeEnterprise: plan === 'enterprise',
-      },
-    }, { headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json({ data: { ...shop, amenities: normalizeBarbershopAmenities(shop?.amenities), plan, canCustomizeSlug: planSupportsCustomSlug(plan), canCustomizeEnterprise: plan === 'enterprise' } }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     if (error instanceof BillingError) return jsonError(error.message, 400);
     return jsonError('Não foi possível carregar o perfil público.', 500);
@@ -63,7 +55,6 @@ export async function PATCH(request: Request) {
     const plan = await BarbershopStripeService.getEffectivePlan(user.id);
     const canCustomizeSlug = planSupportsCustomSlug(plan);
     const canCustomizeEnterprise = plan === 'enterprise';
-    if (!canCustomizeSlug) return jsonError('A personalização da presença online está disponível a partir do plano Pro.', 403);
 
     const body = (await request.json().catch(() => ({}))) as {
       slug?: unknown;
@@ -85,6 +76,7 @@ export async function PATCH(request: Request) {
     const updates: Record<string, unknown> = { public_profile_updated_at: new Date().toISOString() };
 
     if (typeof body.slug === 'string') {
+      if (!canCustomizeSlug) return jsonError('A personalização do URL público está disponível a partir do plano Pro.', 403);
       const slug = normalizePublicProfileSlug(body.slug);
       const validationError = validatePublicProfileSlug(slug);
       if (validationError) return jsonError(validationError, 400);
@@ -100,8 +92,7 @@ export async function PATCH(request: Request) {
 
     if (body.amenities !== undefined) {
       if (!body.amenities || typeof body.amenities !== 'object' || Array.isArray(body.amenities)) return jsonError('Informações do estabelecimento inválidas.', 400);
-      const amenities = normalizeBarbershopAmenities({ ...DEFAULT_BARBERSHOP_AMENITIES, ...(body.amenities as Record<string, unknown>) });
-      updates.amenities = amenities;
+      updates.amenities = normalizeBarbershopAmenities({ ...DEFAULT_BARBERSHOP_AMENITIES, ...(body.amenities as Record<string, unknown>) });
     }
 
     if (canCustomizeEnterprise) {
