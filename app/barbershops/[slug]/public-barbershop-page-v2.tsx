@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Accessibility, Armchair, ArrowLeft, Baby, Calendar, Car, CheckCircle2, Coffee, CreditCard, Dog, DoorOpen, GlassWater, MapPin, Phone, Scissors, Star, Toilet, Wifi, Wind } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { BarbershopAmenities } from '@/lib/barbershops/amenities';
 import type { BarbershopPublicDetails } from './services/public-barbershop.service';
 import { publicBarbershopService } from './services/public-barbershop.service';
