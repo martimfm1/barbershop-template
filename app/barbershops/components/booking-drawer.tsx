@@ -1,4 +1,4 @@
 export {
-  BookingDrawerFinal as default,
-  BookingDrawerFinal as BookingDrawer,
-} from './booking-drawer-final';
+  BookingDrawerPublic as default,
+  BookingDrawerPublic as BookingDrawer,
+} from './booking-drawer-public';
