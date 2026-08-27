@@ -88,8 +88,9 @@ export async function updateBarbershopConfig(
 
   try {
     if (!barbershopId) throw new Error('Barbearia inválida.');
-    if (Object.keys(payload).length === 0)
+    if (Object.keys(payload).length === 0) {
       throw new Error('Nenhuma alteração para guardar.');
+    }
 
     if (payload.time_limit_cancellation_hours !== undefined) {
       const hours = Number(payload.time_limit_cancellation_hours);
@@ -102,6 +103,11 @@ export async function updateBarbershopConfig(
 
     const directoryVisibility = payload.is_public_in_directory;
     const popularServiceId = payload.popular_service_id;
+    const expectedCancellationHours =
+      payload.time_limit_cancellation_hours !== undefined
+        ? Number(payload.time_limit_cancellation_hours)
+        : undefined;
+
     const barbershopPayload: Record<string, unknown> = { ...payload };
     delete barbershopPayload.popular_service_id;
     delete barbershopPayload.is_public_in_directory;
@@ -112,8 +118,9 @@ export async function updateBarbershopConfig(
         error: authError,
       } = await supabase.auth.getUser();
 
-      if (authError || !user)
+      if (authError || !user) {
         throw new Error('Sessão inválida. Inicia sessão novamente.');
+      }
 
       const { error } = await supabase.rpc(
         'set_barbershop_directory_visibility',
@@ -144,8 +151,6 @@ export async function updateBarbershopConfig(
         console.error('[Barbershop Config RPC Error]', {
           message: error.message,
           code: error.code,
-          details: error.details,
-          hint: error.hint,
         });
         throw new Error(
           error.message === 'barbershop update not permitted'
@@ -165,7 +170,24 @@ export async function updateBarbershopConfig(
       if (error) throw error;
     }
 
-    return getBarbershopConfig(barbershopId);
+    const result = await getBarbershopConfig(barbershopId);
+
+    if (
+      expectedCancellationHours !== undefined &&
+      result.data &&
+      result.data.time_limit_cancellation_hours !== expectedCancellationHours
+    ) {
+      console.error('[Barbershop Config Persistence Mismatch]', {
+        field: 'time_limit_cancellation_hours',
+        expected: expectedCancellationHours,
+        actual: result.data.time_limit_cancellation_hours,
+      });
+      throw new Error(
+        'A regra de cancelamento não foi persistida. Atualiza as migrations da base de dados e tenta novamente.',
+      );
+    }
+
+    return result;
   } catch (error: unknown) {
     console.error('[Service Exception - updateBarbershopConfig]:', error);
     return {
