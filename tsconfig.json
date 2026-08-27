@@ -39,11 +39,7 @@
   ],
   "exclude": [
     "node_modules",
-<<<<<<< HEAD
-    ".next/dev"
-=======
     ".next/dev",
     "app/barbershops/[slug]/public-barbershop-page-v2.tsx"
->>>>>>> 2ea599f720b980d5a0c1470449bc0c9f1319a224
   ]
 }
