@@ -9,9 +9,44 @@ import React, {
 } from 'react';
 import { pt } from '@/app/locales/pt';
 import { en } from '@/app/locales/en';
+import { ptCopy } from '@/app/locales/pt-copy';
+import { enCopy } from '@/app/locales/en-copy';
 
 type Locale = 'pt' | 'en';
-const translations = { pt, en } as const;
+type TranslationTree = Record<string, unknown>;
+
+function mergeTranslations(
+  base: TranslationTree,
+  overrides: TranslationTree,
+): TranslationTree {
+  const result: TranslationTree = { ...base };
+
+  for (const [key, value] of Object.entries(overrides)) {
+    const current = result[key];
+    if (
+      current &&
+      typeof current === 'object' &&
+      !Array.isArray(current) &&
+      value &&
+      typeof value === 'object' &&
+      !Array.isArray(value)
+    ) {
+      result[key] = mergeTranslations(
+        current as TranslationTree,
+        value as TranslationTree,
+      );
+    } else {
+      result[key] = value;
+    }
+  }
+
+  return result;
+}
+
+const translations = {
+  pt: mergeTranslations(pt as TranslationTree, ptCopy as TranslationTree),
+  en: mergeTranslations(en as TranslationTree, enCopy as TranslationTree),
+} as const;
 
 interface LanguageContextType {
   locale: Locale;
