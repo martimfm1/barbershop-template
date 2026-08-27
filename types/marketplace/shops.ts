@@ -19,7 +19,9 @@ export interface MarketplaceShopRecord {
   reviews_count?: number | null;
   is_active: boolean;
   barbershops:
-    MarketplaceBarbershopRelation | MarketplaceBarbershopRelation[] | null;
+    | MarketplaceBarbershopRelation
+    | MarketplaceBarbershopRelation[]
+    | null;
 }
 
 /** API representation before presentation formatting. */
@@ -64,6 +66,9 @@ export interface MarketplaceShop {
   accent?: string;
   lat?: number;
   lng?: number;
+  closed_days?: string | null;
+  closedDays?: string | null;
+  off_days?: number[];
 }
 
 export interface MarketplaceService {
