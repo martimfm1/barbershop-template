@@ -1,3 +1,4 @@
+import type { BarbershopAmenities } from '@/lib/barbershops/amenities';
 import type { PublicProfileRecord } from '@/lib/barbershops/public-profile';
 
 export interface ServiceItem {
@@ -17,6 +18,7 @@ export interface ReviewItem {
 }
 
 export interface BarbershopPublicDetails extends PublicProfileRecord {
+  amenities?: BarbershopAmenities;
   services: ServiceItem[];
   reviews: ReviewItem[];
   rating: number;
