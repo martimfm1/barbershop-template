@@ -64,12 +64,12 @@ export default function PrivacyPage() {
         },
         {
           label: {
-            pt: 'Infraestrutura',
-            en: 'Infrastructure',
+            pt: 'Onde guardamos os dados',
+            en: 'Where your data is stored',
           },
           value: {
-            pt: 'Dados alojados em serviços cloud com processamento mínimo necessário para operar e melhorar a plataforma.',
-            en: 'Data is hosted on cloud services with the minimum processing needed to run and improve the platform.',
+            pt: 'Os teus dados são alojados em serviços cloud seguros, com o tratamento mínimo necessário para operar e melhorar a plataforma.',
+            en: 'Your data is hosted on secure cloud services, with only the processing needed to run and improve the platform.',
           },
           icon: <Database className="size-5 text-emerald-400" />,
         },
