@@ -288,15 +288,13 @@ export class BillingService {
         'CUSTOMER_NOT_FOUND',
         { userId },
       );
-    const { error: writeError } = await database
-      .from('customers')
-      .upsert(
-        {
-          user_id: userId,
-          stripe_customer_id: subscription.stripe_customer_id,
-        },
-        { onConflict: 'user_id' },
-      );
+    const { error: writeError } = await database.from('customers').upsert(
+      {
+        user_id: userId,
+        stripe_customer_id: subscription.stripe_customer_id,
+      },
+      { onConflict: 'user_id' },
+    );
     if (writeError)
       throw new BillingError(
         'Could not persist customer mapping.',

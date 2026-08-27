@@ -43,7 +43,9 @@ export async function sendBrevoEmail(input: {
       },
       body: JSON.stringify({
         sender: {
-          name: sanitizeSenderName(input.senderName ?? process.env.BREVO_FROM_NAME ?? 'Silentra'),
+          name: sanitizeSenderName(
+            input.senderName ?? process.env.BREVO_FROM_NAME ?? 'Silentra',
+          ),
           email: senderEmail,
         },
         to: [

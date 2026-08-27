@@ -29,7 +29,10 @@ export async function GET() {
       {
         ok: true,
         campaigns: data ?? [],
-        meta: { total: data?.length ?? 0, generatedAt: new Date().toISOString() },
+        meta: {
+          total: data?.length ?? 0,
+          generatedAt: new Date().toISOString(),
+        },
       },
       { headers: { 'Cache-Control': 'no-store' } },
     );
@@ -71,7 +74,10 @@ export async function POST(request: NextRequest) {
       body.name.trim().length < 1 ||
       body.name.trim().length > 120
     ) {
-      return NextResponse.json({ error: 'Invalid campaign name' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid campaign name' },
+        { status: 400 },
+      );
     }
     if (!isMarketingChannel(body.channel)) {
       return NextResponse.json(
@@ -84,7 +90,10 @@ export async function POST(request: NextRequest) {
       body.body.trim().length < 1 ||
       body.body.length > 10000
     ) {
-      return NextResponse.json({ error: 'Invalid campaign body' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid campaign body' },
+        { status: 400 },
+      );
     }
     if (
       body.channel === 'email' &&
@@ -92,7 +101,10 @@ export async function POST(request: NextRequest) {
         body.subject.trim().length < 1 ||
         body.subject.length > 200)
     ) {
-      return NextResponse.json({ error: 'Email subject is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Email subject is required' },
+        { status: 400 },
+      );
     }
 
     const scheduledAt =
@@ -101,7 +113,9 @@ export async function POST(request: NextRequest) {
         : null;
     if (
       body.scheduledAt &&
-      (!scheduledAt || Number.isNaN(scheduledAt.getTime()) || scheduledAt.getTime() <= Date.now())
+      (!scheduledAt ||
+        Number.isNaN(scheduledAt.getTime()) ||
+        scheduledAt.getTime() <= Date.now())
     ) {
       return NextResponse.json(
         { error: 'scheduledAt must be a valid future timestamp' },
@@ -134,7 +148,9 @@ export async function POST(request: NextRequest) {
         subject: body.channel === 'email' ? body.subject : null,
         body: body.body.trim(),
         segment:
-          body.segment && typeof body.segment === 'object' && !Array.isArray(body.segment)
+          body.segment &&
+          typeof body.segment === 'object' &&
+          !Array.isArray(body.segment)
             ? body.segment
             : {},
         status: scheduledAt ? 'scheduled' : 'draft',
@@ -149,7 +165,11 @@ export async function POST(request: NextRequest) {
     if (response) return response;
     console.error('[MARKETING_CAMPAIGNS_POST]', error);
     return NextResponse.json(
-      { ok: false, error: 'Unable to create campaign', code: 'CAMPAIGN_CREATE_FAILED' },
+      {
+        ok: false,
+        error: 'Unable to create campaign',
+        code: 'CAMPAIGN_CREATE_FAILED',
+      },
       { status: 500 },
     );
   }
@@ -161,11 +181,20 @@ export async function PATCH(request: NextRequest) {
       'marketing_campaigns',
       'marketing',
     );
-    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+    const body = (await request.json().catch(() => null)) as Record<
+      string,
+      unknown
+    > | null;
     const id = typeof body?.id === 'string' ? body.id : '';
-    if (!id) return NextResponse.json({ error: 'Campaign id is required' }, { status: 400 });
+    if (!id)
+      return NextResponse.json(
+        { error: 'Campaign id is required' },
+        { status: 400 },
+      );
 
-    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    const patch: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
     if (typeof body?.name === 'string') {
       const name = body.name.trim();
       if (!name || name.length > 120) {
@@ -187,7 +216,8 @@ export async function PATCH(request: NextRequest) {
       patch.body = message;
     }
     if (body?.subject === null || typeof body?.subject === 'string') {
-      const subject = typeof body.subject === 'string' ? body.subject.trim() : null;
+      const subject =
+        typeof body.subject === 'string' ? body.subject.trim() : null;
       if (subject !== null && subject.length > 200) {
         return NextResponse.json(
           { error: 'Email subject cannot exceed 200 characters.' },
@@ -196,13 +226,20 @@ export async function PATCH(request: NextRequest) {
       }
       patch.subject = subject || null;
     }
-    if (typeof body?.segment === 'object' && body.segment && !Array.isArray(body.segment)) {
+    if (
+      typeof body?.segment === 'object' &&
+      body.segment &&
+      !Array.isArray(body.segment)
+    ) {
       patch.segment = body.segment;
     }
     if (body?.status === 'cancelled') patch.status = 'cancelled';
     if (typeof body?.scheduledAt === 'string') {
       const scheduledAt = new Date(body.scheduledAt);
-      if (Number.isNaN(scheduledAt.getTime()) || scheduledAt.getTime() <= Date.now()) {
+      if (
+        Number.isNaN(scheduledAt.getTime()) ||
+        scheduledAt.getTime() <= Date.now()
+      ) {
         return NextResponse.json(
           { error: 'scheduledAt must be a valid future timestamp' },
           { status: 400 },
@@ -232,7 +269,10 @@ export async function PATCH(request: NextRequest) {
     const response = moduleErrorResponse(error);
     if (response) return response;
     console.error('[MARKETING_CAMPAIGNS_PATCH]', error);
-    return NextResponse.json({ ok: false, error: 'Unable to update campaign' }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: 'Unable to update campaign' },
+      { status: 500 },
+    );
   }
 }
 
@@ -243,7 +283,11 @@ export async function DELETE(request: NextRequest) {
       'marketing',
     );
     const id = new URL(request.url).searchParams.get('id') ?? '';
-    if (!id) return NextResponse.json({ error: 'Campaign id is required' }, { status: 400 });
+    if (!id)
+      return NextResponse.json(
+        { error: 'Campaign id is required' },
+        { status: 400 },
+      );
 
     const { data: campaign, error: lookupError } = await admin
       .from('marketing_campaigns')
@@ -252,7 +296,11 @@ export async function DELETE(request: NextRequest) {
       .eq('barbershop_id', barbershopId)
       .maybeSingle();
     if (lookupError) throw lookupError;
-    if (!campaign) return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+    if (!campaign)
+      return NextResponse.json(
+        { error: 'Campaign not found' },
+        { status: 404 },
+      );
 
     if (!['draft', 'scheduled', 'cancelled'].includes(campaign.status)) {
       return NextResponse.json(
@@ -272,6 +320,9 @@ export async function DELETE(request: NextRequest) {
     const response = moduleErrorResponse(error);
     if (response) return response;
     console.error('[MARKETING_CAMPAIGNS_DELETE]', error);
-    return NextResponse.json({ ok: false, error: 'Unable to delete campaign' }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: 'Unable to delete campaign' },
+      { status: 500 },
+    );
   }
 }

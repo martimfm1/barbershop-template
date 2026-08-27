@@ -50,7 +50,8 @@ function walk(dir) {
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) files.push(...walk(full));
-    else if (entry.name === 'route.ts' || entry.name === 'route.tsx') files.push(full);
+    else if (entry.name === 'route.ts' || entry.name === 'route.tsx')
+      files.push(full);
   }
   return files;
 }
@@ -65,7 +66,9 @@ for (const file of routes) {
   if (publicRoutePatterns.some((pattern) => pattern.test(relative))) continue;
   if (requiredGuards.some((guard) => source.includes(guard))) continue;
 
-  const specializedGuard = specializedGuards.find(({ pattern }) => pattern.test(relative));
+  const specializedGuard = specializedGuards.find(({ pattern }) =>
+    pattern.test(relative),
+  );
   if (
     specializedGuard &&
     specializedGuard.markers.every((marker) => source.includes(marker))
@@ -73,7 +76,9 @@ for (const file of routes) {
     continue;
   }
 
-  failures.push(`${relative}: missing a recognizable server-side auth/tenant guard`);
+  failures.push(
+    `${relative}: missing a recognizable server-side auth/tenant guard`,
+  );
 }
 
 if (failures.length) {

@@ -24,7 +24,10 @@ export async function POST(
 
     if (campaignError) throw campaignError;
     if (!campaign) {
-      return NextResponse.json({ error: 'Campanha não encontrada.' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Campanha não encontrada.' },
+        { status: 404 },
+      );
     }
 
     if (!['scheduled', 'sending'].includes(campaign.status)) {
@@ -61,18 +64,20 @@ export async function POST(
 
     if (recipientUpdateError) throw recipientUpdateError;
 
-    const { count: cancelledRecipients, error: recipientCountError } = await admin
-      .from('marketing_campaign_recipients')
-      .select('id', { count: 'exact', head: true })
-      .eq('campaign_id', campaignId)
-      .eq('status', 'cancelled');
+    const { count: cancelledRecipients, error: recipientCountError } =
+      await admin
+        .from('marketing_campaign_recipients')
+        .select('id', { count: 'exact', head: true })
+        .eq('campaign_id', campaignId)
+        .eq('status', 'cancelled');
 
     if (recipientCountError) throw recipientCountError;
 
     return NextResponse.json({
       ok: true,
       cancelledRecipients: cancelledRecipients ?? 0,
-      message: 'Campanha cancelada. Os destinatários ainda não enviados foram removidos da fila.',
+      message:
+        'Campanha cancelada. Os destinatários ainda não enviados foram removidos da fila.',
     });
   } catch (error) {
     const response = moduleErrorResponse(error);

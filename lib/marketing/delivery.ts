@@ -129,12 +129,20 @@ export async function applyProviderDeliveryEvent(input: {
       ? input.payload.email.trim().toLowerCase()
       : null;
   const recipientValue = (() => {
-    const candidates = [input.payload.recipient, input.payload.to, input.payload.phone_number];
+    const candidates = [
+      input.payload.recipient,
+      input.payload.to,
+      input.payload.phone_number,
+    ];
     const value = candidates.find((item) => typeof item === 'string');
     return typeof value === 'string' ? value.trim() : null;
   })();
 
-  let recipient: { id: string; campaign_id: string; barbershop_id: string } | null = null;
+  let recipient: {
+    id: string;
+    campaign_id: string;
+    barbershop_id: string;
+  } | null = null;
 
   if (providerMessageId) {
     const { data } = await admin

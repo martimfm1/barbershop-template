@@ -38,13 +38,18 @@ function formatDate(value: unknown) {
   if (!value) return '';
   const parsed = new Date(String(value));
   if (Number.isNaN(parsed.getTime())) return '';
-  return new Intl.DateTimeFormat('pt-PT', { dateStyle: 'short' }).format(parsed);
+  return new Intl.DateTimeFormat('pt-PT', { dateStyle: 'short' }).format(
+    parsed,
+  );
 }
 
 function money(value: unknown) {
   const amount = Number(value ?? 0);
   return Number.isFinite(amount)
-    ? new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(amount)
+    ? new Intl.NumberFormat('pt-PT', {
+        style: 'currency',
+        currency: 'EUR',
+      }).format(amount)
     : '0,00 €';
 }
 
@@ -95,11 +100,14 @@ function reportHtml({
     )
     .join('');
 
-  const headerHtml = headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('');
+  const headerHtml = headers
+    .map((header) => `<th>${escapeHtml(header)}</th>`)
+    .join('');
   const rowsHtml = rows.length
     ? rows
         .map(
-          (row) => `<tr>${row.map((value) => `<td>${escapeHtml(value)}</td>`).join('')}</tr>`,
+          (row) =>
+            `<tr>${row.map((value) => `<td>${escapeHtml(value)}</td>`).join('')}</tr>`,
         )
         .join('')
     : `<tr><td colspan="${headers.length}" class="empty">Sem dados para o período selecionado.</td></tr>`;
@@ -203,12 +211,18 @@ export async function GET(request: Request) {
     const type = (url.searchParams.get('type') ?? 'appointments') as ExportType;
     const now = new Date();
     const from = start(
-      date(url.searchParams.get('from'), new Date(now.getTime() - 29 * 86400000)),
+      date(
+        url.searchParams.get('from'),
+        new Date(now.getTime() - 29 * 86400000),
+      ),
     );
     const to = end(date(url.searchParams.get('to'), now));
 
     if (to < from || to.getTime() - from.getTime() > 366 * 86400000) {
-      return NextResponse.json({ error: 'Invalid date range' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid date range' },
+        { status: 400 },
+      );
     }
 
     const period = `${formatDate(from)} — ${formatDate(to)}`;
@@ -236,21 +250,33 @@ export async function GET(request: Request) {
         const created = new Date(String(row.created_at));
         return created >= from && created <= to;
       }).length;
-      const withBirthDate = (data ?? []).filter((row) => Boolean(row.birth_date)).length;
+      const withBirthDate = (data ?? []).filter((row) =>
+        Boolean(row.birth_date),
+      ).length;
 
       return response(
         `silentra-relatorio-clientes-${fromLabel}-${toLabel}.html`,
         reportHtml({
           title: 'Relatório de clientes',
-          subtitle: 'Base de clientes da barbearia para gestão e acompanhamento.',
+          subtitle:
+            'Base de clientes da barbearia para gestão e acompanhamento.',
           period,
           stats: [
             { label: 'Clientes totais', value: String(data?.length ?? 0) },
             { label: 'Novos no período', value: String(createdInPeriod) },
             { label: 'Com data de nascimento', value: String(withBirthDate) },
-            { label: 'Cobertura de dados', value: `${data?.length ? Math.round((withBirthDate / data.length) * 100) : 0}%` },
+            {
+              label: 'Cobertura de dados',
+              value: `${data?.length ? Math.round((withBirthDate / data.length) * 100) : 0}%`,
+            },
           ],
-          headers: ['Nome', 'Email', 'Telefone', 'Data de nascimento', 'Cliente desde'],
+          headers: [
+            'Nome',
+            'Email',
+            'Telefone',
+            'Data de nascimento',
+            'Cliente desde',
+          ],
           rows,
         }),
       );
@@ -295,7 +321,8 @@ export async function GET(request: Request) {
         `silentra-relatorio-marcacoes-${fromLabel}-${toLabel}.html`,
         reportHtml({
           title: 'Relatório de marcações',
-          subtitle: 'Visão operacional das marcações e receita estimada dos serviços registados.',
+          subtitle:
+            'Visão operacional das marcações e receita estimada dos serviços registados.',
           period,
           stats: [
             { label: 'Marcações', value: String(data?.length ?? 0) },
@@ -303,7 +330,15 @@ export async function GET(request: Request) {
             { label: 'Canceladas', value: String(cancelled) },
             { label: 'Receita registada', value: money(revenue) },
           ],
-          headers: ['Data e hora', 'Estado', 'Cliente', 'Serviço', 'Profissional', 'Total', 'Pagamento'],
+          headers: [
+            'Data e hora',
+            'Estado',
+            'Cliente',
+            'Serviço',
+            'Profissional',
+            'Total',
+            'Pagamento',
+          ],
           rows,
         }),
       );
@@ -327,22 +362,39 @@ export async function GET(request: Request) {
         .limit(20000);
       if (error) throw error;
 
-      const totalRevenue = (data ?? []).reduce((sum, row) => sum + Number(row.total ?? 0), 0);
-      const totalDiscount = (data ?? []).reduce((sum, row) => sum + Number(row.discount ?? 0), 0);
+      const totalRevenue = (data ?? []).reduce(
+        (sum, row) => sum + Number(row.total ?? 0),
+        0,
+      );
+      const totalDiscount = (data ?? []).reduce(
+        (sum, row) => sum + Number(row.discount ?? 0),
+        0,
+      );
 
       return response(
         `silentra-relatorio-financeiro-${fromLabel}-${toLabel}.html`,
         reportHtml({
           title: 'Relatório financeiro',
-          subtitle: 'Resumo das transações POS com detalhe por pagamento e estado.',
+          subtitle:
+            'Resumo das transações POS com detalhe por pagamento e estado.',
           period,
           stats: [
             { label: 'Transações', value: String(data?.length ?? 0) },
             { label: 'Receita', value: money(totalRevenue) },
             { label: 'Descontos', value: money(totalDiscount) },
-            { label: 'Ticket médio', value: money(data?.length ? totalRevenue / data.length : 0) },
+            {
+              label: 'Ticket médio',
+              value: money(data?.length ? totalRevenue / data.length : 0),
+            },
           ],
-          headers: ['Data e hora', 'Subtotal', 'Desconto', 'Total', 'Pagamento', 'Estado'],
+          headers: [
+            'Data e hora',
+            'Subtotal',
+            'Desconto',
+            'Total',
+            'Pagamento',
+            'Estado',
+          ],
           rows: (data ?? []).map((row) => [
             formatDateTime(row.created_at),
             money(row.subtotal),
@@ -355,9 +407,15 @@ export async function GET(request: Request) {
       );
     }
 
-    return NextResponse.json({ error: 'Unsupported export type' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Unsupported export type' },
+      { status: 400 },
+    );
   } catch (error) {
     console.error('[ANALYTICS_EXPORT]', error);
-    return NextResponse.json({ error: 'Unable to export analytics' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Unable to export analytics' },
+      { status: 500 },
+    );
   }
 }

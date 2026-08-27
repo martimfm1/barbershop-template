@@ -4,18 +4,31 @@ import { useEffect, useState } from 'react';
 import { Check, LockKeyhole, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { barbershopService } from '@/app/dashboard/_services/barbershop.service';
 
-export function SettingsAutomaticBookingPanel({ barbershopId }: { barbershopId: string }) {
+export function SettingsAutomaticBookingPanel({
+  barbershopId,
+}: {
+  barbershopId: string;
+}) {
   const { plan, loading: planLoading } = useFeatureAccess();
   const eligible = plan === 'pro' || plan === 'enterprise';
   const [autoConfirm, setAutoConfirm] = useState(false);
   const [autoComplete, setAutoComplete] = useState(false);
-  const [initial, setInitial] = useState({ autoConfirm: false, autoComplete: false });
+  const [initial, setInitial] = useState({
+    autoConfirm: false,
+    autoComplete: false,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -25,7 +38,10 @@ export function SettingsAutomaticBookingPanel({ barbershopId }: { barbershopId: 
     void barbershopService.getConfig(barbershopId).then((result) => {
       if (!active) return;
       if (result.error) {
-        toast.error(result.error.message || 'Não foi possível carregar as opções automáticas.');
+        toast.error(
+          result.error.message ||
+            'Não foi possível carregar as opções automáticas.',
+        );
       } else if (result.data) {
         const next = {
           autoConfirm: result.data.auto_confirm_bookings === true,
@@ -37,14 +53,20 @@ export function SettingsAutomaticBookingPanel({ barbershopId }: { barbershopId: 
       }
       setLoading(false);
     });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [barbershopId]);
 
-  const dirty = autoConfirm !== initial.autoConfirm || autoComplete !== initial.autoComplete;
+  const dirty =
+    autoConfirm !== initial.autoConfirm ||
+    autoComplete !== initial.autoComplete;
 
   async function save() {
     if (!eligible) {
-      toast.error('Esta funcionalidade está disponível apenas nos planos Pro e Enterprise.');
+      toast.error(
+        'Esta funcionalidade está disponível apenas nos planos Pro e Enterprise.',
+      );
       return;
     }
     if (!dirty) return;
@@ -55,7 +77,9 @@ export function SettingsAutomaticBookingPanel({ barbershopId }: { barbershopId: 
     });
     setSaving(false);
     if (result.error) {
-      toast.error(result.error.message || 'Não foi possível guardar as opções.');
+      toast.error(
+        result.error.message || 'Não foi possível guardar as opções.',
+      );
       return;
     }
     setInitial({ autoConfirm, autoComplete });
@@ -73,16 +97,23 @@ export function SettingsAutomaticBookingPanel({ barbershopId }: { barbershopId: 
   }
 
   return (
-    <Card className="mt-6 border-violet-500/20 bg-violet-500/[0.035] backdrop-blur-md" aria-labelledby="automatic-booking-title">
+    <Card
+      className="mt-6 border-violet-500/20 bg-violet-500/[0.035] backdrop-blur-md"
+      aria-labelledby="automatic-booking-title"
+    >
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <CardTitle id="automatic-booking-title" className="flex items-center gap-2 text-lg">
+            <CardTitle
+              id="automatic-booking-title"
+              className="flex items-center gap-2 text-lg"
+            >
               <Sparkles className="size-4 text-violet-300" aria-hidden="true" />
               Automatização de marcações
             </CardTitle>
             <CardDescription className="mt-1 max-w-2xl text-xs leading-5">
-              Poupa trabalho manual com confirmação imediata e conclusão automática depois da hora de fim do serviço.
+              Poupa trabalho manual com confirmação imediata e conclusão
+              automática depois da hora de fim do serviço.
             </CardDescription>
           </div>
           {!eligible && (
@@ -96,19 +127,39 @@ export function SettingsAutomaticBookingPanel({ barbershopId }: { barbershopId: 
         <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-sm font-medium">Confirmar marcações automaticamente</p>
-              <p className="mt-1 text-xs leading-5 text-zinc-500">Novas reservas passam diretamente de pendente para confirmada, sem intervenção manual.</p>
+              <p className="text-sm font-medium">
+                Confirmar marcações automaticamente
+              </p>
+              <p className="mt-1 text-xs leading-5 text-zinc-500">
+                Novas reservas passam diretamente de pendente para confirmada,
+                sem intervenção manual.
+              </p>
             </div>
-            <Switch checked={autoConfirm} disabled={!eligible} onCheckedChange={setAutoConfirm} aria-label="Confirmar marcações automaticamente" />
+            <Switch
+              checked={autoConfirm}
+              disabled={!eligible}
+              onCheckedChange={setAutoConfirm}
+              aria-label="Confirmar marcações automaticamente"
+            />
           </div>
         </div>
         <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-sm font-medium">Concluir marcações automaticamente</p>
-              <p className="mt-1 text-xs leading-5 text-zinc-500">Depois de terminar o serviço, a marcação passa automaticamente para concluída.</p>
+              <p className="text-sm font-medium">
+                Concluir marcações automaticamente
+              </p>
+              <p className="mt-1 text-xs leading-5 text-zinc-500">
+                Depois de terminar o serviço, a marcação passa automaticamente
+                para concluída.
+              </p>
             </div>
-            <Switch checked={autoComplete} disabled={!eligible} onCheckedChange={setAutoComplete} aria-label="Concluir marcações automaticamente" />
+            <Switch
+              checked={autoComplete}
+              disabled={!eligible}
+              onCheckedChange={setAutoComplete}
+              aria-label="Concluir marcações automaticamente"
+            />
           </div>
         </div>
         {!eligible && (
@@ -118,7 +169,12 @@ export function SettingsAutomaticBookingPanel({ barbershopId }: { barbershopId: 
           </p>
         )}
         <div className="flex justify-end border-t border-white/10 pt-4">
-          <Button type="button" onClick={() => void save()} disabled={!eligible || !dirty || saving} className="min-h-11 rounded-xl">
+          <Button
+            type="button"
+            onClick={() => void save()}
+            disabled={!eligible || !dirty || saving}
+            className="min-h-11 rounded-xl"
+          >
             {saving ? <Spinner className="mr-2 size-4" /> : null}
             {saving ? 'A guardar…' : 'Guardar automatizações'}
           </Button>

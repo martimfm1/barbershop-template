@@ -747,7 +747,8 @@ export function BookingDrawerBarberAvailability({
                         Data de nascimento já registada
                       </p>
                       <p className="mt-1 text-xs leading-5 text-emerald-100/70">
-                        Encontrámos o teu perfil com este email e telefone. Não precisas de voltar a indicar a data de nascimento.
+                        Encontrámos o teu perfil com este email e telefone. Não
+                        precisas de voltar a indicar a data de nascimento.
                       </p>
                     </div>
                   </div>
@@ -767,7 +768,10 @@ export function BookingDrawerBarberAvailability({
                       aria-describedby="birth-help"
                       className="min-h-12 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-white outline-none focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20"
                     />
-                    <p id="birth-help" className="mt-1 text-[11px] text-zinc-500">
+                    <p
+                      id="birth-help"
+                      className="mt-1 text-[11px] text-zinc-500"
+                    >
                       {customerProfileStatus === 'needs_birth_date'
                         ? 'Encontrámos o teu perfil, mas falta a data de nascimento.'
                         : 'Formato: dia/mês/ano. Usamos a data para funcionalidades como fidelização e aniversários.'}

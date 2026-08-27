@@ -27,15 +27,23 @@ function lisbonDate(offsetDays = 0) {
     month: '2-digit',
     day: '2-digit',
   }).formatToParts(new Date());
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  const date = new Date(`${values.year}-${values.month}-${values.day}T12:00:00Z`);
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
+  const date = new Date(
+    `${values.year}-${values.month}-${values.day}T12:00:00Z`,
+  );
   date.setUTCDate(date.getUTCDate() + offsetDays);
   return date.toISOString().slice(0, 10);
 }
 
 function htmlEscape(value: string) {
-  return value.replace(/[&<>\"']/g, (char) =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char] ?? char,
+  return value.replace(
+    /[&<>\"']/g,
+    (char) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[
+        char
+      ] ?? char,
   );
 }
 
@@ -92,7 +100,10 @@ async function claimCampaign(campaign: BirthdayCampaign, today: string) {
   const admin = createAdminClient();
   const { data } = await admin
     .from('marketing_campaigns')
-    .update({ birthday_last_run_date: today, updated_at: new Date().toISOString() })
+    .update({
+      birthday_last_run_date: today,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', campaign.id)
     .eq('active', true)
     .eq('trigger_type', 'birthday')
@@ -177,7 +188,8 @@ async function sendBirthdayMessage(input: {
     body += `\n\n🎁 Voucher de aniversário\nCódigo: ${input.voucher.code}\nVálido até ${variables.voucherExpiresAt}.`;
   }
   const subject = renderTokens(
-    input.campaign.subject?.trim() || `${input.campaign.name} — ${input.shopName}`,
+    input.campaign.subject?.trim() ||
+      `${input.campaign.name} — ${input.shopName}`,
     variables,
   );
 
@@ -226,7 +238,8 @@ export async function processBirthdayCampaignDelivery(limit = MAX_CAMPAIGNS) {
     campaignsProcessed++;
     const birthdayDate = lisbonDate(-(campaign.birthday_offset_days ?? 0));
     const monthDay = birthdayDate.slice(5);
-    const destinationField = campaign.channel === 'email' ? 'email' : 'num_phone';
+    const destinationField =
+      campaign.channel === 'email' ? 'email' : 'num_phone';
     let campaignSent = 0;
     let campaignFailed = 0;
 
@@ -249,13 +262,19 @@ export async function processBirthdayCampaignDelivery(limit = MAX_CAMPAIGNS) {
       .select('name,slug')
       .eq('id', campaign.barbershop_id)
       .maybeSingle();
-    if (shopError || !shop) throw shopError ?? new Error('Barbershop not found.');
+    if (shopError || !shop)
+      throw shopError ?? new Error('Barbershop not found.');
 
     for (const client of matching) {
-      const destination = campaign.channel === 'email' ? client.email : client.num_phone;
+      const destination =
+        campaign.channel === 'email' ? client.email : client.num_phone;
       if (typeof destination !== 'string' || !destination.trim()) continue;
 
-      const voucher = await issueVoucher({ campaign, clientId: client.id, birthdayDate });
+      const voucher = await issueVoucher({
+        campaign,
+        clientId: client.id,
+        birthdayDate,
+      });
       if (voucher) vouchersIssued++;
 
       const runKey = `birthday:${birthdayDate}`;
@@ -267,7 +286,10 @@ export async function processBirthdayCampaignDelivery(limit = MAX_CAMPAIGNS) {
         .eq('run_key', runKey)
         .maybeSingle();
 
-      if (existingRecipient?.status === 'sent' || existingRecipient?.status === 'delivered') {
+      if (
+        existingRecipient?.status === 'sent' ||
+        existingRecipient?.status === 'delivered'
+      ) {
         continue;
       }
 
@@ -291,7 +313,8 @@ export async function processBirthdayCampaignDelivery(limit = MAX_CAMPAIGNS) {
         recipientId = createdRecipient?.id ?? null;
       } else {
         const currentRecipient = existingRecipient;
-        if (!currentRecipient) throw new Error('Unable to resolve existing birthday recipient.');
+        if (!currentRecipient)
+          throw new Error('Unable to resolve existing birthday recipient.');
         await admin
           .from('marketing_campaign_recipients')
           .update({

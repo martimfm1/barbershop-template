@@ -25,7 +25,10 @@ export async function POST(
       typeof body?.appointmentId === 'string' ? body.appointmentId : null;
 
     if (!normalizedCode) {
-      return NextResponse.json({ error: 'Código do voucher inválido.' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Código do voucher inválido.' },
+        { status: 400 },
+      );
     }
 
     const { data: voucher, error: voucherError } = await admin
@@ -39,7 +42,10 @@ export async function POST(
 
     if (voucherError) throw voucherError;
     if (!voucher) {
-      return NextResponse.json({ error: 'Voucher não encontrado.' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Voucher não encontrado.' },
+        { status: 404 },
+      );
     }
 
     if (voucher.status !== 'issued') {
@@ -80,7 +86,10 @@ export async function POST(
         .maybeSingle();
       if (appointmentError) throw appointmentError;
       if (!appointment) {
-        return NextResponse.json({ error: 'Marcação não encontrada.' }, { status: 404 });
+        return NextResponse.json(
+          { error: 'Marcação não encontrada.' },
+          { status: 404 },
+        );
       }
       if (appointment.client_id !== voucher.client_id) {
         return NextResponse.json(
@@ -90,7 +99,10 @@ export async function POST(
       }
       if (appointment.service_id !== voucher.service_id) {
         return NextResponse.json(
-          { error: 'O voucher só pode ser usado no serviço definido pela campanha.' },
+          {
+            error:
+              'O voucher só pode ser usado no serviço definido pela campanha.',
+          },
           { status: 409 },
         );
       }

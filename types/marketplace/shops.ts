@@ -19,9 +19,7 @@ export interface MarketplaceShopRecord {
   reviews_count?: number | null;
   is_active: boolean;
   barbershops:
-    | MarketplaceBarbershopRelation
-    | MarketplaceBarbershopRelation[]
-    | null;
+    MarketplaceBarbershopRelation | MarketplaceBarbershopRelation[] | null;
 }
 
 /** API representation before presentation formatting. */

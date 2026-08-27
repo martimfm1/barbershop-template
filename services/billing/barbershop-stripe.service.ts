@@ -572,16 +572,14 @@ export class BarbershopStripeService {
       );
 
     const billingEmail = owner.email ?? null;
-    const customerWrite = await database
-      .from('customers')
-      .upsert(
-        {
-          user_id: ownerUserId,
-          stripe_customer_id: customer,
-          email: billingEmail,
-        },
-        { onConflict: 'user_id' },
-      );
+    const customerWrite = await database.from('customers').upsert(
+      {
+        user_id: ownerUserId,
+        stripe_customer_id: customer,
+        email: billingEmail,
+      },
+      { onConflict: 'user_id' },
+    );
     if (customerWrite.error)
       throw new BillingError(
         'Could not persist Stripe customer mapping.',

@@ -195,61 +195,104 @@ export function AppointmentDetailDialog({
             <div className="min-w-0 space-y-6">
               <Section title="Marcação">
                 <div className="grid gap-2.5 sm:grid-cols-2">
-                  <DetailItem icon={<CalendarDays className="size-3.5" />} label="Data">
+                  <DetailItem
+                    icon={<CalendarDays className="size-3.5" />}
+                    label="Data"
+                  >
                     {dateLabel}
                   </DetailItem>
-                  <DetailItem icon={<Clock3 className="size-3.5" />} label="Hora">
+                  <DetailItem
+                    icon={<Clock3 className="size-3.5" />}
+                    label="Hora"
+                  >
                     {timeLabel}
                   </DetailItem>
-                  <DetailItem icon={<UserRound className="size-3.5" />} label="Profissional">
+                  <DetailItem
+                    icon={<UserRound className="size-3.5" />}
+                    label="Profissional"
+                  >
                     {professionalName}
                   </DetailItem>
-                  <DetailItem icon={<Clock3 className="size-3.5" />} label="Serviço">
+                  <DetailItem
+                    icon={<Clock3 className="size-3.5" />}
+                    label="Serviço"
+                  >
                     {serviceName}
                   </DetailItem>
                 </div>
               </Section>
               <Section title="Cliente">
                 <div className="grid gap-2.5 sm:grid-cols-2">
-                  <DetailItem icon={<Phone className="size-3.5" />} label="Telefone">
+                  <DetailItem
+                    icon={<Phone className="size-3.5" />}
+                    label="Telefone"
+                  >
                     {phone ? (
-                      <a href={`tel:${phone}`} className="inline-flex min-h-9 max-w-full items-center rounded-lg text-zinc-100 underline decoration-white/20 underline-offset-4 transition-colors hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70">
+                      <a
+                        href={`tel:${phone}`}
+                        className="inline-flex min-h-9 max-w-full items-center rounded-lg text-zinc-100 underline decoration-white/20 underline-offset-4 transition-colors hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70"
+                      >
                         {phone}
                       </a>
                     ) : (
                       <span className="text-zinc-500">Não indicado</span>
                     )}
                   </DetailItem>
-                  <DetailItem icon={<Mail className="size-3.5" />} label="Email">
+                  <DetailItem
+                    icon={<Mail className="size-3.5" />}
+                    label="Email"
+                  >
                     {email ? (
-                      <a href={`mailto:${email}`} className="inline-flex min-h-9 max-w-full break-all rounded-lg text-zinc-100 underline decoration-white/20 underline-offset-4 transition-colors hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70">
+                      <a
+                        href={`mailto:${email}`}
+                        className="inline-flex min-h-9 max-w-full break-all rounded-lg text-zinc-100 underline decoration-white/20 underline-offset-4 transition-colors hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70"
+                      >
                         {email}
                       </a>
                     ) : (
                       <span className="text-zinc-500">Não indicado</span>
                     )}
                   </DetailItem>
-                  <DetailItem icon={<CalendarDays className="size-3.5" />} label="Nascimento">
-                    {birthDate ? new Date(birthDate).toLocaleDateString('pt-PT') : <span className="text-zinc-500">Não indicado</span>}
+                  <DetailItem
+                    icon={<CalendarDays className="size-3.5" />}
+                    label="Nascimento"
+                  >
+                    {birthDate ? (
+                      new Date(birthDate).toLocaleDateString('pt-PT')
+                    ) : (
+                      <span className="text-zinc-500">Não indicado</span>
+                    )}
                   </DetailItem>
-                  <DetailItem icon={<UserRound className="size-3.5" />} label="Cliente registado">
+                  <DetailItem
+                    icon={<UserRound className="size-3.5" />}
+                    label="Cliente registado"
+                  >
                     {appointment.client_id ? 'Sim' : 'Não'}
                   </DetailItem>
                 </div>
               </Section>
-              {appointment.users?.style_notes || appointment.description_products ? (
+              {appointment.users?.style_notes ||
+              appointment.description_products ? (
                 <Section title="Notas">
                   <div className="space-y-2.5">
                     {appointment.users?.style_notes ? (
                       <div className="rounded-2xl border border-white/8 bg-white/[0.025] p-4">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Preferências / notas do cliente</p>
-                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">{appointment.users.style_notes}</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                          Preferências / notas do cliente
+                        </p>
+                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                          {appointment.users.style_notes}
+                        </p>
                       </div>
                     ) : null}
                     {appointment.description_products ? (
                       <div className="rounded-2xl border border-white/8 bg-white/[0.025] p-4">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Produtos adicionais</p>
-                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">{appointment.description_products}</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                          Produtos adicionais
+                        </p>
+                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                          {appointment.description_products}
+                        </p>
                       </div>
                     ) : null}
                   </div>
@@ -257,7 +300,12 @@ export function AppointmentDetailDialog({
               ) : null}
             </div>
             <div className="min-w-0 md:sticky md:top-0">
-              <PaymentSummary appointment={appointment} servicePrice={servicePrice} extra={extra} total={total} />
+              <PaymentSummary
+                appointment={appointment}
+                servicePrice={servicePrice}
+                extra={extra}
+                total={total}
+              />
             </div>
           </div>
         </div>

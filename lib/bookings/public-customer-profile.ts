@@ -8,7 +8,8 @@ type PublicCustomerProfile = {
 export function normalizePublicBookingPhone(value: string): string {
   let digits = value.replace(/\D/g, '');
   if (digits.startsWith('00')) digits = digits.slice(2);
-  if (digits.startsWith('351') && digits.length === 12) digits = digits.slice(3);
+  if (digits.startsWith('351') && digits.length === 12)
+    digits = digits.slice(3);
   return digits;
 }
 

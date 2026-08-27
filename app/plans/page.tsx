@@ -63,7 +63,9 @@ export default function PlansPage() {
               Escolhe o plano. Compara. Faz o checkout.
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
-              Esta é a página de decisão da Silentra. Aqui encontras a comparação completa e, quando estiveres pronto, inicias o checkout sem sair do funil.
+              Esta é a página de decisão da Silentra. Aqui encontras a
+              comparação completa e, quando estiveres pronto, inicias o checkout
+              sem sair do funil.
             </p>
             <div className="mt-6 grid gap-2 text-xs text-zinc-500 sm:flex sm:flex-wrap sm:gap-x-5">
               <span className="inline-flex items-center gap-2">
@@ -90,7 +92,10 @@ export default function PlansPage() {
           <PricingSection destination="checkout" />
         </section>
 
-        <section id="comparacao" className="mt-10 scroll-mt-24 rounded-[2rem] border border-white/10 bg-white/[0.02] p-5 sm:mt-14 sm:p-8">
+        <section
+          id="comparacao"
+          className="mt-10 scroll-mt-24 rounded-[2rem] border border-white/10 bg-white/[0.02] p-5 sm:mt-14 sm:p-8"
+        >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
@@ -100,7 +105,8 @@ export default function PlansPage() {
                 Confirma a decisão antes de comprar.
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
-                Compara funcionalidades e limites numa única vista. Depois volta aos cards acima para iniciar o checkout.
+                Compara funcionalidades e limites numa única vista. Depois volta
+                aos cards acima para iniciar o checkout.
               </p>
             </div>
             <Link
@@ -130,7 +136,10 @@ export default function PlansPage() {
                 key={question}
                 className="border border-white/10 bg-zinc-900/45 p-5 transition hover:border-white/20 hover:bg-white/[0.035]"
               >
-                <CircleHelp className="size-5 text-emerald-300" aria-hidden="true" />
+                <CircleHelp
+                  className="size-5 text-emerald-300"
+                  aria-hidden="true"
+                />
                 <h2 className="mt-4 font-semibold text-zinc-100">{question}</h2>
                 <p className="mt-2 text-sm leading-6 text-zinc-400">{answer}</p>
               </article>
@@ -148,7 +157,8 @@ export default function PlansPage() {
                 Escolhe um plano acima e continua para o checkout.
               </p>
               <p className="mt-2 text-sm leading-6 text-zinc-500">
-                O checkout é a única etapa de pagamento; depois a subscrição fica associada à barbearia.
+                O checkout é a única etapa de pagamento; depois a subscrição
+                fica associada à barbearia.
               </p>
             </div>
             <Link

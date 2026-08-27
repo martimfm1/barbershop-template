@@ -36,10 +36,13 @@ export const DEFAULT_BARBERSHOP_AMENITIES: BarbershopAmenities = {
   appointment_required: false,
 };
 
-export function normalizeBarbershopAmenities(value: unknown): BarbershopAmenities {
-  const raw = value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
+export function normalizeBarbershopAmenities(
+  value: unknown,
+): BarbershopAmenities {
+  const raw =
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
   const parking: ParkingAvailability =
     raw.parking === 'free' || raw.parking === 'paid' || raw.parking === 'none'
       ? raw.parking

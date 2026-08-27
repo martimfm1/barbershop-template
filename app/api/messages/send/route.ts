@@ -146,14 +146,12 @@ export async function POST(req: Request) {
       );
     }
 
-    await tenant.admin
-      .from('audit_logs')
-      .insert({
-        action: 'manual_email_sent',
-        entity_type: 'user',
-        entity_id: client.id,
-        metadata: { template: templateKey, subject },
-      });
+    await tenant.admin.from('audit_logs').insert({
+      action: 'manual_email_sent',
+      entity_type: 'user',
+      entity_id: client.id,
+      metadata: { template: templateKey, subject },
+    });
     return NextResponse.json({
       success: true,
       messageId: data.messageId ?? null,

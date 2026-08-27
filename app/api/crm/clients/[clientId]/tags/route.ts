@@ -51,13 +51,11 @@ export async function POST(req: Request, { params }: Params) {
       { error: 'Client or tag not found' },
       { status: 404 },
     );
-  const { error } = await t.admin
-    .from('client_tag_assignments')
-    .insert({
-      client_id: clientId,
-      tag_id: tagId,
-      barbershop_id: t.barbershopId,
-    });
+  const { error } = await t.admin.from('client_tag_assignments').insert({
+    client_id: clientId,
+    tag_id: tagId,
+    barbershop_id: t.barbershopId,
+  });
   if (error?.code === '23505')
     return NextResponse.json(
       { error: 'Tag already assigned' },

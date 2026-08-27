@@ -2,8 +2,17 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { ArrowRight, Check, CircleCheck, Loader2, ShieldCheck } from 'lucide-react';
-import { PricingCard, type PricingDestination } from '@/components/billing/PricingCard';
+import {
+  ArrowRight,
+  Check,
+  CircleCheck,
+  Loader2,
+  ShieldCheck,
+} from 'lucide-react';
+import {
+  PricingCard,
+  type PricingDestination,
+} from '@/components/billing/PricingCard';
 import { PLAN_DESCRIPTIONS } from '@/lib/billing/plan-features';
 
 type BillingPrice = {
@@ -46,8 +55,12 @@ export function PricingSection({
 
     const loadPrices = async () => {
       try {
-        const response = await fetch('/api/stripe/prices', { cache: 'no-store' });
-        const body = (await response.json().catch(() => ({}))) as { data?: BillingPrice[] };
+        const response = await fetch('/api/stripe/prices', {
+          cache: 'no-store',
+        });
+        const body = (await response.json().catch(() => ({}))) as {
+          data?: BillingPrice[];
+        };
         if (!cancelled) setPrices(Array.isArray(body.data) ? body.data : []);
       } finally {
         if (!cancelled) setLoadingPrices(false);
@@ -60,21 +73,28 @@ export function PricingSection({
     };
   }, []);
 
-  const proPriceId = prices.find((price) => price.plan === 'pro' && price.interval === 'month')?.id;
-  const enterprisePriceId = prices.find((price) => price.plan === 'enterprise' && price.interval === 'month')?.id;
+  const proPriceId = prices.find(
+    (price) => price.plan === 'pro' && price.interval === 'month',
+  )?.id;
+  const enterprisePriceId = prices.find(
+    (price) => price.plan === 'enterprise' && price.interval === 'month',
+  )?.id;
 
   return (
     <section id="precos" className="space-y-8">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-200">
-            <ShieldCheck className="size-3.5" aria-hidden="true" /> Decisão e checkout
+            <ShieldCheck className="size-3.5" aria-hidden="true" /> Decisão e
+            checkout
           </div>
           <h2 className="mt-4 text-3xl font-semibold leading-tight tracking-[-0.045em] text-zinc-50 sm:text-4xl lg:text-5xl">
             Escolhe o plano. O próximo passo é sempre o checkout.
           </h2>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
-            Compara o essencial, escolhe a fase certa da tua barbearia e continua sem saltos de página desnecessários. O pagamento acontece na experiência de checkout da Silentra.
+            Compara o essencial, escolhe a fase certa da tua barbearia e
+            continua sem saltos de página desnecessários. O pagamento acontece
+            na experiência de checkout da Silentra.
           </p>
         </div>
         <Link
@@ -85,15 +105,31 @@ export function PricingSection({
         </Link>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-3" aria-label="Passos para aderir à Silentra">
+      <div
+        className="grid gap-2 sm:grid-cols-3"
+        aria-label="Passos para aderir à Silentra"
+      >
         {[
           ['01', 'Escolhe', 'Compara os planos e encontra o nível certo.'],
-          ['02', 'Checkout', 'Revê os dados e conclui o pagamento dentro da Silentra.'],
-          ['03', 'Ativa', 'A subscrição fica ligada à tua barbearia e respetiva equipa.'],
+          [
+            '02',
+            'Checkout',
+            'Revê os dados e conclui o pagamento dentro da Silentra.',
+          ],
+          [
+            '03',
+            'Ativa',
+            'A subscrição fica ligada à tua barbearia e respetiva equipa.',
+          ],
         ].map(([step, title, text]) => (
-          <div key={step} className="rounded-2xl border border-white/8 bg-white/[0.02] p-4 sm:p-5">
+          <div
+            key={step}
+            className="rounded-2xl border border-white/8 bg-white/[0.02] p-4 sm:p-5"
+          >
             <div className="flex items-center gap-3">
-              <span className="text-[10px] font-semibold tracking-[0.2em] text-emerald-300">{step}</span>
+              <span className="text-[10px] font-semibold tracking-[0.2em] text-emerald-300">
+                {step}
+              </span>
               <p className="text-sm font-semibold text-zinc-100">{title}</p>
             </div>
             <p className="mt-2 text-xs leading-5 text-zinc-500">{text}</p>
@@ -148,16 +184,30 @@ export function PricingSection({
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5">
-          <p className="flex items-center gap-2 text-sm font-semibold text-zinc-100"><CircleCheck className="size-4 text-emerald-400" /> Free sem cartão</p>
-          <p className="mt-2 text-xs leading-5 text-zinc-500">Começa a operar sem pagamento obrigatório.</p>
+          <p className="flex items-center gap-2 text-sm font-semibold text-zinc-100">
+            <CircleCheck className="size-4 text-emerald-400" /> Free sem cartão
+          </p>
+          <p className="mt-2 text-xs leading-5 text-zinc-500">
+            Começa a operar sem pagamento obrigatório.
+          </p>
         </div>
         <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.045] p-5">
-          <p className="flex items-center gap-2 text-sm font-semibold text-emerald-200"><Check className="size-4 text-emerald-300" /> Oferta Pro para elegíveis</p>
-          <p className="mt-2 text-xs leading-5 text-zinc-500">A oferta aplicável é validada no fluxo de checkout.</p>
+          <p className="flex items-center gap-2 text-sm font-semibold text-emerald-200">
+            <Check className="size-4 text-emerald-300" /> Oferta Pro para
+            elegíveis
+          </p>
+          <p className="mt-2 text-xs leading-5 text-zinc-500">
+            A oferta aplicável é validada no fluxo de checkout.
+          </p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5">
-          <p className="flex items-center gap-2 text-sm font-semibold text-zinc-100"><ShieldCheck className="size-4 text-emerald-400" /> Faturação transparente</p>
-          <p className="mt-2 text-xs leading-5 text-zinc-500">A subscrição pertence à barbearia e é processada pela Stripe.</p>
+          <p className="flex items-center gap-2 text-sm font-semibold text-zinc-100">
+            <ShieldCheck className="size-4 text-emerald-400" /> Faturação
+            transparente
+          </p>
+          <p className="mt-2 text-xs leading-5 text-zinc-500">
+            A subscrição pertence à barbearia e é processada pela Stripe.
+          </p>
         </div>
       </div>
     </section>

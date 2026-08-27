@@ -31,7 +31,8 @@ export async function GET() {
       return NextResponse.json(
         {
           ok: false,
-          error: 'A configuração de automações ainda não está disponível na base de dados.',
+          error:
+            'A configuração de automações ainda não está disponível na base de dados.',
           code: campaignError.code ?? 'AUTOMATION_SCHEMA_ERROR',
           details: campaignError.message,
         },
@@ -50,7 +51,8 @@ export async function GET() {
       return NextResponse.json(
         {
           ok: false,
-          error: 'Não foi possível carregar os serviços disponíveis para recompensas.',
+          error:
+            'Não foi possível carregar os serviços disponíveis para recompensas.',
           code: serviceError.code ?? 'AUTOMATION_SERVICES_ERROR',
           details: serviceError.message,
         },
@@ -138,10 +140,7 @@ export async function PATCH(request: NextRequest) {
       const eventName =
         typeof body?.eventName === 'string' ? body.eventName : '';
       if (!EVENTS.includes(eventName as (typeof EVENTS)[number])) {
-        return NextResponse.json(
-          { error: 'Ação inválida.' },
-          { status: 400 },
-        );
+        return NextResponse.json({ error: 'Ação inválida.' }, { status: 400 });
       }
       patch.interval_value = null;
       patch.interval_unit = null;
@@ -165,7 +164,9 @@ export async function PATCH(request: NextRequest) {
 
       if (!Number.isInteger(offset) || offset < -365 || offset > 365) {
         return NextResponse.json(
-          { error: 'O desvio do aniversário deve estar entre -365 e 365 dias.' },
+          {
+            error: 'O desvio do aniversário deve estar entre -365 e 365 dias.',
+          },
           { status: 400 },
         );
       }

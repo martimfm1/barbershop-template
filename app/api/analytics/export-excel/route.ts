@@ -26,14 +26,19 @@ function formatDateTime(value: unknown) {
   if (!value) return '';
   const parsed = new Date(String(value));
   if (Number.isNaN(parsed.getTime())) return '';
-  return new Intl.DateTimeFormat('pt-PT', { dateStyle: 'short', timeStyle: 'short' }).format(parsed);
+  return new Intl.DateTimeFormat('pt-PT', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(parsed);
 }
 
 function formatDate(value: unknown) {
   if (!value) return '';
   const parsed = new Date(String(value));
   if (Number.isNaN(parsed.getTime())) return '';
-  return new Intl.DateTimeFormat('pt-PT', { dateStyle: 'short' }).format(parsed);
+  return new Intl.DateTimeFormat('pt-PT', { dateStyle: 'short' }).format(
+    parsed,
+  );
 }
 
 function relationRecord(value: unknown): RowRecord | null {
@@ -47,7 +52,10 @@ function relationRecord(value: unknown): RowRecord | null {
 function money(value: unknown) {
   const amount = Number(value ?? 0);
   return Number.isFinite(amount)
-    ? new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(amount)
+    ? new Intl.NumberFormat('pt-PT', {
+        style: 'currency',
+        currency: 'EUR',
+      }).format(amount)
     : '0,00 €';
 }
 
@@ -60,9 +68,19 @@ function escapeXml(value: unknown) {
     .replace(/'/g, '&apos;');
 }
 
-function excelXml(title: string, headers: string[], rows: unknown[][], from: Date, to: Date) {
-  const generated = new Intl.DateTimeFormat('pt-PT', { dateStyle: 'long', timeStyle: 'short' }).format(new Date());
-  const rowXml = (values: unknown[], header = false) => `\n<Row>${values.map((value) => `<Cell ss:StyleID="${header ? 'Header' : 'Cell'}"><Data ss:Type="String">${escapeXml(value)}</Data></Cell>`).join('')}</Row>`;
+function excelXml(
+  title: string,
+  headers: string[],
+  rows: unknown[][],
+  from: Date,
+  to: Date,
+) {
+  const generated = new Intl.DateTimeFormat('pt-PT', {
+    dateStyle: 'long',
+    timeStyle: 'short',
+  }).format(new Date());
+  const rowXml = (values: unknown[], header = false) =>
+    `\n<Row>${values.map((value) => `<Cell ss:StyleID="${header ? 'Header' : 'Cell'}"><Data ss:Type="String">${escapeXml(value)}</Data></Cell>`).join('')}</Row>`;
   const stats = [
     ['Relatório', title],
     ['Período', `${formatDate(from)} — ${formatDate(to)}`],
@@ -84,49 +102,156 @@ function response(filename: string, xml: string) {
 
 export async function GET(request: Request) {
   try {
-    const { admin, barbershopId, plan } = await requireModuleContext('advanced_analytics', 'analytics');
+    const { admin, barbershopId, plan } = await requireModuleContext(
+      'advanced_analytics',
+      'analytics',
+    );
     const url = new URL(request.url);
     const type = (url.searchParams.get('type') ?? 'appointments') as ExportType;
     const now = new Date();
-    const from = dayStart(parseDate(url.searchParams.get('from'), new Date(now.getTime() - 29 * 86400000)));
+    const from = dayStart(
+      parseDate(
+        url.searchParams.get('from'),
+        new Date(now.getTime() - 29 * 86400000),
+      ),
+    );
     const to = dayEnd(parseDate(url.searchParams.get('to'), now));
 
     if (to < from || to.getTime() - from.getTime() > 366 * 86400000) {
-      return NextResponse.json({ error: 'Invalid date range' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid date range' },
+        { status: 400 },
+      );
     }
 
     const fromLabel = from.toISOString().slice(0, 10);
     const toLabel = to.toISOString().slice(0, 10);
 
     if (type === 'clients') {
-      const { data, error } = await admin.from('users').select('name_complete,email,num_phone,birth_date,created_at').eq('barbershop_id', barbershopId).eq('role', 'client').order('created_at', { ascending: false }).limit(10000);
+      const { data, error } = await admin
+        .from('users')
+        .select('name_complete,email,num_phone,birth_date,created_at')
+        .eq('barbershop_id', barbershopId)
+        .eq('role', 'client')
+        .order('created_at', { ascending: false })
+        .limit(10000);
       if (error) throw error;
-      const rows = (data ?? []).map((row) => [row.name_complete, row.email, row.num_phone, formatDate(row.birth_date), formatDate(row.created_at)]);
-      return response(`silentra-clientes-${fromLabel}-${toLabel}.xls`, excelXml('Clientes — Silentra', ['Nome', 'Email', 'Telefone', 'Data de nascimento', 'Cliente desde'], rows, from, to));
+      const rows = (data ?? []).map((row) => [
+        row.name_complete,
+        row.email,
+        row.num_phone,
+        formatDate(row.birth_date),
+        formatDate(row.created_at),
+      ]);
+      return response(
+        `silentra-clientes-${fromLabel}-${toLabel}.xls`,
+        excelXml(
+          'Clientes — Silentra',
+          ['Nome', 'Email', 'Telefone', 'Data de nascimento', 'Cliente desde'],
+          rows,
+          from,
+          to,
+        ),
+      );
     }
 
     if (type === 'appointments') {
-      const { data, error } = await admin.from('appointments').select('date_hour,status,manual_name,value_products,payment_method,service:services(name,price),professional:professionals(name)').eq('barbershop_id', barbershopId).gte('date_hour', from.toISOString()).lte('date_hour', to.toISOString()).order('date_hour', { ascending: true }).limit(20000);
+      const { data, error } = await admin
+        .from('appointments')
+        .select(
+          'date_hour,status,manual_name,value_products,payment_method,service:services(name,price),professional:professionals(name)',
+        )
+        .eq('barbershop_id', barbershopId)
+        .gte('date_hour', from.toISOString())
+        .lte('date_hour', to.toISOString())
+        .order('date_hour', { ascending: true })
+        .limit(20000);
       if (error) throw error;
       const rows = (data ?? []).map((row: RowRecord) => {
         const service = relationRecord(row.service);
-        const total = Number(service?.price ?? 0) + Number(row.value_products ?? 0);
-        return [formatDateTime(row.date_hour), row.status, row.manual_name, service?.name, relationRecord(row.professional)?.name, money(total), row.payment_method];
+        const total =
+          Number(service?.price ?? 0) + Number(row.value_products ?? 0);
+        return [
+          formatDateTime(row.date_hour),
+          row.status,
+          row.manual_name,
+          service?.name,
+          relationRecord(row.professional)?.name,
+          money(total),
+          row.payment_method,
+        ];
       });
-      return response(`silentra-marcacoes-${fromLabel}-${toLabel}.xls`, excelXml('Marcações — Silentra', ['Data e hora', 'Estado', 'Cliente', 'Serviço', 'Profissional', 'Total', 'Pagamento'], rows, from, to));
+      return response(
+        `silentra-marcacoes-${fromLabel}-${toLabel}.xls`,
+        excelXml(
+          'Marcações — Silentra',
+          [
+            'Data e hora',
+            'Estado',
+            'Cliente',
+            'Serviço',
+            'Profissional',
+            'Total',
+            'Pagamento',
+          ],
+          rows,
+          from,
+          to,
+        ),
+      );
     }
 
     if (type === 'pos') {
-      if (plan !== PLANS.ENTERPRISE) return NextResponse.json({ error: 'POS export requires Enterprise.' }, { status: 403 });
-      const { data, error } = await admin.from('pos_transactions').select('created_at,subtotal,discount,total,payment_method,status').eq('barbershop_id', barbershopId).gte('created_at', from.toISOString()).lte('created_at', to.toISOString()).order('created_at', { ascending: true }).limit(20000);
+      if (plan !== PLANS.ENTERPRISE)
+        return NextResponse.json(
+          { error: 'POS export requires Enterprise.' },
+          { status: 403 },
+        );
+      const { data, error } = await admin
+        .from('pos_transactions')
+        .select('created_at,subtotal,discount,total,payment_method,status')
+        .eq('barbershop_id', barbershopId)
+        .gte('created_at', from.toISOString())
+        .lte('created_at', to.toISOString())
+        .order('created_at', { ascending: true })
+        .limit(20000);
       if (error) throw error;
-      const rows = (data ?? []).map((row) => [formatDateTime(row.created_at), money(row.subtotal), money(row.discount), money(row.total), row.payment_method, row.status]);
-      return response(`silentra-financeiro-${fromLabel}-${toLabel}.xls`, excelXml('Financeiro POS — Silentra', ['Data e hora', 'Subtotal', 'Desconto', 'Total', 'Pagamento', 'Estado'], rows, from, to));
+      const rows = (data ?? []).map((row) => [
+        formatDateTime(row.created_at),
+        money(row.subtotal),
+        money(row.discount),
+        money(row.total),
+        row.payment_method,
+        row.status,
+      ]);
+      return response(
+        `silentra-financeiro-${fromLabel}-${toLabel}.xls`,
+        excelXml(
+          'Financeiro POS — Silentra',
+          [
+            'Data e hora',
+            'Subtotal',
+            'Desconto',
+            'Total',
+            'Pagamento',
+            'Estado',
+          ],
+          rows,
+          from,
+          to,
+        ),
+      );
     }
 
-    return NextResponse.json({ error: 'Unsupported export type' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Unsupported export type' },
+      { status: 400 },
+    );
   } catch (error) {
     console.error('[ANALYTICS_EXPORT_EXCEL]', error);
-    return NextResponse.json({ error: 'Unable to export Excel report' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Unable to export Excel report' },
+      { status: 500 },
+    );
   }
 }

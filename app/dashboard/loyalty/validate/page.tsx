@@ -92,7 +92,9 @@ export default function LoyaltyValidationPage() {
     try {
       setCameraOpen(true);
       setStatus('A abrir a câmara…');
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
 
       const video = videoRef.current;
       if (!video) throw new Error('Pré-visualização da câmara indisponível.');
@@ -118,7 +120,8 @@ export default function LoyaltyValidationPage() {
       );
 
       scannerControlsRef.current = controls;
-      streamRef.current = video.srcObject instanceof MediaStream ? video.srcObject : null;
+      streamRef.current =
+        video.srcObject instanceof MediaStream ? video.srcObject : null;
       setStatus('Câmara aberta. Aponta-a para o QR da recompensa.');
     } catch (error) {
       stopCamera();

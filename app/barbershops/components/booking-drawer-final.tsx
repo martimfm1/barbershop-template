@@ -93,7 +93,8 @@ function parseBirthDate(value: string) {
 
 function closedForDay(shop: BookingDrawerProps['shop'], day: BookingDayOption) {
   const raw = shop?.closed_days ?? shop?.closedDays ?? shop?.off_days;
-  const values = typeof raw === 'string' ? raw.split(',') : Array.isArray(raw) ? raw : [];
+  const values =
+    typeof raw === 'string' ? raw.split(',') : Array.isArray(raw) ? raw : [];
   const weekday = new Date(`${day.dateStr}T12:00:00`).getDay();
   return values.some(
     (value) =>
@@ -112,10 +113,13 @@ export function BookingDrawerFinal({
   const days = useMemo(() => buildDays(), []);
   const [step, setStep] = useState<Step>(1);
   const [dayIndex, setDayIndex] = useState(0);
-  const [professional, setProfessional] = useState<MarketplaceProfessional | null>(null);
+  const [professional, setProfessional] =
+    useState<MarketplaceProfessional | null>(null);
   const [serviceId, setServiceId] = useState<string | null>(selectedServiceId);
   const [services, setServices] = useState<MarketplaceService[]>([]);
-  const [professionals, setProfessionals] = useState<MarketplaceProfessional[]>([]);
+  const [professionals, setProfessionals] = useState<MarketplaceProfessional[]>(
+    [],
+  );
   const [slots, setSlots] = useState<string[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [loadingPeople, setLoadingPeople] = useState(false);
@@ -168,7 +172,9 @@ export function BookingDrawerFinal({
       .then(async (response) => {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-          throw new Error(data?.error || 'Não foi possível carregar os barbeiros.');
+          throw new Error(
+            data?.error || 'Não foi possível carregar os barbeiros.',
+          );
         }
         return data as MarketplaceBookingResponse;
       })
@@ -221,7 +227,9 @@ export function BookingDrawerFinal({
       .then(async (response) => {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-          throw new Error(data?.error || 'Não foi possível carregar os horários.');
+          throw new Error(
+            data?.error || 'Não foi possível carregar os horários.',
+          );
         }
         return data as MarketplaceBookingResponse;
       })
@@ -263,7 +271,8 @@ export function BookingDrawerFinal({
     if (!name.trim() || !phone.trim() || !email.trim()) {
       return toast.error('Preenche todos os campos obrigatórios.');
     }
-    if (!parsedBirthDate) return toast.error('Indica uma data de nascimento válida.');
+    if (!parsedBirthDate)
+      return toast.error('Indica uma data de nascimento válida.');
 
     setSubmitting(true);
     setError('');
@@ -315,9 +324,13 @@ export function BookingDrawerFinal({
         <header className="shrink-0 border-b border-white/10 px-4 py-4 sm:px-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-300">Agendamento</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-300">
+                Agendamento
+              </p>
               <h2 className="mt-1 text-lg font-semibold">
-                {step === 4 ? 'Reserva confirmada' : shop?.name ?? 'Agendamento'}
+                {step === 4
+                  ? 'Reserva confirmada'
+                  : (shop?.name ?? 'Agendamento')}
               </h2>
               <p className="mt-1 text-xs text-zinc-400">
                 {step === 1
@@ -339,7 +352,10 @@ export function BookingDrawerFinal({
             </button>
           </div>
           {step < 4 && (
-            <div className="mt-4 grid grid-cols-3 gap-1.5" aria-label={`Passo ${step} de 3`}>
+            <div
+              className="mt-4 grid grid-cols-3 gap-1.5"
+              aria-label={`Passo ${step} de 3`}
+            >
               {[1, 2, 3].map((item) => (
                 <div
                   key={item}
@@ -352,21 +368,38 @@ export function BookingDrawerFinal({
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-5">
           {error ? (
-            <div className="flex flex-col items-center gap-4 py-12 text-center" role="alert">
+            <div
+              className="flex flex-col items-center gap-4 py-12 text-center"
+              role="alert"
+            >
               <XCircle className="size-8 text-red-400" aria-hidden="true" />
               <p className="max-w-sm text-sm text-zinc-400">{error}</p>
-              <Button variant="outline" onClick={() => setError('')}>Tentar novamente</Button>
+              <Button variant="outline" onClick={() => setError('')}>
+                Tentar novamente
+              </Button>
             </div>
           ) : step === 1 ? (
             <div className="space-y-6">
               <section aria-labelledby="booking-professional-title">
                 <div className="mb-3 flex items-center gap-2">
-                  <UserRound className="size-4 text-emerald-300" aria-hidden="true" />
-                  <h3 id="booking-professional-title" className="text-sm font-semibold">1. Barbeiro</h3>
+                  <UserRound
+                    className="size-4 text-emerald-300"
+                    aria-hidden="true"
+                  />
+                  <h3
+                    id="booking-professional-title"
+                    className="text-sm font-semibold"
+                  >
+                    1. Barbeiro
+                  </h3>
                 </div>
                 {loadingPeople ? (
                   <div className="flex items-center gap-2 rounded-2xl border border-white/10 p-4 text-sm text-zinc-500">
-                    <Loader2 className="size-4 animate-spin" aria-hidden="true" /> A carregar barbeiros…
+                    <Loader2
+                      className="size-4 animate-spin"
+                      aria-hidden="true"
+                    />{' '}
+                    A carregar barbeiros…
                   </div>
                 ) : (
                   <div className="grid gap-2">
@@ -379,10 +412,19 @@ export function BookingDrawerFinal({
                         className={`flex min-h-16 w-full items-center justify-between rounded-2xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${professional?.id === item.id ? 'border-emerald-400/40 bg-emerald-400/[0.08]' : 'border-white/10 bg-white/[0.025] hover:border-white/20'}`}
                       >
                         <span>
-                          <span className="block text-sm font-semibold">{item.name}</span>
-                          <span className="mt-0.5 block text-xs text-zinc-500">{item.role || 'Barbeiro profissional'}</span>
+                          <span className="block text-sm font-semibold">
+                            {item.name}
+                          </span>
+                          <span className="mt-0.5 block text-xs text-zinc-500">
+                            {item.role || 'Barbeiro profissional'}
+                          </span>
                         </span>
-                        {professional?.id === item.id && <Check className="size-5 text-emerald-300" aria-hidden="true" />}
+                        {professional?.id === item.id && (
+                          <Check
+                            className="size-5 text-emerald-300"
+                            aria-hidden="true"
+                          />
+                        )}
                       </button>
                     ))}
                     {!professionals.length && (
@@ -396,8 +438,13 @@ export function BookingDrawerFinal({
 
               <section aria-labelledby="booking-day-title">
                 <div className="mb-3 flex items-center gap-2">
-                  <CalendarDays className="size-4 text-emerald-300" aria-hidden="true" />
-                  <h3 id="booking-day-title" className="text-sm font-semibold">2. Dia</h3>
+                  <CalendarDays
+                    className="size-4 text-emerald-300"
+                    aria-hidden="true"
+                  />
+                  <h3 id="booking-day-title" className="text-sm font-semibold">
+                    2. Dia
+                  </h3>
                 </div>
                 <div className="flex snap-x gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {days.map((day, index) => {
@@ -410,25 +457,47 @@ export function BookingDrawerFinal({
                         onClick={() => setDayIndex(index)}
                         className={`min-w-[68px] rounded-2xl border px-2 py-3 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${dayIndex === index ? 'border-emerald-400/40 bg-emerald-400/[0.08]' : 'border-white/10 bg-white/[0.025]'}`}
                       >
-                        <span className="block text-[10px] font-bold text-zinc-500">{day.isToday ? 'HOJE' : day.weekdayShort}</span>
-                        <span className="mt-1 block text-xl font-black">{day.dayNumeric}</span>
-                        {closed && <span className="mt-0.5 block text-[8px] font-semibold text-amber-300">FECHADO</span>}
+                        <span className="block text-[10px] font-bold text-zinc-500">
+                          {day.isToday ? 'HOJE' : day.weekdayShort}
+                        </span>
+                        <span className="mt-1 block text-xl font-black">
+                          {day.dayNumeric}
+                        </span>
+                        {closed && (
+                          <span className="mt-0.5 block text-[8px] font-semibold text-amber-300">
+                            FECHADO
+                          </span>
+                        )}
                       </button>
                     );
                   })}
                 </div>
                 {isClosed && (
                   <div className="mt-3 flex items-start gap-3 rounded-2xl border border-amber-400/20 bg-amber-400/[0.05] p-3 text-xs text-amber-100">
-                    <AlertCircle className="mt-0.5 size-4 shrink-0 text-amber-300" aria-hidden="true" />
+                    <AlertCircle
+                      className="mt-0.5 size-4 shrink-0 text-amber-300"
+                      aria-hidden="true"
+                    />
                     A barbearia não aceita marcações neste dia.
                   </div>
                 )}
               </section>
 
-              <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4" aria-labelledby="booking-service-title">
+              <section
+                className="rounded-2xl border border-white/10 bg-white/[0.02] p-4"
+                aria-labelledby="booking-service-title"
+              >
                 <div className="mb-3 flex items-center gap-2">
-                  <Scissors className="size-4 text-zinc-400" aria-hidden="true" />
-                  <h3 id="booking-service-title" className="text-sm font-semibold">3. Serviço</h3>
+                  <Scissors
+                    className="size-4 text-zinc-400"
+                    aria-hidden="true"
+                  />
+                  <h3
+                    id="booking-service-title"
+                    className="text-sm font-semibold"
+                  >
+                    3. Serviço
+                  </h3>
                 </div>
                 <select
                   aria-label="Escolher serviço"
@@ -439,7 +508,8 @@ export function BookingDrawerFinal({
                   <option value="">Seleciona um serviço</option>
                   {services.map((item) => (
                     <option key={item.id} value={item.id}>
-                      {item.name} · {item.durationMinutes} min · €{Number(item.price ?? 0).toFixed(2)}
+                      {item.name} · {item.durationMinutes} min · €
+                      {Number(item.price ?? 0).toFixed(2)}
                     </option>
                   ))}
                 </select>
@@ -451,28 +521,59 @@ export function BookingDrawerFinal({
                 disabled={loadingPeople || !professionals.length || !service}
                 className="min-h-11 w-full rounded-xl bg-zinc-100 font-semibold text-zinc-950 hover:bg-white focus-visible:ring-2 focus-visible:ring-emerald-400"
               >
-                Continuar <ArrowRight className="ml-2 size-4" aria-hidden="true" />
+                Continuar{' '}
+                <ArrowRight className="ml-2 size-4" aria-hidden="true" />
               </Button>
             </div>
           ) : step === 2 ? (
             <div className="space-y-5">
               <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
                 <div className="grid gap-3 text-xs sm:grid-cols-3">
-                  <div><p className="text-zinc-500">Barbeiro</p><p className="mt-1 font-semibold text-zinc-100">{professional?.name}</p></div>
-                  <div><p className="text-zinc-500">Dia</p><p className="mt-1 font-semibold text-zinc-100">{currentDay.fullDateFormatted}</p></div>
-                  <div><p className="text-zinc-500">Serviço</p><p className="mt-1 font-semibold text-zinc-100">{service?.name}</p></div>
+                  <div>
+                    <p className="text-zinc-500">Barbeiro</p>
+                    <p className="mt-1 font-semibold text-zinc-100">
+                      {professional?.name}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-zinc-500">Dia</p>
+                    <p className="mt-1 font-semibold text-zinc-100">
+                      {currentDay.fullDateFormatted}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-zinc-500">Serviço</p>
+                    <p className="mt-1 font-semibold text-zinc-100">
+                      {service?.name}
+                    </p>
+                  </div>
                 </div>
               </div>
               <section aria-labelledby="booking-slots-title">
                 <div className="mb-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Clock3 className="size-4 text-emerald-300" aria-hidden="true" />
-                    <h3 id="booking-slots-title" className="text-sm font-semibold">Horários disponíveis</h3>
+                    <Clock3
+                      className="size-4 text-emerald-300"
+                      aria-hidden="true"
+                    />
+                    <h3
+                      id="booking-slots-title"
+                      className="text-sm font-semibold"
+                    >
+                      Horários disponíveis
+                    </h3>
                   </div>
-                  {loadingSlots && <Loader2 className="size-4 animate-spin text-zinc-500" aria-label="A carregar horários" />}
+                  {loadingSlots && (
+                    <Loader2
+                      className="size-4 animate-spin text-zinc-500"
+                      aria-label="A carregar horários"
+                    />
+                  )}
                 </div>
                 {loadingSlots ? (
-                  <div className="rounded-2xl border border-white/10 p-6 text-center text-sm text-zinc-500">A procurar horários…</div>
+                  <div className="rounded-2xl border border-white/10 p-6 text-center text-sm text-zinc-500">
+                    A procurar horários…
+                  </div>
                 ) : slots.length ? (
                   <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                     {slots.map((slot) => (
@@ -489,18 +590,37 @@ export function BookingDrawerFinal({
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-white/10 p-6 text-center">
-                    <Clock3 className="mx-auto size-6 text-zinc-600" aria-hidden="true" />
-                    <p className="mt-2 text-sm font-medium">Sem horários disponíveis</p>
-                    <p className="mt-1 text-xs text-zinc-500">Experimenta outro dia ou barbeiro.</p>
+                    <Clock3
+                      className="mx-auto size-6 text-zinc-600"
+                      aria-hidden="true"
+                    />
+                    <p className="mt-2 text-sm font-medium">
+                      Sem horários disponíveis
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      Experimenta outro dia ou barbeiro.
+                    </p>
                   </div>
                 )}
               </section>
               <div className="grid grid-cols-2 gap-2">
-                <Button type="button" variant="outline" onClick={() => setStep(1)} className="min-h-11 rounded-xl">
-                  <ArrowLeft className="mr-2 size-4" aria-hidden="true" /> Voltar
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStep(1)}
+                  className="min-h-11 rounded-xl"
+                >
+                  <ArrowLeft className="mr-2 size-4" aria-hidden="true" />{' '}
+                  Voltar
                 </Button>
-                <Button type="button" onClick={continueStepTwo} disabled={!selectedSlot} className="min-h-11 rounded-xl bg-zinc-100 text-zinc-950 hover:bg-white">
-                  Continuar <ArrowRight className="ml-2 size-4" aria-hidden="true" />
+                <Button
+                  type="button"
+                  onClick={continueStepTwo}
+                  disabled={!selectedSlot}
+                  className="min-h-11 rounded-xl bg-zinc-100 text-zinc-950 hover:bg-white"
+                >
+                  Continuar{' '}
+                  <ArrowRight className="ml-2 size-4" aria-hidden="true" />
                 </Button>
               </div>
             </div>
@@ -510,38 +630,124 @@ export function BookingDrawerFinal({
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-xs text-zinc-500">Reserva</p>
-                    <p className="mt-1 text-sm font-semibold">{professional?.name} · {currentDay.fullDateFormatted} · {selectedSlot}</p>
-                    <p className="mt-1 text-xs text-zinc-500">{service?.name}</p>
+                    <p className="mt-1 text-sm font-semibold">
+                      {professional?.name} · {currentDay.fullDateFormatted} ·{' '}
+                      {selectedSlot}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      {service?.name}
+                    </p>
                   </div>
-                  <CheckCircle2 className="size-5 text-emerald-300" aria-hidden="true" />
+                  <CheckCircle2
+                    className="size-5 text-emerald-300"
+                    aria-hidden="true"
+                  />
                 </div>
               </div>
               <div className="space-y-3">
-                <label className="grid gap-1.5 text-xs text-zinc-500">Nome<input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" required className="min-h-11 rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400" /></label>
-                <label className="grid gap-1.5 text-xs text-zinc-500">Telefone<input value={phone} onChange={(event) => setPhone(event.target.value)} autoComplete="tel" inputMode="tel" required className="min-h-11 rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400" /></label>
-                <label className="grid gap-1.5 text-xs text-zinc-500">Email<input value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" inputMode="email" type="email" required className="min-h-11 rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400" /></label>
-                <label className="grid gap-1.5 text-xs text-zinc-500">Data de nascimento<input value={birthDate} onChange={(event) => setBirthDate(event.target.value.replace(/[^0-9/]/g, '').slice(0, 10))} inputMode="numeric" placeholder="DD/MM/AAAA" required className="min-h-11 rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400" /></label>
+                <label className="grid gap-1.5 text-xs text-zinc-500">
+                  Nome
+                  <input
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    autoComplete="name"
+                    required
+                    className="min-h-11 rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                  />
+                </label>
+                <label className="grid gap-1.5 text-xs text-zinc-500">
+                  Telefone
+                  <input
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    autoComplete="tel"
+                    inputMode="tel"
+                    required
+                    className="min-h-11 rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                  />
+                </label>
+                <label className="grid gap-1.5 text-xs text-zinc-500">
+                  Email
+                  <input
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    autoComplete="email"
+                    inputMode="email"
+                    type="email"
+                    required
+                    className="min-h-11 rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                  />
+                </label>
+                <label className="grid gap-1.5 text-xs text-zinc-500">
+                  Data de nascimento
+                  <input
+                    value={birthDate}
+                    onChange={(event) =>
+                      setBirthDate(
+                        event.target.value.replace(/[^0-9/]/g, '').slice(0, 10),
+                      )
+                    }
+                    inputMode="numeric"
+                    placeholder="DD/MM/AAAA"
+                    required
+                    className="min-h-11 rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-zinc-100 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                  />
+                </label>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <Button type="button" variant="outline" onClick={() => setStep(2)} className="min-h-11 rounded-xl">
-                  <ArrowLeft className="mr-2 size-4" aria-hidden="true" /> Voltar
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStep(2)}
+                  className="min-h-11 rounded-xl"
+                >
+                  <ArrowLeft className="mr-2 size-4" aria-hidden="true" />{' '}
+                  Voltar
                 </Button>
-                <Button type="button" onClick={() => void submit()} disabled={submitting} className="min-h-11 rounded-xl bg-zinc-100 text-zinc-950 hover:bg-white">
-                  {submitting ? <><Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" /> A reservar…</> : 'Confirmar reserva'}
+                <Button
+                  type="button"
+                  onClick={() => void submit()}
+                  disabled={submitting}
+                  className="min-h-11 rounded-xl bg-zinc-100 text-zinc-950 hover:bg-white"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2
+                        className="mr-2 size-4 animate-spin"
+                        aria-hidden="true"
+                      />{' '}
+                      A reservar…
+                    </>
+                  ) : (
+                    'Confirmar reserva'
+                  )}
                 </Button>
               </div>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-4 py-12 text-center">
               <div className="flex size-16 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-400/10">
-                <CheckCircle2 className="size-8 text-emerald-300" aria-hidden="true" />
+                <CheckCircle2
+                  className="size-8 text-emerald-300"
+                  aria-hidden="true"
+                />
               </div>
               <div>
                 <h3 className="text-lg font-semibold">Reserva confirmada</h3>
-                <p className="mt-1 text-sm text-zinc-400">{currentDay.fullDateFormatted} às {selectedSlot}</p>
-                <p className="mt-1 text-xs text-zinc-500">{professional?.name} · {service?.name}</p>
+                <p className="mt-1 text-sm text-zinc-400">
+                  {currentDay.fullDateFormatted} às {selectedSlot}
+                </p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  {professional?.name} · {service?.name}
+                </p>
               </div>
-              <Button type="button" onClick={onClose} className="min-h-11 rounded-xl bg-zinc-100 text-zinc-950 hover:bg-white">Fechar</Button>
+              <Button
+                type="button"
+                onClick={onClose}
+                className="min-h-11 rounded-xl bg-zinc-100 text-zinc-950 hover:bg-white"
+              >
+                Fechar
+              </Button>
             </div>
           )}
         </div>

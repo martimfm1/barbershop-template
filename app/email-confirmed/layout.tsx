@@ -6,6 +6,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function EmailConfirmedLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function EmailConfirmedLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return children;
 }

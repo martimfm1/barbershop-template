@@ -291,14 +291,12 @@ export async function DELETE(
         'A marcação já foi alterada. Atualiza a página e tenta novamente.',
         409,
       );
-    await admin
-      .from('audit_logs')
-      .insert({
-        action: 'customer_portal_cancel',
-        entity_type: 'appointment',
-        entity_id: appointment.id,
-        metadata: { email: session.email },
-      });
+    await admin.from('audit_logs').insert({
+      action: 'customer_portal_cancel',
+      entity_type: 'appointment',
+      entity_id: appointment.id,
+      metadata: { email: session.email },
+    });
     void dispatchAppointmentAutomations('booking_cancelled', {
       appointmentId: appointment.id,
       barbershopId: appointment.barbershop_id,
@@ -397,18 +395,16 @@ export async function PATCH(
         'A marcação já foi alterada. Atualiza a página e tenta novamente.',
         409,
       );
-    await admin
-      .from('audit_logs')
-      .insert({
-        action: 'customer_portal_reschedule',
-        entity_type: 'appointment',
-        entity_id: appointment.id,
-        metadata: {
-          email: session.email,
-          from: appointment.date_hour,
-          to: newDateHour,
-        },
-      });
+    await admin.from('audit_logs').insert({
+      action: 'customer_portal_reschedule',
+      entity_type: 'appointment',
+      entity_id: appointment.id,
+      metadata: {
+        email: session.email,
+        from: appointment.date_hour,
+        to: newDateHour,
+      },
+    });
     return NextResponse.json({ success: true, dateHour: updated.date_hour });
   } catch (error) {
     console.error('[CUSTOMER_PORTAL_RESCHEDULE_CRITICAL]', error);

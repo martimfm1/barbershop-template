@@ -12,7 +12,10 @@ export type DashboardSkeletonVariant =
   | 'messages'
   | 'pos';
 
-const VARIANT_CONFIG: Record<DashboardSkeletonVariant, { columns: string; rows: number }> = {
+const VARIANT_CONFIG: Record<
+  DashboardSkeletonVariant,
+  { columns: string; rows: number }
+> = {
   overview: { columns: 'lg:grid-cols-4', rows: 5 },
   table: { columns: 'lg:grid-cols-1', rows: 8 },
   calendar: { columns: 'lg:grid-cols-[1.3fr_0.7fr]', rows: 6 },
@@ -49,7 +52,10 @@ function MetricsSkeleton() {
   return (
     <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+        <div
+          key={index}
+          className="rounded-2xl border border-white/10 bg-white/[0.02] p-4"
+        >
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-2">
               <SkeletonBlock className="h-3 w-20" />
@@ -81,7 +87,10 @@ function ContentSkeleton({ variant }: { variant: DashboardSkeletonVariant }) {
         </div>
         <div className="divide-y divide-white/5">
           {Array.from({ length: config.rows }).map((_, index) => (
-            <div key={index} className="grid gap-3 p-4 sm:grid-cols-[1.5fr_0.8fr_0.8fr_auto] sm:items-center sm:p-5">
+            <div
+              key={index}
+              className="grid gap-3 p-4 sm:grid-cols-[1.5fr_0.8fr_0.8fr_auto] sm:items-center sm:p-5"
+            >
               <div className="flex items-center gap-3">
                 <SkeletonBlock className="size-10 rounded-xl" />
                 <div className="min-w-0 flex-1 space-y-2">
@@ -123,7 +132,10 @@ function ContentSkeleton({ variant }: { variant: DashboardSkeletonVariant }) {
           <SkeletonBlock className="h-5 w-32" />
           <div className="mt-5 space-y-3">
             {Array.from({ length: config.rows }).map((_, index) => (
-              <div key={index} className="rounded-xl border border-white/10 p-3">
+              <div
+                key={index}
+                className="rounded-xl border border-white/10 p-3"
+              >
                 <SkeletonBlock className="h-3 w-24" />
                 <SkeletonBlock className="mt-2 h-4 w-40 max-w-full" />
                 <SkeletonBlock className="mt-3 h-2.5 w-28" />
@@ -147,7 +159,10 @@ function ContentSkeleton({ variant }: { variant: DashboardSkeletonVariant }) {
         </aside>
         <div className="space-y-4">
           {Array.from({ length: config.rows }).map((_, index) => (
-            <div key={index} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 sm:p-6">
+            <div
+              key={index}
+              className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 sm:p-6"
+            >
               <SkeletonBlock className="h-5 w-48" />
               <SkeletonBlock className="mt-2 h-3 w-80 max-w-full" />
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -164,7 +179,10 @@ function ContentSkeleton({ variant }: { variant: DashboardSkeletonVariant }) {
   return (
     <section className={`grid gap-4 ${config.columns}`}>
       {Array.from({ length: config.rows }).map((_, index) => (
-        <div key={index} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 sm:p-6">
+        <div
+          key={index}
+          className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 sm:p-6"
+        >
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1 space-y-2">
               <SkeletonBlock className="h-5 w-40 max-w-full" />
@@ -183,7 +201,11 @@ function ContentSkeleton({ variant }: { variant: DashboardSkeletonVariant }) {
   );
 }
 
-export function DashboardSkeleton({ variant = 'overview' }: { variant?: DashboardSkeletonVariant }) {
+export function DashboardSkeleton({
+  variant = 'overview',
+}: {
+  variant?: DashboardSkeletonVariant;
+}) {
   return (
     <main
       className="min-h-screen bg-background px-3 pb-10 pt-6 text-foreground sm:px-5 md:px-8 md:pt-8"
