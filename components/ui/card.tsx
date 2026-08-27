@@ -12,7 +12,7 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        'group/card flex flex-col gap-5 overflow-hidden rounded-[1.25rem] border border-white/[0.09] bg-white/[0.025] py-6 text-sm text-card-foreground shadow-[0_18px_55px_rgba(0,0,0,0.16)] ring-0 backdrop-blur-xl transition-[transform,border-color,background-color,box-shadow] duration-300 hover:-translate-y-0.5 hover:border-white/[0.14] hover:bg-white/[0.035] hover:shadow-[0_22px_65px_rgba(0,0,0,0.2)] data-[size=sm]:gap-4 data-[size=sm]:py-4 dark:bg-zinc-950/55 *:[img:first-child]:rounded-t-[1.25rem] *:[img:last-child]:rounded-b-[1.25rem]',
+        'group/card flex flex-col gap-5 overflow-hidden rounded-[1.25rem] border border-white/[0.09] bg-white/[0.025] py-6 text-sm text-card-foreground shadow-[0_18px_55px_rgba(0,0,0,0.16)] ring-0 backdrop-blur-xl transition-[transform,border-color,background-color,box-shadow] duration-300 motion-reduce:transition-none motion-reduce:transform-none motion-reduce:hover:transform-none hover:-translate-y-0.5 hover:border-white/[0.14] hover:bg-white/[0.035] hover:shadow-[0_22px_65px_rgba(0,0,0,0.2)] data-[size=sm]:gap-4 data-[size=sm]:py-4 dark:bg-zinc-950/55 *:[img:first-child]:rounded-t-[1.25rem] *:[img:last-child]:rounded-b-[1.25rem]',
         className,
       )}
       {...props}
