@@ -50,7 +50,6 @@ export function SettingsAutomaticBookingPanel({ barbershopId }: { barbershopId: 
     if (!dirty) return;
     setSaving(true);
     const result = await barbershopService.updateConfig(barbershopId, {
-      name: '',
       auto_confirm_bookings: autoConfirm,
       auto_complete_bookings: autoComplete,
     });
@@ -83,7 +82,7 @@ export function SettingsAutomaticBookingPanel({ barbershopId }: { barbershopId: 
               Automatização de marcações
             </CardTitle>
             <CardDescription className="mt-1 max-w-2xl text-xs leading-5">
-              Poupa trabalho manual com confirmação imediata e conclusão automática após o horário terminar.
+              Poupa trabalho manual com confirmação imediata e conclusão automática depois da hora de fim do serviço.
             </CardDescription>
           </div>
           {!eligible && (
@@ -98,28 +97,18 @@ export function SettingsAutomaticBookingPanel({ barbershopId }: { barbershopId: 
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="text-sm font-medium">Confirmar marcações automaticamente</p>
-              <p className="mt-1 text-xs leading-5 text-zinc-500">Novas reservas passam diretamente de pendente para confirmada.</p>
+              <p className="mt-1 text-xs leading-5 text-zinc-500">Novas reservas passam diretamente de pendente para confirmada, sem intervenção manual.</p>
             </div>
-            <Switch
-              checked={autoConfirm}
-              disabled={!eligible}
-              onCheckedChange={setAutoConfirm}
-              aria-label="Confirmar marcações automaticamente"
-            />
+            <Switch checked={autoConfirm} disabled={!eligible} onCheckedChange={setAutoConfirm} aria-label="Confirmar marcações automaticamente" />
           </div>
         </div>
         <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="text-sm font-medium">Concluir marcações automaticamente</p>
-              <p className="mt-1 text-xs leading-5 text-zinc-500">Marca como concluída uma reserva quando o serviço já terminou.</p>
+              <p className="mt-1 text-xs leading-5 text-zinc-500">Depois de terminar o serviço, a marcação passa automaticamente para concluída.</p>
             </div>
-            <Switch
-              checked={autoComplete}
-              disabled={!eligible}
-              onCheckedChange={setAutoComplete}
-              aria-label="Concluir marcações automaticamente"
-            />
+            <Switch checked={autoComplete} disabled={!eligible} onCheckedChange={setAutoComplete} aria-label="Concluir marcações automaticamente" />
           </div>
         </div>
         {!eligible && (
