@@ -109,8 +109,7 @@ export async function POST(
         },
         { status: 500 },
       );
-    if (serviceError)
-      console.error('[APPOINTMENT_CONFIRM_SERVICE_ERROR]', serviceError);
+    if (serviceError) console.error('[APPOINTMENT_CONFIRM_SERVICE_ERROR]', serviceError.message);
 
     let clientRelation: {
       name_complete?: string | null;
@@ -122,8 +121,7 @@ export async function POST(
         .select('name_complete,email')
         .eq('id', appointment.client_id)
         .maybeSingle();
-      if (clientError)
-        console.error('[APPOINTMENT_CONFIRM_CLIENT_ERROR]', clientError);
+      if (clientError) console.error('[APPOINTMENT_CONFIRM_CLIENT_ERROR]', clientError.message);
       clientRelation = client;
     }
 
@@ -196,9 +194,8 @@ export async function POST(
             ? emailException.message
             : String(emailException);
         console.error('[APPOINTMENT_CONFIRM_EMAIL_ERROR]', {
-          appointmentId,
-          email: recipientEmail,
           error: emailError,
+          notificationFailed: true,
         });
       }
     }
@@ -224,7 +221,7 @@ export async function POST(
           : 'Marcação confirmada. O cliente não tem e-mail associado.',
     });
   } catch (error) {
-    console.error('[APPOINTMENT_CONFIRM_ERROR]', error);
+    console.error('[APPOINTMENT_CONFIRM_ERROR]', error instanceof Error ? error.message : 'unknown error');
     return NextResponse.json(
       { success: false, error: 'Erro interno ao confirmar a marcação.' },
       { status: 500 },
