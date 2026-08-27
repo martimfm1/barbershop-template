@@ -34,6 +34,8 @@ export const viewport = { width: 'device-width', initialScale: 1 };
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const enableVercelTelemetry = process.env.NODE_ENV === 'production';
+
   return (
     <html
       lang="pt-PT"
@@ -50,8 +52,8 @@ export default function RootLayout({
       <body className="min-h-full bg-black text-foreground">
         <LanguageProvider>
           <ProductionLogGuard />
-          <SpeedInsights />
-          <Analytics />
+          {enableVercelTelemetry ? <SpeedInsights /> : null}
+          {enableVercelTelemetry ? <Analytics /> : null}
           <ClientShell>{children}</ClientShell>
         </LanguageProvider>
       </body>
