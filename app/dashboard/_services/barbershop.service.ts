@@ -9,6 +9,8 @@ export interface BarbershopConfigPayload {
   closed_days?: string;
   allow_online_bookings?: boolean;
   auto_reminders?: boolean;
+  auto_confirm_bookings?: boolean;
+  auto_complete_bookings?: boolean;
   popular_service_id?: string | null;
   lunch_start?: string;
   lunch_end?: string;
@@ -26,7 +28,7 @@ export async function getBarbershopConfig(
     const { data: barberData, error: barberError } = await supabase
       .from('barbershops')
       .select(
-        'name, phone, address, opening_time, closing_time, lunch_start, lunch_end, closed_days, allow_online_bookings, auto_reminders, is_public_in_directory, time_limit_cancellation_hours',
+        'name, phone, address, opening_time, closing_time, lunch_start, lunch_end, closed_days, allow_online_bookings, auto_reminders, auto_confirm_bookings, auto_complete_bookings, is_public_in_directory, time_limit_cancellation_hours',
       )
       .eq('id', barbershopId)
       .single();
@@ -55,6 +57,8 @@ export async function getBarbershopConfig(
         closed_days: barberData.closed_days ?? undefined,
         allow_online_bookings: barberData.allow_online_bookings ?? undefined,
         auto_reminders: barberData.auto_reminders ?? undefined,
+        auto_confirm_bookings: barberData.auto_confirm_bookings ?? undefined,
+        auto_complete_bookings: barberData.auto_complete_bookings ?? undefined,
         is_public_in_directory: barberData.is_public_in_directory ?? undefined,
         time_limit_cancellation_hours: Math.max(
           0,
@@ -146,7 +150,9 @@ export async function updateBarbershopConfig(
         throw new Error(
           error.message === 'barbershop update not permitted'
             ? 'Não tens permissão para alterar as definições desta barbearia.'
-            : error.message,
+            : error.message === 'AUTOMATIC_BOOKING_SETTINGS_PRO_REQUIRED'
+              ? 'A confirmação e conclusão automáticas estão disponíveis apenas nos planos Pro e Enterprise.'
+              : error.message,
         );
       }
     }
