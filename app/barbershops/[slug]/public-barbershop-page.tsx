@@ -1,1 +1,1 @@
-export { default } from './public-barbershop-page-v2';
+export { default } from './public-barbershop-page-final';

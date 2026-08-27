@@ -16,6 +16,8 @@ const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/$/,
 
 type PublicData = BarbershopPublicDetails & { amenities?: BarbershopAmenities };
 
+type AmenityItem = { label: string; Icon: typeof Wifi };
+
 function storageUrl(bucket: 'avatar' | 'banner', value: string | null | undefined, entityId: string | null | undefined) {
   if (!SUPABASE_URL) return null;
   if (value) {
@@ -28,7 +30,7 @@ function storageUrl(bucket: 'avatar' | 'banner', value: string | null | undefine
 
 function formatTime(value?: string | null) { return value ? value.slice(0, 5) : '--:--'; }
 
-const amenityItems = (amenities: BarbershopAmenities) => [
+const amenityItems = (amenities: BarbershopAmenities): AmenityItem[] => [
   amenities.wifi ? { label: 'Wi-Fi', Icon: Wifi } : null,
   amenities.wheelchair_accessible ? { label: 'Acesso para cadeira de rodas', Icon: Accessibility } : null,
   amenities.accessible_entrance ? { label: 'Entrada acessível', Icon: DoorOpen } : null,
@@ -43,7 +45,7 @@ const amenityItems = (amenities: BarbershopAmenities) => [
   amenities.water ? { label: 'Água', Icon: GlassWater } : null,
   amenities.pet_friendly ? { label: 'Pet friendly', Icon: Dog } : null,
   amenities.appointment_required ? { label: 'Agendamento obrigatório', Icon: Calendar } : null,
-].filter(Boolean) as { label: string; Icon: typeof Wifi }[];
+].filter((item): item is AmenityItem => Boolean(item));
 
 export default function BarbershopPublicPageV2({ initialData, loyaltyEnabled = false }: { slug: string; loyaltyEnabled?: boolean; initialData: BarbershopPublicDetails }) {
   const shop = initialData as PublicData;
@@ -94,6 +96,7 @@ export default function BarbershopPublicPageV2({ initialData, loyaltyEnabled = f
 
         {loyaltyEnabled && <section className="mt-4 rounded-3xl border border-emerald-400/15 bg-emerald-400/[0.03] p-5 sm:p-6"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-start gap-3"><div className="rounded-xl bg-emerald-400/10 p-2 text-emerald-300"><CheckCircle2 className="size-5" aria-hidden="true" /></div><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-300">Fidelização</p><h2 className="mt-1 text-lg font-semibold">Volta. Acumula. Ganha.</h2><p className="mt-1 text-sm text-zinc-400">Ganha pontos nas tuas visitas e troca-os por recompensas.</p></div></div><Link href={`/barbershops/${encodeURIComponent(shop.slug)}/loyalty`} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-emerald-300 px-4 text-xs font-bold text-zinc-950">Ver fidelização</Link></div></section>}
       </div>
+
       <BookingDrawer shop={{ id: shop.id, barbershop_id: targetId, name: shop.name, slug: shop.slug, city: shop.city || '', address: shop.address || '', price: String(shop.price ?? 0), rating, reviewsCount: shop.reviewsCount, opening_time: shop.opening_time || '', closing_time: shop.closing_time || '', hours: `${formatTime(shop.opening_time)} - ${formatTime(shop.closing_time)}`, distanceKm: 0, reviews: String(shop.reviewsCount), nextSlot: '', tags: shop.tags || [] }} isOpen={bookingOpen} onClose={() => { setBookingOpen(false); setSelectedServiceId(null); }} selectedServiceId={selectedServiceId} />
     </main>
   );
