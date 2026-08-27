@@ -40,7 +40,7 @@ export function SettingsAutomaticBookingPanel({
       if (result.error) {
         toast.error(
           result.error.message ||
-            'Não foi possível carregar as opções automáticas.',
+            'Não foi possível carregar estas opções. Tenta novamente.',
         );
       } else if (result.data) {
         const next = {
@@ -65,7 +65,7 @@ export function SettingsAutomaticBookingPanel({
   async function save() {
     if (!eligible) {
       toast.error(
-        'Esta funcionalidade está disponível apenas nos planos Pro e Enterprise.',
+        'Estas opções estão disponíveis apenas nos planos Pro e Enterprise.',
       );
       return;
     }
@@ -78,12 +78,12 @@ export function SettingsAutomaticBookingPanel({
     setSaving(false);
     if (result.error) {
       toast.error(
-        result.error.message || 'Não foi possível guardar as opções.',
+        result.error.message || 'Não foi possível guardar estas opções.',
       );
       return;
     }
     setInitial({ autoConfirm, autoComplete });
-    toast.success('Automatizações de marcações guardadas.');
+    toast.success('Alterações guardadas.');
   }
 
   if (planLoading || loading) {
@@ -109,16 +109,16 @@ export function SettingsAutomaticBookingPanel({
               className="flex items-center gap-2 text-lg"
             >
               <Sparkles className="size-4 text-violet-300" aria-hidden="true" />
-              Automatização de marcações
+              Marcações automáticas
             </CardTitle>
             <CardDescription className="mt-1 max-w-2xl text-xs leading-5">
-              Poupa trabalho manual com confirmação imediata e conclusão
-              automática depois da hora de fim do serviço.
+              Deixa a Silentra tratar de duas tarefas por ti: confirmar novas
+              marcações e fechá-las automaticamente quando o serviço terminar.
             </CardDescription>
           </div>
           {!eligible && (
             <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-amber-400/20 bg-amber-400/[0.06] px-2.5 py-1 text-[11px] font-medium text-amber-200">
-              <LockKeyhole className="size-3" aria-hidden="true" /> Pro
+              <LockKeyhole className="size-3" aria-hidden="true" /> Pro+
             </span>
           )}
         </div>
@@ -128,18 +128,18 @@ export function SettingsAutomaticBookingPanel({
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="text-sm font-medium">
-                Confirmar marcações automaticamente
+                Confirmar novas marcações automaticamente
               </p>
               <p className="mt-1 text-xs leading-5 text-zinc-500">
-                Novas reservas passam diretamente de pendente para confirmada,
-                sem intervenção manual.
+                Assim que uma nova marcação entrar, fica confirmada sem teres de
+                a abrir manualmente.
               </p>
             </div>
             <Switch
               checked={autoConfirm}
               disabled={!eligible}
               onCheckedChange={setAutoConfirm}
-              aria-label="Confirmar marcações automaticamente"
+              aria-label="Confirmar novas marcações automaticamente"
             />
           </div>
         </div>
@@ -147,25 +147,25 @@ export function SettingsAutomaticBookingPanel({
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="text-sm font-medium">
-                Concluir marcações automaticamente
+                Dar como concluídas automaticamente
               </p>
               <p className="mt-1 text-xs leading-5 text-zinc-500">
-                Depois de terminar o serviço, a marcação passa automaticamente
-                para concluída.
+                Depois da hora prevista para terminar o serviço, a marcação
+                passa automaticamente para concluída.
               </p>
             </div>
             <Switch
               checked={autoComplete}
               disabled={!eligible}
               onCheckedChange={setAutoComplete}
-              aria-label="Concluir marcações automaticamente"
+              aria-label="Dar como concluídas automaticamente"
             />
           </div>
         </div>
         {!eligible && (
           <p className="flex items-center gap-2 text-xs text-zinc-500">
             <Check className="size-3.5 text-emerald-300" aria-hidden="true" />
-            Faz upgrade para Pro ou Enterprise para ativar estas automatizações.
+            Muda para Pro ou Enterprise para ativar estas opções.
           </p>
         )}
         <div className="flex justify-end border-t border-white/10 pt-4">
@@ -176,7 +176,7 @@ export function SettingsAutomaticBookingPanel({
             className="min-h-11 rounded-xl"
           >
             {saving ? <Spinner className="mr-2 size-4" /> : null}
-            {saving ? 'A guardar…' : 'Guardar automatizações'}
+            {saving ? 'A guardar…' : 'Guardar alterações'}
           </Button>
         </div>
       </CardContent>
