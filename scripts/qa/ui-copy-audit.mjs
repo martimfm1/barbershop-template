@@ -1,12 +1,10 @@
-import { readFile } from 'node:fs/promises';
-import { readdir } from 'node:fs/promises';
-import { join, relative } from 'node:path';
+import { readFile, readdir } from 'node:fs/promises';
+import { extname, join, relative } from 'node:path';
 
 const ROOTS = ['app', 'components', 'context'];
-const EXTENSIONS = new Set(['.tsx', '.ts', '.jsx', '.js']);
+const EXTENSIONS = new Set(['.tsx', '.jsx']);
 
-// These terms are useful internally but should almost never be exposed in the
-// normal product UI. The audit looks only at quoted user-facing strings.
+// Terms that should not appear in ordinary user-facing UI copy.
 const FORBIDDEN = [
   /\bRPC\b/i,
   /\bendpoint\b/i,
@@ -23,26 +21,15 @@ const FORBIDDEN = [
   /\bcommand center\b/i,
 ];
 
-const TECHNICAL_PATHS = [
-  '/api/',
-  '/lib/',
-  '/scripts/',
-  '/supabase/',
-  '/services/',
-  '/docs/',
-];
-
-const USER_STRING = /(['"`])([\s\S]*?)\1/g;
-
 async function walk(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = [];
 
   for (const entry of entries) {
-    if (entry.name.startsWith('.')) continue;
-    const path = join(directory, entry.name);
-    if (entry.isDirectory()) files.push(...(await walk(path)));
-    else if (EXTENSIONS.has(entry.name.slice(entry.name.lastIndexOf('.')))) files.push(path);
+    if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+    const filePath = join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...(await walk(filePath)));
+    else if (EXTENSIONS.has(extname(entry.name))) files.push(filePath);
   }
 
   return files;
@@ -53,19 +40,22 @@ for (const root of ROOTS) files.push(...(await walk(root)));
 
 const findings = [];
 for (const file of files) {
-  const relativePath = `/${relative('.', file).replaceAll('\\', '/')}`;
-  if (TECHNICAL_PATHS.some((path) => relativePath.includes(path))) continue;
+  const normalizedPath = `/${relative('.', file).replaceAll('\\', '/')}`;
+
+  // Translation sources are reviewed separately; API/server implementation
+  // strings are intentionally outside this user-facing audit.
+  if (normalizedPath.includes('/locales/')) continue;
 
   const source = await readFile(file, 'utf8');
-  for (const match of source.matchAll(USER_STRING)) {
-    const value = match[2];
+  for (const match of source.matchAll(/(['"`])([\s\S]*?)\1/g)) {
+    const value = match[2].trim();
     if (value.length < 4 || !/[A-Za-zÀ-ÿ]/.test(value)) continue;
 
     const rule = FORBIDDEN.find((pattern) => pattern.test(value));
     if (!rule) continue;
 
     const line = source.slice(0, match.index).split('\n').length;
-    findings.push(`${relativePath}:${line}: ${value.trim()}`);
+    findings.push(`${normalizedPath}:${line}: ${value}`);
   }
 }
 
