@@ -1,4 +1,4 @@
 export {
-  BookingDrawerBarberFirst as default,
-  BookingDrawerBarberFirst as BookingDrawer,
-} from './booking-drawer-barber-first';
+  BookingDrawerFinal as default,
+  BookingDrawerFinal as BookingDrawer,
+} from './booking-drawer-final';
