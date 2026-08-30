@@ -82,6 +82,14 @@ begin
     raise exception 'At least one product is required';
   end if;
 
+  if not exists (
+    select 1 from public.barbershops
+    where id = p_barbershop_id
+      and is_public_in_directory is not false
+  ) then
+    raise exception 'Marketplace unavailable';
+  end if;
+
   select created_by into v_created_by
   from public.barbershops
   where id = p_barbershop_id;
@@ -149,4 +157,5 @@ begin
 end;
 $$;
 
+revoke all on function public.create_marketplace_order_atomic(uuid,text,text,text,text,jsonb) from public, anon, authenticated;
 grant execute on function public.create_marketplace_order_atomic(uuid,text,text,text,text,jsonb) to service_role;
