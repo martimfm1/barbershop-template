@@ -7,10 +7,28 @@ import {
   currentTermsAddendum,
 } from '@/lib/legal/current-legal-addendum';
 
+const CANONICAL_URL = 'https://barbers.silentra.me/terms';
+
 export const metadata: Metadata = {
   title: 'Termos e Condições | Silentra for Barbers',
   description:
     'Termos de utilização da plataforma Silentra for Barbers, incluindo acesso, reservas, responsabilidade, comunicação e suporte.',
+  alternates: {
+    canonical: CANONICAL_URL,
+  },
+  openGraph: {
+    title: 'Termos e Condições | Silentra for Barbers',
+    description:
+      'Termos de utilização da plataforma Silentra for Barbers, incluindo acesso, reservas, responsabilidade, comunicação e suporte.',
+    url: CANONICAL_URL,
+    siteName: 'Silentra',
+    locale: 'pt_PT',
+    type: 'website',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 const currentTerms = {
