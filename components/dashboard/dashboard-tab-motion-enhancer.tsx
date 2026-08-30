@@ -108,7 +108,9 @@ export function DashboardTabMotionEnhancer() {
 
     const scan = () => {
       const tabLists = Array.from(
-        document.querySelectorAll<HTMLElement>('[role="tablist"]'),
+        document.querySelectorAll<HTMLElement>(
+          '[role="tablist"]:not([data-dashboard-tab-motion="native"])',
+        ),
       );
 
       tabLists.forEach((tabList) => {
