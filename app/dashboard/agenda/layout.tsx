@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -14,7 +15,6 @@ export default function AgendaLayout({
   const searchParams = useSearchParams();
   const reduceMotion = useReducedMotion();
   const calendar = searchParams.get('view') === 'calendar';
-  const viewKey = calendar ? 'calendar' : 'lines';
 
   return (
     <div className="relative min-w-0">
@@ -36,11 +36,7 @@ export default function AgendaLayout({
             {!calendar ? (
               <motion.span
                 layoutId="agenda-view-pill"
-                transition={
-                  reduceMotion
-                    ? { duration: 0 }
-                    : { type: 'spring', stiffness: 460, damping: 32, mass: 0.7 }
-                }
+                transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 460, damping: 32, mass: 0.7 }}
                 className="absolute inset-0 -z-10 rounded-xl border border-white/[0.1] bg-white/[0.09] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_8px_24px_rgba(0,0,0,0.18)]"
                 aria-hidden="true"
               />
@@ -60,11 +56,7 @@ export default function AgendaLayout({
             {calendar ? (
               <motion.span
                 layoutId="agenda-view-pill"
-                transition={
-                  reduceMotion
-                    ? { duration: 0 }
-                    : { type: 'spring', stiffness: 460, damping: 32, mass: 0.7 }
-                }
+                transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 460, damping: 32, mass: 0.7 }}
                 className="absolute inset-0 -z-10 rounded-xl border border-white/[0.1] bg-white/[0.09] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_8px_24px_rgba(0,0,0,0.18)]"
                 aria-hidden="true"
               />
@@ -82,9 +74,9 @@ export default function AgendaLayout({
             initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 18, scale: 0.985, filter: 'blur(6px)' }}
             animate={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0, scale: 1, filter: 'blur(0px)' }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -14, scale: 0.99, filter: 'blur(3px)' }}
-            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: reduceMotion ? 0.1 : 0.32, ease: [0.22, 1, 0.36, 1] }}
           >
-            <AgendaCalendarStage />
+            <AgendaCalendarStage reduceMotion={Boolean(reduceMotion)} />
           </motion.div>
         ) : (
           <motion.div
@@ -92,7 +84,7 @@ export default function AgendaLayout({
             initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -18, scale: 0.985, filter: 'blur(6px)' }}
             animate={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0, scale: 1, filter: 'blur(0px)' }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 14, scale: 0.99, filter: 'blur(3px)' }}
-            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: reduceMotion ? 0.1 : 0.32, ease: [0.22, 1, 0.36, 1] }}
           >
             {children}
           </motion.div>
@@ -102,6 +94,38 @@ export default function AgendaLayout({
   );
 }
 
-function AgendaCalendarStage() {
-  return <AgendaCalendarView />;
+function AgendaCalendarStage({ reduceMotion }: { reduceMotion: boolean }) {
+  const [showSkeleton, setShowSkeleton] = useState(true);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setShowSkeleton(false), reduceMotion ? 180 : 520);
+    return () => window.clearTimeout(timeout);
+  }, [reduceMotion]);
+
+  return (
+    <div className="relative">
+      <AnimatePresence initial={false} mode="wait">
+        {showSkeleton ? (
+          <motion.div
+            key="skeleton"
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.995 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.995, filter: 'blur(3px)' }}
+            transition={{ duration: reduceMotion ? 0.1 : 0.2, ease: 'easeOut' }}
+          >
+            <AgendaCalendarSkeleton />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="calendar-content"
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+            animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+            transition={{ duration: reduceMotion ? 0.1 : 0.24, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <AgendaCalendarView />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 }
