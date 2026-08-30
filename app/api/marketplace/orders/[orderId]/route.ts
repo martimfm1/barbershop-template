@@ -10,7 +10,21 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ or
     const { orderId } = await params;
     const body = (await request.json().catch(() => null)) as { status?: unknown } | null;
     const status = typeof body?.status === 'string' ? body.status : '';
-    if (!STATUSES.includes(status as Status)) return NextResponse.json({ error: 'Estado inválido.' }, { status: 400 });
+    if (!STATUSES.includes(status as Status)) {
+      return NextResponse.json({ error: 'Estado inválido.' }, { status: 400 });
+    }
+
+    if (status === 'cancelled') {
+      const { data, error } = await admin.rpc('cancel_marketplace_order_atomic', {
+        p_order_id: orderId,
+        p_barbershop_id: barbershopId,
+      });
+      if (error || !data) {
+        const message = error?.message ?? 'Não foi possível cancelar a encomenda.';
+        return NextResponse.json({ error: message }, { status: 409 });
+      }
+      return NextResponse.json({ order: data });
+    }
 
     const { data, error } = await admin
       .from('marketplace_orders')
