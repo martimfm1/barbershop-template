@@ -1,26 +1,43 @@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-export function StatusBadge({ status }: { status: string }) {
-  const styles = {
-    pending: 'text-amber-200 bg-amber-500/10 hover:bg-amber-500/20',
-    scheduled: 'text-blue-200 bg-blue-500/10 hover:bg-blue-500/20',
-    completed: 'text-emerald-200 bg-emerald-500/10 hover:bg-emerald-500/20',
-    cancelled: 'text-red-200 bg-red-500/10 hover:bg-red-500/20',
-  } as const;
+const statusConfig = {
+  pending: {
+    label: 'Por confirmar',
+    className: 'border-amber-400/20 bg-amber-400/[0.08] text-amber-200',
+    dot: 'bg-amber-300',
+  },
+  scheduled: {
+    label: 'Confirmada',
+    className: 'border-sky-400/20 bg-sky-400/[0.08] text-sky-200',
+    dot: 'bg-sky-300',
+  },
+  completed: {
+    label: 'Concluída',
+    className: 'border-emerald-400/20 bg-emerald-400/[0.08] text-emerald-200',
+    dot: 'bg-emerald-300',
+  },
+  cancelled: {
+    label: 'Cancelada',
+    className: 'border-rose-400/20 bg-rose-400/[0.08] text-rose-200',
+    dot: 'bg-rose-300',
+  },
+} as const;
 
-  const displayStatus = status.charAt(0).toUpperCase() + status.slice(1);
+export function StatusBadge({ status }: { status: string }) {
+  const config = statusConfig[status as keyof typeof statusConfig];
 
   return (
     <Badge
       variant="ghost"
       className={cn(
-        'px-3 py-1 font-semibold',
-        styles[status as keyof typeof styles] ??
-          'text-zinc-300 bg-white/5 hover:bg-white/10',
+        'inline-flex items-center gap-1.5 border px-2.5 py-1 text-[11px] font-semibold',
+        config?.className ?? 'border-white/10 bg-white/[0.04] text-zinc-300',
       )}
+      aria-label={`Estado: ${config?.label ?? status}`}
     >
-      {displayStatus}
+      <span className={cn('size-1.5 rounded-full', config?.dot ?? 'bg-zinc-500')} aria-hidden="true" />
+      {config?.label ?? status}
     </Badge>
   );
 }
