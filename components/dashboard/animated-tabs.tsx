@@ -99,10 +99,7 @@ export function AnimatedTabs({
   layoutId?: string;
 }) {
   return (
-    <nav
-      aria-label="Secções"
-      className={cn(containerClasses, className)}
-    >
+    <nav aria-label="Secções" className={cn(containerClasses, className)}>
       {tabs.map((tab) => {
         const active = activeHref === tab.href;
 
@@ -152,6 +149,7 @@ export function AnimatedTabList<T extends string>({
   return (
     <div
       role="tablist"
+      data-dashboard-tab-motion="native"
       aria-label={ariaLabel}
       className={cn(containerClasses, className)}
     >
