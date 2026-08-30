@@ -1,20 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CalendarX2, Check, Clock3, Save } from 'lucide-react';
-import { toast } from 'sonner';
-import { useBarbershop } from '@/context/BarbershopContext';
-import { barbershopService } from '@/app/dashboard/_services/barbershop.service';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { createPortal } from 'react-dom';
+import { CalendarX2, Check, Clock3 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
 
 const PRESETS = [0, 2, 6, 12, 24, 48, 72] as const;
 
@@ -24,172 +13,145 @@ function formatHours(hours: number) {
   return `${hours} horas`;
 }
 
+function setNativeInputValue(input: HTMLInputElement, value: number) {
+  const setter = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    'value',
+  )?.set;
+  setter?.call(input, String(value));
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
 export function SettingsCancellationPolicyPanel() {
-  const { barbershopId } = useBarbershop();
+  const [target, setTarget] = useState<HTMLElement | null>(null);
+  const [sourceInput, setSourceInput] = useState<HTMLInputElement | null>(null);
   const [hours, setHours] = useState(24);
-  const [initialHours, setInitialHours] = useState(24);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!barbershopId) return;
-    let active = true;
-    void barbershopService.getConfig(barbershopId).then((result) => {
-      if (!active) return;
-      if (result.error) {
-        toast.error(
-          result.error.message ||
-            'Não foi possível carregar a regra de cancelamento.',
-        );
-      } else {
-        const next = Math.max(
-          0,
-          Math.min(
-            720,
-            Number(result.data?.time_limit_cancellation_hours ?? 24),
-          ),
-        );
-        setHours(next);
-        setInitialHours(next);
-      }
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, [barbershopId]);
-
-  const dirty = hours !== initialHours;
-  const invalid = !Number.isInteger(hours) || hours < 0 || hours > 720;
-
-  async function save() {
-    if (!barbershopId || !dirty || invalid) return;
-    setSaving(true);
-    const result = await barbershopService.updateConfig(barbershopId, {
-      time_limit_cancellation_hours: hours,
-    });
-    setSaving(false);
-    if (result.error) {
-      toast.error(
-        result.error.message ||
-          'Não foi possível guardar a regra de cancelamento.',
+    const findTarget = () => {
+      const input = document.querySelector<HTMLInputElement>(
+        '#settings-hours input[type="number"][min="0"][max="720"]',
       );
-      return;
-    }
-    const next = Math.max(
-      0,
-      Math.min(
-        720,
-        Number(result.data?.time_limit_cancellation_hours ?? hours),
-      ),
-    );
+      if (!input || !input.parentElement) return false;
+
+      const container = input.parentElement;
+      const initialValue = Number(input.value);
+      setHours(Number.isFinite(initialValue) ? initialValue : 24);
+      setSourceInput(input);
+      setTarget(container);
+
+      Array.from(container.children).forEach((child) => {
+        if (child instanceof HTMLElement) {
+          child.style.display = 'none';
+        }
+      });
+      return true;
+    };
+
+    if (findTarget()) return;
+
+    const observer = new MutationObserver(() => {
+      if (findTarget()) observer.disconnect();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!sourceInput) return;
+    const sync = () => {
+      const next = Number(sourceInput.value);
+      if (Number.isFinite(next)) setHours(next);
+    };
+    sourceInput.addEventListener('input', sync);
+    sourceInput.addEventListener('change', sync);
+    return () => {
+      sourceInput.removeEventListener('input', sync);
+      sourceInput.removeEventListener('change', sync);
+    };
+  }, [sourceInput]);
+
+  if (!target || !sourceInput) return null;
+
+  const invalid = !Number.isInteger(hours) || hours < 0 || hours > 720;
+  const updateHours = (next: number) => {
     setHours(next);
-    setInitialHours(next);
-    toast.success('Regra de cancelamento atualizada.');
-  }
+    setNativeInputValue(sourceInput, next);
+  };
 
-  if (loading) {
-    return (
-      <Card className="mt-6 border-white/10 bg-black/30">
-        <CardContent className="flex min-h-36 items-center justify-center">
-          <Spinner className="size-6" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card
-      className="mt-6 border-white/10 bg-white/[0.02] backdrop-blur-md"
-      aria-labelledby="cancellation-policy-title"
-    >
-      <CardHeader>
-        <CardTitle
-          id="cancellation-policy-title"
-          className="flex items-center gap-2"
-        >
-          <CalendarX2 className="size-4 text-amber-300" aria-hidden="true" />
-          Regra de cancelamento
-        </CardTitle>
-        <CardDescription>
-          Define com quantas horas de antecedência o cliente pode cancelar ou
-          reagendar uma marcação.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div className="grid gap-2">
-            <label
-              htmlFor="settings-cancellation-hours"
-              className="text-sm font-medium"
-            >
-              Horas antes da marcação
-            </label>
-            <Input
-              id="settings-cancellation-hours"
-              type="number"
-              min={0}
-              max={720}
-              step={1}
-              value={hours}
-              onChange={(event) => setHours(Number(event.target.value))}
-              className="min-h-12 rounded-xl border-white/10 bg-white/[0.04] text-lg"
-              aria-invalid={invalid}
-            />
-            {invalid ? (
-              <p className="text-xs text-red-300">
-                Usa um número inteiro entre 0 e 720 horas.
-              </p>
-            ) : (
-              <p className="text-xs leading-5 text-zinc-600">
-                0 permite cancelar até à hora marcada.
-              </p>
-            )}
-          </div>
-          <div className="rounded-2xl border border-amber-400/15 bg-amber-400/[0.04] px-5 py-4 sm:min-w-48">
-            <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
-              <Clock3 className="size-3.5" aria-hidden="true" /> Regra atual
-            </p>
-            <p className="mt-2 text-lg font-semibold text-white">
-              {formatHours(hours)}
-            </p>
-          </div>
-        </div>
-
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-            Atalhos
+  return createPortal(
+    <div className="space-y-6" data-cancellation-policy-panel>
+      <div className="flex items-start gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-400/[0.06] text-amber-300">
+          <CalendarX2 className="size-4" aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-zinc-100">Prazo de cancelamento</p>
+          <p className="mt-1 max-w-2xl text-xs leading-5 text-zinc-600">
+            Define com quantas horas de antecedência o cliente pode cancelar ou reagendar uma marcação.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {PRESETS.map((preset) => {
-              const active = hours === preset;
-              return (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => setHours(preset)}
-                  className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${active ? 'border-amber-400/30 bg-amber-400/10 text-amber-100' : 'border-white/10 bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06]'}`}
-                >
-                  {active && <Check className="size-3.5" aria-hidden="true" />}
-                  {formatHours(preset)}
-                </button>
-              );
-            })}
-          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+        <div className="grid gap-2">
+          <label htmlFor="settings-cancellation-hours-enhanced" className="text-sm font-medium text-zinc-300">
+            Horas antes da marcação
+          </label>
+          <Input
+            id="settings-cancellation-hours-enhanced"
+            type="number"
+            min={0}
+            max={720}
+            step={1}
+            value={hours}
+            onChange={(event) => updateHours(Number(event.target.value))}
+            className="min-h-12 rounded-xl border-white/10 bg-white/[0.04] text-lg tabular-nums"
+            aria-invalid={invalid}
+          />
+          {invalid ? (
+            <p className="text-xs text-red-300">Usa um número inteiro entre 0 e 720 horas.</p>
+          ) : (
+            <p className="text-xs leading-5 text-zinc-600">0 permite cancelar até à hora marcada.</p>
+          )}
         </div>
 
-        <div className="flex justify-end border-t border-white/10 pt-4">
-          <Button
-            type="button"
-            onClick={() => void save()}
-            disabled={!dirty || saving || invalid}
-            className="min-h-11 rounded-xl sm:min-w-44"
-          >
-            {saving ? <Spinner className="mr-2 size-4" /> : null}
-            {saving ? 'A guardar…' : 'Guardar Alterações'}
-          </Button>
+        <div className="rounded-2xl border border-amber-400/15 bg-amber-400/[0.04] px-5 py-4 sm:min-w-52">
+          <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+            <Clock3 className="size-3.5" aria-hidden="true" /> Regra atual
+          </p>
+          <p className="mt-2 text-lg font-semibold text-white">{formatHours(hours)}</p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Atalhos</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {PRESETS.map((preset) => {
+            const active = hours === preset;
+            return (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => updateHours(preset)}
+                className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${active ? 'border-amber-400/30 bg-amber-400/10 text-amber-100' : 'border-white/10 bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200'}`}
+                aria-pressed={active}
+              >
+                {active ? <Check className="size-3.5" aria-hidden="true" /> : null}
+                {formatHours(preset)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="border-t border-white/10 pt-4">
+        <p className="text-xs leading-5 text-zinc-600">
+          Esta alteração é guardada juntamente com as restantes definições no botão <span className="font-medium text-zinc-400">Guardar alterações</span>.
+        </p>
+      </div>
+    </div>,
+    target,
   );
 }
