@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const db = createAdminClient();
   let query = db
     .from('inventory_products')
-    .select('id,barbershop_id,name,description,category,image_url,unit_price,compare_at_price,stock_quantity,marketplace_featured,barbershops(name,slug,is_public_in_directory)')
+    .select('id,barbershop_id,name,description,category,image_url,unit_price,compare_at_price,stock_quantity,marketplace_featured,barbershops(name,slug,is_public_in_directory,marketplace_sales_mode)')
     .eq('active', true)
     .eq('marketplace_visible', true)
     .gt('stock_quantity', 0)
@@ -36,8 +36,9 @@ export async function GET(request: Request) {
 
   const visible = (data ?? []).filter((item) => {
     const relation = Array.isArray(item.barbershops) ? item.barbershops[0] : item.barbershops;
-    return relation?.is_public_in_directory !== false;
+    return relation?.is_public_in_directory !== false && relation?.marketplace_sales_mode === 'physical_and_online';
   });
+
   const categories = [...new Set(visible.map((item) => item.category).filter(Boolean))].sort();
   const shops = [...new Map(
     visible
