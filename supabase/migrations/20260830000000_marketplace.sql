@@ -76,10 +76,15 @@ declare
   v_quantity numeric;
   v_subtotal numeric(12,2) := 0;
   v_item_total numeric(12,2);
+  v_created_by uuid;
 begin
   if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then
     raise exception 'At least one product is required';
   end if;
+
+  select created_by into v_created_by
+  from public.barbershops
+  where id = p_barbershop_id;
 
   insert into public.marketplace_orders (
     barbershop_id, customer_name, customer_email, customer_phone, notes
@@ -126,11 +131,13 @@ begin
         updated_at = now()
     where id = v_product.id;
 
-    insert into public.inventory_movements (
-      product_id, barbershop_id, quantity, reason, reference_id, created_by
-    ) values (
-      v_product.id, p_barbershop_id, -v_quantity, 'sale', v_order.id, nullif(auth.uid(), null)
-    );
+    if v_created_by is not null then
+      insert into public.inventory_movements (
+        product_id, barbershop_id, quantity, reason, reference_id, created_by
+      ) values (
+        v_product.id, p_barbershop_id, -v_quantity, 'sale', v_order.id, v_created_by
+      );
+    end if;
   end loop;
 
   update public.marketplace_orders
@@ -139,8 +146,6 @@ begin
   returning * into v_order;
 
   return v_order;
-exception when others then
-  raise;
 end;
 $$;
 
