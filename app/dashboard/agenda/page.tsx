@@ -2,7 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { CalendarDays, CalendarOff, Plus, Sparkles } from 'lucide-react';
+import {
+  CalendarDays,
+  CalendarOff,
+  CheckCircle2,
+  Clock3,
+  Plus,
+  Search,
+  Sparkles,
+  Users,
+  XCircle,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useBarbershop } from '@/context/BarbershopContext';
 import type { Appointment, Client, Professional, Service } from '@/types';
@@ -14,10 +24,30 @@ import { BookingForm } from '@/app/dashboard/_components/cards/BookingFormCard';
 import { BlockScheduleForm } from '@/app/dashboard/_components/cards/BlockFormCard';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { AppointmentDetailDialog } from '@/components/dashboard/appointment-detail-dialog';
 import { AppointmentMobileCard } from '@/components/dashboard/appointment-mobile-card';
 import { AppointmentsTable } from '@/components/dashboard/appointments-table';
+
+const STATUS_FILTERS = [
+  { id: 'all', label: 'Todas' },
+  { id: 'pending', label: 'Por confirmar' },
+  { id: 'scheduled', label: 'Confirmadas' },
+  { id: 'completed', label: 'Concluídas' },
+  { id: 'cancelled', label: 'Canceladas' },
+] as const;
+
+type StatusFilter = (typeof STATUS_FILTERS)[number]['id'];
+
+function sameLocalDay(value: string, reference: Date) {
+  const date = new Date(value);
+  return (
+    date.getFullYear() === reference.getFullYear() &&
+    date.getMonth() === reference.getMonth() &&
+    date.getDate() === reference.getDate()
+  );
+}
 
 export default function AgendaPage() {
   const { barbershopId, loading: isLoadingBarbershop } = useBarbershop();
@@ -28,8 +58,10 @@ export default function AgendaPage() {
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showAddBlockForm, setShowAddBlockForm] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] =
-    useState<Appointment | null>(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [todayOnly, setTodayOnly] = useState(false);
 
   const fetchInitialData = useCallback(async () => {
     if (!barbershopId) return;
@@ -60,7 +92,7 @@ export default function AgendaPage() {
 
   useEffect(() => {
     if (isLoadingBarbershop) return;
-    if (barbershopId) queueMicrotask(() => void fetchInitialData());
+    if (barbershopId) void fetchInitialData();
   }, [barbershopId, fetchInitialData, isLoadingBarbershop]);
 
   const {
@@ -127,25 +159,54 @@ export default function AgendaPage() {
     setBookingFormData,
   ]);
 
-  const todayAppointments = useMemo(() => {
-    const today = new Date();
-    return appointments.filter((appointment) => {
-      const date = new Date(appointment.date_hour);
-      return (
-        date.getFullYear() === today.getFullYear() &&
-        date.getMonth() === today.getMonth() &&
-        date.getDate() === today.getDate()
-      );
-    });
-  }, [appointments]);
+  const now = useMemo(() => new Date(), []);
+  const todayAppointments = useMemo(
+    () => appointments.filter((appointment) => sameLocalDay(appointment.date_hour, now)),
+    [appointments, now],
+  );
+
+  const metrics = useMemo(() => {
+    const upcomingToday = todayAppointments.filter(
+      (appointment) =>
+        new Date(appointment.date_hour).getTime() >= Date.now() &&
+        appointment.status !== 'cancelled' &&
+        appointment.status !== 'completed',
+    ).length;
+    return {
+      today: todayAppointments.length,
+      pending: appointments.filter((item) => item.status === 'pending').length,
+      scheduled: appointments.filter((item) => item.status === 'scheduled').length,
+      completed: appointments.filter((item) => item.status === 'completed').length,
+      cancelled: appointments.filter((item) => item.status === 'cancelled').length,
+      upcomingToday,
+    };
+  }, [appointments, todayAppointments]);
 
   const orderedAppointments = useMemo(
     () =>
-      [...appointments].sort(
-        (a, b) =>
-          new Date(a.date_hour).getTime() - new Date(b.date_hour).getTime(),
-      ),
-    [appointments],
+      [...appointments]
+        .filter((appointment) => {
+          if (todayOnly && !sameLocalDay(appointment.date_hour, now)) return false;
+          if (statusFilter !== 'all' && appointment.status !== statusFilter) return false;
+          const term = search.trim().toLocaleLowerCase('pt-PT');
+          if (!term) return true;
+          const values = [
+            appointment.manual_name,
+            appointment.manual_phone,
+            appointment.manual_email,
+            appointment.users?.name_complete,
+            appointment.users?.num_phone,
+            appointment.users?.email,
+            appointment.services?.name,
+            appointment.professionals?.name,
+          ];
+          return values.some((value) => value?.toLowerCase().includes(term));
+        })
+        .sort(
+          (a, b) =>
+            new Date(a.date_hour).getTime() - new Date(b.date_hour).getTime(),
+        ),
+    [appointments, now, search, statusFilter, todayOnly],
   );
 
   const actionProps = {
@@ -175,24 +236,16 @@ export default function AgendaPage() {
               <div>
                 <h1 className="silentra-page-title">Agenda</h1>
                 <p className="silentra-page-description">
-                  Vê o que está marcado, resolve o próximo passo e mantém o teu
-                  dia organizado.
+                  Vê o que está marcado, resolve o próximo passo e mantém o teu dia organizado.
                 </p>
               </div>
             </div>
             {!loadingInitial && (
               <p className="mt-3 text-xs text-zinc-500">
-                <span className="font-semibold text-zinc-200">
-                  {todayAppointments.length}
-                </span>{' '}
-                {todayAppointments.length === 1
-                  ? 'marcação hoje'
-                  : 'marcações hoje'}{' '}
-                ·{' '}
-                <span className="font-semibold text-zinc-200">
-                  {appointments.length}
-                </span>{' '}
-                no total
+                <span className="font-semibold text-zinc-200">{metrics.today}</span>{' '}
+                {metrics.today === 1 ? 'marcação hoje' : 'marcações hoje'} ·{' '}
+                <span className="font-semibold text-amber-200">{metrics.pending}</span>{' '}
+                por confirmar
               </p>
             )}
           </div>
@@ -206,20 +259,82 @@ export default function AgendaPage() {
               <Plus className="size-4" aria-hidden="true" />
               {showAddForm ? 'Fechar marcação' : 'Nova marcação'}
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowAddBlockForm((value) => !value)}
-            >
+            <Button variant="outline" onClick={() => setShowAddBlockForm((value) => !value)}>
               <CalendarOff className="size-4" aria-hidden="true" />
               {showAddBlockForm ? 'Fechar bloqueio' : 'Bloquear horário'}
-            </Button>
-            <Button asChild variant="ghost">
-              <Link href="/dashboard">Voltar</Link>
             </Button>
           </div>
         </header>
 
-        <div className="space-y-4">
+        <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {[
+            ['Hoje', metrics.today, CalendarDays, 'text-emerald-300'],
+            ['Próximas hoje', metrics.upcomingToday, Clock3, 'text-sky-300'],
+            ['Por confirmar', metrics.pending, Clock3, 'text-amber-300'],
+            ['Concluídas', metrics.completed, CheckCircle2, 'text-violet-300'],
+            ['Canceladas', metrics.cancelled, XCircle, 'text-rose-300'],
+          ].map(([label, value, Icon, iconClass]) => {
+            const MetricIcon = Icon as typeof CalendarDays;
+            return (
+              <Card key={label as string} className="border-white/10 bg-white/[0.025] backdrop-blur-md">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className={`flex size-9 items-center justify-center rounded-xl bg-white/[0.04] ${iconClass}`}>
+                      <MetricIcon className="size-4" aria-hidden="true" />
+                    </span>
+                    <span className="text-2xl font-semibold tracking-tight text-zinc-50">{value as number}</span>
+                  </div>
+                  <p className="mt-3 text-xs font-medium text-zinc-400">{label as string}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </section>
+
+        <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-white/[0.075] bg-black/20 p-3 backdrop-blur-xl lg:flex-row lg:items-center">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-600" aria-hidden="true" />
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Pesquisar cliente, serviço, barbeiro ou contacto"
+              className="min-h-11 rounded-xl border-white/10 bg-white/[0.03] pl-9"
+              aria-label="Pesquisar na agenda"
+            />
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-0.5" role="tablist" aria-label="Estado das marcações">
+            {STATUS_FILTERS.map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                role="tab"
+                aria-selected={statusFilter === filter.id}
+                onClick={() => setStatusFilter(filter.id)}
+                className={`min-h-10 shrink-0 rounded-xl border px-3 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
+                  statusFilter === filter.id
+                    ? 'border-emerald-400/30 bg-emerald-400/[0.1] text-emerald-200'
+                    : 'border-white/10 bg-white/[0.02] text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-300'
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setTodayOnly((value) => !value)}
+            aria-pressed={todayOnly}
+            className={`min-h-10 shrink-0 rounded-xl border px-3 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
+              todayOnly
+                ? 'border-sky-400/30 bg-sky-400/[0.08] text-sky-200'
+                : 'border-white/10 bg-white/[0.02] text-zinc-500 hover:bg-white/[0.05]'
+            }`}
+          >
+            Apenas hoje
+          </button>
+        </div>
+
+        <div className="mt-4 space-y-4">
           {showAddForm && (
             <section className="silentra-section-block p-4 sm:p-6">
               <BookingForm
@@ -251,43 +366,28 @@ export default function AgendaPage() {
             </section>
           )}
 
-          <section
-            className="silentra-section-block overflow-hidden"
-            aria-labelledby="agenda-list-title"
-          >
+          <section className="silentra-section-block overflow-hidden" aria-labelledby="agenda-list-title">
             <div className="flex flex-col gap-3 border-b border-white/[0.075] p-4 sm:flex-row sm:items-end sm:justify-between sm:px-6 sm:py-5">
               <div>
                 <p className="silentra-eyebrow mb-0">Hoje e próximos</p>
-                <h2
-                  id="agenda-list-title"
-                  className="mt-1 text-xl font-semibold tracking-[-0.03em] text-zinc-50 sm:text-2xl"
-                >
+                <h2 id="agenda-list-title" className="mt-1 text-xl font-semibold tracking-[-0.03em] text-zinc-50 sm:text-2xl">
                   Marcações
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-zinc-500">
-                  As mais próximas aparecem primeiro para encontrares
-                  rapidamente o que exige atenção.
+                  Pesquisa, filtra e abre rapidamente a marcação que precisa da tua atenção.
                 </p>
               </div>
-              {!loadingInitial && orderedAppointments.length > 0 && (
+              {!loadingInitial && (
                 <span className="silentra-pill w-fit border border-white/10 bg-white/[0.035] px-3 py-1.5 text-xs font-medium text-zinc-400">
-                  {orderedAppointments.length}{' '}
-                  {orderedAppointments.length === 1 ? 'marcação' : 'marcações'}
+                  {orderedAppointments.length} resultado{orderedAppointments.length === 1 ? '' : 's'}
                 </span>
               )}
             </div>
 
             {loadingInitial ? (
-              <div
-                className="space-y-3 p-4 sm:p-6"
-                role="status"
-                aria-label="A carregar marcações"
-              >
+              <div className="space-y-3 p-4 sm:p-6" role="status" aria-label="A carregar marcações">
                 {[0, 1, 2, 3].map((index) => (
-                  <div
-                    key={index}
-                    className="rounded-2xl border border-white/[0.055] bg-white/[0.02] p-4"
-                  >
+                  <div key={index} className="rounded-2xl border border-white/[0.055] bg-white/[0.02] p-4">
                     <Skeleton className="h-4 w-32 bg-white/[0.07]" />
                     <Skeleton className="mt-3 h-4 w-48 bg-white/[0.07]" />
                     <Skeleton className="mt-4 h-9 w-full bg-white/[0.07]" />
@@ -300,19 +400,33 @@ export default function AgendaPage() {
                   <Sparkles className="size-5" aria-hidden="true" />
                 </div>
                 <h2 className="mt-4 text-base font-semibold text-zinc-100">
-                  A tua agenda está pronta para receber a primeira marcação.
+                  {search || statusFilter !== 'all' || todayOnly
+                    ? 'Não encontrámos marcações com estes filtros.'
+                    : 'A tua agenda está pronta para receber a primeira marcação.'}
                 </h2>
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">
-                  Não precisas de configurar tudo antes de começar. Cria uma
-                  marcação agora e adiciona o resto à medida que precisares.
+                  {search || statusFilter !== 'all' || todayOnly
+                    ? 'Experimenta limpar a pesquisa ou escolher outro estado.'
+                    : 'Cria uma marcação agora e adiciona o resto à medida que precisares.'}
                 </p>
-                <Button
-                  onClick={() => setShowAddForm(true)}
-                  className="mt-5 bg-zinc-50 text-zinc-950 hover:bg-white"
-                >
-                  <Plus className="size-4" aria-hidden="true" />
-                  Criar primeira marcação
-                </Button>
+                {search || statusFilter !== 'all' || todayOnly ? (
+                  <Button
+                    variant="outline"
+                    className="mt-5"
+                    onClick={() => {
+                      setSearch('');
+                      setStatusFilter('all');
+                      setTodayOnly(false);
+                    }}
+                  >
+                    Limpar filtros
+                  </Button>
+                ) : (
+                  <Button onClick={() => setShowAddForm(true)} className="mt-5 bg-zinc-50 text-zinc-950 hover:bg-white">
+                    <Plus className="size-4" aria-hidden="true" />
+                    Criar primeira marcação
+                  </Button>
+                )}
               </div>
             ) : (
               <>
@@ -327,15 +441,18 @@ export default function AgendaPage() {
                   ))}
                 </div>
                 <div className="hidden md:block">
-                  <AppointmentsTable
-                    appointments={orderedAppointments}
-                    onDetails={setSelectedAppointment}
-                    {...actionProps}
-                  />
+                  <AppointmentsTable appointments={orderedAppointments} onDetails={setSelectedAppointment} {...actionProps} />
                 </div>
               </>
             )}
           </section>
+
+          {!loadingInitial && appointments.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 px-1 text-xs text-zinc-600">
+              <Users className="size-3.5" aria-hidden="true" />
+              {clients.length} clientes disponíveis · {services.length} serviços · {professionals.length} barbeiros
+            </div>
+          )}
         </div>
       </div>
 
