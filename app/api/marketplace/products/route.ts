@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const db = createAdminClient();
   let query = db
     .from('inventory_products')
-    .select('id,barbershop_id,name,description,category,image_url,unit_price,compare_at_price,stock_quantity,marketplace_featured,barbershops(name,slug)')
+    .select('id,barbershop_id,name,description,category,image_url,unit_price,compare_at_price,stock_quantity,marketplace_featured,barbershops(name,slug,is_public_in_directory)')
     .eq('active', true)
     .eq('marketplace_visible', true)
     .gt('stock_quantity', 0)
@@ -34,6 +34,19 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Não foi possível carregar o marketplace.' }, { status: 500 });
   }
 
-  const categories = [...new Set((data ?? []).map((item) => item.category).filter(Boolean))].sort();
-  return NextResponse.json({ products: data ?? [], categories });
+  const visible = (data ?? []).filter((item) => {
+    const relation = Array.isArray(item.barbershops) ? item.barbershops[0] : item.barbershops;
+    return relation?.is_public_in_directory !== false;
+  });
+  const categories = [...new Set(visible.map((item) => item.category).filter(Boolean))].sort();
+  const shops = [...new Map(
+    visible
+      .map((item) => {
+        const relation = Array.isArray(item.barbershops) ? item.barbershops[0] : item.barbershops;
+        return relation ? [item.barbershop_id, { id: item.barbershop_id, name: relation.name, slug: relation.slug }] as const : null;
+      })
+      .filter((item): item is readonly [string, { id: string; name: string; slug: string | null }] => Boolean(item)),
+  ).values()].sort((a, b) => a.name.localeCompare(b.name, 'pt-PT'));
+
+  return NextResponse.json({ products: visible, categories, shops });
 }
