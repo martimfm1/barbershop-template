@@ -14,19 +14,43 @@ export default function AgendaLayout({ children }: Readonly<{ children: React.Re
 
   return (
     <div className="relative min-w-0">
-      <div className="mx-auto mb-3 flex w-full max-w-[100rem] justify-center px-0 sm:justify-end">
-        <div className="relative inline-flex w-full max-w-sm items-center overflow-hidden rounded-2xl border border-white/[0.08] bg-black/25 p-1 shadow-[0_12px_36px_rgba(0,0,0,0.14)] backdrop-blur-xl sm:w-auto" role="tablist" aria-label="Vista da agenda">
-          <Link href="/dashboard/agenda" role="tab" aria-selected={!calendar} className={cn('relative z-10 inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 sm:flex-none', !calendar ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300')}>
+      <div className="mx-auto mb-3 flex w-full max-w-[100rem] justify-center px-1 sm:justify-end sm:px-0">
+        <nav
+          aria-label="Vista da agenda"
+          className="isolate inline-grid w-full max-w-sm grid-cols-2 overflow-hidden rounded-2xl border border-white/[0.1] bg-black/30 p-1 shadow-[0_12px_36px_rgba(0,0,0,0.16)] backdrop-blur-xl sm:w-fit sm:max-w-none"
+        >
+          <Link
+            href="/dashboard/agenda"
+            aria-current={!calendar ? 'page' : undefined}
+            aria-label="Ver agenda em linhas"
+            className={cn(
+              'relative isolate inline-flex min-h-12 min-w-0 items-center justify-center gap-2 overflow-hidden rounded-xl px-4 text-sm font-semibold whitespace-nowrap transition-[color,background-color] duration-200 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/90 focus-visible:ring-inset',
+              !calendar
+                ? 'text-zinc-100'
+                : 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200',
+            )}
+          >
             {!calendar ? <ActiveViewPill reduceMotion={Boolean(reduceMotion)} /> : null}
-            <List className="size-3.5" aria-hidden="true" />
-            Linhas
+            <List className="relative z-10 size-4 shrink-0" aria-hidden="true" />
+            <span className="relative z-10 truncate">Linhas</span>
           </Link>
-          <Link href="/dashboard/agenda?view=calendar" role="tab" aria-selected={calendar} className={cn('relative z-10 inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/80 sm:flex-none', calendar ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300')}>
+
+          <Link
+            href="/dashboard/agenda?view=calendar"
+            aria-current={calendar ? 'page' : undefined}
+            aria-label="Ver agenda em calendário"
+            className={cn(
+              'relative isolate inline-flex min-h-12 min-w-0 items-center justify-center gap-2 overflow-hidden rounded-xl px-4 text-sm font-semibold whitespace-nowrap transition-[color,background-color] duration-200 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/90 focus-visible:ring-inset',
+              calendar
+                ? 'text-zinc-100'
+                : 'text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200',
+            )}
+          >
             {calendar ? <ActiveViewPill reduceMotion={Boolean(reduceMotion)} /> : null}
-            <CalendarDays className="size-3.5" aria-hidden="true" />
-            Calendário
+            <CalendarDays className="relative z-10 size-4 shrink-0" aria-hidden="true" />
+            <span className="relative z-10 truncate">Calendário</span>
           </Link>
-        </div>
+        </nav>
       </div>
 
       <AnimatePresence initial={false} mode="popLayout">
@@ -45,5 +69,16 @@ export default function AgendaLayout({ children }: Readonly<{ children: React.Re
 }
 
 function ActiveViewPill({ reduceMotion }: { reduceMotion: boolean }) {
-  return <motion.span layoutId="agenda-view-pill" transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 460, damping: 32, mass: 0.7 }} className="absolute inset-0 -z-10 rounded-xl border border-white/[0.1] bg-white/[0.09] shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_8px_24px_rgba(0,0,0,0.2)]" aria-hidden="true" />;
+  return (
+    <motion.span
+      layoutId="agenda-view-pill"
+      transition={
+        reduceMotion
+          ? { duration: 0 }
+          : { type: 'spring', stiffness: 460, damping: 32, mass: 0.7 }
+      }
+      className="absolute inset-0 z-0 rounded-xl border border-emerald-400/15 bg-white/[0.1] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_6px_20px_rgba(0,0,0,0.18)]"
+      aria-hidden="true"
+    />
+  );
 }
