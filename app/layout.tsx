@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import {
   Geist,
   Geist_Mono,
@@ -31,14 +32,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = guestMetadata;
 export const viewport = { width: 'device-width', initialScale: 1 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const cookieStore = await cookies();
+  const storedLocale = cookieStore.get('locale')?.value;
+  const initialLocale = storedLocale === 'en' ? 'en' : 'pt';
   const enableVercelTelemetry = process.env.NODE_ENV === 'production';
 
   return (
     <html
-      lang="pt-PT"
+      lang={initialLocale === 'pt' ? 'pt-PT' : 'en'}
       dir="ltr"
       className={cn(
         'dark h-full scroll-smooth antialiased',
@@ -50,7 +54,7 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full bg-black text-foreground">
-        <LanguageProvider>
+        <LanguageProvider initialLocale={initialLocale}>
           <ProductionLogGuard />
           {enableVercelTelemetry ? <SpeedInsights /> : null}
           {enableVercelTelemetry ? <Analytics /> : null}
