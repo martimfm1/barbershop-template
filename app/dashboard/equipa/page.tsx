@@ -10,6 +10,7 @@ import { ProfessionalsListCard } from '@/app/dashboard/_components/cards/Profess
 import { InviteCodeCard } from '@/app/dashboard/_components/team/InviteCodeCard';
 import { TeamMembersManager } from '@/app/dashboard/_components/team/TeamMembersManager';
 import { ManagementPageHeader } from '@/app/dashboard/_components/shared/ManagementPageHeader';
+import { AnimatedTabList } from '@/components/dashboard/animated-tabs';
 import { Spinner } from '@/components/ui/spinner';
 import { Briefcase, UsersRound, KeyRound, UserPlus } from 'lucide-react';
 import {
@@ -24,6 +25,29 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 type TeamSeatState = { used: number; limit: number; unlimited: boolean };
+type TeamTab = 'professionals' | 'members' | 'invite';
+
+const TEAM_TABS = [
+  {
+    value: 'professionals',
+    label: 'Barbeiros',
+    icon: <Briefcase className="size-4" aria-hidden="true" />,
+  },
+  {
+    value: 'members',
+    label: 'Membros e permissões',
+    icon: <UsersRound className="size-4" aria-hidden="true" />,
+  },
+  {
+    value: 'invite',
+    label: 'Convidar',
+    icon: <KeyRound className="size-4" aria-hidden="true" />,
+  },
+] satisfies Array<{
+  value: TeamTab;
+  label: string;
+  icon: React.ReactNode;
+}>;
 
 export default function EquipaPage() {
   const { barbershopId, loading: isLoadingBarbershop } = useBarbershop();
@@ -31,9 +55,7 @@ export default function EquipaPage() {
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [showAddProfessionalForm, setShowAddProfessionalForm] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
-  const [activeTab, setActiveTab] = useState<
-    'professionals' | 'members' | 'invite'
-  >('professionals');
+  const [activeTab, setActiveTab] = useState<TeamTab>('professionals');
   const [teamSeats, setTeamSeats] = useState<TeamSeatState>({
     used: 0,
     limit: 1,
@@ -169,35 +191,15 @@ export default function EquipaPage() {
           </div>
         </section>
 
-        <nav
-          className="grid grid-cols-1 gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-1.5 sm:grid-cols-3"
-          aria-label="Secções da equipa"
-        >
-          <button
-            type="button"
-            onClick={() => setActiveTab('professionals')}
-            className={`flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-medium transition ${activeTab === 'professionals' ? 'bg-white text-zinc-950 shadow' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}
-          >
-            <Briefcase className="size-4" />
-            Barbeiros
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('members')}
-            className={`flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-medium transition ${activeTab === 'members' ? 'bg-white text-zinc-950 shadow' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}
-          >
-            <UsersRound className="size-4" />
-            Membros e permissões
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('invite')}
-            className={`flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-medium transition ${activeTab === 'invite' ? 'bg-white text-zinc-950 shadow' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}
-          >
-            <KeyRound className="size-4" />
-            Convidar
-          </button>
-        </nav>
+        <AnimatedTabList
+          tabs={TEAM_TABS}
+          value={activeTab}
+          onValueChange={setActiveTab}
+          ariaLabel="Secções da equipa"
+          layoutId="team-tab-indicator"
+          className="grid grid-cols-3 overflow-visible"
+          tabClassName="flex min-w-0 items-center justify-center"
+        />
 
         {activeTab === 'invite' && <InviteCodeCard seats={teamSeats} />}
         {activeTab === 'members' && (
