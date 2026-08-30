@@ -7,10 +7,28 @@ import {
   currentPrivacyAddendum,
 } from '@/lib/legal/current-legal-addendum';
 
+const CANONICAL_URL = 'https://barbers.silentra.me/privacy';
+
 export const metadata: Metadata = {
   title: 'Privacidade | Silentra for Barbers',
   description:
     'Política de privacidade da Silentra for Barbers, com dados recolhidos, finalidades, partilha, retenção e direitos.',
+  alternates: {
+    canonical: CANONICAL_URL,
+  },
+  openGraph: {
+    title: 'Privacidade | Silentra for Barbers',
+    description:
+      'Política de privacidade da Silentra for Barbers, com dados recolhidos, finalidades, partilha, retenção e direitos.',
+    url: CANONICAL_URL,
+    siteName: 'Silentra',
+    locale: 'pt_PT',
+    type: 'website',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 const currentPrivacyPolicy = {
