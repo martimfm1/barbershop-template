@@ -2,13 +2,9 @@
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
-/**
- * Mirrors the visual hierarchy of DashboardSidebar from top to bottom.
- * Lower items enter from the floor; higher items enter from the ceiling.
- */
 const DASHBOARD_HIERARCHY = [
   '/dashboard',
   '/dashboard/agenda',
@@ -39,7 +35,6 @@ function getHierarchyIndex(pathname: string) {
 
   let bestIndex = 0;
   let bestLength = 0;
-
   DASHBOARD_HIERARCHY.forEach((item, index) => {
     if (
       item !== '/dashboard' &&
@@ -50,7 +45,6 @@ function getHierarchyIndex(pathname: string) {
       bestLength = item.length;
     }
   });
-
   return bestIndex;
 }
 
@@ -60,6 +54,11 @@ function getTransitionKey(pathname: string, searchParams: URLSearchParams) {
   }
   return pathname;
 }
+
+type TransitionState = {
+  key: string;
+  direction: 1 | -1;
+};
 
 export function DashboardPageTransition({
   children,
@@ -72,46 +71,53 @@ export function DashboardPageTransition({
   const searchParams = useSearchParams();
   const reducedMotion = useReducedMotion();
   const section = getSection(pathname);
-  const transitionKey = getTransitionKey(pathname, searchParams);
-  const currentIndex = getHierarchyIndex(pathname);
-  const previousIndexRef = useRef(currentIndex);
-  const previousKeyRef = useRef(transitionKey);
+  const targetKey = getTransitionKey(pathname, searchParams);
+  const targetIndex = getHierarchyIndex(pathname);
 
-  const movingInHierarchy = currentIndex - previousIndexRef.current;
-  const direction =
-    previousKeyRef.current === transitionKey
-      ? 1
-      : movingInHierarchy === 0
-        ? transitionKey.includes('view=calendar')
-          ? 1
-          : -1
-        : movingInHierarchy > 0
-          ? 1
-          : -1;
+  const [transition, setTransition] = useState<TransitionState>(() => ({
+    key: targetKey,
+    direction: 1,
+  }));
 
   useEffect(() => {
-    previousIndexRef.current = currentIndex;
-    previousKeyRef.current = transitionKey;
-  }, [currentIndex, transitionKey]);
+    setTransition((previous) => {
+      if (previous.key === targetKey) return previous;
+
+      const previousPath = previous.key.split('?')[0];
+      const previousIndex = getHierarchyIndex(previousPath);
+      const movingInHierarchy = targetIndex - previousIndex;
+
+      const direction: 1 | -1 =
+        movingInHierarchy === 0
+          ? targetKey.includes('view=calendar')
+            ? 1
+            : -1
+          : movingInHierarchy > 0
+            ? 1
+            : -1;
+
+      return { key: targetKey, direction };
+    });
+  }, [targetIndex, targetKey]);
 
   return (
     <div
       className={cn('grid min-w-0 [perspective:1400px]', className)}
       style={{ transformStyle: 'preserve-3d' }}
     >
-      <AnimatePresence initial={false} mode="popLayout" custom={direction}>
+      <AnimatePresence initial={false} mode="popLayout" custom={transition.direction}>
         <motion.div
-          key={transitionKey}
-          custom={direction}
+          key={transition.key}
+          custom={transition.direction}
           initial={
             reducedMotion
               ? { opacity: 0 }
               : {
                   opacity: 0,
-                  y: direction > 0 ? 72 : -72,
+                  y: transition.direction > 0 ? 72 : -72,
                   scale: 0.965,
-                  rotateX: direction > 0 ? -7 : 7,
-                  transformOrigin: direction > 0 ? '50% 0%' : '50% 100%',
+                  rotateX: transition.direction > 0 ? -7 : 7,
+                  transformOrigin: transition.direction > 0 ? '50% 0%' : '50% 100%',
                   filter: 'blur(8px)',
                 }
           }
@@ -131,10 +137,10 @@ export function DashboardPageTransition({
               ? { opacity: 0 }
               : {
                   opacity: 0,
-                  y: direction > 0 ? -48 : 48,
+                  y: transition.direction > 0 ? -48 : 48,
                   scale: 0.975,
-                  rotateX: direction > 0 ? 6 : -6,
-                  transformOrigin: direction > 0 ? '50% 100%' : '50% 0%',
+                  rotateX: transition.direction > 0 ? 6 : -6,
+                  transformOrigin: transition.direction > 0 ? '50% 100%' : '50% 0%',
                   filter: 'blur(6px)',
                 }
           }
@@ -151,7 +157,7 @@ export function DashboardPageTransition({
           }
           className="col-start-1 row-start-1 min-w-0 will-change-transform [backface-visibility:hidden]"
           data-dashboard-section={section}
-          data-dashboard-direction={direction > 0 ? 'down' : 'up'}
+          data-dashboard-direction={transition.direction > 0 ? 'down' : 'up'}
         >
           {children}
         </motion.div>
