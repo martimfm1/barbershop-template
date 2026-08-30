@@ -11,6 +11,7 @@ const publicRoutePatterns = [
   /\/auth\//,
   /\/reviews\//,
   /\/address\/search\/route\.ts$/,
+  /\/marketplace\/products\/route\.ts$/,
   /\/cron\//,
   /\/stripe\/webhook\/route\.ts$/,
   /\/stripe\/prices\/route\.ts$/,
@@ -63,6 +64,8 @@ for (const file of routes) {
   const relative = path.relative(process.cwd(), file).replaceAll(path.sep, '/');
   const source = fs.readFileSync(file, 'utf8');
 
+  // The marketplace catalog is intentionally public. Its route applies
+  // server-side visibility, active, stock and public-sales-mode filters.
   if (publicRoutePatterns.some((pattern) => pattern.test(relative))) continue;
   if (requiredGuards.some((guard) => source.includes(guard))) continue;
 
