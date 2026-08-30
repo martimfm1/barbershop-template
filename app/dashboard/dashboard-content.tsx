@@ -8,12 +8,66 @@ import { Spotlight } from '@/components/aceternity/spotlight';
 import { DashboardTabMotionEnhancer } from '@/components/dashboard/dashboard-tab-motion-enhancer';
 import { DashboardPageTransition } from '@/components/dashboard/dashboard-page-transition';
 
+const dashboardSurfaceStyles = `
+  .silentra-dashboard-shell .dashboard-page {
+    position: relative;
+    background: transparent;
+  }
+
+  /* Full-page route wrappers should never create a second opaque canvas. */
+  .silentra-dashboard-shell .dashboard-page > main[class*="min-h-screen"],
+  .silentra-dashboard-shell .dashboard-page > div[class*="min-h-screen"] {
+    min-height: auto !important;
+    background: transparent !important;
+    background-image: none !important;
+    border-color: transparent !important;
+  }
+
+  /* Keep dashboard surfaces airy and consistent with the platform backdrop. */
+  .silentra-dashboard-shell .dashboard-page [data-slot="card"] {
+    border-color: rgb(255 255 255 / 0.055) !important;
+    background: linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.028),
+      rgb(255 255 255 / 0.010)
+    ) !important;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.025),
+      0 18px 55px rgb(0 0 0 / 0.12) !important;
+    backdrop-filter: blur(22px) saturate(125%);
+    -webkit-backdrop-filter: blur(22px) saturate(125%);
+  }
+
+  .silentra-dashboard-shell .dashboard-page [data-slot="card"] [data-slot="card-header"] {
+    border-color: rgb(255 255 255 / 0.04) !important;
+  }
+
+  /* Common hand-built dashboard panels. */
+  .silentra-dashboard-shell .dashboard-page [class*="bg-zinc-950/"],
+  .silentra-dashboard-shell .dashboard-page [class*="bg-black/"] {
+    backdrop-filter: blur(20px) saturate(120%);
+    -webkit-backdrop-filter: blur(20px) saturate(120%);
+  }
+
+  /* Avoid heavy framing; depth should come from translucency and shadow. */
+  .silentra-dashboard-shell .dashboard-page [class*="border-white/10"] {
+    border-color: rgb(255 255 255 / 0.055) !important;
+  }
+
+  @media (max-width: 1023px) {
+    .silentra-dashboard-shell .dashboard-page {
+      padding-bottom: 5rem;
+    }
+  }
+`;
+
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isSettingsPage = pathname.startsWith('/dashboard/settings');
 
   return (
     <div className="silentra-dashboard-shell">
+      <style dangerouslySetInnerHTML={{ __html: dashboardSurfaceStyles }} />
       <DashboardTabMotionEnhancer />
       {!isSettingsPage && <DashboardTopBar />}
       <DashboardSidebar />
