@@ -24,6 +24,14 @@ const eslintConfig = defineConfig([
       '@next/next/no-img-element': 'off',
     },
   },
+  {
+    files: ['app/marketplace/page.tsx'],
+    rules: {
+      // Marketplace intentionally keeps its top-level brand link as a native
+      // anchor because it is a public boundary outside the authenticated app.
+      '@next/next/no-html-link-for-pages': 'off',
+    },
+  },
   globalIgnores([
     '.next/**',
     'out/**',
