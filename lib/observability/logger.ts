@@ -1,6 +1,7 @@
 type LogContext = Record<string, unknown>;
 
-const SENSITIVE_KEY = /(password|token|secret|authorization|cookie|api[_-]?key|email|phone|birth|qr|otp|code)/i;
+const SENSITIVE_KEY =
+  /(password|token|secret|authorization|cookie|api[_-]?key|email|phone|birth|qr|otp|code)/i;
 const MAX_STRING_LENGTH = 500;
 
 function sanitizeValue(value: unknown): unknown {
@@ -12,7 +13,9 @@ function sanitizeValue(value: unknown): unknown {
   return value;
 }
 
-function sanitizeObject(context: Record<string, unknown>): Record<string, unknown> {
+function sanitizeObject(
+  context: Record<string, unknown>,
+): Record<string, unknown> {
   const output: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(context)) {
     if (SENSITIVE_KEY.test(key)) {

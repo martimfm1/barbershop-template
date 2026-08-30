@@ -42,4 +42,4 @@ supabase db push
 
 No Supabase, confirmar em **Integrations → Cron** que `silentra-booking-completion` está ativo e consultar o histórico de execuções em caso de falha.
 
-O Supabase Cron suporta jobs SQL e funções de base de dados e permite frequências inferiores a um dia, tornando-o adequado para este worker. 
+O Supabase Cron suporta jobs SQL e funções de base de dados e permite frequências inferiores a um dia, tornando-o adequado para este worker.

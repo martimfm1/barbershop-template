@@ -168,7 +168,6 @@ export default function AgendaPage() {
       <div className="relative z-10 mx-auto w-full max-w-[100rem] px-0 py-6 sm:py-8 lg:py-10">
         <header className="silentra-page-header">
           <div className="min-w-0">
-            <p className="silentra-eyebrow">Operação diária</p>
             <div className="flex items-center gap-3">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-300 shadow-[0_10px_30px_rgba(16,185,129,0.08)]">
                 <CalendarDays className="size-5" aria-hidden="true" />

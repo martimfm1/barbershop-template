@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const DEFAULT_TEXT =
-  'Scaneia para conhecer a nossa barbearia e marcar o teu proximo servico.';
+  'Faz scan para conhecer a nossa barbearia e marcar o teu proximo servico.';
 function download(href: string, filename: string) {
   const link = document.createElement('a');
   link.href = href;

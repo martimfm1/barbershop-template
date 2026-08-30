@@ -17,17 +17,17 @@ Todos os textos apresentados ao utilizador devem ser fáceis de entender sem con
 
 ## Padrão para estados
 
-| Situação | Texto recomendado |
-|---|---|
-| A carregar | A carregar… |
-| Guardar | Guardar alterações |
-| Sucesso | Alterações guardadas. |
-| Erro | Não foi possível guardar. Tenta novamente. |
-| Sem resultados | Não encontrámos resultados. |
-| Estado pending | Por confirmar |
-| Estado active | Ativo |
-| Estado inactive | Desativado |
-| Upgrade | Mudar de plano |
+| Situação        | Texto recomendado                          |
+| --------------- | ------------------------------------------ |
+| A carregar      | A carregar…                                |
+| Guardar         | Guardar alterações                         |
+| Sucesso         | Alterações guardadas.                      |
+| Erro            | Não foi possível guardar. Tenta novamente. |
+| Sem resultados  | Não encontrámos resultados.                |
+| Estado pending  | Por confirmar                              |
+| Estado active   | Ativo                                      |
+| Estado inactive | Desativado                                 |
+| Upgrade         | Mudar de plano                             |
 
 ## Acessibilidade de linguagem
 

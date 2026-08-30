@@ -118,7 +118,7 @@ export default function EquipaPage() {
           icon={Briefcase}
           eyebrow="Equipa e permissões"
           title="Equipa"
-          description="Um lugar por pessoa. Os convidados contam para o plano e a role Barbeiro mantém automaticamente o perfil profissional ligado."
+          description="Um lugar por pessoa. Os convidados contam para o plano."
           accentClassName="border-purple-500/20 bg-purple-500/10 text-purple-400"
           actions={
             teamLimitReached ? (
@@ -164,7 +164,7 @@ export default function EquipaPage() {
               {plan}
             </p>
             <p className="mt-1 text-xs text-zinc-500">
-              O limite é aplicado no servidor.
+              Define o limite de lugares de equipa e perfis de barbeiro.
             </p>
           </div>
         </section>

@@ -141,7 +141,8 @@ export const enCopy = {
   },
   auth: {
     loginSubtitle: 'Sign in to manage your barbershop.',
-    registerSubtitle: 'Create your account and start setting up your barbershop.',
+    registerSubtitle:
+      'Create your account and start setting up your barbershop.',
     forgotPassword: 'Forgot your password?',
     rememberMe: 'Keep me signed in',
     signIn: 'Sign in',
@@ -172,8 +173,7 @@ export const enCopy = {
     createBtn: 'Create barbershop',
     joinBtn: 'Join barbershop',
     successTitle: 'Your barbershop is ready',
-    successDescription:
-      'Now you can add services, barbers and opening hours.',
+    successDescription: 'Now you can add services, barbers and opening hours.',
     editLater: 'You can change everything later in Settings.',
     estimatedTime: 'About 2 minutes',
     canAdjustLater: 'You can change these details later',

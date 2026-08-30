@@ -43,6 +43,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
+import { SettingsCancellationPolicyPanel } from '@/components/dashboard/settings-cancellation-policy-panel';
 
 type SettingsSection =
   | 'overview'
@@ -479,8 +480,7 @@ export default function SettingsPageOrganized() {
                       </h2>
                       <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-500">
                         Dados da barbearia, localização, comodidades, horários,
-                        regras de marcação, aparência e conta. Sem menus
-                        duplicados.
+                        regras de marcação, aparência e conta.
                       </p>
                     </div>
                     <CheckCircle2
@@ -526,7 +526,7 @@ export default function SettingsPageOrganized() {
                     <Store
                       className="size-4 text-emerald-400"
                       aria-hidden="true"
-                    />{' '}
+                    />
                     Negócio
                   </CardTitle>
                   <CardDescription>
@@ -578,7 +578,7 @@ export default function SettingsPageOrganized() {
                       </p>
                       <p className="mt-1 text-xs leading-5 text-zinc-600">
                         Controla se a barbearia aparece na área pública de
-                        descoberta. Disponível no Pro e Enterprise.
+                        descoberta.
                       </p>
                     </div>
                     <Switch
@@ -613,7 +613,7 @@ export default function SettingsPageOrganized() {
                     <Clock3
                       className="size-4 text-blue-400"
                       aria-hidden="true"
-                    />{' '}
+                    />
                     Horários e encerramentos
                   </CardTitle>
                   <CardDescription>
@@ -670,7 +670,7 @@ export default function SettingsPageOrganized() {
                         htmlFor="settings-lunch-start"
                         className="text-sm font-medium"
                       >
-                        Início da pausa{' '}
+                        Início da pausa
                         <span className="font-normal text-zinc-600">
                           (opcional)
                         </span>
@@ -693,7 +693,7 @@ export default function SettingsPageOrganized() {
                         htmlFor="settings-lunch-end"
                         className="text-sm font-medium"
                       >
-                        Fim da pausa{' '}
+                        Fim da pausa
                         <span className="font-normal text-zinc-600">
                           (opcional)
                         </span>
@@ -714,10 +714,6 @@ export default function SettingsPageOrganized() {
                   </div>
                   <div>
                     <p className="text-sm font-medium">Dias de folga</p>
-                    <p className="mt-1 text-xs text-zinc-600">
-                      Português e inglês são mostrados juntos para evitar
-                      ambiguidades.
-                    </p>
                     <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                       {DAYS.map(([value, pt, en]) => {
                         const active = closedDays.includes(value);
@@ -759,8 +755,8 @@ export default function SettingsPageOrganized() {
                     <CalendarCheck2
                       className="size-4 text-violet-400"
                       aria-hidden="true"
-                    />{' '}
-                    Regras de marcação
+                    />
+                    Regras e marcação
                   </CardTitle>
                   <CardDescription>
                     As regras que controlam a forma como os clientes reservam e
@@ -789,40 +785,11 @@ export default function SettingsPageOrganized() {
                       aria-label="Permitir marcações online"
                     />
                   </div>
-                  <div className="grid gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-                    <label
-                      htmlFor="cancel-window"
-                      className="text-sm font-medium"
-                    >
-                      Prazo de cancelamento
-                    </label>
-                    <p className="text-xs leading-5 text-zinc-600">
-                      Número de horas antes da marcação a partir do qual o
-                      cliente já não pode cancelar.
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id="cancel-window"
-                        type="number"
-                        min={0}
-                        max={720}
-                        value={config.time_limit_cancellation_hours}
-                        onChange={(e) =>
-                          setConfig((c) => ({
-                            ...c,
-                            time_limit_cancellation_hours: Number(
-                              e.target.value,
-                            ),
-                          }))
-                        }
-                        className={`${INPUT_CLASS} max-w-40`}
-                      />
-                      <span className="text-sm text-zinc-500">horas</span>
-                    </div>
-                  </div>
+
+                  <SettingsAutomaticBookingPanel barbershopId={barbershopId!} />
                 </CardContent>
               </Card>
-              <SettingsAutomaticBookingPanel barbershopId={barbershopId!} />
+              <SettingsCancellationPolicyPanel />
             </section>
 
             <section id="settings-appearance" className="scroll-mt-28">
@@ -832,7 +799,7 @@ export default function SettingsPageOrganized() {
                     <ImageIcon
                       className="size-4 text-amber-400"
                       aria-hidden="true"
-                    />{' '}
+                    />
                     Aparência
                   </CardTitle>
                   <CardDescription>
@@ -965,7 +932,7 @@ export default function SettingsPageOrganized() {
                     <ShieldCheck
                       className="size-4 text-emerald-400"
                       aria-hidden="true"
-                    />{' '}
+                    />
                     Conta e segurança
                   </CardTitle>
                   <CardDescription>

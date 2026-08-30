@@ -153,11 +153,7 @@ export function InviteCodeCard({ seats }: InviteCodeCardProps) {
             </div>
           </div>
         ) : (
-          <p className="text-xs leading-5 text-zinc-500">
-            Depois de entrar, o proprietário ou um gestor com permissão de
-            equipa pode alterar a função e as permissões da pessoa. A role
-            Barbeiro mantém o perfil profissional sincronizado.
-          </p>
+          <p className="text-sm text-zinc-500">Depois podes mudar</p>
         )}
       </CardContent>
     </Card>

@@ -16,8 +16,6 @@ import { professionalService } from '@/app/dashboard/_services/professionals.ser
 import { authService } from '@/app/dashboard/_services/auth.service';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Spotlight } from '@/components/aceternity/spotlight';
-import { StatusBadge } from '@/app/state/_components/shared/StatusBadge';
 import {
   Card,
   CardContent,
@@ -223,17 +221,13 @@ export default function DashboardPage() {
 
   return (
     <TooltipProvider>
-      <main className="relative min-h-screen overflow-hidden bg-background pb-5 pt-16 text-foreground">
-        <Spotlight className="opacity-70" />
+      <main className="relative min-h-screen overflow-hidden pb-5 pt-16 text-foreground">
         <div className="relative px-3 pb-5 pt-8 sm:px-5 md:px-8 md:pb-12">
           <section
             className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
             aria-labelledby="dashboard-greeting"
           >
             <div>
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-400">
-                Painel
-              </p>
               <h1
                 id="dashboard-greeting"
                 className="mt-1 font-heading text-2xl font-bold tracking-tight text-zinc-50 sm:text-3xl"

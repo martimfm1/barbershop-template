@@ -278,18 +278,6 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator {
   position: relative;
   min-height: 100dvh;
   overflow: clip;
-  background:
-    radial-gradient(
-      circle at 88% 5%,
-      rgb(16 185 129 / 0.055),
-      transparent 22rem
-    ),
-    radial-gradient(
-      circle at 12% 32%,
-      rgb(255 255 255 / 0.025),
-      transparent 24rem
-    ),
-    var(--background);
 }
 .silentra-page-shell-narrow .silentra-page-content {
   max-width: 72rem;

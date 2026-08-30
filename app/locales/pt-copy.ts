@@ -166,8 +166,7 @@ export const ptCopy = {
   },
   onboarding: {
     title: 'Vamos preparar a tua barbearia',
-    subtitle:
-      'Só pedimos o essencial agora. O resto podes ajustar mais tarde.',
+    subtitle: 'Só pedimos o essencial agora. O resto podes ajustar mais tarde.',
     createTitle: 'Criar a tua barbearia',
     createSubtitle: 'Começa pelos dados básicos. Demora cerca de 2 minutos.',
     joinTitle: 'Entrar numa barbearia',

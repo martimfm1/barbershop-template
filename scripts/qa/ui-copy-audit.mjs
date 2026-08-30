@@ -68,7 +68,12 @@ for (const file of files) {
     if (/^[@$A-Za-z_][\w$]*\s*=/.test(linePrefix)) continue;
     if (/\$\{|=>|encodeURIComponent\(|https?:\/\//.test(value)) continue;
     if (/^[@~./]/.test(value)) continue;
-    if (/\b(className|id|key|href|src|type|name|value|variant|format|endpoint)\s*=/.test(linePrefix)) continue;
+    if (
+      /\b(className|id|key|href|src|type|name|value|variant|format|endpoint)\s*=/.test(
+        linePrefix,
+      )
+    )
+      continue;
 
     const rule = FORBIDDEN.find((pattern) => pattern.test(value));
     if (!rule) continue;
@@ -79,9 +84,13 @@ for (const file of files) {
 }
 
 if (findings.length) {
-  console.error('UI copy audit found technical language in user-facing source:');
+  console.error(
+    'UI copy audit found technical language in user-facing source:',
+  );
   for (const finding of findings) console.error(`- ${finding}`);
   process.exit(1);
 }
 
-console.log('UI copy audit passed: no blocked technical language found in user-facing source.');
+console.log(
+  'UI copy audit passed: no blocked technical language found in user-facing source.',
+);
