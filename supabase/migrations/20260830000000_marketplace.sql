@@ -157,5 +157,57 @@ begin
 end;
 $$;
 
+create or replace function public.cancel_marketplace_order_atomic(
+  p_order_id uuid,
+  p_barbershop_id uuid
+) returns public.marketplace_orders
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_order public.marketplace_orders;
+  v_item record;
+  v_created_by uuid;
+begin
+  select * into v_order
+  from public.marketplace_orders
+  where id = p_order_id and barbershop_id = p_barbershop_id
+  for update;
+
+  if not found then raise exception 'Order not found'; end if;
+  if v_order.status = 'cancelled' then return v_order; end if;
+  if v_order.status = 'completed' then raise exception 'Completed order cannot be cancelled'; end if;
+
+  select created_by into v_created_by from public.barbershops where id = p_barbershop_id;
+
+  for v_item in
+    select product_id, quantity from public.marketplace_order_items where order_id = p_order_id
+  loop
+    update public.inventory_products
+    set stock_quantity = stock_quantity + v_item.quantity,
+        updated_at = now()
+    where id = v_item.product_id and barbershop_id = p_barbershop_id;
+
+    if v_created_by is not null then
+      insert into public.inventory_movements (
+        product_id, barbershop_id, quantity, reason, reference_id, created_by
+      ) values (
+        v_item.product_id, p_barbershop_id, v_item.quantity, 'return', p_order_id, v_created_by
+      );
+    end if;
+  end loop;
+
+  update public.marketplace_orders
+  set status = 'cancelled', updated_at = now()
+  where id = p_order_id
+  returning * into v_order;
+
+  return v_order;
+end;
+$$;
+
 revoke all on function public.create_marketplace_order_atomic(uuid,text,text,text,text,jsonb) from public, anon, authenticated;
+revoke all on function public.cancel_marketplace_order_atomic(uuid,uuid) from public, anon, authenticated;
 grant execute on function public.create_marketplace_order_atomic(uuid,text,text,text,text,jsonb) to service_role;
+grant execute on function public.cancel_marketplace_order_atomic(uuid,uuid) to service_role;
