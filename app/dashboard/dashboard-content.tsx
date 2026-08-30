@@ -5,6 +5,7 @@ import { BarbershopProvider } from '@/context/BarbershopContext';
 import { DashboardTopBar } from '@/app/dashboard/_components/DashboardTopBar';
 import { DashboardSidebar } from '@/app/dashboard/_components/DashboardSidebar';
 import { Spotlight } from '@/components/aceternity/spotlight';
+import { DashboardTabMotionEnhancer } from '@/components/dashboard/dashboard-tab-motion-enhancer';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -12,6 +13,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="silentra-dashboard-shell">
+      <DashboardTabMotionEnhancer />
       {!isSettingsPage && <DashboardTopBar />}
       <DashboardSidebar />
       <div
