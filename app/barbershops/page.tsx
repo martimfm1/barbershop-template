@@ -25,8 +25,8 @@ const MapPreview = dynamic(
     loading: () => (
       <div className="flex h-full min-h-64 items-center justify-center bg-white/[0.02] text-sm text-zinc-500">
         <div className="flex items-center gap-2">
-          <Loader2 className="size-4 animate-spin" aria-hidden="true" />A
-          carregar mapa…
+          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          A carregar mapa…
         </div>
       </div>
     ),
@@ -144,13 +144,11 @@ export default function BarbershopsDirectoryPage() {
           </div>
 
           <div className="mt-4 grid gap-2 sm:mt-7 sm:gap-3 lg:max-w-4xl">
-            <div className="hidden sm:block">
-              <LocationRequest
-                value={userLocation}
-                onChange={setUserLocation}
-                autoRequest
-              />
-            </div>
+            <LocationRequest
+              value={userLocation}
+              onChange={setUserLocation}
+              autoRequest
+            />
             <div className="hidden sm:block">
               <SearchFilterBar
                 query={query}
@@ -177,13 +175,6 @@ export default function BarbershopsDirectoryPage() {
                 setView={setView}
                 userLocation={userLocation}
                 setUserLocation={setUserLocation}
-              />
-            </div>
-            <div className="sm:hidden">
-              <LocationRequest
-                value={userLocation}
-                onChange={setUserLocation}
-                autoRequest
               />
             </div>
           </div>
