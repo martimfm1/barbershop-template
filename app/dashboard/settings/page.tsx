@@ -5,6 +5,7 @@ export default function SettingsRoute() {
   return (
     <>
       <SettingsPage />
+      <SettingsCancellationPolicyPanel />
     </>
   );
 }
