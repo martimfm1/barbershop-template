@@ -81,8 +81,14 @@ function interpolate(value: string, variables?: Record<string, unknown>) {
   );
 }
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('pt');
+export function LanguageProvider({
+  children,
+  initialLocale = 'pt',
+}: {
+  children: React.ReactNode;
+  initialLocale?: Locale;
+}) {
+  const [locale, setLocaleState] = useState<Locale>(initialLocale);
 
   useEffect(() => {
     const saved = window.localStorage.getItem('locale');
@@ -97,6 +103,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
     window.localStorage.setItem('locale', newLocale);
+    document.cookie = `locale=${newLocale}; Path=/; Max-Age=31536000; SameSite=Lax`;
   };
 
   const t = useMemo(
