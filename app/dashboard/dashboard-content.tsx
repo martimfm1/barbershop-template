@@ -6,6 +6,7 @@ import { DashboardTopBar } from '@/app/dashboard/_components/DashboardTopBar';
 import { DashboardSidebar } from '@/app/dashboard/_components/DashboardSidebar';
 import { Spotlight } from '@/components/aceternity/spotlight';
 import { DashboardTabMotionEnhancer } from '@/components/dashboard/dashboard-tab-motion-enhancer';
+import { DashboardPageTransition } from '@/components/dashboard/dashboard-page-transition';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -21,9 +22,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           isSettingsPage ? 'pt-0' : 'pt-2'
         }`}
       >
-        <main className="dashboard-page mx-auto max-w-[1600px] py-5 sm:py-7">
-          {children}
-        </main>
+        <DashboardPageTransition>
+          <main className="dashboard-page mx-auto max-w-[1600px] py-5 sm:py-7">
+            {children}
+          </main>
+        </DashboardPageTransition>
       </div>
     </div>
   );
