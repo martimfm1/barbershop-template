@@ -28,6 +28,9 @@ alter table public.marketplace_orders
 create index if not exists barbershops_marketplace_sales_mode_idx
   on public.barbershops(marketplace_sales_mode);
 
+-- Remove the previous service-role-only signature so there is one canonical order RPC.
+drop function if exists public.create_marketplace_order_atomic(uuid,text,text,text,text,jsonb);
+
 create or replace function public.create_marketplace_order_atomic(
   p_barbershop_id uuid,
   p_customer_name text,
@@ -165,6 +168,5 @@ begin
 end;
 $$;
 
-revoke all on function public.create_marketplace_order_atomic(uuid,text,text,text,text,jsonb) from public, anon, authenticated;
 revoke all on function public.create_marketplace_order_atomic(uuid,text,text,text,text,jsonb,text,text,text,text,text) from public, anon, authenticated;
 grant execute on function public.create_marketplace_order_atomic(uuid,text,text,text,text,jsonb,text,text,text,text,text) to service_role;
