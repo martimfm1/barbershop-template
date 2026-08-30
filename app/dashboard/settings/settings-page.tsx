@@ -345,7 +345,11 @@ export default function SettingsPageOrganized() {
       return toast.error(
         r.error.message || 'Não foi possível atualizar a imagem.',
       );
-    type === 'avatar' ? setAvatarTick(Date.now()) : setBannerTick(Date.now());
+    if (type === 'avatar') {
+      setAvatarTick(Date.now());
+    } else {
+      setBannerTick(Date.now());
+    }
     toast.success(
       type === 'avatar' ? 'Logótipo atualizado.' : 'Capa atualizada.',
     );

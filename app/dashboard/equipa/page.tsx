@@ -164,7 +164,7 @@ export default function EquipaPage() {
                   : `${teamSeats.used} / ${teamSeats.limit}`}
             </p>
             <p className="mt-1 text-xs text-zinc-500">
-              Cada membro convidado consome 1 lugar.
+              Cada membro convidado consome 1 lugar. Tu contas como um.
             </p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
