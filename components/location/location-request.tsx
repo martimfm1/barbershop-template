@@ -13,7 +13,13 @@ interface LocationRequestProps {
 }
 
 type LocationState =
-  'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported';
+  | 'idle'
+  | 'requesting'
+  | 'granted'
+  | 'denied'
+  | 'unsupported';
+
+const AUTO_REQUEST_KEY = 'silentra:location-auto-requested';
 
 function readStoredLocation(): UserCoordinates | null {
   try {
@@ -38,6 +44,22 @@ function readStoredLocation(): UserCoordinates | null {
 function storeLocation(location: UserCoordinates) {
   try {
     sessionStorage.setItem('silentra:user-location', JSON.stringify(location));
+  } catch {
+    // Optional client storage.
+  }
+}
+
+function wasAutoRequestStarted() {
+  try {
+    return sessionStorage.getItem(AUTO_REQUEST_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markAutoRequestStarted() {
+  try {
+    sessionStorage.setItem(AUTO_REQUEST_KEY, '1');
   } catch {
     // Optional client storage.
   }
@@ -86,7 +108,13 @@ export function LocationRequest({
       setState('granted');
       return;
     }
-    if (autoRequest && !value && !requestedRef.current) {
+    if (
+      autoRequest &&
+      !value &&
+      !requestedRef.current &&
+      !wasAutoRequestStarted()
+    ) {
+      markAutoRequestStarted();
       const timer = window.setTimeout(requestLocation, 250);
       return () => window.clearTimeout(timer);
     }
