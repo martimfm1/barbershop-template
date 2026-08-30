@@ -7,6 +7,7 @@ import {
   Check,
   CircleCheck,
   Loader2,
+  RefreshCw,
   ShieldCheck,
 } from 'lucide-react';
 import {
@@ -49,19 +50,35 @@ export function PricingSection({
 }) {
   const [prices, setPrices] = useState<BillingPrice[]>([]);
   const [loadingPrices, setLoadingPrices] = useState(true);
+  const [pricesError, setPricesError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
     const loadPrices = async () => {
+      setLoadingPrices(true);
+      setPricesError(false);
       try {
         const response = await fetch('/api/stripe/prices', {
           cache: 'no-store',
+          headers: { Accept: 'application/json' },
         });
         const body = (await response.json().catch(() => ({}))) as {
           data?: BillingPrice[];
         };
-        if (!cancelled) setPrices(Array.isArray(body.data) ? body.data : []);
+        if (!response.ok || !Array.isArray(body.data)) {
+          throw new Error('PRICES_UNAVAILABLE');
+        }
+        if (!cancelled) setPrices(body.data);
+      } catch (error) {
+        if (cancelled) return;
+        console.error(
+          '[PRICING_SECTION_LOAD_ERROR]',
+          error instanceof Error ? error.name : 'UNKNOWN',
+        );
+        setPrices([]);
+        setPricesError(true);
       } finally {
         if (!cancelled) setLoadingPrices(false);
       }
@@ -71,7 +88,7 @@ export function PricingSection({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [retryKey]);
 
   const proPriceId = prices.find(
     (price) => price.plan === 'pro' && price.interval === 'month',
@@ -143,11 +160,32 @@ export function PricingSection({
             <div
               key={item}
               className="flex min-h-[480px] items-center justify-center rounded-2xl border border-white/10 bg-zinc-900/70 text-zinc-500"
-              aria-hidden="true"
+              aria-label="A carregar preços"
             >
-              <Loader2 className="size-5 animate-spin" />
+              <Loader2 className="size-5 animate-spin" aria-hidden="true" />
             </div>
           ))}
+        </div>
+      ) : pricesError ? (
+        <div
+          role="alert"
+          className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.05] p-6 text-center sm:p-8"
+        >
+          <p className="text-base font-semibold text-zinc-100">
+            Não foi possível carregar os preços.
+          </p>
+          <p className="mt-2 text-sm leading-6 text-zinc-500">
+            O checkout está temporariamente indisponível. Tenta novamente sem
+            perder o contexto desta página.
+          </p>
+          <button
+            type="button"
+            onClick={() => setRetryKey((value) => value + 1)}
+            className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-zinc-100 hover:border-white/20 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+          >
+            <RefreshCw className="size-4" aria-hidden="true" />
+            Tentar novamente
+          </button>
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-3 lg:items-stretch">
