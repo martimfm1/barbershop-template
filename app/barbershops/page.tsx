@@ -25,8 +25,8 @@ const MapPreview = dynamic(
     loading: () => (
       <div className="flex h-full min-h-64 items-center justify-center bg-white/[0.02] text-sm text-zinc-500">
         <div className="flex items-center gap-2">
-          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-          A carregar mapa…
+          <Loader2 className="size-4 animate-spin" aria-hidden="true" />A
+          carregar mapa…
         </div>
       </div>
     ),

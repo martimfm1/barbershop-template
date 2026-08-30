@@ -7,6 +7,7 @@ Bring the dashboard and public barber experience to a consistent, production-rea
 ## Delivery order
 
 ### 1. Settings: one save flow
+
 - Keep one primary `Guardar alterações` action at the settings page level.
 - Treat settings as a single draft, including business identity, location, opening hours, booking rules, cancellation policy, amenities, and automatic booking rules where supported.
 - Remove individual `Guardar...` actions from settings sub-panels.
@@ -15,12 +16,14 @@ Bring the dashboard and public barber experience to a consistent, production-rea
 - Do not silently persist changes when toggles or inputs change.
 
 ### 2. Public sales page inside each barber branch (optional)
+
 - Add an optional public sales/offer page under the barber shop public branch.
 - Reuse the shop identity, services, professionals, availability, and booking CTA.
 - Keep the page conversion-focused and mobile-first.
 - Add clear controls in settings to enable/disable the page.
 
 ### 3. Sales management
+
 - Redesign sales/POS management around daily operations first.
 - Make the primary action obvious: create sale, add items/services, choose payment method, finish sale.
 - Surface daily revenue, number of sales, average sale value, refunds/cancellations where available, and top products/services.
@@ -28,6 +31,7 @@ Bring the dashboard and public barber experience to a consistent, production-rea
 - Keep enterprise-only functionality gated by the existing plan system.
 
 ### 4. Product language audit
+
 - Replace unexplained acronyms, developer terminology, abbreviated labels, and clipped copy.
 - Use formal but natural Portuguese that a first-time barber can understand.
 - Prefer full labels over internal names.
@@ -35,33 +39,39 @@ Bring the dashboard and public barber experience to a consistent, production-rea
 - Preserve technical identifiers only where they are genuinely required by an admin/developer tool.
 
 ### 5. Sales UX/UI upgrade
+
 - Rework cards, totals, payment selection, product selection, and confirmation surfaces.
 - Add useful shortcuts such as recent services/products, quick repeat sale, and customer lookup where the existing data model supports them.
 - Keep touch targets large and the flow efficient on mobile.
 - Use visual hierarchy to reduce time-to-complete for routine sales.
 
 ### 6. Global UX/UI pass
+
 - Standardize spacing, typography, card hierarchy, buttons, dialogs, states, and responsive breakpoints.
 - Prefer mobile-first layouts and progressively enhance for desktop.
 - Keep accessibility states visible: keyboard focus, readable contrast, labels, status announcements, and sensible tab order.
 - Reduce duplicated visual patterns and inconsistent interaction behaviour.
 
 ### 7. Agenda
+
 - Align the agenda implementation with the existing skeleton reference.
 - Preserve current booking/business rules while improving information density, scanning, navigation, and mobile operation.
 - Keep client details, service, professional, status, and payment context immediately accessible.
 
 ### 8. Dashboard animated tabs
+
 - Add subtle animated transitions to dashboard tabs where they improve orientation.
 - Avoid animation that delays interaction or harms accessibility.
 - Respect reduced-motion preferences.
 
 ### 9. Communication
+
 - Keep messaging functionality grouped under the Comunicação area.
 - Avoid scattering communication workflows across unrelated navigation sections.
 - Make the information architecture explicit for campaigns, birthdays, templates, and message history.
 
 ### 10. Final production QA
+
 - `pnpm typecheck`
 - `pnpm lint`
 - `pnpm build`

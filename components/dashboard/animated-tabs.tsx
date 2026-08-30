@@ -53,7 +53,9 @@ export function AnimatedTabs({
               aria-hidden="true"
               className={cn(
                 'pointer-events-none absolute inset-x-2 bottom-0 h-0.5 origin-left rounded-full transition-transform duration-200 motion-reduce:transition-none',
-                active ? 'scale-x-100 bg-emerald-400' : 'scale-x-0 bg-transparent',
+                active
+                  ? 'scale-x-100 bg-emerald-400'
+                  : 'scale-x-0 bg-transparent',
               )}
             />
           </Link>

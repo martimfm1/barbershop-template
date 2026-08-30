@@ -13,11 +13,7 @@ interface LocationRequestProps {
 }
 
 type LocationState =
-  | 'idle'
-  | 'requesting'
-  | 'granted'
-  | 'denied'
-  | 'unsupported';
+  'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported';
 
 const AUTO_REQUEST_KEY = 'silentra:location-auto-requested';
 

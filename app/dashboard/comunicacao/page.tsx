@@ -1,8 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { Bell, Megaphone, MessageCircle, Cake, ArrowUpRight } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Bell,
+  Megaphone,
+  MessageCircle,
+  Cake,
+  ArrowUpRight,
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { Button } from '@/components/ui/button';
 
@@ -39,9 +51,16 @@ export default function CommunicationPage() {
     <main className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl space-y-8">
         <header className="max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Comunicação</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Fala com os teus clientes no momento certo.</h1>
-          <p className="mt-3 text-muted-foreground">Mensagens, campanhas e aniversários reunidos numa única área para tornares a relação com os clientes mais simples e eficaz.</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+            Comunicação
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+            Fala com os teus clientes no momento certo.
+          </h1>
+          <p className="mt-3 text-muted-foreground">
+            Mensagens, campanhas e aniversários reunidos numa única área para
+            tornares a relação com os clientes mais simples e eficaz.
+          </p>
         </header>
 
         <section className="grid gap-4 md:grid-cols-3">
@@ -49,7 +68,10 @@ export default function CommunicationPage() {
             const Icon = section.icon;
             const locked = !hasFeature(section.feature);
             return (
-              <Card key={section.href} className="border-white/10 bg-white/[0.02] transition hover:bg-white/[0.035]">
+              <Card
+                key={section.href}
+                className="border-white/10 bg-white/[0.02] transition hover:bg-white/[0.035]"
+              >
                 <CardHeader>
                   <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                     <Icon className="size-5" />
@@ -64,7 +86,10 @@ export default function CommunicationPage() {
                     </Button>
                   ) : (
                     <Button asChild className="w-full">
-                      <Link href={section.href}>Abrir {section.title.toLowerCase()} <ArrowUpRight className="ml-2 size-4" /></Link>
+                      <Link href={section.href}>
+                        Abrir {section.title.toLowerCase()}{' '}
+                        <ArrowUpRight className="ml-2 size-4" />
+                      </Link>
                     </Button>
                   )}
                 </CardContent>
@@ -79,10 +104,15 @@ export default function CommunicationPage() {
               <Bell className="mt-0.5 size-5 shrink-0 text-primary" />
               <div>
                 <p className="font-medium">Tudo centralizado</p>
-                <p className="mt-1 text-sm text-muted-foreground">Usa esta área como ponto de partida para qualquer comunicação com clientes.</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Usa esta área como ponto de partida para qualquer comunicação
+                  com clientes.
+                </p>
               </div>
             </div>
-            <Button asChild variant="outline"><Link href="/dashboard">Voltar ao resumo</Link></Button>
+            <Button asChild variant="outline">
+              <Link href="/dashboard">Voltar ao resumo</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
