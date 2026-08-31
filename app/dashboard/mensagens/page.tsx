@@ -159,7 +159,7 @@ export default function MensagensPage() {
   };
 
   return (
-    <main className="dashboard-page min-h-screen bg-background px-4 pb-24 pt-24 text-foreground sm:px-6 lg:px-8 lg:pt-10">
+    <main className="dashboard-page min-h-screen px-4 pb-24 pt-24 text-foreground sm:px-6 lg:px-8 lg:pt-10">
       <div className="mx-auto max-w-6xl space-y-7">
         <header className="dashboard-page-header border-b border-white/10 pb-6">
           <div className="min-w-0">

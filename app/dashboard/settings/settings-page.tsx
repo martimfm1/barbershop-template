@@ -383,7 +383,7 @@ export default function SettingsPageOrganized() {
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-50">
       <div className="mx-auto max-w-7xl px-4 pb-28 pt-4 sm:px-6 lg:px-8">
-        <header className="sticky top-0 z-30 -mx-4 border-b border-white/[.06] bg-zinc-950/90 px-4 py-4 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        <header className="sticky top-0 z-30 -mx-4 border-b bg-zinc-950/10 px-4 py-4 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <Link
@@ -394,7 +394,6 @@ export default function SettingsPageOrganized() {
                 <ArrowLeft className="size-4" />
               </Link>
               <div className="min-w-0">
-                <p className="text-xs text-zinc-600">Painel</p>
                 <h1 className="truncate text-xl font-semibold sm:text-2xl">
                   Definições
                 </h1>

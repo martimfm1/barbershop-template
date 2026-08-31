@@ -178,15 +178,6 @@ export default function AgendaPage() {
       <div className="relative z-10 mx-auto w-full max-w-[100rem] px-0 py-6 sm:py-8 lg:py-10">
         <header className="silentra-page-header">
           <div className="min-w-0">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-300 shadow-[0_10px_30px_rgba(16,185,129,0.08)]">
-                <CalendarDays className="size-5" aria-hidden="true" />
-              </div>
-              <div>
-                <h1 className="silentra-page-title">Agenda</h1>
-                <p className="silentra-page-description">Vê o que está marcado, resolve o próximo passo e mantém o teu dia organizado.</p>
-              </div>
-            </div>
             {!loadingInitial && <p className="mt-3 text-xs text-zinc-500"><span className="font-semibold text-zinc-200">{metrics.today}</span>{' '}{metrics.today === 1 ? 'marcação hoje' : 'marcações hoje'} · <span className="font-semibold text-amber-200">{metrics.pending}</span>{' '}por confirmar</p>}
           </div>
           <div className="silentra-page-actions w-full sm:w-auto">

@@ -323,10 +323,10 @@ export default function POSPage() {
     }
   }
 
-  if (billingLoading) return <main className="min-h-screen bg-background" />;
+  if (billingLoading) return <main className="min-h-screen" />;
   if (!allowed)
     return (
-      <main className="min-h-screen bg-background px-4 py-24">
+      <main className="min-h-screen px-4 py-24">
         <div className="mx-auto max-w-xl">
           <Card>
             <CardContent className="flex flex-col items-center gap-5 py-16 text-center">
@@ -345,7 +345,7 @@ export default function POSPage() {
     );
 
   return (
-    <main className="min-h-screen bg-background px-4 py-12 text-foreground sm:px-8">
+    <main className="min-h-screen px-4 py-12 text-foreground sm:px-8">
       <div className="mx-auto max-w-7xl space-y-8">
         <header className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>

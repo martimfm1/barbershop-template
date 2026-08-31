@@ -30,6 +30,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const MAX_BODY_LENGTH = 10000;
 const EDITABLE_STATUSES = ['draft', 'scheduled'] as const;
@@ -466,11 +473,10 @@ export function MarketingWorkspace() {
     }
   }
 
-  if (accessLoading)
-    return <main className="min-h-screen bg-background" aria-busy="true" />;
+  if (accessLoading) return <main className="min-h-screen" aria-busy="true" />;
   if (!allowed)
     return (
-      <main className="min-h-screen bg-background px-4 py-20 sm:px-8">
+      <main className="min-h-screen px-4 py-20 sm:px-8">
         <Card className="mx-auto max-w-xl border-white/10 bg-white/[0.02]">
           <CardContent className="flex flex-col items-center gap-4 py-16 text-center">
             <Sparkles className="size-8 text-primary" aria-hidden="true" />
@@ -488,7 +494,7 @@ export function MarketingWorkspace() {
 
   return (
     <main
-      className="min-h-screen bg-background px-4 py-6 text-foreground sm:px-8 sm:py-8"
+      className="min-h-screen px-4 py-6 text-foreground sm:px-8 sm:py-8"
       aria-labelledby="marketing-title"
     >
       <div className="mx-auto max-w-7xl space-y-6">
@@ -1291,208 +1297,215 @@ export function MarketingWorkspace() {
         </div>
       )}
 
-      {editorOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 p-4 backdrop-blur-sm sm:p-8">
-          <section
-            className="mx-auto max-w-5xl rounded-3xl border border-white/10 bg-zinc-950 shadow-2xl"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="campaign-editor-title"
-          >
-            <div className="flex items-start justify-between gap-4 border-b border-white/10 p-5">
+<Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+      <DialogContent 
+        className="flex max-h-[90vh] sm:min-w-1lg max-w-6xl lg:min-w-4xl flex-col gap-0 overflow-hidden border border-white/15 bg-zinc-950/70 p-0 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] backdrop-blur-2xl rounded-2xl"
+      >
+        {/* Header Fixo com Glassmorphism */}
+        <DialogHeader className="shrink-0 border-b border-white/10 bg-zinc-900/30 p-4 text-left backdrop-blur-md sm:p-6">
+          <DialogTitle className="text-lg font-semibold text-zinc-100 sm:text-xl">
+            {editorMode === 'create' ? 'Nova campanha' : 'Editar campanha'}
+          </DialogTitle>
+          <DialogDescription className="mt-1 text-xs text-zinc-400 sm:text-sm">
+            {editorMode === 'edit'
+              ? 'Podes editar enquanto o envio ainda não começou.'
+              : 'Cria primeiro; depois podes editar, apagar ou automatizar.'}
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Formulário com Scroll Interno (Mobile-First) */}
+        <form onSubmit={saveCampaign} className="flex min-h-0 flex-1 flex-col">
+          <div className="grid flex-1 overflow-y-auto grid-cols-1 lg:grid-cols-2 divide-y divide-white/10 lg:divide-y-0 lg:divide-x">
+            
+            {/* Lado Esquerdo: Formulário */}
+            <div className="space-y-4 p-4 sm:p-6">
               <div>
-                <h2
-                  id="campaign-editor-title"
-                  className="text-xl font-semibold"
+                <label
+                  htmlFor="marketing-campaign-name"
+                  className="block text-xs font-medium text-zinc-200 sm:text-sm"
                 >
-                  {editorMode === 'create'
-                    ? 'Nova campanha'
-                    : 'Editar campanha'}
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {editorMode === 'edit'
-                    ? 'Podes editar enquanto o envio ainda não começou.'
-                    : 'Cria primeiro; depois podes editar, apagar ou automatizar.'}
-                </p>
+                  Nome
+                </label>
+                <Input
+                  id="marketing-campaign-name"
+                  value={form.name}
+                  maxLength={120}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      name: event.target.value,
+                    }))
+                  }
+                  className="mt-1.5 border-white/10 bg-white/[0.03] text-zinc-100 backdrop-blur-sm focus-visible:ring-emerald-400/50"
+                  required
+                />
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setEditorOpen(false)}
-                disabled={saving}
-                aria-label="Fechar"
-              >
-                <X className="size-4" />
-              </Button>
+
+              <div>
+                <label
+                  htmlFor="marketing-campaign-channel"
+                  className="block text-xs font-medium text-zinc-200 sm:text-sm"
+                >
+                  Canal
+                </label>
+                <select
+                  id="marketing-campaign-channel"
+                  disabled={editorMode === 'edit'}
+                  value={form.channel}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      channel: event.target.value as FormState['channel'],
+                      subject:
+                        event.target.value === 'sms' ? '' : current.subject,
+                    }))
+                  }
+                  className="mt-1.5 h-10 w-full rounded-md border border-white/10 bg-zinc-900/60 px-3 text-xs text-zinc-100 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+                >
+                  <option value="email" className="bg-zinc-900 text-zinc-100">
+                    Email
+                  </option>
+                  <option value="sms" className="bg-zinc-900 text-zinc-100">
+                    SMS
+                  </option>
+                </select>
+              </div>
+
+              {form.channel === 'email' && (
+                <div>
+                  <label
+                    htmlFor="marketing-campaign-subject"
+                    className="block text-xs font-medium text-zinc-200 sm:text-sm"
+                  >
+                    Assunto
+                  </label>
+                  <Input
+                    id="marketing-campaign-subject"
+                    value={form.subject}
+                    maxLength={200}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        subject: event.target.value,
+                      }))
+                    }
+                    className="mt-1.5 border-white/10 bg-white/[0.03] text-zinc-100 backdrop-blur-sm focus-visible:ring-emerald-400/50"
+                    required
+                  />
+                </div>
+              )}
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="marketing-campaign-body"
+                    className="text-xs font-medium text-zinc-200 sm:text-sm"
+                  >
+                    Mensagem
+                  </label>
+                  <span className="text-xs text-zinc-400">
+                    {form.body.length}/{MAX_BODY_LENGTH}
+                  </span>
+                </div>
+                <Textarea
+                  id="marketing-campaign-body"
+                  value={form.body}
+                  maxLength={MAX_BODY_LENGTH}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      body: event.target.value,
+                    }))
+                  }
+                  className="mt-1.5 min-h-[140px] border-white/10 bg-white/[0.03] text-zinc-100 backdrop-blur-sm focus-visible:ring-emerald-400/50 sm:min-h-[180px]"
+                  required
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="marketing-campaign-schedule"
+                  className="block text-xs font-medium text-zinc-200 sm:text-sm"
+                >
+                  Agendar (opcional)
+                </label>
+                <Input
+                  id="marketing-campaign-schedule"
+                  type="datetime-local"
+                  value={form.scheduledAt}
+                  min={new Date().toISOString().slice(0, 16)}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      scheduledAt: event.target.value,
+                    }))
+                  }
+                  className="mt-1.5 border-white/10 bg-white/[0.03] text-zinc-100 backdrop-blur-sm focus-visible:ring-emerald-400/50"
+                />
+              </div>
             </div>
-            <form onSubmit={saveCampaign} className="grid lg:grid-cols-2">
-              <div className="space-y-5 p-5 lg:border-r lg:border-white/10 sm:p-6">
-                <div>
-                  <label
-                    htmlFor="marketing-campaign-name"
-                    className="text-sm font-medium"
-                  >
-                    Nome
-                  </label>
-                  <Input
-                    id="marketing-campaign-name"
-                    value={form.name}
-                    maxLength={120}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        name: event.target.value,
-                      }))
-                    }
-                    required
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="marketing-campaign-channel"
-                    className="text-sm font-medium"
-                  >
-                    Canal
-                  </label>
-                  <select
-                    id="marketing-campaign-channel"
-                    disabled={editorMode === 'edit'}
-                    value={form.channel}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        channel: event.target.value as FormState['channel'],
-                        subject:
-                          event.target.value === 'sms' ? '' : current.subject,
-                      }))
-                    }
-                    className="mt-1.5 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    <option value="email">Email</option>
-                    <option value="sms">SMS</option>
-                  </select>
-                </div>
+
+            {/* Lado Direito: Pré-visualização com Efeito Card Glass */}
+            <div className="bg-white/[0.015] p-4 sm:p-6">
+              <p className="text-xs font-medium text-zinc-200 sm:text-sm">
+                Pré-visualização
+              </p>
+              <div className="mt-3 rounded-xl border border-white/10 bg-zinc-900/40 p-4 backdrop-blur-md shadow-inner">
                 {form.channel === 'email' && (
-                  <div>
-                    <label
-                      htmlFor="marketing-campaign-subject"
-                      className="text-sm font-medium"
-                    >
+                  <>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
                       Assunto
-                    </label>
-                    <Input
-                      id="marketing-campaign-subject"
-                      value={form.subject}
-                      maxLength={200}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          subject: event.target.value,
-                        }))
-                      }
-                      required
-                    />
-                  </div>
+                    </p>
+                    <h3 className="mt-1 text-sm font-semibold text-zinc-100 sm:text-base">
+                      {form.subject || 'Assunto da campanha'}
+                    </h3>
+                  </>
                 )}
-                <div>
-                  <div className="flex items-center justify-between">
-                    <label
-                      htmlFor="marketing-campaign-body"
-                      className="text-sm font-medium"
-                    >
-                      Mensagem
-                    </label>
-                    <span className="text-xs text-muted-foreground">
-                      {form.body.length}/{MAX_BODY_LENGTH}
-                    </span>
-                  </div>
-                  <Textarea
-                    id="marketing-campaign-body"
-                    value={form.body}
-                    maxLength={MAX_BODY_LENGTH}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        body: event.target.value,
-                      }))
-                    }
-                    className="mt-1.5 min-h-64"
-                    required
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="marketing-campaign-schedule"
-                    className="text-sm font-medium"
-                  >
-                    Agendar (opcional)
-                  </label>
-                  <Input
-                    id="marketing-campaign-schedule"
-                    type="datetime-local"
-                    value={form.scheduledAt}
-                    min={new Date().toISOString().slice(0, 16)}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        scheduledAt: event.target.value,
-                      }))
-                    }
-                    className="mt-1.5"
-                  />
-                </div>
-              </div>
-              <div className="border-t border-white/10 bg-white/[0.02] p-5 sm:p-6 lg:border-t-0">
-                <p className="text-sm font-medium">Pré-visualização</p>
-                <div className="mt-4 rounded-2xl border border-white/10 bg-zinc-900 p-5">
-                  {form.channel === 'email' && (
-                    <>
-                      <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">
-                        Assunto
-                      </p>
-                      <h3 className="mt-1 font-semibold">
-                        {form.subject || 'Assunto da campanha'}
-                      </h3>
-                    </>
-                  )}
-                  <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-zinc-200">
-                    {form.body || 'A mensagem aparece aqui.'}
-                  </p>
-                </div>
-                <p className="mt-4 text-xs leading-5 text-muted-foreground">
-                  Enquanto estiver em rascunho ou agendada, podes voltar aqui e
-                  alterar o conteúdo.
+                <p className="mt-3 whitespace-pre-wrap text-xs leading-relaxed text-zinc-300 sm:text-sm">
+                  {form.body || 'A mensagem aparece aqui.'}
                 </p>
               </div>
-              <div className="flex justify-end gap-2 border-t border-white/10 p-5 lg:col-span-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setEditorOpen(false)}
-                  disabled={saving}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={saving}>
-                  {saving ? (
-                    <Loader2
-                      className="mr-2 size-4 animate-spin"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <CheckCircle2 className="mr-2 size-4" aria-hidden="true" />
-                  )}
-                  {saving
-                    ? 'A guardar…'
-                    : editorMode === 'create'
-                      ? 'Criar campanha'
-                      : 'Guardar alterações'}
-                </Button>
-              </div>
-            </form>
-          </section>
-        </div>
-      )}
+              <p className="mt-3 text-xs text-zinc-400">
+                Enquanto estiver em rascunho ou agendada, podes voltar aqui e
+                alterar o conteúdo.
+              </p>
+            </div>
+          </div>
+
+          {/* Rodapé Fixo (Sticky) com Glassmorphism */}
+          <div className="shrink-0 flex items-center justify-end gap-2 border-t border-white/10 bg-zinc-900/30 p-4 backdrop-blur-md sm:px-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditorOpen(false)}
+              disabled={saving}
+              className="border-white/10 bg-white/5 text-xs text-zinc-200 hover:bg-white/10 sm:text-sm"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={saving}
+              className="bg-emerald-500 text-xs text-zinc-950 hover:bg-emerald-400 font-medium sm:text-sm"
+            >
+              {saving ? (
+                <Loader2
+                  className="mr-2 size-4 animate-spin"
+                  aria-hidden="true"
+                />
+              ) : (
+                <CheckCircle2 className="mr-2 size-4" aria-hidden="true" />
+              )}
+              {saving
+                ? 'A guardar…'
+                : editorMode === 'create'
+                  ? 'Criar campanha'
+                  : 'Guardar alterações'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
     </main>
   );
 }

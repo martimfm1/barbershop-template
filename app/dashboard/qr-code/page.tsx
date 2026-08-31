@@ -119,7 +119,7 @@ export default function QrCodePage() {
     page.document.close();
   };
   return (
-    <main className="dashboard-page py-6 sm:py-8">
+    <main className="dashboard-page py-6 sm:py-8 mt-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <ManagementPageHeader
           icon={QrCode}

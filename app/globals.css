@@ -87,7 +87,7 @@
     @apply scroll-smooth font-sans;
   }
   body {
-    @apply min-h-screen bg-background text-foreground antialiased;
+    @apply min-h-screen text-foreground antialiased;
   }
   button,
   a,

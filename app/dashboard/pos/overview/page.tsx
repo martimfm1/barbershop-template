@@ -169,7 +169,7 @@ export default function SalesOverviewPage() {
 
   if (!allowed) {
     return (
-      <main className="min-h-screen bg-background px-4 py-16">
+      <main className="min-h-screen px-4 py-16">
         <div className="mx-auto max-w-xl">
           <Card>
             <CardContent className="flex flex-col items-center gap-4 py-16 text-center">
@@ -189,7 +189,7 @@ export default function SalesOverviewPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8">
+    <main className="min-h-screen px-4 py-8 text-foreground sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-7">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>

@@ -145,12 +145,6 @@ export function SettingsCancellationPolicyPanel() {
           })}
         </div>
       </div>
-
-      <div className="border-t border-white/10 pt-4">
-        <p className="text-xs leading-5 text-zinc-600">
-          Esta alteração é guardada juntamente com as restantes definições no botão <span className="font-medium text-zinc-400">Guardar alterações</span>.
-        </p>
-      </div>
     </div>,
     target,
   );

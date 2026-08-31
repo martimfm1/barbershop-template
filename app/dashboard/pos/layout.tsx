@@ -16,8 +16,8 @@ export default function SalesLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
 
   return (
-    <div className="min-w-0">
-      <nav aria-label="Área de vendas" className="sticky top-2 z-30 mb-5 overflow-x-auto rounded-2xl border border-white/10 bg-zinc-950/75 p-1.5 shadow-[0_14px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+    <div className="min-w-0 mt-12">
+      <nav aria-label="Área de vendas" className="sticky top-2 z-30 mb-5 overflow-x-auto rounded-2xl bg-zinc-950/10 p-1.5 shadow-[0_14px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl">
         <div className="flex min-w-max gap-1">
           {tabs.map((tab) => {
             const Icon = tab.icon;

@@ -152,11 +152,11 @@ export default function MarketingPage() {
     }
   }
 
-  if (accessLoading) return <main className="min-h-screen bg-background" />;
+  if (accessLoading) return <main className="min-h-screen" />;
 
   if (!allowed) {
     return (
-      <main className="min-h-screen bg-background px-4 py-24">
+      <main className="min-h-screen px-4 py-24">
         <div className="mx-auto max-w-xl">
           <Card>
             <CardContent className="flex flex-col items-center gap-5 py-16 text-center">
@@ -176,7 +176,7 @@ export default function MarketingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-8 sm:py-10">
+    <main className="min-h-screen px-4 py-8 text-foreground sm:px-8 sm:py-10">
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="flex flex-col gap-5 border-b border-white/10 pb-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
