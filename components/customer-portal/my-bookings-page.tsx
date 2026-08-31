@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   ArrowRight,
   CalendarDays,
-  Check,
+  Calendar,
   Clock3,
   LogOut,
   Mail,
@@ -241,7 +241,7 @@ export function MyBookingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 antialiased">
+    <div className="min-h-screen text-zinc-100 antialiased">
       <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-24 sm:px-6 sm:pt-28 lg:px-8 lg:pt-32">
         <header className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-3xl">
@@ -275,7 +275,7 @@ export function MyBookingsPage() {
             <div className="rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.08),transparent_38%),rgba(24,24,27,0.65)] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.25)] sm:p-8">
               {step === 'email' ? (
                 <form onSubmit={requestCode} className="space-y-5">
-                  <div className="flex size-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]">
+                  <div className="flex size-12 items-center justify-center rounded-2xl border border-white/10 backdrop-blur-2xl">
                     <Mail className="size-5 text-emerald-200" />
                   </div>
                   <div>
@@ -300,7 +300,7 @@ export function MyBookingsPage() {
                   />
                   <button
                     disabled={loading}
-                    className="inline-flex h-12 w-full items-center justify-center gap-2 bg-white text-sm font-semibold text-zinc-950 disabled:opacity-50"
+                    className="inline-flex h-12 w-full items-center justify-center gap-2 bg-zinc-950/20 backdrop-blur-2xl text-sm font-semibold disabled:opacity-30"
                   >
                     {loading ? 'A enviar…' : 'Enviar código'}
                     <ArrowRight className="size-4" />
@@ -338,7 +338,7 @@ export function MyBookingsPage() {
                   />
                   <button
                     disabled={loading || code.length !== 6}
-                    className="h-12 w-full bg-white text-sm font-semibold text-zinc-950 disabled:opacity-50"
+                    className="h-12 w-full bg-zinc-950/40 backdrop-blur-2xl text-sm font-semibold text-zinc-100 disabled:opacity-50"
                   >
                     {loading ? 'A confirmar…' : 'Confirmar email'}
                   </button>
@@ -355,7 +355,7 @@ export function MyBookingsPage() {
                 </form>
               )}
             </div>
-            <aside className="rounded-[2rem] border border-white/10 bg-white/[0.025] p-5 sm:p-8">
+            <aside className="rounded-[2rem] border border-white/10 backdrop-blur-2xl p-5 sm:p-8">
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
                 Como funciona
               </p>
@@ -397,116 +397,121 @@ export function MyBookingsPage() {
               </button>
             </div>
             <div className="grid gap-4 lg:grid-cols-[1fr_0.34fr]">
-              <section>
-                <div className="mb-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                    Agenda
+<div className="w-full space-y-6">
+      {/* Cabeçalho da Secção com Badge Contador */}
+      <div className="flex items-end justify-between border-b border-white/10 pb-4">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+            Agenda
+          </p>
+          <div className="mt-1 flex items-center gap-3">
+            <h2 className="text-2xl font-semibold tracking-tight text-white">
+              Próximas marcações
+            </h2>
+            {!loading && upcoming.length > 0 && (
+              <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-white/10 px-2 text-xs font-semibold text-zinc-300 backdrop-blur-md">
+                {upcoming.length}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Conteúdo Principal */}
+      {loading ? (
+        <div className="flex h-40 w-full items-center justify-center rounded-3xl border border-white/10 bg-white/[0.02] text-sm text-zinc-500 backdrop-blur-md">
+          A carregar as tuas marcações…
+        </div>
+      ) : upcoming.length === 0 ? (
+        /* Estado Vazio (Empty State Clean) */
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-white/15 bg-white/[0.01] px-6 py-12 text-center backdrop-blur-sm sm:py-16">
+          <div className="flex size-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-400">
+            <Calendar className="size-6" />
+          </div>
+          <h3 className="mt-4 text-base font-semibold text-white">
+            Não tens próximas marcações
+          </h3>
+          <p className="mt-1 max-w-sm text-sm leading-relaxed text-zinc-400">
+            Explora as barbearias disponíveis e faz a tua reserva em poucos segundos.
+          </p>
+          <Link
+            href="/barbershops"
+            className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-zinc-950 transition-all hover:bg-zinc-200 active:scale-[0.98]"
+          >
+            Explorar barbearias
+            <ArrowRight className="size-4" />
+          </Link>
+        </div>
+      ) : (
+        /* Lista de Marcações (Full Width Clean Stream) */
+        <div className="grid gap-4">
+          {upcoming.map((item) => (
+            <article
+              key={item.id}
+              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-5 shadow-2xl backdrop-blur-md transition-all duration-200 hover:border-white/20 sm:p-6"
+            >
+              {/* Topo do Card: Nome da Barbearia, Serviço e Status */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    {item.barbershopName}
                   </p>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.035em]">
-                    Próximas marcações
-                  </h2>
+                  <h3 className="mt-1 truncate text-lg font-semibold text-white sm:text-xl">
+                    {item.serviceName}
+                  </h3>
                 </div>
-                {loading ? (
-                  <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-12 text-center text-sm text-zinc-500">
-                    A carregar…
-                  </div>
-                ) : upcoming.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.02] p-8 text-center sm:p-12">
-                    <p className="font-semibold">
-                      Não tens próximas marcações.
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-zinc-500">
-                      Explora uma barbearia e cria uma nova reserva com o mesmo
-                      email.
-                    </p>
-                    <Link
-                      href="/barbershops"
-                      className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 bg-white px-4 text-sm font-semibold text-zinc-950"
-                    >
-                      Explorar barbearias
-                      <ArrowRight className="size-4" />
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="grid gap-3">
-                    {upcoming.map((item) => (
-                      <article
-                        key={item.id}
-                        className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5 shadow-xl sm:p-6"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                              {item.barbershopName}
-                            </p>
-                            <h3 className="mt-2 truncate text-base font-semibold text-white">
-                              {item.serviceName}
-                            </h3>
-                          </div>
-                          <span className="shrink-0 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-medium text-emerald-200">
-                            {statusLabel(item.status)}
-                          </span>
-                        </div>
-                        <div className="mt-5 grid gap-3 text-sm text-zinc-300 sm:grid-cols-3">
-                          <div className="flex gap-2">
-                            <CalendarDays className="size-4 shrink-0 text-zinc-500" />
-                            <span>{formatDate(item.dateHour)}</span>
-                          </div>
-                          <div className="flex gap-2">
-                            <Clock3 className="size-4 shrink-0 text-zinc-500" />
-                            <span>
-                              {item.durationMinutes} min
-                              {item.professionalName
-                                ? ` · ${item.professionalName}`
-                                : ' · Qualquer barbeiro'}
-                            </span>
-                          </div>
-                          {item.barbershopAddress && (
-                            <div className="flex gap-2">
-                              <MapPin className="size-4 shrink-0 text-zinc-500" />
-                              <span>{item.barbershopAddress}</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="mt-5 grid gap-2 sm:grid-cols-2">
-                          <button
-                            disabled={actionId === item.id}
-                            onClick={() => openReschedule(item)}
-                            className="min-h-11 rounded-xl border border-white/10 text-sm font-medium text-zinc-200 hover:bg-white/5 disabled:opacity-50"
-                          >
-                            Reagendar
-                          </button>
-                          <button
-                            disabled={actionId === item.id}
-                            onClick={() => void cancel(item.id)}
-                            className="min-h-11 rounded-xl border border-red-400/20 bg-red-400/[0.04] text-sm font-medium text-red-200 hover:bg-red-400/[0.08] disabled:opacity-50"
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      </article>
-                    ))}
+                <span className="shrink-0 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300 backdrop-blur-md">
+                  {statusLabel(item.status)}
+                </span>
+              </div>
+
+              {/* Informações da Reserva (Grid em Pills Muted) */}
+              <div className="mt-6 grid gap-2.5 sm:grid-cols-3">
+                <div className="flex items-center gap-2.5 rounded-xl border border-white/5 bg-white/[0.02] px-3.5 py-2.5 text-xs text-zinc-300">
+                  <CalendarDays className="size-4 shrink-0 text-emerald-400" />
+                  <span className="truncate font-medium">{formatDate(item.dateHour)}</span>
+                </div>
+
+                <div className="flex items-center gap-2.5 rounded-xl border border-white/5 bg-white/[0.02] px-3.5 py-2.5 text-xs text-zinc-300">
+                  <Clock3 className="size-4 shrink-0 text-emerald-400" />
+                  <span className="truncate font-medium">
+                    {item.durationMinutes} min
+                    {item.professionalName
+                      ? ` · ${item.professionalName}`
+                      : ' · Qualquer barbeiro'}
+                  </span>
+                </div>
+
+                {item.barbershopAddress && (
+                  <div className="flex items-center gap-2.5 rounded-xl border border-white/5 bg-white/[0.02] px-3.5 py-2.5 text-xs text-zinc-300 sm:col-span-1">
+                    <MapPin className="size-4 shrink-0 text-emerald-400" />
+                    <span className="truncate font-medium">{item.barbershopAddress}</span>
                   </div>
                 )}
-              </section>
-              <aside className="h-fit rounded-3xl border border-white/10 bg-white/[0.02] p-5 sm:p-6">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                  Privacidade
-                </p>
-                <p className="mt-3 text-sm leading-6 text-zinc-400">
-                  Só tens acesso depois de confirmares o email associado às
-                  reservas.
-                </p>
-                <div className="mt-5 border-t border-white/8 pt-5">
-                  <p className="text-xs text-zinc-500">Histórico</p>
-                  <p className="mt-1 text-2xl font-semibold text-white">
-                    {past.length}
-                  </p>
-                  <p className="text-xs text-zinc-600">
-                    marcaç{past.length === 1 ? 'ão' : 'ões'} anteriores
-                  </p>
-                </div>
-              </aside>
+              </div>
+
+              {/* Ações (Alinhadas à direita em telas maiores) */}
+              <div className="mt-6 flex flex-col-reverse justify-end gap-2.5 border-t border-white/5 pt-4 sm:flex-row sm:items-center">
+                <button
+                  disabled={actionId === item.id}
+                  onClick={() => void cancel(item.id)}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/[0.05] px-4 text-xs font-medium text-red-300 transition-all hover:bg-red-500/10 disabled:opacity-50 sm:w-auto"
+                >
+                  Cancelar reserva
+                </button>
+                <button
+                  disabled={actionId === item.id}
+                  onClick={() => openReschedule(item)}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-white/15 bg-white/10 px-5 text-xs font-semibold text-white transition-all hover:bg-white/20 active:scale-[0.98] disabled:opacity-50 sm:w-auto"
+                >
+                  Reagendar
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
             </div>
             {past.length > 0 && (
               <section>
