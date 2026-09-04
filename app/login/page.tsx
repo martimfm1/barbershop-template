@@ -102,9 +102,9 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              <div className="w-full max-w-[460px] justify-self-center">
-                <Card className="border-white/10 bg-zinc-950/85 shadow-2xl shadow-black/80 backdrop-blur-xl">
-                  <CardHeader className="space-y-4 p-5 sm:p-6">
+              <div className="w-full max-w-[460px] justify-self-center mt-8">
+                <Card className="glassmorphism">
+                  <CardHeader className="space-y-4 p-4 sm:p-6">
                     <div className="grid grid-cols-2 rounded-full border border-white/10 bg-black/50 p-1">
                       <button
                         type="button"

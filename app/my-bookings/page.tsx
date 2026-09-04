@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { SiteNavbar } from '@/components/site-navbar';
 import { MyBookingsPage } from '@/components/customer-portal/my-bookings-page';
-import { LoyaltySummary } from '@/components/customer-portal/loyalty-summary';
 
 export default function CustomerBookingsPage() {
   return (
@@ -10,9 +9,6 @@ export default function CustomerBookingsPage() {
       <div className="silentra-page-grid" aria-hidden="true" />
 
       <div className="relative z-[1] mx-auto w-full max-w-6xl px-4 pb-4 pt-24 sm:px-6 sm:pt-28 lg:px-8">
-        <div className="mb-5">
-          <LoyaltySummary />
-        </div>
         <MyBookingsPage />
       </div>
 

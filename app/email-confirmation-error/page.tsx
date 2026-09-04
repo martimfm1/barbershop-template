@@ -1,12 +1,15 @@
 import Link from 'next/link';
 import { AlertCircle, ArrowLeft, Mail } from 'lucide-react';
+import { StarfieldBackground } from '@/components/ui/starfield';
 
 export default function EmailConfirmationErrorPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 py-8 text-zinc-100">
+    <main className="min-h-screen bg-background px-4 py-10 sm:px-6 lg:px-8">
+      <StarfieldBackground>
+      <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-lg items-center justify-center">
       <section
         aria-labelledby="confirmation-error-title"
-        className="w-full max-w-md rounded-2xl border border-white/10 bg-zinc-900 p-6 shadow-2xl sm:p-8"
+        className="glassmorphism w-full max-w-md rounded-2xl border border-white/10 bg-zinc-900 p-6 shadow-2xl sm:p-8"
       >
         <div
           className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-red-400"
@@ -48,6 +51,8 @@ export default function EmailConfirmationErrorPage() {
           confirmação mais recente.
         </p>
       </section>
+      </div>
+      </StarfieldBackground>
     </main>
   );
 }

@@ -29,7 +29,7 @@ export default async function CheckoutPage({
   if (params.checkout === 'return') {
     return (
       <main className="min-h-screen bg-zinc-950 px-4 py-10 text-zinc-50 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-xl rounded-2xl border border-emerald-400/20 bg-zinc-900/70 p-7 text-center shadow-[0_24px_90px_rgba(0,0,0,0.28)] sm:p-9">
+        <div className="glassmorphism mx-auto max-w-xl rounded-2xl border border-emerald-400/20 bg-zinc-900/70 p-7 text-center shadow-[0_24px_90px_rgba(0,0,0,0.28)] sm:p-9">
           <div className="mx-auto flex size-12 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-400/10 text-emerald-200">
             ✓
           </div>
@@ -54,7 +54,7 @@ export default async function CheckoutPage({
   if (!priceId) {
     return (
       <main className="min-h-screen bg-zinc-950 px-4 py-10 text-zinc-50 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-xl rounded-2xl border border-white/10 bg-zinc-900/70 p-7 text-center shadow-[0_24px_90px_rgba(0,0,0,0.28)]">
+        <div className="glassmorphism mx-auto max-w-xl rounded-2xl border border-white/10 bg-zinc-900/70 p-7 text-center shadow-[0_24px_90px_rgba(0,0,0,0.28)]">
           <h1 className="text-2xl font-semibold text-white">Checkout</h1>
           <p className="mt-2 text-sm leading-6 text-zinc-500">
             Seleciona um plano para continuares para o checkout.

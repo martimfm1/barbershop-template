@@ -1,13 +1,15 @@
 import Link from 'next/link';
 import { CheckCircle2, ArrowRight } from 'lucide-react';
+import { StarfieldBackground } from '@/components/ui/starfield';
 
 export default function EmailConfirmedPage() {
   return (
     <main className="min-h-screen bg-background px-4 py-10 sm:px-6 lg:px-8">
+      <StarfieldBackground>
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-lg items-center justify-center">
         <section
           aria-labelledby="email-confirmed-title"
-          className="w-full rounded-2xl border border-border bg-card p-6 text-center shadow-sm sm:p-8"
+          className="glassmorphism w-full rounded-2xl border border-border bg-card p-6 text-center shadow-sm sm:p-8"
         >
           <div
             aria-hidden="true"
@@ -39,6 +41,7 @@ export default function EmailConfirmedPage() {
           </Link>
         </section>
       </div>
+      </StarfieldBackground>
     </main>
   );
 }

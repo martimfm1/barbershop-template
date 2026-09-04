@@ -78,7 +78,7 @@ export default function ForgotPasswordPage() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, ease: 'easeOut' }}
-                className="w-full border border-white/10 bg-zinc-950/85 shadow-2xl shadow-black/80 backdrop-blur-xl rounded-2xl focus-within:border-white/20 transition-colors"
+                className="glassmorphism w-full border border-white/10 bg-zinc-950/85 shadow-2xl shadow-black/80 backdrop-blur-xl rounded-2xl focus-within:border-white/20 transition-colors"
               >
                 <CardHeader className="gap-2 pb-2 px-5 sm:px-6 pt-6 sm:pt-7">
                   <div className="flex justify-start">
