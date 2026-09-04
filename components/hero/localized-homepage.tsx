@@ -402,8 +402,7 @@ export function LocalizedHomepage() {
           </motion.div>
         </div>
       </section>
-
-      <section className="border-y border-white/8 bg-white/[0.015]">
+      <section className="border-y border-white/8 bg-white/[0.015]" id='howitworks'>
         <div className="mx-auto grid max-w-7xl md:grid-cols-2">
           <div className="border-b border-white/8 p-6 sm:p-8 lg:p-10 md:border-r">
             <div className="flex items-center gap-3">

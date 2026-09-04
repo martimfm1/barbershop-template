@@ -297,7 +297,7 @@ export default function OnboardingPage() {
             <motion.div
               layout
               transition={{ type: 'spring', stiffness: 260, damping: 28 }}
-              className="overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/60 p-5 shadow-2xl shadow-black/70 backdrop-blur-xl sm:p-7"
+              className="overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/5 backdrop-blur-xl p-5 shadow-2xl shadow-black/30 sm:p-7"
             >
               <AnimatePresence mode="wait">
                 {step === 'selection' && (
@@ -562,7 +562,7 @@ export default function OnboardingPage() {
                       </div>
 
                       <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5">
-                        <div className="mb-4 flex items-start gap-3">
+                        <div className="mb-6 flex items-start gap-3">
                           <Clock3
                             className="mt-0.5 size-5 text-blue-400"
                             aria-hidden="true"
@@ -571,10 +571,6 @@ export default function OnboardingPage() {
                             <h2 className="font-semibold text-zinc-100">
                               Configuração inicial
                             </h2>
-                            <p className="text-xs text-zinc-500">
-                              Já deixámos valores práticos para acelerar o
-                              início.
-                            </p>
                           </div>
                         </div>
                         <div className="grid gap-4 sm:grid-cols-3">
@@ -603,7 +599,7 @@ export default function OnboardingPage() {
                               />
                             </div>
                             <p className="text-[11px] text-zinc-600">
-                              Pode alterar este valor depois.
+                              Este valor é apenas uma referência para os clientes.
                             </p>
                           </div>
                           <div className="grid gap-2">
@@ -624,6 +620,9 @@ export default function OnboardingPage() {
                                 className={`${inputClass} pl-10`}
                               />
                             </div>
+                            <p className="text-[11px] text-zinc-600">
+                              Este é o horário de abertura da sua barbearia.
+                            </p>
                           </div>
                           <div className="grid gap-2">
                             <Label htmlFor="close-time">Fecho</Label>
@@ -643,6 +642,9 @@ export default function OnboardingPage() {
                                 className={`${inputClass} pl-10`}
                               />
                             </div>
+                            <p className="text-[11px] text-zinc-600">
+                              Este é o horário de fecho da sua barbearia.
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -737,8 +739,7 @@ export default function OnboardingPage() {
                         Já tem um convite?
                       </CardTitle>
                       <CardDescription className="mt-2 text-sm leading-6 text-zinc-400">
-                        Introduza o código que recebeu do proprietário ou
-                        administrador. O acesso é validado no servidor.
+                        Introduza o código de convite que recebeu
                       </CardDescription>
                     </CardHeader>
                     <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5">

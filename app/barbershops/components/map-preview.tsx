@@ -34,7 +34,7 @@ export function MapPreview({
     <motion.aside
       whileHover={{ y: -2 }}
       transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-      className="rounded-3xl border border-white/10 bg-zinc-950/90 p-4 text-zinc-100 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl lg:sticky lg:top-28"
+      className="glassmorphism rounded-3xl border border-white/10 bg-zinc-950/90 p-4 text-zinc-100 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl lg:sticky"
       aria-label="Mapa e resultados de barbearias"
     >
       <div className="flex items-center justify-between gap-3">
@@ -51,7 +51,7 @@ export function MapPreview({
         </span>
       </div>
 
-      <div className="relative mt-5 h-[540px] overflow-hidden rounded-3xl border border-white/15 bg-zinc-950 shadow-inner">
+      <div className="relative mt-5 h-[440px] overflow-hidden rounded-3xl border border-white/15 bg-zinc-950 shadow-inner">
         <MapInner
           shops={shops}
           onSelectShop={onSelectShop}

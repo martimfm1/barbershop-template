@@ -119,7 +119,7 @@ export function LocationRequest({
   if (state === 'granted' && value) {
     return (
       <div className={className}>
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-3.5">
+        <div className="max-w-200px truncate flex items-center justify-between gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-3.5">
           <div className="flex min-w-0 items-center gap-3">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
               <CheckCircle2 className="size-4" aria-hidden="true" />

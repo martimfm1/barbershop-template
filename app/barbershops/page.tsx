@@ -116,11 +116,11 @@ export default function BarbershopsDirectoryPage() {
     router.push(`/barbershops/${encodeURIComponent(shop.slug)}`);
 
   return (
-    <div className="silentra-page-shell min-h-[100svh] overflow-x-clip text-zinc-50 antialiased">
+    <div className="silentra-page-shell min-h-[100svh] overflow-x-clip text-zinc-50 antialiased mt-6 mb-6">
       <div className="silentra-page-grid" aria-hidden="true" />
       <SiteNavbar />
       <main className="relative z-10 mx-auto w-full max-w-7xl px-3 pb-[max(4rem,env(safe-area-inset-bottom))] pt-[calc(5rem+env(safe-area-inset-top))] sm:px-6 sm:pb-16 sm:pt-28 lg:px-8 lg:pt-32">
-        <header className="silentra-section-block overflow-hidden rounded-[1.5rem] p-4 sm:rounded-[2rem] sm:p-8 lg:p-10">
+        <header className="silentra-section-block overflow-hidden rounded-[1.5rem] p-4 sm:rounded-[2rem] sm:p-8 lg:p-10 glassmorphism">
           <div
             className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-emerald-300/30 to-transparent"
             aria-hidden="true"
@@ -148,6 +148,7 @@ export default function BarbershopsDirectoryPage() {
               value={userLocation}
               onChange={setUserLocation}
               autoRequest
+              className='max-w-full min-w-0'
             />
             <div className="hidden sm:block">
               <SearchFilterBar
@@ -180,7 +181,7 @@ export default function BarbershopsDirectoryPage() {
           </div>
 
           {availableTags.length > 0 && (
-            <div className="mt-2 rounded-2xl border border-white/10 bg-black/15 p-2 sm:mt-4 sm:p-4">
+            <div className="glassmorphism mt-2 rounded-2xl border border-white/10 bg-black/15 p-2 sm:mt-4 sm:p-4">
               <div className="mb-2 flex items-center gap-2 px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
                 <Tag className="size-3.5" aria-hidden="true" />
                 Categorias e estilos
@@ -314,8 +315,8 @@ export default function BarbershopsDirectoryPage() {
               )}
             </div>
             <aside className="hidden lg:block">
-              <div className="silentra-section-block sticky top-24 overflow-hidden rounded-3xl">
-                <div className="border-b border-white/8 px-4 py-3">
+              <div className="sticky top-24 overflow-hidden rounded-3xl">
+                <div className="border-b border-white/8 px-4 py-3 mb-4">
                   <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
                     <MapPin
                       className="size-4 text-emerald-300"
@@ -327,7 +328,7 @@ export default function BarbershopsDirectoryPage() {
                     Seleciona uma barbearia para abrir a página completa.
                   </p>
                 </div>
-                <div className="h-[28rem]">
+                <div className="min-h-[30rem] max-h-[38rem] overflow-hidden">
                   <MapPreview
                     shops={visibleShops}
                     view={view}

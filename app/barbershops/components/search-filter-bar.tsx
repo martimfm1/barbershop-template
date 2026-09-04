@@ -84,7 +84,7 @@ export function SearchFilterBar({
     <div
       role="search"
       aria-label="Pesquisar barbearias"
-      className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-zinc-900/80 p-3 shadow-xl backdrop-blur-md"
+      className="glassmorphism flex flex-col gap-3 rounded-2xl border border-white/10 bg-zinc-900/80 p-3 shadow-xl backdrop-blur-md"
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative flex min-w-0 flex-1 items-center rounded-xl bg-white/5 px-3.5 py-2.5 transition-all focus-within:bg-white/10 focus-within:ring-2 focus-within:ring-emerald-400/30">

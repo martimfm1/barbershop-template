@@ -262,7 +262,7 @@ export function SiteNavbar() {
       },
       {
         label: t('nav.howItWorks', { defaultValue: 'Como funciona' }),
-        href: '/#friction',
+        href: '/#howitworks',
       },
     ],
     [t],
@@ -280,7 +280,7 @@ export function SiteNavbar() {
       },
       {
         label: t('nav.howItWorks', { defaultValue: 'Como funciona' }),
-        href: '/#friction',
+        href: '/#howitworks',
       },
       {
         label: t('nav.forBarbers', { defaultValue: 'Para barbeiros' }),

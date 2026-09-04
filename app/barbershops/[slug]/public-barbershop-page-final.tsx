@@ -208,9 +208,9 @@ export default function BarbershopPublicPageFinal({
         </Link>
       </section>
 
-      <div className="silentra-page-content !pt-0">
+      <div className="silentra-page-content pt-0!">
         <section className="relative -mt-16 sm:-mt-24">
-          <div className="silentra-surface-raised rounded-3xl p-4 sm:p-6">
+          <div className="silentra-surface-raised rounded-3xl p-4 sm:p-6 glassmorphism">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div className="flex min-w-0 items-end gap-4">
                 <div className="relative size-24 shrink-0 overflow-hidden rounded-2xl border-4 border-zinc-950 bg-zinc-900 shadow-2xl sm:size-32">
@@ -284,24 +284,24 @@ export default function BarbershopPublicPageFinal({
         </section>
 
         <section
-          className="mt-4 grid gap-3 sm:grid-cols-3"
+          className="mt-6 grid gap-3 sm:grid-cols-3"
           aria-label="Horários da barbearia"
         >
-          <div className="silentra-section-block rounded-2xl p-4">
+          <div className="silentra-section-block rounded-2xl p-4 mt-0 glassmorphism">
             <p className="text-xs text-zinc-500">Horário</p>
             <p className="mt-1 text-sm font-semibold">
               {formatTime(shop.opening_time)} - {formatTime(shop.closing_time)}
             </p>
           </div>
           {shop.lunch_start && shop.lunch_end && (
-            <div className="silentra-section-block rounded-2xl p-4">
+            <div className="silentra-section-block rounded-2xl p-4 glassmorphism">
               <p className="text-xs text-zinc-500">Pausa</p>
               <p className="mt-1 text-sm font-semibold">
                 {formatTime(shop.lunch_start)} - {formatTime(shop.lunch_end)}
               </p>
             </div>
           )}
-          <div className="silentra-section-block rounded-2xl p-4">
+          <div className="silentra-section-block rounded-2xl p-4 glassmorphism">
             <p className="text-xs text-zinc-500">Dias de fecho</p>
             <p className="mt-1 text-sm font-semibold">
               {formatClosedDays(shop.closed_days) || 'Nenhum'}
@@ -311,7 +311,7 @@ export default function BarbershopPublicPageFinal({
 
         {amenities && (
           <section
-            className="silentra-section-block mt-4 rounded-3xl p-5 sm:p-6"
+            className="silentra-section-block mt-4 rounded-3xl p-5 sm:p-6 glassmorphism"
             aria-labelledby="amenities-heading"
           >
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -360,7 +360,7 @@ export default function BarbershopPublicPageFinal({
         )}
 
         <section
-          className="silentra-section-block mt-4 rounded-3xl p-5 sm:p-6"
+          className="silentra-section-block mt-4 rounded-3xl p-5 sm:p-6 glassmorphism"
           aria-labelledby="services-heading"
         >
           <p className="silentra-eyebrow">Serviços</p>
@@ -374,7 +374,7 @@ export default function BarbershopPublicPageFinal({
             {shop.services.map((service) => (
               <article
                 key={service.id}
-                className="rounded-2xl border border-white/[0.08] bg-white/[0.018] p-4"
+                className="rounded-2xl border border-white/[0.08] bg-white/[0.018] p-4 glassmorphim"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -391,11 +391,12 @@ export default function BarbershopPublicPageFinal({
                 </div>
                 <Button
                   type="button"
+                  variant="outline"
                   onClick={() => {
                     setSelectedServiceId(service.id);
                     setBookingOpen(true);
                   }}
-                  className="mt-4 min-h-10 w-full rounded-xl border border-white/10 bg-white/[0.04] text-xs font-semibold text-zinc-100 hover:border-emerald-400/25 hover:bg-emerald-400/[0.07] focus-visible:ring-2 focus-visible:ring-emerald-400"
+                  className="mt-4 min-h-10 w-full rounded-xl border border-white/10 bg-white/[0.04] text-xs font-semibold text-zinc-100 focus-visible:ring-2 focus-visible:ring-emerald-400 glassmorphim"
                 >
                   Agendar este serviço
                 </Button>
@@ -405,7 +406,7 @@ export default function BarbershopPublicPageFinal({
         </section>
 
         <section
-          className="silentra-section-block mt-4 rounded-3xl p-5 sm:p-6"
+          className="silentra-section-block mt-4 rounded-3xl p-5 sm:p-6 glassmorphism"
           aria-labelledby="reviews-heading"
         >
           <p className="silentra-eyebrow">Confiança</p>

@@ -91,7 +91,7 @@ export function MobileSearchFilterBar({
     <div
       role="search"
       aria-label="Pesquisar barbearias"
-      className="w-full min-w-0 rounded-2xl border border-white/10 bg-zinc-900/95 p-2 shadow-xl backdrop-blur-md"
+      className="glassmorphism w-full min-w-0 rounded-2xl border border-white/10 bg-zinc-900/95 p-2 shadow-xl backdrop-blur-md"
     >
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-2">
         <div className="relative flex min-w-0 items-center rounded-xl border border-white/10 bg-black/25 px-2.5 focus-within:border-emerald-400/30 focus-within:ring-2 focus-within:ring-emerald-400/10">
@@ -176,7 +176,7 @@ export function MobileSearchFilterBar({
         </div>
       </div>
 
-      <div className="mt-2 flex min-w-0 items-center justify-between gap-2 rounded-xl border border-white/8 bg-white/[0.025] px-2.5 py-1.5">
+      <div className=" mt-2 flex min-w-0 items-center justify-between gap-2 rounded-xl border border-white/8 bg-white/[0.025] px-2.5 py-1.5">
         <span className="min-w-0 truncate text-[11px] font-medium text-zinc-400">
           Filtro: <span className="text-zinc-200">{filterLabel}</span>
         </span>
