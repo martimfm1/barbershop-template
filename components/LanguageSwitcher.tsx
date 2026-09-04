@@ -122,7 +122,7 @@ export function LanguageSwitcher() {
                 transition={NAVBAR_POPUP_TRANSITION}
                 role="menu"
                 aria-label={menuLabel}
-                className="absolute right-0 top-[calc(100%+0.55rem)] z-[230] w-52 overflow-hidden rounded-xl border border-white/10 bg-zinc-950/95 p-1 shadow-2xl shadow-black/30 backdrop-blur-2xl supports-[backdrop-filter]:bg-zinc-950/82"
+                className="absolute right-0 top-[calc(100%+0.55rem)] z-[230] w-52 overflow-hidden rounded-xl border bg-zinc-950/93 border-white/10 backdrop-blur-2xl mt-4 p-1 shadow-2xl shadow-black/30"
               >
                 <div className="px-2.5 pb-1.5 pt-2">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">

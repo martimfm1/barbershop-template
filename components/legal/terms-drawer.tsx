@@ -31,7 +31,7 @@ export function TermsDrawer({ trigger }: TermsDrawerProps) {
   return (
     <Drawer>
       <DrawerTrigger asChild>{trigger}</DrawerTrigger>
-      <DrawerContent className="mx-auto max-h-[85vh] max-w-lg rounded-t-2xl border-white/10 bg-zinc-950 text-zinc-50">
+      <DrawerContent className="glassmorphism mx-auto max-h-[85vh] max-w-lg rounded-t-2xl border-white/10 bg-zinc-950 text-zinc-50">
         <DrawerHeader className="text-left">
           <DrawerTitle className="font-heading text-lg">
             {t('legal.termsTitle', { defaultValue: 'Terms & Conditions' })}

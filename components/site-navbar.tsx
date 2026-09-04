@@ -352,7 +352,7 @@ export function SiteNavbar() {
       >
         <motion.div
           className={cn(
-            'mx-auto flex h-[4.25rem] w-full max-w-7xl items-center rounded-2xl border px-2 shadow-2xl backdrop-blur-2xl',
+            'glassmorphism mx-auto flex h-[4.25rem] w-full max-w-7xl items-center rounded-2xl border px-2 shadow-2xl backdrop-blur-2xl',
             isScrolled
               ? 'border-white/15 bg-zinc-950/82 shadow-black/30'
               : 'border-white/10 bg-zinc-950/62 shadow-black/20',
@@ -483,7 +483,7 @@ export function SiteNavbar() {
                       }
                       transition={NAVBAR_POPUP_TRANSITION}
                       role="menu"
-                      className="absolute right-0 top-[calc(100%+0.65rem)] w-[min(19rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/96 p-1.5 text-zinc-200 shadow-2xl shadow-black/35 backdrop-blur-2xl supports-[backdrop-filter]:bg-zinc-950/82"
+                      className="absolute right-0 top-[calc(100%+0.65rem)] w-[min(19rem,calc(100vw-1.5rem))] bg-zinc-950/93 border-white/10 backdrop-blur-2xl mt-4 rounded-2xl p-1.5 text-zinc-200 shadow-2xl shadow-black/50"
                     >
                       <div className="border-b border-white/8 px-3 py-3">
                         <div className="flex items-center justify-between gap-3">
@@ -601,7 +601,7 @@ export function SiteNavbar() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={NAVBAR_TRANSITION}
-            className="fixed inset-0 z-[150] flex flex-col bg-zinc-950/97 px-5 pb-8 pt-28 text-zinc-50 backdrop-blur-2xl sm:px-8 sm:pt-32"
+            className="glassmorphism fixed inset-0 z-[150] flex flex-col bg-zinc-950/97 px-5 pb-8 pt-28 text-zinc-50 backdrop-blur-2xl sm:px-8 sm:pt-32"
             role="dialog"
             aria-modal="true"
             aria-label={t('dashboard.mainNavigation', {

@@ -249,7 +249,7 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/dashboard/billing"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-zinc-200 transition-colors hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              className="glassmorphism inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-zinc-200 transition-colors hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
               <Crown className="size-4 text-emerald-400" aria-hidden="true" />
               Plano atual: {PLAN_NAMES[plan]}
@@ -330,7 +330,7 @@ export default function DashboardPage() {
                   <Link
                     key={action.href}
                     href={action.href}
-                    className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition-all duration-200 hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 md:p-4"
+                    className="glassmorphism group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition-all duration-200 hover:border-white/20 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 md:p-4"
                   >
                     <span
                       className={cn(
@@ -351,7 +351,7 @@ export default function DashboardPage() {
 
           {nextAppointment && !loadingInitial && (
             <section
-              className="mb-5 rounded-3xl border border-white/10 bg-zinc-900/60 p-4 shadow-xl backdrop-blur-xl sm:p-5"
+              className="glassmorphism mb-5 rounded-3xl border border-white/10 bg-zinc-900/60 p-4 shadow-xl backdrop-blur-xl sm:p-5"
               aria-labelledby="next-appointment-title"
             >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -433,7 +433,7 @@ export default function DashboardPage() {
                     >
                       <Card
                         className={cn(
-                          'cursor-pointer border border-white/10 bg-white/[0.04] transition-all duration-200',
+                          'glassmorphism cursor-pointer border border-white/10 bg-white/[0.04] transition-all duration-200',
                           cardHoverVariants[metric.variant],
                         )}
                       >
@@ -462,7 +462,7 @@ export default function DashboardPage() {
           </section>
 
           <section className="grid gap-3 pt-5 md:gap-4 lg:grid-cols-[1fr_360px]">
-            <Card className="border border-white/10 bg-zinc-900/60 shadow-xl backdrop-blur-xl">
+            <Card className="glassmorphism border border-white/10 bg-zinc-900/60 shadow-xl backdrop-blur-xl">
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -550,7 +550,7 @@ export default function DashboardPage() {
               </div>
             </Card>
 
-            <Card className="border border-white/10 bg-zinc-900/60 shadow-xl backdrop-blur-xl">
+            <Card className="glassmorphism border border-white/10 bg-zinc-900/60 shadow-xl backdrop-blur-xl">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-lg font-medium text-zinc-100">
                   <CalendarDays
@@ -586,7 +586,7 @@ export default function DashboardPage() {
                       <Link
                         key={appointment.id}
                         href="/dashboard/agenda"
-                        className="group flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.025] p-3 transition hover:border-white/10 hover:bg-white/[0.05]"
+                        className="glassmorphism group flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.025] p-3 transition hover:border-white/10 hover:bg-white/[0.05]"
                       >
                         <div className="flex size-11 shrink-0 flex-col items-center justify-center rounded-xl border border-white/10 bg-white/[0.035]">
                           <span className="text-xs font-semibold text-zinc-200">

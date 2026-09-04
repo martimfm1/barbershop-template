@@ -63,9 +63,8 @@ export default function PlansPage() {
               Escolhe o plano. Compara. Faz o checkout.
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
-              Esta é a página de decisão da Silentra. Aqui encontras a
-              comparação completa e, quando estiveres pronto, inicias o checkout
-              sem sair do funil.
+              Esta é a página de decisão da Silentrafor Barbers. Aqui encontras a
+              comparação completa e, quando estiveres pronto, inicias o checkout.
             </p>
             <div className="mt-6 grid gap-2 text-xs text-zinc-500 sm:flex sm:flex-wrap sm:gap-x-5">
               <span className="inline-flex items-center gap-2">
@@ -75,10 +74,6 @@ export default function PlansPage() {
               <span className="inline-flex items-center gap-2">
                 <CheckCircle2 className="size-3.5 text-emerald-300" />
                 Oferta Pro para novos utilizadores elegíveis
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <CheckCircle2 className="size-3.5 text-emerald-300" />
-                Checkout dentro da Silentra
               </span>
               <span className="inline-flex items-center gap-2">
                 <CheckCircle2 className="size-3.5 text-emerald-300" />
@@ -134,7 +129,7 @@ export default function PlansPage() {
             {faqs.map(([question, answer]) => (
               <article
                 key={question}
-                className="border border-white/10 bg-zinc-900/45 p-5 transition hover:border-white/20 hover:bg-white/[0.035]"
+                className="glassmorphism rounded-2xl border border-white/10 bg-zinc-900/45 p-5 transition hover:border-white/20 hover:bg-white/[0.035]"
               >
                 <CircleHelp
                   className="size-5 text-emerald-300"
@@ -146,8 +141,7 @@ export default function PlansPage() {
             ))}
           </div>
         </section>
-
-        <section className="mt-10 border border-white/10 bg-white/[0.03] p-5 sm:mt-14 sm:p-8">
+        <section className="mt-10 glassmorphism rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:mt-14 sm:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-300/80">

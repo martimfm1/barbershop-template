@@ -181,7 +181,7 @@ export function PlanComparison() {
               active={isAuthenticated && !loading && currentPlan === mobilePlan}
               popular={mobilePlan === PLANS.PRO}
             />
-            <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+            <div className="glassmorphism mt-4 grid grid-cols-2 gap-2 text-sm">
               <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
                 <p className="text-[11px] text-zinc-500">Profissionais</p>
                 <p className="mt-1 font-semibold text-zinc-100">
@@ -208,7 +208,7 @@ export function PlanComparison() {
           {FEATURE_GROUPS.map((group) => (
             <section
               key={group.title}
-              className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/45"
+              className="glassmorphism rounded-2xl border border-white/10 bg-zinc-900/45"
             >
               <div className="border-b border-white/10 bg-white/[0.02] px-4 py-3">
                 <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">

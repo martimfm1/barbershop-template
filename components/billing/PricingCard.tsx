@@ -229,7 +229,7 @@ export function PricingCard({
   return (
     <>
       <div
-        className={`relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border p-6 transition-[border-color,background-color,box-shadow,transform] duration-200 sm:p-7 ${isActivePaidPlan ? 'border-emerald-500/60 bg-zinc-900/95 shadow-[0_20px_70px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/30' : popular ? '-translate-y-1 border-emerald-500/40 bg-zinc-900/95 shadow-[0_24px_80px_rgba(16,185,129,0.14)] ring-1 ring-emerald-500/10' : 'border-white/10 bg-zinc-900/70 shadow-[0_18px_60px_rgba(0,0,0,0.25)] hover:-translate-y-0.5 hover:border-white/20'}`}
+        className={`glassmorphism relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border p-6 transition-[border-color,background-color,box-shadow,transform] duration-200 sm:p-7 ${isActivePaidPlan ? 'border-emerald-500/60 bg-zinc-900/95 shadow-[0_20px_70px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/30' : popular ? '-translate-y-1 border-emerald-500/40 bg-zinc-900/95 shadow-[0_24px_80px_rgba(16,185,129,0.14)] ring-1 ring-emerald-500/10' : 'border-white/10 bg-zinc-900/70 shadow-[0_18px_60px_rgba(0,0,0,0.25)] hover:-translate-y-0.5 hover:border-white/20'}`}
       >
         {popular && (
           <div

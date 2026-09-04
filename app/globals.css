@@ -493,9 +493,10 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator {
   background: var(--surface-subtle);
 }
 .glassmorphism {
-  border: 1px solid var(--border-subtle);
-  background: rgb(255 255 255 / 0.012);
-  backdrop-filter: blur(18px);
+  border: 1px solid var(--border-subtle) !important;
+  background: rgb(255 255 255 / 0.012) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
 }
 
 .silentra-surface-raised {

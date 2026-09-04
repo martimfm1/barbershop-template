@@ -187,7 +187,7 @@ export function DashboardSidebar() {
         href={item.href}
         onClick={mobile ? closeMobile : undefined}
         className={cn(
-          'group relative flex min-h-11 items-center gap-3 overflow-hidden rounded-xl px-3 text-sm transition-[background-color,color,transform] duration-200 motion-reduce:transition-none',
+          'glassmorphism group relative flex min-h-11 items-center gap-3 overflow-hidden rounded-xl px-3 text-sm transition-[background-color,color,transform] duration-200 motion-reduce:transition-none',
           active
             ? 'bg-white/10 text-white shadow-sm'
             : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-100',

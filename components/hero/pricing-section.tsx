@@ -165,7 +165,7 @@ export function PricingSection({
           {[0, 1, 2].map((item) => (
             <div
               key={item}
-              className="flex min-h-[480px] items-center justify-center rounded-2xl border border-white/10 bg-zinc-900/70 text-zinc-500"
+              className="glassmorphism flex min-h-[480px] items-center justify-center rounded-2xl border border-white/10 bg-zinc-900/70 text-zinc-500"
               aria-label="A carregar preços"
             >
               <Loader2 className="size-5 animate-spin" aria-hidden="true" />
@@ -227,7 +227,7 @@ export function PricingSection({
       )}
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5">
+        <div className="glassmorphism rounded-2xl border border-white/10 bg-white/[0.025] p-5">
           <p className="flex items-center gap-2 text-sm font-semibold text-zinc-100">
             <CircleCheck className="size-4 text-emerald-400" /> Free sem cartão
           </p>
@@ -235,7 +235,7 @@ export function PricingSection({
             Começa a operar sem pagamento obrigatório.
           </p>
         </div>
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.045] p-5">
+        <div className="glassmorphism rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.045] p-5">
           <p className="flex items-center gap-2 text-sm font-semibold text-emerald-200">
             <Check className="size-4 text-emerald-300" /> Oferta Pro para
             elegíveis
@@ -244,7 +244,7 @@ export function PricingSection({
             A oferta aplicável é validada no fluxo de checkout.
           </p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5">
+        <div className="glassmorphism rounded-2xl border border-white/10 bg-white/[0.025] p-5">
           <p className="flex items-center gap-2 text-sm font-semibold text-zinc-100">
             <ShieldCheck className="size-4 text-emerald-400" /> Faturação
             transparente
