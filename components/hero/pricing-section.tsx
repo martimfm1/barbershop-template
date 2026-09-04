@@ -45,8 +45,10 @@ const HERO_FEATURES = {
 
 export function PricingSection({
   destination = 'plans',
+  showDecisionHeader = true,
 }: {
   destination?: PricingDestination;
+  showDecisionHeader?: boolean;
 }) {
   const [prices, setPrices] = useState<BillingPrice[]>([]);
   const [loadingPrices, setLoadingPrices] = useState(true);
@@ -99,60 +101,64 @@ export function PricingSection({
 
   return (
     <section id="precos" className="space-y-8">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-200">
-            <ShieldCheck className="size-3.5" aria-hidden="true" /> Decisão e
-            checkout
-          </div>
-          <h2 className="mt-4 text-3xl font-semibold leading-tight tracking-[-0.045em] text-zinc-50 sm:text-4xl lg:text-5xl">
-            Escolhe o plano. O próximo passo é sempre o checkout.
-          </h2>
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
-            Compara o essencial, escolhe a fase certa da tua barbearia e
-            continua sem saltos de página desnecessários. O pagamento acontece
-            na experiência de checkout da Silentra.
-          </p>
-        </div>
-        <Link
-          href="#comparacao"
-          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-zinc-100 transition hover:border-white/20 hover:bg-white/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-        >
-          Ver comparação <ArrowRight className="size-4" />
-        </Link>
-      </div>
-
-      <div
-        className="grid gap-2 sm:grid-cols-3"
-        aria-label="Passos para aderir à Silentra"
-      >
-        {[
-          ['01', 'Escolhe', 'Compara os planos e encontra o nível certo.'],
-          [
-            '02',
-            'Checkout',
-            'Revê os dados e conclui o pagamento dentro da Silentra.',
-          ],
-          [
-            '03',
-            'Ativa',
-            'A subscrição fica ligada à tua barbearia e respetiva equipa.',
-          ],
-        ].map(([step, title, text]) => (
-          <div
-            key={step}
-            className="rounded-2xl border border-white/8 bg-white/[0.02] p-4 sm:p-5"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-semibold tracking-[0.2em] text-emerald-300">
-                {step}
-              </span>
-              <p className="text-sm font-semibold text-zinc-100">{title}</p>
+      {showDecisionHeader ? (
+        <>
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-200">
+                <ShieldCheck className="size-3.5" aria-hidden="true" /> Decisão e
+                checkout
+              </div>
+              <h2 className="mt-4 text-3xl font-semibold leading-tight tracking-[-0.045em] text-zinc-50 sm:text-4xl lg:text-5xl">
+                Escolhe o plano. O próximo passo é sempre o checkout.
+              </h2>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
+                Compara o essencial, escolhe a fase certa da tua barbearia e
+                continua sem saltos de página desnecessários. O pagamento acontece
+                na experiência de checkout da Silentra.
+              </p>
             </div>
-            <p className="mt-2 text-xs leading-5 text-zinc-500">{text}</p>
+            <Link
+              href="#comparacao"
+              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-zinc-100 transition hover:border-white/20 hover:bg-white/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            >
+              Ver comparação <ArrowRight className="size-4" />
+            </Link>
           </div>
-        ))}
-      </div>
+
+          <div
+            className="grid gap-2 sm:grid-cols-3"
+            aria-label="Passos para aderir à Silentra"
+          >
+            {[
+              ['01', 'Escolhe', 'Compara os planos e encontra o nível certo.'],
+              [
+                '02',
+                'Checkout',
+                'Revê os dados e conclui o pagamento dentro da Silentra.',
+              ],
+              [
+                '03',
+                'Ativa',
+                'A subscrição fica ligada à tua barbearia e respetiva equipa.',
+              ],
+            ].map(([step, title, text]) => (
+              <div
+                key={step}
+                className="rounded-2xl border border-white/8 bg-white/[0.02] p-4 sm:p-5"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-semibold tracking-[0.2em] text-emerald-300">
+                    {step}
+                  </span>
+                  <p className="text-sm font-semibold text-zinc-100">{title}</p>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-zinc-500">{text}</p>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : null}
 
       {loadingPrices ? (
         <div className="grid gap-4 lg:grid-cols-3">
