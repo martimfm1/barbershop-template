@@ -75,6 +75,8 @@ export default function MapInner({
   const defaultCenter: [number, number] = userLocation
     ? [userLocation.latitude, userLocation.longitude]
     : [38.7223, -9.1393];
+  const cartoApiKey = process.env.NEXT_PUBLIC_CARTO_API_KEY?.trim();
+  const cartoTileUrl = `https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png${cartoApiKey ? `?key=${encodeURIComponent(cartoApiKey)}` : ''}`;
 
   return (
     <div className="h-full w-full">
@@ -147,8 +149,10 @@ export default function MapInner({
         aria-label="Mapa de barbearias próximas"
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url={cartoTileUrl}
+          subdomains="abcd"
+          maxZoom={20}
         />
 
         <MapBoundsController shops={shops} userLocation={userLocation} />
