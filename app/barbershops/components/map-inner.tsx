@@ -79,7 +79,7 @@ export default function MapInner({
   const cartoTileUrl = `https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png${cartoApiKey ? `?key=${encodeURIComponent(cartoApiKey)}` : ''}`;
 
   return (
-    <div className="w-full">
+    <div className="h-full w-full">
       <style>{`
         .custom-leaflet-popup .leaflet-popup-content-wrapper,
         .custom-leaflet-popup .leaflet-popup-tip {
