@@ -89,7 +89,7 @@ export default function PlansPage() {
         </section>
 
         <section className="mt-8 sm:mt-12">
-          <PricingSection destination="checkout" />
+          <PricingSection destination="checkout" showDecisionHeader={false} />
         </section>
 
         <section
