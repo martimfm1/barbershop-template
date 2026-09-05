@@ -1,13 +1,32 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
+const INVITE_BODY = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/;
+
+function normalizeInviteCode(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const compact = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (compact.startsWith('BARB')) {
+    const body = compact.slice(4);
+    if (!INVITE_BODY.test(body)) return null;
+    return `BARB-${body.slice(0, 4)}-${body.slice(4)}`;
+  }
+  if (!INVITE_BODY.test(compact)) return null;
+  return `BARB-${compact.slice(0, 4)}-${compact.slice(4)}`;
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const { inviteCode } = await request.json();
-    if (typeof inviteCode !== 'string' || inviteCode.trim().length < 6)
+    const body: unknown = await request.json().catch(() => null);
+    const inviteCode =
+      body && typeof body === 'object' && 'inviteCode' in body
+        ? normalizeInviteCode((body as { inviteCode?: unknown }).inviteCode)
+        : null;
+
+    if (!inviteCode)
       return NextResponse.json(
-        { error: 'Introduz um código de convite válido.' },
+        { error: 'Introduz um código de convite no formato BARB-XXXX-XXXX.' },
         { status: 400 },
       );
 
@@ -16,10 +35,10 @@ export async function POST(request: Request) {
       error: authError,
     } = await supabase.auth.getUser();
     if (authError || !user)
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+      return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
 
     const { data, error } = await supabase.rpc('join_barbershop_with_invite', {
-      p_code: inviteCode.trim(),
+      p_code: inviteCode,
     });
     if (error) {
       console.error(
@@ -27,6 +46,18 @@ export async function POST(request: Request) {
         error.code ?? 'UNKNOWN',
         error.message ?? '',
       );
+      if (
+        error.code === 'P0001' &&
+        error.message === 'PROFESSIONAL_LIMIT_REACHED'
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              'Esta barbearia atingiu o limite de pessoas da equipa do plano atual.',
+          },
+          { status: 409 },
+        );
+      }
       if (
         error.code === 'P0001' &&
         error.message === 'TEAM_MEMBER_LIMIT_REACHED'
@@ -51,9 +82,11 @@ export async function POST(request: Request) {
         );
       }
       if (error.code === '42501')
-        return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+        return NextResponse.json({ error: 'Não tens permissão para entrar nesta equipa.' }, { status: 403 });
+      if (error.code === 'P0002')
+        return NextResponse.json({ error: 'Não foi possível encontrar o teu perfil.' }, { status: 409 });
       return NextResponse.json(
-        { error: 'Não foi possível associar a tua conta à barbearia.' },
+        { error: 'Não foi possível associar a tua conta à barbearia. Tenta novamente.' },
         { status: 500 },
       );
     }
@@ -81,7 +114,7 @@ export async function POST(request: Request) {
       error instanceof Error ? error.name : 'UNKNOWN',
     );
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Não foi possível concluir o convite. Tenta novamente.' },
       { status: 500 },
     );
   }
