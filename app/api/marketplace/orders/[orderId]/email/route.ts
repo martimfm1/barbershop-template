@@ -33,7 +33,12 @@ export async function POST(
     const subject = typeof body?.subject === 'string' ? body.subject.trim() : '';
     const message = typeof body?.message === 'string' ? body.message.trim() : '';
 
-    if (subject.length < 3 || subject.length > 180 || message.length < 3 || message.length > 5000) {
+    if (
+      subject.length < 3 ||
+      subject.length > 180 ||
+      message.length < 3 ||
+      message.length > 5000
+    ) {
       return NextResponse.json(
         { error: 'Indica um assunto e uma mensagem válidos.' },
         { status: 400 },
@@ -42,13 +47,16 @@ export async function POST(
 
     const { data: order, error: orderError } = await admin
       .from('marketplace_orders')
-      .select('id,customer_name,customer_email,barbershop_id')
+      .select('id,customer_name,customer_email,barbershop_id,status')
       .eq('id', orderId)
       .eq('barbershop_id', barbershopId)
       .maybeSingle();
 
     if (orderError) {
-      console.error('[MARKETPLACE_ORDER_EMAIL_ORDER_ERROR]', orderError.code ?? 'UNKNOWN');
+      console.error(
+        '[MARKETPLACE_ORDER_EMAIL_ORDER_ERROR]',
+        orderError.code ?? 'UNKNOWN',
+      );
       return NextResponse.json(
         { error: 'Não foi possível carregar a encomenda.' },
         { status: 503 },
@@ -56,7 +64,10 @@ export async function POST(
     }
 
     if (!order) {
-      return NextResponse.json({ error: 'Encomenda não encontrada.' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Encomenda não encontrada.' },
+        { status: 404 },
+      );
     }
 
     const { data: shop } = await admin
@@ -87,16 +98,24 @@ export async function POST(
       );
     }
 
-    await admin.from('marketplace_order_events').insert({
-      order_id: order.id,
-      barbershop_id: barbershopId,
-      previous_status: order.id ? undefined : undefined,
-      new_status: 'pending',
-      actor_user_id: auth.user?.id ?? null,
-      source: 'manual_email',
-      customer_message: `Email enviado ao cliente: ${subject}`,
-      metadata: { subject },
-    });
+    const { error: eventError } = await admin
+      .from('marketplace_order_events')
+      .insert({
+        order_id: order.id,
+        barbershop_id: barbershopId,
+        previous_status: order.status,
+        new_status: order.status,
+        actor_user_id: auth.user?.id ?? null,
+        source: 'manual_email',
+        customer_message: `Email enviado ao cliente: ${subject}`,
+        metadata: { subject },
+      });
+    if (eventError) {
+      console.error(
+        '[MARKETPLACE_ORDER_EMAIL_EVENT_LOG_FAILED]',
+        eventError.code ?? 'UNKNOWN',
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
