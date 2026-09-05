@@ -54,6 +54,29 @@ const checks = [
       source.includes('ABCDEFGHJKLMNPQRSTUVWXYZ23456789'),
   },
   {
+    name: 'Marketplace order RPC includes delivery fields used by the API',
+    file: 'supabase/migrations/20260830210000_marketplace_sales_channels.sql',
+    test: (source) =>
+      source.includes('p_fulfillment_method text default \'pickup\'') &&
+      source.includes('p_shipping_address text default null') &&
+      source.includes('p_shipping_city text default null') &&
+      source.includes('p_shipping_postal_code text default null') &&
+      source.includes('shipping_address') &&
+      source.includes('shipping_city') &&
+      source.includes('shipping_postal_code'),
+  },
+  {
+    name: 'Marketplace order API sends the canonical delivery RPC parameters',
+    file: 'app/api/marketplace/orders/route.ts',
+    test: (source) =>
+      source.includes("rpc('create_marketplace_order_atomic'") &&
+      source.includes('p_fulfillment_method: fulfillmentMethod') &&
+      source.includes('p_shipping_address:') &&
+      source.includes('p_shipping_city:') &&
+      source.includes('p_shipping_postal_code:') &&
+      source.includes('p_shipping_country:'),
+  },
+  {
     name: 'Marketplace lifecycle has durable order events',
     file: 'supabase/migrations/20260905133000_marketplace_order_lifecycle.sql',
     test: (source) =>
