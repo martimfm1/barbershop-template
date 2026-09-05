@@ -55,15 +55,15 @@ export function InviteCodeCard({ seats }: InviteCodeCardProps) {
       });
       const data = await response.json();
       if (!response.ok)
-        throw new Error(data.error || 'Não foi possível gerar o código.');
+        throw new Error(data.error || 'Não foi possível gerar o convite.');
       setCode(data.code);
       setExpiresAt(data.expiresAt);
-      toast.success('Código de barbeiro gerado.');
+      toast.success('Convite criado.');
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : 'Não foi possível gerar o código.',
+          : 'Não foi possível gerar o convite.',
       );
     } finally {
       setLoading(false);
@@ -72,9 +72,13 @@ export function InviteCodeCard({ seats }: InviteCodeCardProps) {
 
   async function copyCode() {
     if (!code) return;
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    toast.success('Código copiado.');
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      toast.success('Código copiado.');
+    } catch {
+      toast.error('Não foi possível copiar o código.');
+    }
   }
 
   const expired = secondsLeft !== null && secondsLeft <= 0;
@@ -82,7 +86,7 @@ export function InviteCodeCard({ seats }: InviteCodeCardProps) {
   const seconds = secondsLeft === null ? 0 : secondsLeft % 60;
 
   return (
-    <Card className="rounded-3xl border-white/10 bg-zinc-900/60 shadow-xl backdrop-blur-xl">
+    <Card className="glassmorphism rounded-3xl border-white/10 shadow-xl">
       <CardHeader className="border-b border-white/10 p-5 sm:p-6">
         <div className="flex items-start gap-3">
           <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
@@ -90,11 +94,11 @@ export function InviteCodeCard({ seats }: InviteCodeCardProps) {
           </div>
           <div className="min-w-0">
             <CardTitle className="text-lg font-semibold text-zinc-50">
-              Código de entrada
+              Convidar para a equipa
             </CardTitle>
-            <p className="mt-1 text-sm text-zinc-500">
-              Gera um código de utilização única válido durante 10 minutos. Quem
-              entrar fica ligado à equipa e começa como barbeiro.
+            <p className="mt-1 text-sm leading-6 text-zinc-500">
+              Cria um código de utilização única. O convite é válido durante 10
+              minutos e atribui à pessoa a função definida no convite.
             </p>
           </div>
         </div>
@@ -104,8 +108,7 @@ export function InviteCodeCard({ seats }: InviteCodeCardProps) {
           <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.05] p-4 text-sm text-amber-100">
             <p className="font-semibold">Limite da equipa atingido</p>
             <p className="mt-1 text-xs leading-5 text-amber-100/60">
-              Aumenta o plano para convidar outra pessoa. O código não pode ser
-              gerado enquanto não existir um lugar disponível.
+              Não existe espaço para adicionar outra pessoa neste plano.
             </p>
           </div>
         )}
@@ -115,11 +118,11 @@ export function InviteCodeCard({ seats }: InviteCodeCardProps) {
           className="min-h-11 bg-emerald-600 text-white hover:bg-emerald-500 sm:w-fit"
         >
           {loading ? (
-            <Loader2 className="size-4 animate-spin" />
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
           ) : (
             <>
-              <RefreshCw className="mr-2 size-4" />
-              Gerar código de barbeiro
+              <RefreshCw className="mr-2 size-4" aria-hidden="true" />
+              Gerar convite
             </>
           )}
         </Button>
@@ -127,11 +130,11 @@ export function InviteCodeCard({ seats }: InviteCodeCardProps) {
         {code && !expired ? (
           <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.05] p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
+              <div className="min-w-0">
                 <p className="text-[11px] uppercase tracking-wider text-zinc-500">
-                  Código de barbeiro
+                  Código de convite
                 </p>
-                <p className="mt-1 font-mono text-2xl font-bold tracking-[0.18em] text-white">
+                <p className="mt-1 break-all font-mono text-xl font-bold tracking-[0.14em] text-white sm:text-2xl">
                   {code}
                 </p>
                 <p className="mt-1 text-xs text-zinc-500">
@@ -144,16 +147,19 @@ export function InviteCodeCard({ seats }: InviteCodeCardProps) {
                 className="min-h-11 border-white/10 bg-transparent text-white hover:bg-white/5"
               >
                 {copied ? (
-                  <Check className="mr-2 size-4" />
+                  <Check className="mr-2 size-4" aria-hidden="true" />
                 ) : (
-                  <Copy className="mr-2 size-4" />
+                  <Copy className="mr-2 size-4" aria-hidden="true" />
                 )}
                 {copied ? 'Copiado' : 'Copiar'}
               </Button>
             </div>
           </div>
         ) : (
-          <p className="text-sm text-zinc-500">Depois podes mudar</p>
+          <p className="text-xs leading-5 text-zinc-500">
+            Cada novo convite substitui o anterior apenas quando o novo código é
+            usado; códigos antigos continuam a expirar naturalmente.
+          </p>
         )}
       </CardContent>
     </Card>
