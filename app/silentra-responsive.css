@@ -41,9 +41,21 @@ canvas {
   }
 
   [data-slot='drawer-content'].max-w-lg.rounded-none {
-    height: 80dvh;
-    max-height: 80dvh;
+    height: min(80dvh, 42rem);
+    max-height: min(80dvh, 42rem);
     border-radius: 1.5rem 1.5rem 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* The fixed mobile dashboard navigation must never hide the final actions/content. */
+  body:has(nav[aria-label='Navegação rápida']) {
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  }
+
+  /* Keep scrollable content clear of the fixed mobile navigation. */
+  main,
+  [role='main'] {
+    scroll-padding-bottom: calc(5rem + env(safe-area-inset-bottom));
   }
 }
 
@@ -77,5 +89,9 @@ body:has([data-slot='drawer-content'].max-w-lg.rounded-none) header.fixed.inset-
 @media (prefers-reduced-motion: reduce) {
   body:has([data-slot='drawer-content'].max-w-lg.rounded-none) header.fixed.inset-x-0.top-0 {
     transition: none;
+  }
+
+  .aceternity-beam {
+    animation: none !important;
   }
 }
