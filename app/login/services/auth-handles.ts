@@ -40,11 +40,15 @@ if (typeof window !== 'undefined') {
   }
 }
 
+interface RouterLike {
+  push: (path: string) => void;
+}
+
 interface LoginParams {
   event: FormEvent<HTMLFormElement>;
   setIsSubmitting: (loading: boolean) => void;
   setErrorMsg: (msg: string | null) => void;
-  router?: { push: (path: string) => void };
+  router: RouterLike;
 }
 
 interface LoginResponse {
@@ -57,6 +61,7 @@ export async function handleLogin({
   event,
   setIsSubmitting,
   setErrorMsg,
+  router,
 }: LoginParams) {
   event.preventDefault();
   setIsSubmitting(true);
@@ -108,9 +113,9 @@ export async function handleLogin({
     }
 
     if (!result.user?.barbershopId) {
-      window.location.href = '/onboarding';
+      router.push('/onboarding');
     } else {
-      window.location.href = '/dashboard';
+      router.push('/dashboard');
     }
   } catch (error: unknown) {
     const targetError =
@@ -132,6 +137,7 @@ interface RegisterParams {
   acceptedTerms: boolean;
   termsErrorMessage?: string;
   onSuccess?: () => void;
+  router: RouterLike;
 }
 
 export async function handleRegister({
@@ -141,6 +147,7 @@ export async function handleRegister({
   acceptedTerms,
   termsErrorMessage = 'Deves aceitar os termos e condições.',
   onSuccess,
+  router,
 }: RegisterParams) {
   event.preventDefault();
 
@@ -193,7 +200,7 @@ export async function handleRegister({
     if (onSuccess) {
       onSuccess();
     } else {
-      window.location.href = `/confirm-email?email=${encodeURIComponent(email)}`;
+      router.push(`/confirm-email?email=${encodeURIComponent(email)}`);
     }
   } catch (error) {
     const targetError =
