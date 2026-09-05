@@ -7,6 +7,7 @@ import {
   JetBrains_Mono,
 } from 'next/font/google';
 import './globals.css';
+import './silentra-responsive.css';
 import { cn } from '@/lib/utils';
 import { ClientShell } from '@/components/client-shell';
 import { ProductionLogGuard } from '@/app/production-log-guard';
