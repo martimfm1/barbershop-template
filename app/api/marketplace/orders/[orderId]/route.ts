@@ -26,6 +26,8 @@ const customerMessage = (status: Status) => {
       return 'A tua encomenda foi confirmada.';
     case 'preparing':
       return 'A tua encomenda está a ser preparada.';
+    case 'ready':
+      return 'A tua encomenda está pronta.';
     case 'shipped':
       return 'A tua encomenda foi enviada.';
     case 'delivered':
@@ -69,6 +71,7 @@ async function notifyCustomer(
   const subjectByStatus: Partial<Record<Status, string>> = {
     confirmed: 'A sua encomenda foi confirmada',
     preparing: 'A sua encomenda está a ser preparada',
+    ready: 'A sua encomenda está pronta',
     shipped: 'A sua encomenda foi enviada',
     delivered: 'A sua encomenda foi entregue',
     cancelled: 'A sua encomenda foi cancelada',
