@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendBrevoEmail } from '@/lib/email/brevo';
+import { consumePublicRateLimit } from '@/lib/security/public-rate-limit';
 import { moduleErrorResponse, requireModuleContext } from '@/services/modules/authorization';
 
 export const runtime = 'nodejs';
@@ -81,7 +82,6 @@ export async function POST(request: Request) {
     if (!FULFILLMENT_METHODS.includes(fulfillmentMethod as FulfillmentMethod)) return NextResponse.json({ error: 'Escolhe uma forma de entrega válida.' }, { status: 400 });
     if (fulfillmentMethod === 'delivery' && (!shippingAddress || !shippingCity || !shippingPostalCode)) return NextResponse.json({ error: 'Preenche a morada de entrega.' }, { status: 400 });
 
-    const db = createAdminClient();
     const normalizedItems: NormalizedOrderItem[] = items.map((rawItem) => {
       const item = rawItem && typeof rawItem === 'object' ? rawItem as Record<string, unknown> : {};
       return {
@@ -91,6 +91,21 @@ export async function POST(request: Request) {
     });
     if (normalizedItems.some((item) => !UUID_PATTERN.test(item.productId) || !Number.isInteger(item.quantity) || item.quantity <= 0 || item.quantity > 50)) return NextResponse.json({ error: 'O carrinho contém produtos inválidos.' }, { status: 400 });
 
+    const allowed = await consumePublicRateLimit(
+      request,
+      'marketplace-order-create',
+      `${shopId}:${customerEmail}`,
+      5,
+      300,
+    );
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Demasiadas tentativas. Aguarda alguns minutos e tenta novamente.' },
+        { status: 429, headers: { 'Retry-After': '300' } },
+      );
+    }
+
+    const db = createAdminClient();
     const { data, error } = await db.rpc('create_marketplace_order_atomic', {
       p_barbershop_id: shopId,
       p_customer_name: customerName,
