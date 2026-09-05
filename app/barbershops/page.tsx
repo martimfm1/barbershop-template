@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, MapPin, Search, Tag, X } from 'lucide-react';
+import { AlertTriangle, Loader2, MapPin, Search, Tag, X } from 'lucide-react';
 import { SiteNavbar } from '@/components/site-navbar';
 import { SearchFilterBar } from './components/search-filter-bar';
 import { MobileSearchFilterBar } from './components/mobile-search-filter-bar';
@@ -25,8 +25,8 @@ const MapPreview = dynamic(
     loading: () => (
       <div className="flex h-full min-h-64 items-center justify-center bg-white/[0.02] text-sm text-zinc-500">
         <div className="flex items-center gap-2">
-          <Loader2 className="size-4 animate-spin" aria-hidden="true" />A
-          carregar mapa…
+          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          A carregar mapa…
         </div>
       </div>
     ),
@@ -37,6 +37,7 @@ export default function BarbershopsDirectoryPage() {
   const router = useRouter();
   const [shops, setShops] = useState<MarketplaceShop[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [activeTag, setActiveTag] = useState<string | null>(null);
@@ -57,6 +58,7 @@ export default function BarbershopsDirectoryPage() {
   useEffect(() => {
     const controller = new AbortController();
     setIsLoading(true);
+    setLoadError(false);
 
     fetchShops({
       query: debouncedQuery,
@@ -65,11 +67,15 @@ export default function BarbershopsDirectoryPage() {
       userLocation,
       signal: controller.signal,
     })
-      .then((data) => setShops(data))
+      .then((data) => {
+        if (controller.signal.aborted) return;
+        setShops(data);
+      })
       .catch((error) => {
         if (error?.name === 'AbortError') return;
         console.error('[Marketplace] Failed to load shops:', error);
         setShops([]);
+        setLoadError(true);
       })
       .finally(() => {
         if (!controller.signal.aborted) setIsLoading(false);
@@ -115,6 +121,12 @@ export default function BarbershopsDirectoryPage() {
   const handleNavigateToShop = (shop: MarketplaceShop) =>
     router.push(`/barbershops/${encodeURIComponent(shop.slug)}`);
 
+  const retryLoad = () => {
+    setLoadError(false);
+    setIsLoading(true);
+    setDebouncedQuery((value) => value);
+  };
+
   return (
     <div className="silentra-page-shell min-h-[100svh] overflow-x-clip text-zinc-50 antialiased mt-6 mb-6">
       <div className="silentra-page-grid" aria-hidden="true" />
@@ -127,10 +139,7 @@ export default function BarbershopsDirectoryPage() {
           />
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-300">
-              <Search
-                className="size-3.5 text-emerald-300"
-                aria-hidden="true"
-              />
+              <Search className="size-3.5 text-emerald-300" aria-hidden="true" />
               Diretório Silentra
             </div>
             <h1 className="mt-4 max-w-2xl text-[1.95rem] font-semibold leading-[1.02] tracking-[-0.055em] text-zinc-50 sm:mt-5 sm:text-5xl">
@@ -148,7 +157,7 @@ export default function BarbershopsDirectoryPage() {
               value={userLocation}
               onChange={setUserLocation}
               autoRequest
-              className='max-w-full min-w-0'
+              className="max-w-full min-w-0"
             />
             <div className="hidden sm:block">
               <SearchFilterBar
@@ -217,8 +226,7 @@ export default function BarbershopsDirectoryPage() {
               {activeTag && (
                 <div className="mt-2 flex items-center justify-between gap-2 border-t border-white/5 pt-2 text-[11px] text-zinc-500">
                   <span className="min-w-0 truncate">
-                    Filtro:{' '}
-                    <strong className="text-zinc-300">{activeTag}</strong>
+                    Filtro: <strong className="text-zinc-300">{activeTag}</strong>
                   </span>
                   <button
                     type="button"
@@ -241,7 +249,9 @@ export default function BarbershopsDirectoryPage() {
               <p className="text-sm text-zinc-400" aria-live="polite">
                 {isLoading
                   ? 'A procurar...'
-                  : `${visibleShops.length} ${visibleShops.length === 1 ? 'barbearia encontrada' : 'barbearias encontradas'}`}
+                  : loadError
+                    ? 'Não foi possível carregar as barbearias.'
+                    : `${visibleShops.length} ${visibleShops.length === 1 ? 'barbearia encontrada' : 'barbearias encontradas'}`}
               </p>
             </div>
             <div className="grid w-full grid-cols-2 gap-2 sm:hidden">
@@ -279,6 +289,28 @@ export default function BarbershopsDirectoryPage() {
                     <span>A encontrar barbearias...</span>
                   </div>
                 </div>
+              ) : loadError ? (
+                <div
+                  className="silentra-section-block flex min-h-64 flex-col items-center justify-center rounded-3xl border-rose-400/10 p-7 text-center sm:p-12"
+                  role="alert"
+                >
+                  <div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-rose-400/15 bg-rose-400/[0.05] text-rose-300">
+                    <AlertTriangle className="size-5" aria-hidden="true" />
+                  </div>
+                  <p className="mt-4 text-base font-semibold text-zinc-200">
+                    Não foi possível carregar as barbearias.
+                  </p>
+                  <p className="mt-2 max-w-md text-sm leading-6 text-zinc-500">
+                    Verifica a ligação e tenta novamente. Os teus filtros serão mantidos.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={retryLoad}
+                    className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-5 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
               ) : visibleShops.length === 0 ? (
                 <div className="silentra-section-block rounded-3xl border-dashed p-7 text-center sm:p-12">
                   <div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-zinc-400">
@@ -302,7 +334,7 @@ export default function BarbershopsDirectoryPage() {
                   />
                 </div>
               ) : (
-                <div className="grid gap-3 md:grid-cols-2 sm:gap-4">
+                <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
                   {visibleShops.map((shop) => (
                     <ShopCard
                       key={shop.id}
@@ -316,12 +348,9 @@ export default function BarbershopsDirectoryPage() {
             </div>
             <aside className="hidden lg:block">
               <div className="sticky top-24 overflow-hidden rounded-3xl">
-                <div className="border-b border-white/8 px-4 py-3 mb-4">
+                <div className="mb-4 border-b border-white/8 px-4 py-3">
                   <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
-                    <MapPin
-                      className="size-4 text-emerald-300"
-                      aria-hidden="true"
-                    />
+                    <MapPin className="size-4 text-emerald-300" aria-hidden="true" />
                     Explora no mapa
                   </div>
                   <p className="mt-1 text-[11px] text-zinc-500">
