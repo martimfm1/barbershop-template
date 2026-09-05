@@ -156,6 +156,7 @@ export function BookingDrawerCanonical({
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [retryKey, setRetryKey] = useState(0);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -191,6 +192,7 @@ export function BookingDrawerCanonical({
     setLoadingAvailability(false);
     setSubmitting(false);
     setError('');
+    setRetryKey(0);
     setName('');
     setPhone('');
     setEmail('');
@@ -230,7 +232,7 @@ export function BookingDrawerCanonical({
           );
       });
     return () => controller.abort();
-  }, [currentDay.dateStr, isOpen, shop]);
+  }, [currentDay.dateStr, isOpen, retryKey, shop]);
 
   useEffect(() => {
     if (!isOpen || step !== 2 || !shop || !professional || !service) {
@@ -278,7 +280,7 @@ export function BookingDrawerCanonical({
         () => !controller.signal.aborted && setLoadingAvailability(false),
       );
     return () => controller.abort();
-  }, [currentDay.dateStr, isOpen, professional, service, shop, step]);
+  }, [currentDay.dateStr, isOpen, professional, retryKey, service, shop, step]);
 
   useEffect(() => {
     if (!isOpen || step !== 3 || !shop) return;
@@ -402,7 +404,7 @@ export function BookingDrawerCanonical({
 
   return (
     <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DrawerContent className="mx-auto flex h-[100dvh] max-h-[100dvh] w-full max-w-lg flex-col overflow-hidden rounded-none border-white/10 bg-zinc-950 text-zinc-100 sm:h-auto sm:max-h-[92dvh] sm:rounded-t-3xl">
+      <DrawerContent className="mx-auto flex h-[82dvh] max-h-[82dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border-white/10 bg-zinc-950 text-zinc-100 sm:h-auto sm:max-h-[92dvh] sm:rounded-t-3xl">
         <header className="shrink-0 border-b border-white/10 px-4 py-4 sm:px-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -459,9 +461,12 @@ export function BookingDrawerCanonical({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setError('')}
+                onClick={() => {
+                  setError('');
+                  if (step < 3) setRetryKey((value) => value + 1);
+                }}
               >
-                Tentar novamente
+                {step < 3 ? 'Tentar novamente' : 'Voltar aos dados'}
               </Button>
             </div>
           ) : step === 1 ? (
