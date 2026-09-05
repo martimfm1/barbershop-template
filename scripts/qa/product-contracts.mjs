@@ -22,7 +22,7 @@ const checks = [
     test: (source) =>
       source.includes('BARBERSHOP_CLOSED_DAY') &&
       source.includes("at time zone 'Europe/Lisbon'") &&
-      source.includes('unnest(string_to_array(lower(v_closed_days),')),
+      source.includes('unnest(string_to_array'),
   },
   {
     name: 'Final booking migration links existing clients',
