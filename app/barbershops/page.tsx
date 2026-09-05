@@ -49,6 +49,7 @@ export default function BarbershopsDirectoryPage() {
   const [userLocation, setUserLocation] = useState<UserCoordinates | null>(
     null,
   );
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 260);
@@ -82,7 +83,7 @@ export default function BarbershopsDirectoryPage() {
       });
 
     return () => controller.abort();
-  }, [debouncedQuery, activeDate, activeFilter, userLocation]);
+  }, [debouncedQuery, activeDate, activeFilter, userLocation, reloadKey]);
 
   const availableTags = useMemo(() => {
     const unique = new Map<string, string>();
@@ -124,7 +125,7 @@ export default function BarbershopsDirectoryPage() {
   const retryLoad = () => {
     setLoadError(false);
     setIsLoading(true);
-    setDebouncedQuery((value) => value);
+    setReloadKey((value) => value + 1);
   };
 
   return (
