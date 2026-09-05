@@ -7,6 +7,8 @@ allowBuilds:
   puppeteer: true
   sharp: true
   unrs-resolver: true
+overrides:
+  browserslist: '>=4.28.7'
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
