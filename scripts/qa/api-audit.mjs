@@ -18,6 +18,15 @@ const publicRoutePatterns = [
   /\/silentra-admin\//,
 ];
 
+const aliasRoutes = [
+  {
+    pattern: /\/onboarding\/join\/route\.ts$/,
+    requiredMarkers: [
+      "export { POST } from '@/app/api/onboarding/join-v2/route'",
+    ],
+  },
+];
+
 const requiredGuards = [
   'requireModuleContext',
   'requireTenantAuthorization',
@@ -67,6 +76,16 @@ for (const file of routes) {
   // The marketplace catalog is intentionally public. Its route applies
   // server-side visibility, active, stock and public-sales-mode filters.
   if (publicRoutePatterns.some((pattern) => pattern.test(relative))) continue;
+
+  const aliasRoute = aliasRoutes.find(({ pattern }) => pattern.test(relative));
+  if (aliasRoute) {
+    if (aliasRoute.requiredMarkers.every((marker) => source.includes(marker))) {
+      continue;
+    }
+    failures.push(`${relative}: legacy alias is not linked to the canonical guarded implementation`);
+    continue;
+  }
+
   if (requiredGuards.some((guard) => source.includes(guard))) continue;
 
   const specializedGuard = specializedGuards.find(({ pattern }) =>
