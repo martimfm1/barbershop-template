@@ -68,6 +68,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   return (
     <div className="silentra-dashboard-shell">
       <style dangerouslySetInnerHTML={{ __html: dashboardSurfaceStyles }} />
+      <a
+        href="#dashboard-main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-white focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-zinc-950 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+      >
+        Saltar para o conteúdo principal
+      </a>
       <DashboardTabMotionEnhancer />
       {!isSettingsPage && <DashboardTopBar />}
       <DashboardSidebar />
@@ -77,7 +83,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         }`}
       >
         <DashboardPageTransition>
-          <main className="dashboard-page mx-auto max-w-[1600px] py-5 sm:py-7">
+          <main
+            id="dashboard-main-content"
+            tabIndex={-1}
+            className="dashboard-page mx-auto max-w-[1600px] py-5 sm:py-7"
+          >
             {children}
           </main>
         </DashboardPageTransition>
