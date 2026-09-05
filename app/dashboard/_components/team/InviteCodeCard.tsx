@@ -10,6 +10,17 @@ type InviteCodeCardProps = {
   seats?: { used: number; limit: number; unlimited: boolean };
 };
 
+const INVITE_PATTERN = /^BARB-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}$/;
+
+function normalizeInviteCode(value: string): string {
+  const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!cleaned.startsWith('BARB')) return cleaned.slice(0, 8);
+  const body = cleaned.slice(4, 12);
+  return body.length
+    ? `BARB-${body.slice(0, 4)}${body.length > 4 ? `-${body.slice(4, 8)}` : ''}`
+    : 'BARB-';
+}
+
 export function InviteCodeCard({ seats }: InviteCodeCardProps) {
   const [code, setCode] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
@@ -51,12 +62,16 @@ export function InviteCodeCard({ seats }: InviteCodeCardProps) {
       const response = await fetch('/api/team/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
       });
       const data = await response.json();
       if (!response.ok)
         throw new Error(data.error || 'Não foi possível gerar o convite.');
-      setCode(data.code);
+
+      const normalized = normalizeInviteCode(String(data.code ?? ''));
+      if (!INVITE_PATTERN.test(normalized))
+        throw new Error('O convite gerado tem um formato inválido.');
+
+      setCode(normalized);
       setExpiresAt(data.expiresAt);
       toast.success('Convite criado.');
     } catch (error) {
@@ -97,8 +112,9 @@ export function InviteCodeCard({ seats }: InviteCodeCardProps) {
               Convidar para a equipa
             </CardTitle>
             <p className="mt-1 text-sm leading-6 text-zinc-500">
-              Cria um código de utilização única. O convite é válido durante 10
-              minutos e atribui à pessoa a função definida no convite.
+              Gera um código no mesmo formato aceite pelo onboarding:
+              <span className="ml-1 font-mono text-zinc-300">BARB-XXXX-XXXX</span>.
+              O convite é válido durante 10 minutos.
             </p>
           </div>
         </div>
@@ -134,7 +150,10 @@ export function InviteCodeCard({ seats }: InviteCodeCardProps) {
                 <p className="text-[11px] uppercase tracking-wider text-zinc-500">
                   Código de convite
                 </p>
-                <p className="mt-1 break-all font-mono text-xl font-bold tracking-[0.14em] text-white sm:text-2xl">
+                <p
+                  className="mt-1 break-all font-mono text-xl font-bold tracking-[0.14em] text-white sm:text-2xl"
+                  aria-label={`Código de convite ${code}`}
+                >
                   {code}
                 </p>
                 <p className="mt-1 text-xs text-zinc-500">
@@ -157,8 +176,7 @@ export function InviteCodeCard({ seats }: InviteCodeCardProps) {
           </div>
         ) : (
           <p className="text-xs leading-5 text-zinc-500">
-            Cada novo convite substitui o anterior apenas quando o novo código é
-            usado; códigos antigos continuam a expirar naturalmente.
+            Cada código pode ser usado uma vez e expira automaticamente.
           </p>
         )}
       </CardContent>
