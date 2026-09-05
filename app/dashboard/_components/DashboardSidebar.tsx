@@ -68,14 +68,14 @@ function BrandAvatar({ mobile = false, avatarUrl }: BrandAvatarProps) {
 }
 
 const primaryItems: SidebarItem[] = [
-  { href: '/dashboard', label: 'Resumo', icon: LayoutDashboard },
-  { href: '/dashboard/agenda', label: 'Marcações', icon: CalendarDays },
+  { href: '/dashboard', label: 'Início', icon: LayoutDashboard },
+  { href: '/dashboard/agenda', label: 'Agenda', icon: CalendarDays },
   { href: '/dashboard/clientes', label: 'Clientes', icon: Users },
   { href: '/dashboard/qr-code', label: 'QR Code', icon: QrCode },
   { href: '/dashboard/servicos', label: 'Serviços', icon: Scissors },
   {
     href: '/dashboard/equipa',
-    label: 'Barbeiros',
+    label: 'Equipa',
     icon: Briefcase,
     feature: 'team_management',
   },

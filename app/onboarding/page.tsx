@@ -43,6 +43,18 @@ function getErrorMessage(error: unknown): string {
   return 'Ocorreu um erro inesperado.';
 }
 
+function normalizeInviteCode(value: string): string {
+  const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (cleaned.startsWith('BARB')) {
+    const body = cleaned.slice(4, 12);
+    return body.length ? `BARB-${body.slice(0, 4)}${body.length > 4 ? `-${body.slice(4)}` : ''}` : 'BARB-';
+  }
+  if (/^[A-Z0-9]{1,8}$/.test(cleaned)) {
+    return cleaned.length > 4 ? `BARB-${cleaned.slice(0, 4)}-${cleaned.slice(4, 8)}` : cleaned;
+  }
+  return cleaned.slice(0, 14);
+}
+
 const inputClass =
   'min-h-11 rounded-xl border-white/10 bg-white/[0.04] text-sm text-zinc-50 placeholder:text-zinc-600 focus-visible:ring-2 focus-visible:ring-emerald-500/50';
 
@@ -243,7 +255,7 @@ export default function OnboardingPage() {
       const response = await fetch('/api/onboarding/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteCode: inviteCode.trim().toUpperCase() }),
+        body: JSON.stringify({ inviteCode: normalizeInviteCode(inviteCode) }),
       });
       const data = await response.json();
       if (!response.ok)
@@ -749,10 +761,11 @@ export default function OnboardingPage() {
                         required
                         value={inviteCode}
                         onChange={(event) =>
-                          setInviteCode(event.target.value.toUpperCase())
+                          setInviteCode(normalizeInviteCode(event.target.value))
                         }
-                        placeholder="BB-98X2"
-                        maxLength={10}
+                        placeholder="BARB-7K4P-9X2M"
+                        maxLength={14}
+                        inputMode="text"
                         autoComplete="one-time-code"
                         className="mt-2 min-h-12 text-center font-mono text-lg tracking-[0.25em]"
                       />
