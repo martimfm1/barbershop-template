@@ -80,5 +80,10 @@
     "tailwindcss": "^4",
     "tsx": "^4.19.2",
     "typescript": "^5"
+  },
+  "pnpm": {
+    "overrides": {
+      "browserslist": ">=4.28.7"
+    }
   }
 }
