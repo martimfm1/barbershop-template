@@ -16,6 +16,9 @@ const STATUSES = [
 ] as const;
 type Status = (typeof STATUSES)[number];
 
+const canCancel = (status: Status) =>
+  ['pending', 'confirmed', 'preparing', 'ready'].includes(status);
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ orderId: string }> },
@@ -62,6 +65,13 @@ export async function PATCH(
     }
 
     if (status === 'cancelled') {
+      if (!canCancel(current.status as Status)) {
+        return NextResponse.json(
+          { error: 'Esta encomenda já não pode ser cancelada neste estado.' },
+          { status: 409 },
+        );
+      }
+
       const { data, error } = await admin.rpc('cancel_marketplace_order_atomic', {
         p_order_id: orderId,
         p_barbershop_id: barbershopId,
