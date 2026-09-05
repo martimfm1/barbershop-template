@@ -266,7 +266,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Este dia é de folga da barbearia. Escolhe outro dia.',
+          error: 'A barbearia está fechada neste dia. Escolhe outro dia.',
         },
         { status: 409 },
       );
@@ -396,6 +396,25 @@ export async function POST(request: Request) {
           {
             success: false,
             error: 'Este horário acabou de ser reservado por outra pessoa.',
+          },
+          { status: 409 },
+        );
+      if (
+        createError?.message === 'BOOKING_BARBERSHOP_CLOSED_DAY' ||
+        createError?.message === 'BARBERSHOP_CLOSED_DAY'
+      )
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'A barbearia está fechada neste dia. Escolhe outro dia.',
+          },
+          { status: 409 },
+        );
+      if (createError?.message === 'BOOKING_SERVICE_NOT_AVAILABLE')
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'O serviço selecionado já não está disponível.',
           },
           { status: 409 },
         );
