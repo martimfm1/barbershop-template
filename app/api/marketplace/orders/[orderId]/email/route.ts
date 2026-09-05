@@ -103,7 +103,7 @@ export async function POST(
       .insert({
         order_id: order.id,
         barbershop_id: barbershopId,
-        previous_status: order.status,
+        previous_status: null,
         new_status: order.status,
         actor_user_id: auth.user?.id ?? null,
         source: 'manual_email',
