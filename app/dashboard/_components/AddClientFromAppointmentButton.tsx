@@ -1,6 +1,6 @@
 'use client';
 
-import { UserPlus, Loader2, Check } from 'lucide-react';
+import { Check, Loader2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -21,12 +21,14 @@ export function AddClientFromAppointmentButton({
     return (
       <span
         className={cn(
-          'inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-emerald-500/15 bg-emerald-500/5 px-3 text-xs font-medium text-emerald-400',
+          'inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-emerald-500/15 bg-emerald-500/5 px-3 text-xs font-medium text-emerald-300',
           className,
         )}
+        role="status"
+        aria-label="Cliente já guardado"
       >
         <Check className="size-3.5" aria-hidden="true" />
-        Cliente na lista
+        Cliente já guardado
       </span>
     );
   }
@@ -37,9 +39,10 @@ export function AddClientFromAppointmentButton({
       variant="outline"
       size="sm"
       disabled={loading}
+      aria-busy={loading || undefined}
       onClick={() => void onAdd()}
       className={cn(
-        'min-h-9 gap-1.5 border-white/10 bg-white/[0.03] text-xs text-zinc-200 hover:bg-white/[0.07]',
+        'min-h-10 gap-1.5 border-white/10 bg-white/[0.03] text-xs text-zinc-200 hover:bg-white/[0.07]',
         className,
       )}
     >
@@ -48,7 +51,7 @@ export function AddClientFromAppointmentButton({
       ) : (
         <UserPlus className="size-3.5" aria-hidden="true" />
       )}
-      {loading ? 'A adicionar…' : 'Adicionar aos clientes'}
+      {loading ? 'A adicionar…' : 'Adicionar cliente'}
     </Button>
   );
 }
