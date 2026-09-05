@@ -35,7 +35,7 @@
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "@whiskeysockets/baileys": "7.0.0-rc13",
-    "@zxing/browser": "^0.2.0",
+    "@zxing/browser": "^0.2.1",
     "browser-image-compression": "^2.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
