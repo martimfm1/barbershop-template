@@ -1,0 +1,1 @@
+Before changing create_booking_atomic, inspect the current migration chain and schema definitions for appointments, barbershop schedule/day-off fields, services, and the RPC return type. Do not deploy assumptions about column names or enum values.
