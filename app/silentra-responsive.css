@@ -65,12 +65,16 @@ canvas {
 }
 
 /* When a booking drawer is open, remove the public fixed navbar from the active layer. */
-body:has([data-slot='drawer-content'].max-w-lg.rounded-none) header.fixed.inset-x-0.top-0 {
+body:has([data-slot='drawer-content'].max-w-lg.rounded-none)
+  header.fixed.inset-x-0.top-0 {
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
   transform: translateY(-12px);
-  transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease,
+    visibility 160ms ease;
 }
 
 .cn-toast {
@@ -87,7 +91,8 @@ body:has([data-slot='drawer-content'].max-w-lg.rounded-none) header.fixed.inset-
 }
 
 @media (prefers-reduced-motion: reduce) {
-  body:has([data-slot='drawer-content'].max-w-lg.rounded-none) header.fixed.inset-x-0.top-0 {
+  body:has([data-slot='drawer-content'].max-w-lg.rounded-none)
+    header.fixed.inset-x-0.top-0 {
     transition: none;
   }
 

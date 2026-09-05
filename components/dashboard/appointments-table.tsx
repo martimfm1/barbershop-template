@@ -14,7 +14,10 @@ import {
 import { CalendarDays, Clock3, User } from 'lucide-react';
 import { AppointmentActions } from './appointment-actions';
 
-type ActionProps = Omit<ComponentProps<typeof AppointmentActions>, 'appointment' | 'onDetails'>;
+type ActionProps = Omit<
+  ComponentProps<typeof AppointmentActions>,
+  'appointment' | 'onDetails'
+>;
 
 type Props = ActionProps & {
   appointments: Appointment[];
@@ -28,7 +31,11 @@ const statusAccent: Record<Appointment['status'], string> = {
   cancelled: 'bg-rose-400',
 };
 
-export function AppointmentsTable({ appointments, onDetails, ...actionProps }: Props) {
+export function AppointmentsTable({
+  appointments,
+  onDetails,
+  ...actionProps
+}: Props) {
   return (
     <div className="overflow-x-auto">
       <Table className="min-w-[900px]">
@@ -38,16 +45,23 @@ export function AppointmentsTable({ appointments, onDetails, ...actionProps }: P
             <TableHead className="w-[24%] text-zinc-500">Serviço</TableHead>
             <TableHead className="w-[20%] text-zinc-500">Quando</TableHead>
             <TableHead className="w-[14%] text-zinc-500">Estado</TableHead>
-            <TableHead className="w-[14%] text-right text-zinc-500">Ações</TableHead>
+            <TableHead className="w-[14%] text-right text-zinc-500">
+              Ações
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {appointments.map((appointment) => {
             const date = new Date(appointment.date_hour);
-            const phone = appointment.users?.num_phone || appointment.manual_phone;
-            const name = appointment.users?.name_complete || appointment.manual_name || 'Cliente';
+            const phone =
+              appointment.users?.num_phone || appointment.manual_phone;
+            const name =
+              appointment.users?.name_complete ||
+              appointment.manual_name ||
+              'Cliente';
             const service = appointment.services?.name || 'Serviço';
-            const professional = appointment.professionals?.name || 'Sem barbeiro';
+            const professional =
+              appointment.professionals?.name || 'Sem barbeiro';
 
             return (
               <TableRow
@@ -65,15 +79,24 @@ export function AppointmentsTable({ appointments, onDetails, ...actionProps }: P
                 aria-label={`Ver detalhes da marcação de ${name}`}
               >
                 <TableCell className="relative py-4 pl-5">
-                  <span className={`absolute inset-y-2 left-0 w-0.5 rounded-full ${statusAccent[appointment.status]}`} aria-hidden="true" />
+                  <span
+                    className={`absolute inset-y-2 left-0 w-0.5 rounded-full ${statusAccent[appointment.status]}`}
+                    aria-hidden="true"
+                  />
                   <div className="min-w-0">
-                    <p className="truncate font-semibold text-zinc-100">{name}</p>
-                    <p className="mt-1 truncate text-[11px] text-zinc-500">{phone || 'Sem telefone'}</p>
+                    <p className="truncate font-semibold text-zinc-100">
+                      {name}
+                    </p>
+                    <p className="mt-1 truncate text-[11px] text-zinc-500">
+                      {phone || 'Sem telefone'}
+                    </p>
                   </div>
                 </TableCell>
                 <TableCell className="py-4">
                   <div className="min-w-0">
-                    <p className="truncate font-medium text-zinc-200">{service}</p>
+                    <p className="truncate font-medium text-zinc-200">
+                      {service}
+                    </p>
                     <p className="mt-1 flex items-center gap-1 truncate text-[11px] text-zinc-500">
                       <User className="size-3 shrink-0" aria-hidden="true" />
                       {professional}
@@ -86,10 +109,15 @@ export function AppointmentsTable({ appointments, onDetails, ...actionProps }: P
                       <CalendarDays className="size-3.5" aria-hidden="true" />
                     </span>
                     <div>
-                      <p className="text-sm font-medium tabular-nums text-zinc-200">{date.toLocaleDateString('pt-PT')}</p>
+                      <p className="text-sm font-medium tabular-nums text-zinc-200">
+                        {date.toLocaleDateString('pt-PT')}
+                      </p>
                       <p className="mt-0.5 flex items-center gap-1 text-[11px] tabular-nums text-zinc-500">
                         <Clock3 className="size-3" aria-hidden="true" />
-                        {date.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
+                        {date.toLocaleTimeString('pt-PT', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </p>
                     </div>
                   </div>
@@ -97,7 +125,10 @@ export function AppointmentsTable({ appointments, onDetails, ...actionProps }: P
                 <TableCell className="py-4">
                   <StatusBadge status={appointment.status} />
                 </TableCell>
-                <TableCell className="py-4" onClick={(event) => event.stopPropagation()}>
+                <TableCell
+                  className="py-4"
+                  onClick={(event) => event.stopPropagation()}
+                >
                   <div className="flex justify-end">
                     <AppointmentActions
                       appointment={appointment}

@@ -30,8 +30,10 @@ export async function POST(
       message?: unknown;
     } | null;
 
-    const subject = typeof body?.subject === 'string' ? body.subject.trim() : '';
-    const message = typeof body?.message === 'string' ? body.message.trim() : '';
+    const subject =
+      typeof body?.subject === 'string' ? body.subject.trim() : '';
+    const message =
+      typeof body?.message === 'string' ? body.message.trim() : '';
 
     if (
       subject.length < 3 ||

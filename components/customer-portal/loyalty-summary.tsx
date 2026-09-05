@@ -74,7 +74,10 @@ export function LoyaltySummary() {
         <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
           <div className="flex items-center justify-between gap-3 text-sm">
             <div className="flex items-center gap-2 text-zinc-300">
-              <Sparkles className="size-4 text-emerald-300" aria-hidden="true" />
+              <Sparkles
+                className="size-4 text-emerald-300"
+                aria-hidden="true"
+              />
               <span>Próxima recompensa</span>
             </div>
             <span className="font-semibold text-white">

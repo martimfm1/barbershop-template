@@ -15,13 +15,21 @@ const statusRail: Record<Appointment['status'], string> = {
   cancelled: 'bg-rose-400',
 };
 
-export function AppointmentMobileCard({ appointment, onDetails, ...actionProps }: Props) {
+export function AppointmentMobileCard({
+  appointment,
+  onDetails,
+  ...actionProps
+}: Props) {
   const date = new Date(appointment.date_hour);
   const phone = appointment.users?.num_phone || appointment.manual_phone;
-  const name = appointment.users?.name_complete || appointment.manual_name || 'Cliente';
+  const name =
+    appointment.users?.name_complete || appointment.manual_name || 'Cliente';
   const service = appointment.services?.name || 'Serviço';
   const professional = appointment.professionals?.name || 'Sem barbeiro';
-  const time = date.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+  const time = date.toLocaleTimeString('pt-PT', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
   return (
     <article
@@ -37,43 +45,78 @@ export function AppointmentMobileCard({ appointment, onDetails, ...actionProps }
       role={onDetails ? 'button' : undefined}
       aria-label={onDetails ? `Ver detalhes da marcação de ${name}` : undefined}
     >
-      <span className={`absolute inset-y-4 left-0 w-0.5 rounded-full ${statusRail[appointment.status]}`} aria-hidden="true" />
+      <span
+        className={`absolute inset-y-4 left-0 w-0.5 rounded-full ${statusRail[appointment.status]}`}
+        aria-hidden="true"
+      />
 
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="truncate text-[15px] font-semibold text-zinc-100">{name}</h3>
+            <h3 className="truncate text-[15px] font-semibold text-zinc-100">
+              {name}
+            </h3>
             <StatusBadge status={appointment.status} />
           </div>
           {phone ? (
-            <a href={`tel:${phone}`} onClick={(event) => event.stopPropagation()} className="mt-1 block w-fit text-xs text-zinc-500 underline-offset-4 hover:text-emerald-300 hover:underline" aria-label={`Ligar a ${name}`}>
+            <a
+              href={`tel:${phone}`}
+              onClick={(event) => event.stopPropagation()}
+              className="mt-1 block w-fit text-xs text-zinc-500 underline-offset-4 hover:text-emerald-300 hover:underline"
+              aria-label={`Ligar a ${name}`}
+            >
               {phone}
             </a>
           ) : (
-            <span className="mt-1 block text-xs text-zinc-600">Sem telefone</span>
+            <span className="mt-1 block text-xs text-zinc-600">
+              Sem telefone
+            </span>
           )}
         </div>
         <div className="shrink-0 rounded-xl border border-emerald-400/10 bg-emerald-400/[0.035] px-2.5 py-2 text-right">
-          <p className="text-sm font-semibold tabular-nums text-zinc-100">{time}</p>
-          <p className="mt-0.5 text-[10px] text-zinc-600">{date.toLocaleDateString('pt-PT')}</p>
+          <p className="text-sm font-semibold tabular-nums text-zinc-100">
+            {time}
+          </p>
+          <p className="mt-0.5 text-[10px] text-zinc-600">
+            {date.toLocaleDateString('pt-PT')}
+          </p>
         </div>
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-2">
         <div className="rounded-xl border border-white/[0.055] bg-black/10 p-3">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-600">Serviço</span>
-          <p className="mt-1 truncate text-sm font-medium text-zinc-200">{service}</p>
-          <p className="mt-1 flex items-center gap-1 truncate text-[11px] text-zinc-500"><User className="size-3 shrink-0" aria-hidden="true" />{professional}</p>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-600">
+            Serviço
+          </span>
+          <p className="mt-1 truncate text-sm font-medium text-zinc-200">
+            {service}
+          </p>
+          <p className="mt-1 flex items-center gap-1 truncate text-[11px] text-zinc-500">
+            <User className="size-3 shrink-0" aria-hidden="true" />
+            {professional}
+          </p>
         </div>
         <div className="rounded-xl border border-white/[0.055] bg-black/10 p-3">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-600">Quando</span>
-          <p className="mt-1 flex items-center gap-1 text-sm font-medium tabular-nums text-zinc-200"><Clock3 className="size-3.5 text-zinc-500" aria-hidden="true" />{time}</p>
-          <p className="mt-1 flex items-center gap-1 text-[11px] text-zinc-500"><CalendarDays className="size-3" aria-hidden="true" />{date.toLocaleDateString('pt-PT')}</p>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-600">
+            Quando
+          </span>
+          <p className="mt-1 flex items-center gap-1 text-sm font-medium tabular-nums text-zinc-200">
+            <Clock3 className="size-3.5 text-zinc-500" aria-hidden="true" />
+            {time}
+          </p>
+          <p className="mt-1 flex items-center gap-1 text-[11px] text-zinc-500">
+            <CalendarDays className="size-3" aria-hidden="true" />
+            {date.toLocaleDateString('pt-PT')}
+          </p>
         </div>
       </div>
 
       <div className="mt-3 border-t border-white/[0.055] pt-3">
-        <AppointmentActions appointment={appointment} onDetails={onDetails} {...actionProps} />
+        <AppointmentActions
+          appointment={appointment}
+          onDetails={onDetails}
+          {...actionProps}
+        />
       </div>
     </article>
   );

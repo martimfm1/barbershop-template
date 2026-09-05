@@ -56,7 +56,9 @@ function TabContent({
         <span
           className={cn(
             'shrink-0 transition-colors duration-200',
-            active ? 'text-emerald-300' : 'text-zinc-500 group-hover:text-zinc-300',
+            active
+              ? 'text-emerald-300'
+              : 'text-zinc-500 group-hover:text-zinc-300',
           )}
         >
           {icon}

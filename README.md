@@ -88,16 +88,16 @@ A autorização, o isolamento de tenants e os entitlements dos planos são trata
 
 O acesso às funcionalidades e quotas é definido pelos entitlements no backend.
 
-| Área | Free | Pro | Enterprise |
-| --- | :---: | :---: | :---: |
-| Gestão de marcações | ✓ | ✓ | ✓ |
-| Clientes e serviços | ✓ | ✓ | ✓ |
-| Gestão de profissionais | ✓ | ✓ | ✓ |
-| Dashboard operacional | ✓ | ✓ | ✓ |
-| Funcionalidades avançadas | — | ✓ | ✓ |
-| Marketing e automações | — | ✓ | ✓ |
-| Analytics avançado | — | ✓ | ✓ |
-| Funcionalidades Enterprise | — | — | ✓ |
+| Área                       | Free | Pro | Enterprise |
+| -------------------------- | :--: | :-: | :--------: |
+| Gestão de marcações        |  ✓   |  ✓  |     ✓      |
+| Clientes e serviços        |  ✓   |  ✓  |     ✓      |
+| Gestão de profissionais    |  ✓   |  ✓  |     ✓      |
+| Dashboard operacional      |  ✓   |  ✓  |     ✓      |
+| Funcionalidades avançadas  |  —   |  ✓  |     ✓      |
+| Marketing e automações     |  —   |  ✓  |     ✓      |
+| Analytics avançado         |  —   |  ✓  |     ✓      |
+| Funcionalidades Enterprise |  —   |  —  |     ✓      |
 
 As quotas e os entitlements efetivos são definidos no código e validados pelas APIs. A interface adapta-se ao plano atual, mas não é utilizada como mecanismo de segurança.
 

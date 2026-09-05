@@ -63,8 +63,9 @@ export default function PlansPage() {
               Escolhe o plano. Compara. Faz o checkout.
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
-              Esta é a página de decisão da Silentrafor Barbers. Aqui encontras a
-              comparação completa e, quando estiveres pronto, inicias o checkout.
+              Esta é a página de decisão da Silentrafor Barbers. Aqui encontras
+              a comparação completa e, quando estiveres pronto, inicias o
+              checkout.
             </p>
             <div className="mt-6 grid gap-2 text-xs text-zinc-500 sm:flex sm:flex-wrap sm:gap-x-5">
               <span className="inline-flex items-center gap-2">

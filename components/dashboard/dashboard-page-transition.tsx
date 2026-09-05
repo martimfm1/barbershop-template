@@ -105,7 +105,11 @@ export function DashboardPageTransition({
       className={cn('grid min-w-0 [perspective:1400px]', className)}
       style={{ transformStyle: 'preserve-3d' }}
     >
-      <AnimatePresence initial={false} mode="popLayout" custom={transition.direction}>
+      <AnimatePresence
+        initial={false}
+        mode="popLayout"
+        custom={transition.direction}
+      >
         <motion.div
           key={transition.key}
           custom={transition.direction}
@@ -117,7 +121,8 @@ export function DashboardPageTransition({
                   y: transition.direction > 0 ? 72 : -72,
                   scale: 0.965,
                   rotateX: transition.direction > 0 ? -7 : 7,
-                  transformOrigin: transition.direction > 0 ? '50% 0%' : '50% 100%',
+                  transformOrigin:
+                    transition.direction > 0 ? '50% 0%' : '50% 100%',
                   filter: 'blur(8px)',
                 }
           }
@@ -140,7 +145,8 @@ export function DashboardPageTransition({
                   y: transition.direction > 0 ? -48 : 48,
                   scale: 0.975,
                   rotateX: transition.direction > 0 ? 6 : -6,
-                  transformOrigin: transition.direction > 0 ? '50% 100%' : '50% 0%',
+                  transformOrigin:
+                    transition.direction > 0 ? '50% 100%' : '50% 0%',
                   filter: 'blur(6px)',
                 }
           }
@@ -149,7 +155,12 @@ export function DashboardPageTransition({
               ? { duration: 0.12 }
               : {
                   opacity: { duration: 0.24, ease: [0.22, 1, 0.36, 1] },
-                  y: { type: 'spring', stiffness: 280, damping: 30, mass: 0.78 },
+                  y: {
+                    type: 'spring',
+                    stiffness: 280,
+                    damping: 30,
+                    mass: 0.78,
+                  },
                   scale: { duration: 0.42, ease: [0.22, 1, 0.36, 1] },
                   rotateX: { duration: 0.42, ease: [0.22, 1, 0.36, 1] },
                   filter: { duration: 0.28, ease: 'easeOut' },

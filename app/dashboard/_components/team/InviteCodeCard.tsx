@@ -10,7 +10,8 @@ type InviteCodeCardProps = {
   seats?: { used: number; limit: number; unlimited: boolean };
 };
 
-const INVITE_PATTERN = /^BARB-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}$/;
+const INVITE_PATTERN =
+  /^BARB-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}$/;
 
 function normalizeInviteCode(value: string): string {
   const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -113,8 +114,10 @@ export function InviteCodeCard({ seats }: InviteCodeCardProps) {
             </CardTitle>
             <p className="mt-1 text-sm leading-6 text-zinc-500">
               Gera um código no mesmo formato aceite pelo onboarding:
-              <span className="ml-1 font-mono text-zinc-300">BARB-XXXX-XXXX</span>.
-              O convite é válido durante 10 minutos.
+              <span className="ml-1 font-mono text-zinc-300">
+                BARB-XXXX-XXXX
+              </span>
+              . O convite é válido durante 10 minutos.
             </p>
           </div>
         </div>

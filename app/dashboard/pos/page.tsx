@@ -230,9 +230,11 @@ export default function POSPage() {
   }
 
   useEffect(() => {
-    if (!repeatedTransactionId || repeatedRef.current === repeatedTransactionId) return;
+    if (!repeatedTransactionId || repeatedRef.current === repeatedTransactionId)
+      return;
     const transaction = transactions.find(
-      (item) => item.id === repeatedTransactionId && item.status === 'completed',
+      (item) =>
+        item.id === repeatedTransactionId && item.status === 'completed',
     );
     if (!transaction) return;
     if (!products.length && !services.length) return;
@@ -420,17 +422,26 @@ export default function POSPage() {
         <header className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
             <p className="text-sm font-medium text-primary">ENTERPRISE · POS</p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight">Ponto de venda</h1>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+              Ponto de venda
+            </h1>
             <p className="mt-2 text-muted-foreground">
-              Cria vendas, associa clientes e gere reversões com stock sincronizado.
+              Cria vendas, associa clientes e gere reversões com stock
+              sincronizado.
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => void loadData()} disabled={loading}>
+            <Button
+              variant="outline"
+              onClick={() => void loadData()}
+              disabled={loading}
+            >
               <RefreshCcw className="mr-2 h-4 w-4" /> Atualizar
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/dashboard"><ArrowLeft className="mr-2 h-4 w-4" /> Dashboard</Link>
+              <Link href="/dashboard">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Dashboard
+              </Link>
             </Button>
           </div>
         </header>
@@ -438,103 +449,300 @@ export default function POSPage() {
         <div className="grid gap-6 xl:grid-cols-[1fr_390px]">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Search className="h-5 w-5" /> Catálogo</CardTitle>
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Pesquisar produto ou serviço..." />
+              <CardTitle className="flex items-center gap-2">
+                <Search className="h-5 w-5" /> Catálogo
+              </CardTitle>
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Pesquisar produto ou serviço..."
+              />
             </CardHeader>
             <CardContent>
               {loading ? (
-                <p className="py-10 text-center text-muted-foreground">A carregar catálogo...</p>
+                <p className="py-10 text-center text-muted-foreground">
+                  A carregar catálogo...
+                </p>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
                   {filteredProducts.map((p) => (
-                    <button key={p.id} type="button" onClick={() => addProduct(p)} className="rounded-xl border border-white/10 p-4 text-left transition hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => addProduct(p)}
+                      className="rounded-xl border border-white/10 p-4 text-left transition hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
                       <p className="font-medium">{p.name}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">Produto · {p.stock_quantity} em stock</p>
-                      <p className="mt-2 font-semibold">{money(p.unit_price)}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Produto · {p.stock_quantity} em stock
+                      </p>
+                      <p className="mt-2 font-semibold">
+                        {money(p.unit_price)}
+                      </p>
                     </button>
                   ))}
                   {filteredServices.map((s) => (
-                    <button key={s.id} type="button" onClick={() => addService(s)} className="rounded-xl border border-white/10 p-4 text-left transition hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => addService(s)}
+                      className="rounded-xl border border-white/10 p-4 text-left transition hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
                       <p className="font-medium">{s.name}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">Serviço · {s.duration} min</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Serviço · {s.duration} min
+                      </p>
                       <p className="mt-2 font-semibold">{money(s.price)}</p>
                     </button>
                   ))}
-                  {!filteredProducts.length && !filteredServices.length && <p className="col-span-full py-10 text-center text-muted-foreground">Nenhum resultado.</p>}
+                  {!filteredProducts.length && !filteredServices.length && (
+                    <p className="col-span-full py-10 text-center text-muted-foreground">
+                      Nenhum resultado.
+                    </p>
+                  )}
                 </div>
               )}
             </CardContent>
           </Card>
 
           <Card className="h-fit xl:sticky xl:top-6">
-            <CardHeader><CardTitle className="flex items-center gap-2"><ShoppingCart className="h-5 w-5" /> Nova venda</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5" /> Nova venda
+              </CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
-              {cart.length === 0 ? <p className="py-6 text-center text-muted-foreground">Adiciona produtos ou serviços.</p> : (
+              {cart.length === 0 ? (
+                <p className="py-6 text-center text-muted-foreground">
+                  Adiciona produtos ou serviços.
+                </p>
+              ) : (
                 <div className="space-y-3">
                   {cart.map((item) => (
-                    <div key={item.key} className="rounded-xl border border-white/10 p-3">
+                    <div
+                      key={item.key}
+                      className="rounded-xl border border-white/10 p-3"
+                    >
                       <div className="flex items-start justify-between gap-3">
-                        <div><p className="font-medium">{item.description}</p><p className="text-sm text-muted-foreground">{money(item.unitPrice)} cada</p></div>
-                        <button type="button" onClick={() => setCart((current) => current.filter((x) => x.key !== item.key))} aria-label={`Remover ${item.description}`} className="rounded-lg p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><Trash2 className="h-4 w-4 text-muted-foreground" /></button>
+                        <div>
+                          <p className="font-medium">{item.description}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {money(item.unitPrice)} cada
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCart((current) =>
+                              current.filter((x) => x.key !== item.key),
+                            )
+                          }
+                          aria-label={`Remover ${item.description}`}
+                          className="rounded-lg p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        >
+                          <Trash2 className="h-4 w-4 text-muted-foreground" />
+                        </button>
                       </div>
                       <div className="mt-3 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <Button size="icon" variant="outline" onClick={() => changeQuantity(item.key, -1)} aria-label="Diminuir quantidade"><Minus className="h-4 w-4" /></Button>
-                          <span className="w-6 text-center" aria-label={`Quantidade ${item.quantity}`}>{item.quantity}</span>
-                          <Button size="icon" variant="outline" onClick={() => changeQuantity(item.key, 1)} aria-label="Aumentar quantidade"><Plus className="h-4 w-4" /></Button>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={() => changeQuantity(item.key, -1)}
+                            aria-label="Diminuir quantidade"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span
+                            className="w-6 text-center"
+                            aria-label={`Quantidade ${item.quantity}`}
+                          >
+                            {item.quantity}
+                          </span>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={() => changeQuantity(item.key, 1)}
+                            aria-label="Aumentar quantidade"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <span className="font-semibold">{money(item.quantity * item.unitPrice)}</span>
+                        <span className="font-semibold">
+                          {money(item.quantity * item.unitPrice)}
+                        </span>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
               <div className="border-t border-white/10 pt-4">
-                <label className="text-sm text-muted-foreground" htmlFor="pos-client">Cliente (opcional)</label>
-                <select id="pos-client" className="mt-1 h-10 w-full rounded-md border border-white/10 bg-background px-3" value={clientId} onChange={(e) => setClientId(e.target.value)}>
+                <label
+                  className="text-sm text-muted-foreground"
+                  htmlFor="pos-client"
+                >
+                  Cliente (opcional)
+                </label>
+                <select
+                  id="pos-client"
+                  className="mt-1 h-10 w-full rounded-md border border-white/10 bg-background px-3"
+                  value={clientId}
+                  onChange={(e) => setClientId(e.target.value)}
+                >
                   <option value="">Cliente ocasional</option>
-                  {clients.map((client) => <option key={client.id} value={client.id}>{client.name_complete}{client.num_phone ? ` · ${client.num_phone}` : ''}</option>)}
+                  {clients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.name_complete}
+                      {client.num_phone ? ` · ${client.num_phone}` : ''}
+                    </option>
+                  ))}
                 </select>
-                <label className="mt-4 block text-sm text-muted-foreground" htmlFor="pos-discount">Desconto</label>
-                <Input id="pos-discount" className="mt-1" type="number" min="0" step="0.01" value={discount} onChange={(e) => setDiscount(Number(e.target.value) || 0)} />
-                <label className="mt-4 block text-sm text-muted-foreground" htmlFor="pos-payment">Método de pagamento</label>
-                <select id="pos-payment" className="mt-1 h-10 w-full rounded-md border border-white/10 bg-background px-3" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-                  <option value="cash">Dinheiro</option><option value="card">Cartão</option><option value="transfer">Transferência</option><option value="other">Outro</option>
+                <label
+                  className="mt-4 block text-sm text-muted-foreground"
+                  htmlFor="pos-discount"
+                >
+                  Desconto
+                </label>
+                <Input
+                  id="pos-discount"
+                  className="mt-1"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={discount}
+                  onChange={(e) => setDiscount(Number(e.target.value) || 0)}
+                />
+                <label
+                  className="mt-4 block text-sm text-muted-foreground"
+                  htmlFor="pos-payment"
+                >
+                  Método de pagamento
+                </label>
+                <select
+                  id="pos-payment"
+                  className="mt-1 h-10 w-full rounded-md border border-white/10 bg-background px-3"
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                >
+                  <option value="cash">Dinheiro</option>
+                  <option value="card">Cartão</option>
+                  <option value="transfer">Transferência</option>
+                  <option value="other">Outro</option>
                 </select>
-                <div className="mt-5 flex justify-between text-sm"><span>Subtotal</span><span>{money(subtotal)}</span></div>
-                <div className="mt-1 flex justify-between text-sm"><span>Desconto</span><span>-{money(appliedDiscount)}</span></div>
-                <div className="mt-2 flex justify-between text-xl font-semibold"><span>Total</span><span>{money(total)}</span></div>
-                <Button className="mt-5 w-full" size="lg" disabled={!cart.length || submitting} onClick={() => void checkout()}>{submitting ? 'A processar...' : 'Concluir venda'}</Button>
+                <div className="mt-5 flex justify-between text-sm">
+                  <span>Subtotal</span>
+                  <span>{money(subtotal)}</span>
+                </div>
+                <div className="mt-1 flex justify-between text-sm">
+                  <span>Desconto</span>
+                  <span>-{money(appliedDiscount)}</span>
+                </div>
+                <div className="mt-2 flex justify-between text-xl font-semibold">
+                  <span>Total</span>
+                  <span>{money(total)}</span>
+                </div>
+                <Button
+                  className="mt-5 w-full"
+                  size="lg"
+                  disabled={!cart.length || submitting}
+                  onClick={() => void checkout()}
+                >
+                  {submitting ? 'A processar...' : 'Concluir venda'}
+                </Button>
               </div>
             </CardContent>
           </Card>
         </div>
 
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><Receipt className="h-5 w-5" /> Histórico</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5" /> Histórico
+            </CardTitle>
+          </CardHeader>
           <CardContent>
-            {transactions.length === 0 ? <p className="py-10 text-center text-muted-foreground">Ainda não existem transações.</p> : (
+            {transactions.length === 0 ? (
+              <p className="py-10 text-center text-muted-foreground">
+                Ainda não existem transações.
+              </p>
+            ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[950px] text-sm">
-                  <thead className="border-b border-white/10 text-left text-muted-foreground"><tr><th className="px-3 py-3">Data</th><th className="px-3 py-3">Itens</th><th className="px-3 py-3">Pagamento</th><th className="px-3 py-3">Total</th><th className="px-3 py-3">Estado</th><th className="px-3 py-3 text-right">Ações</th></tr></thead>
+                  <thead className="border-b border-white/10 text-left text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-3">Data</th>
+                      <th className="px-3 py-3">Itens</th>
+                      <th className="px-3 py-3">Pagamento</th>
+                      <th className="px-3 py-3">Total</th>
+                      <th className="px-3 py-3">Estado</th>
+                      <th className="px-3 py-3 text-right">Ações</th>
+                    </tr>
+                  </thead>
                   <tbody className="divide-y divide-white/10">
                     {transactions.map((transaction) => (
                       <tr key={transaction.id}>
-                        <td className="px-3 py-4 text-muted-foreground">{new Date(transaction.created_at).toLocaleString('pt-PT')}</td>
-                        <td className="max-w-[300px] px-3 py-4">{(transaction.pos_transaction_items ?? []).map((item) => `${item.description} × ${item.quantity}`).join(', ') || '—'}</td>
-                        <td className="px-3 py-4 capitalize">{transaction.payment_method}</td>
-                        <td className="px-3 py-4 font-medium">{money(transaction.total)}</td>
-                        <td className="px-3 py-4"><span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs capitalize">{transaction.status}</span></td>
+                        <td className="px-3 py-4 text-muted-foreground">
+                          {new Date(transaction.created_at).toLocaleString(
+                            'pt-PT',
+                          )}
+                        </td>
+                        <td className="max-w-[300px] px-3 py-4">
+                          {(transaction.pos_transaction_items ?? [])
+                            .map(
+                              (item) =>
+                                `${item.description} × ${item.quantity}`,
+                            )
+                            .join(', ') || '—'}
+                        </td>
+                        <td className="px-3 py-4 capitalize">
+                          {transaction.payment_method}
+                        </td>
+                        <td className="px-3 py-4 font-medium">
+                          {money(transaction.total)}
+                        </td>
+                        <td className="px-3 py-4">
+                          <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs capitalize">
+                            {transaction.status}
+                          </span>
+                        </td>
                         <td className="px-3 py-4">
                           {transaction.status === 'completed' ? (
                             <div className="flex justify-end gap-2">
                               <Button asChild size="sm" variant="outline">
-                                <Link href={`/dashboard/pos?repeat=${encodeURIComponent(transaction.id)}`}>Repetir venda</Link>
+                                <Link
+                                  href={`/dashboard/pos?repeat=${encodeURIComponent(transaction.id)}`}
+                                >
+                                  Repetir venda
+                                </Link>
                               </Button>
-                              <Button size="sm" variant="outline" disabled={reversing === transaction.id} onClick={() => void reverseTransaction(transaction, 'refund')}><Undo2 className="mr-1.5 h-3.5 w-3.5" /> Reembolsar</Button>
-                              <Button size="sm" variant="ghost" disabled={reversing === transaction.id} onClick={() => void reverseTransaction(transaction, 'void')}><RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Anular</Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={reversing === transaction.id}
+                                onClick={() =>
+                                  void reverseTransaction(transaction, 'refund')
+                                }
+                              >
+                                <Undo2 className="mr-1.5 h-3.5 w-3.5" />{' '}
+                                Reembolsar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                disabled={reversing === transaction.id}
+                                onClick={() =>
+                                  void reverseTransaction(transaction, 'void')
+                                }
+                              >
+                                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />{' '}
+                                Anular
+                              </Button>
                             </div>
-                          ) : <span className="block text-right text-xs text-muted-foreground">Sem ações</span>}
+                          ) : (
+                            <span className="block text-right text-xs text-muted-foreground">
+                              Sem ações
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -545,7 +753,12 @@ export default function POSPage() {
           </CardContent>
         </Card>
 
-        <Card><CardContent className="flex items-center gap-3 py-4 text-sm text-muted-foreground">Os preços, stock e total são sempre revalidados pelo servidor antes de concluir a venda.</CardContent></Card>
+        <Card>
+          <CardContent className="flex items-center gap-3 py-4 text-sm text-muted-foreground">
+            Os preços, stock e total são sempre revalidados pelo servidor antes
+            de concluir a venda.
+          </CardContent>
+        </Card>
       </div>
     </main>
   );

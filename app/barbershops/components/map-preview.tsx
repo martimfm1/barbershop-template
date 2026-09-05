@@ -82,8 +82,8 @@ export function MapPreview({
                   Resultados disponíveis
                 </div>
                 <div className="mt-0.5 text-xs font-medium text-zinc-300">
-                  {shops.length} {shops.length === 1 ? 'barbearia' : 'barbearias'}{' '}
-                  no mapa
+                  {shops.length}{' '}
+                  {shops.length === 1 ? 'barbearia' : 'barbearias'} no mapa
                 </div>
               </div>
               <div className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1.5 text-xs font-semibold text-emerald-100">

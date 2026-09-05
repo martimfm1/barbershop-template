@@ -142,11 +142,7 @@ export default function MapInner({
           className="h-full w-full rounded-3xl"
           aria-label="Mapa de barbearias próximas"
         >
-          <TileLayer
-            url={cartoTileUrl}
-            subdomains="abcd"
-            maxZoom={20}
-          />
+          <TileLayer url={cartoTileUrl} subdomains="abcd" maxZoom={20} />
 
           <MapBoundsController shops={shops} userLocation={userLocation} />
 

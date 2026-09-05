@@ -82,7 +82,9 @@ for (const file of routes) {
     if (aliasRoute.requiredMarkers.every((marker) => source.includes(marker))) {
       continue;
     }
-    failures.push(`${relative}: legacy alias is not linked to the canonical guarded implementation`);
+    failures.push(
+      `${relative}: legacy alias is not linked to the canonical guarded implementation`,
+    );
     continue;
   }
 

@@ -198,7 +198,9 @@ export async function handleRegister({
     if (onSuccess) {
       onSuccess();
     } else {
-      throw new Error('Registo concluído, mas não foi definida uma página de confirmação.');
+      throw new Error(
+        'Registo concluído, mas não foi definida uma página de confirmação.',
+      );
     }
   } catch (error) {
     const targetError =

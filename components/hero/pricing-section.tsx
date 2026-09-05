@@ -106,16 +106,16 @@ export function PricingSection({
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-200">
-                <ShieldCheck className="size-3.5" aria-hidden="true" /> Decisão e
-                checkout
+                <ShieldCheck className="size-3.5" aria-hidden="true" /> Decisão
+                e checkout
               </div>
               <h2 className="mt-4 text-3xl font-semibold leading-tight tracking-[-0.045em] text-zinc-50 sm:text-4xl lg:text-5xl">
                 Escolhe o plano. O próximo passo é sempre o checkout.
               </h2>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
                 Compara o essencial, escolhe a fase certa da tua barbearia e
-                continua sem saltos de página desnecessários. O pagamento acontece
-                na experiência de checkout da Silentra.
+                continua sem saltos de página desnecessários. O pagamento
+                acontece na experiência de checkout da Silentra.
               </p>
             </div>
             <Link

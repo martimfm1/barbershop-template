@@ -242,7 +242,11 @@ export default function SalesOverviewPage() {
             <Button asChild className="min-h-10">
               <Link href="/dashboard/pos">Nova venda</Link>
             </Button>
-            <Button variant="outline" onClick={() => void load()} className="min-h-10">
+            <Button
+              variant="outline"
+              onClick={() => void load()}
+              className="min-h-10"
+            >
               <RefreshCcw className="mr-2 size-4" />
               Atualizar
             </Button>
@@ -254,14 +258,18 @@ export default function SalesOverviewPage() {
             <CardContent className="p-5">
               <p className="text-sm text-muted-foreground">Receita</p>
               <p className="mt-2 text-2xl font-semibold">{money(revenue)}</p>
-              <p className="mt-1 text-xs text-muted-foreground">Vendas concluídas</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Vendas concluídas
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-5">
               <p className="text-sm text-muted-foreground">Vendas</p>
               <p className="mt-2 text-2xl font-semibold">{completed.length}</p>
-              <p className="mt-1 text-xs text-muted-foreground">Operações concluídas</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Operações concluídas
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -275,14 +283,20 @@ export default function SalesOverviewPage() {
             <CardContent className="p-5">
               <p className="text-sm text-muted-foreground">Descontos</p>
               <p className="mt-2 text-2xl font-semibold">{money(discounts)}</p>
-              <p className="mt-1 text-xs text-muted-foreground">Valor concedido</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Valor concedido
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground">Reembolsos e anulações</p>
+              <p className="text-sm text-muted-foreground">
+                Reembolsos e anulações
+              </p>
               <p className="mt-2 text-2xl font-semibold">{reversed.length}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{money(reversedValue)} revertidos</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {money(reversedValue)} revertidos
+              </p>
             </CardContent>
           </Card>
         </section>
@@ -303,21 +317,36 @@ export default function SalesOverviewPage() {
               ) : (
                 <div className="space-y-3">
                   {topItems.map((item, index) => {
-                    const share = revenue > 0 ? Math.round((item.revenue / revenue) * 100) : 0;
+                    const share =
+                      revenue > 0
+                        ? Math.round((item.revenue / revenue) * 100)
+                        : 0;
                     return (
-                      <div key={item.name} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                      <div
+                        key={item.name}
+                        className="rounded-2xl border border-white/10 bg-white/[0.02] p-4"
+                      >
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex min-w-0 items-center gap-3">
-                            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-sm font-semibold text-primary">{index + 1}</span>
+                            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-sm font-semibold text-primary">
+                              {index + 1}
+                            </span>
                             <div className="min-w-0">
-                              <p className="truncate font-medium">{item.name}</p>
-                              <p className="text-xs text-muted-foreground">{item.quantity} unidade(s) · {share}% da receita</p>
+                              <p className="truncate font-medium">
+                                {item.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {item.quantity} unidade(s) · {share}% da receita
+                              </p>
                             </div>
                           </div>
                           <p className="font-semibold">{money(item.revenue)}</p>
                         </div>
                         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-                          <div className="h-full rounded-full bg-primary" style={{ width: `${share}%` }} />
+                          <div
+                            className="h-full rounded-full bg-primary"
+                            style={{ width: `${share}%` }}
+                          />
                         </div>
                       </div>
                     );
@@ -336,13 +365,20 @@ export default function SalesOverviewPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               {paymentBreakdown.length === 0 ? (
-                <p className="py-10 text-center text-muted-foreground">Sem vendas neste período.</p>
+                <p className="py-10 text-center text-muted-foreground">
+                  Sem vendas neste período.
+                </p>
               ) : (
                 paymentBreakdown.map(([method, stats]) => (
-                  <div key={method} className="flex items-center justify-between rounded-xl border border-white/10 p-3">
+                  <div
+                    key={method}
+                    className="flex items-center justify-between rounded-xl border border-white/10 p-3"
+                  >
                     <div>
                       <p className="font-medium">{paymentLabel(method)}</p>
-                      <p className="text-xs text-muted-foreground">{stats.count} venda(s)</p>
+                      <p className="text-xs text-muted-foreground">
+                        {stats.count} venda(s)
+                      </p>
                     </div>
                     <p className="font-semibold">{money(stats.revenue)}</p>
                   </div>
@@ -361,7 +397,9 @@ export default function SalesOverviewPage() {
           </CardHeader>
           <CardContent>
             {completed.length === 0 ? (
-              <p className="py-10 text-center text-muted-foreground">Sem vendas concluídas.</p>
+              <p className="py-10 text-center text-muted-foreground">
+                Sem vendas concluídas.
+              </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[720px] text-sm">
@@ -376,10 +414,25 @@ export default function SalesOverviewPage() {
                   <tbody className="divide-y divide-white/10">
                     {completed.slice(0, 20).map((transaction) => (
                       <tr key={transaction.id}>
-                        <td className="px-3 py-4 text-muted-foreground">{new Date(transaction.created_at).toLocaleString('pt-PT')}</td>
-                        <td className="max-w-[420px] px-3 py-4">{(transaction.pos_transaction_items ?? []).map((item) => `${item.description} × ${item.quantity}`).join(', ') || '—'}</td>
-                        <td className="px-3 py-4">{paymentLabel(transaction.payment_method)}</td>
-                        <td className="px-3 py-4 text-right font-semibold">{money(transaction.total)}</td>
+                        <td className="px-3 py-4 text-muted-foreground">
+                          {new Date(transaction.created_at).toLocaleString(
+                            'pt-PT',
+                          )}
+                        </td>
+                        <td className="max-w-[420px] px-3 py-4">
+                          {(transaction.pos_transaction_items ?? [])
+                            .map(
+                              (item) =>
+                                `${item.description} × ${item.quantity}`,
+                            )
+                            .join(', ') || '—'}
+                        </td>
+                        <td className="px-3 py-4">
+                          {paymentLabel(transaction.payment_method)}
+                        </td>
+                        <td className="px-3 py-4 text-right font-semibold">
+                          {money(transaction.total)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

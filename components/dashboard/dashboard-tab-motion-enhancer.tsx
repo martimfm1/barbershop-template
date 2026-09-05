@@ -147,7 +147,9 @@ function enhanceSidebar(nav: HTMLElement) {
     : 'transform 460ms cubic-bezier(0.22, 1, 0.36, 1), width 460ms cubic-bezier(0.22, 1, 0.36, 1), height 460ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease';
 
   const sync = () => {
-    const active = items.find((item) => item.getAttribute('aria-current') === 'page');
+    const active = items.find(
+      (item) => item.getAttribute('aria-current') === 'page',
+    );
     if (!active || !indicator) {
       if (indicator) indicator.style.opacity = '0';
       return;

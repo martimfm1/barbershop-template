@@ -20,13 +20,17 @@ export async function POST() {
       if (error.code === '42501')
         return NextResponse.json(
           {
-            error: 'Apenas o proprietário ou administrador pode gerar convites.',
+            error:
+              'Apenas o proprietário ou administrador pode gerar convites.',
           },
           { status: 403 },
         );
       if (error.code === 'P0001')
         return NextResponse.json(
-          { error: 'Não existe espaço disponível para adicionar outra pessoa à equipa.' },
+          {
+            error:
+              'Não existe espaço disponível para adicionar outra pessoa à equipa.',
+          },
           { status: 409 },
         );
       return NextResponse.json(

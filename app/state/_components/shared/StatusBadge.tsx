@@ -36,7 +36,10 @@ export function StatusBadge({ status }: { status: string }) {
       )}
       aria-label={`Estado: ${config?.label ?? status}`}
     >
-      <span className={cn('size-1.5 rounded-full', config?.dot ?? 'bg-zinc-500')} aria-hidden="true" />
+      <span
+        className={cn('size-1.5 rounded-full', config?.dot ?? 'bg-zinc-500')}
+        aria-hidden="true"
+      />
       {config?.label ?? status}
     </Badge>
   );

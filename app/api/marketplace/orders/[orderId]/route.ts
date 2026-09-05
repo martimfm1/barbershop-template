@@ -76,7 +76,8 @@ async function notifyCustomer(
     delivered: 'A sua encomenda foi entregue',
     cancelled: 'A sua encomenda foi cancelada',
   };
-  const subject = subjectByStatus[order.status] || 'Atualização da sua encomenda';
+  const subject =
+    subjectByStatus[order.status] || 'Atualização da sua encomenda';
 
   const result = await sendBrevoEmail({
     to: order.customer_email,
@@ -119,11 +120,20 @@ export async function PATCH(
       .maybeSingle();
 
     if (currentError) {
-      console.error('[MARKETPLACE_ORDER_READ_ERROR]', currentError.code ?? 'UNKNOWN');
-      return NextResponse.json({ error: 'Não foi possível carregar a encomenda.' }, { status: 503 });
+      console.error(
+        '[MARKETPLACE_ORDER_READ_ERROR]',
+        currentError.code ?? 'UNKNOWN',
+      );
+      return NextResponse.json(
+        { error: 'Não foi possível carregar a encomenda.' },
+        { status: 503 },
+      );
     }
     if (!current) {
-      return NextResponse.json({ error: 'Encomenda não encontrada.' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Encomenda não encontrada.' },
+        { status: 404 },
+      );
     }
     if (current.status === status) {
       return NextResponse.json({ order: current });
@@ -142,8 +152,14 @@ export async function PATCH(
         p_barbershop_id: barbershopId,
       });
       if (result.error || !result.data) {
-        console.error('[MARKETPLACE_ORDER_CANCEL_ERROR]', result.error?.code ?? 'UNKNOWN');
-        return NextResponse.json({ error: 'Não foi possível cancelar a encomenda.' }, { status: 409 });
+        console.error(
+          '[MARKETPLACE_ORDER_CANCEL_ERROR]',
+          result.error?.code ?? 'UNKNOWN',
+        );
+        return NextResponse.json(
+          { error: 'Não foi possível cancelar a encomenda.' },
+          { status: 409 },
+        );
       }
       updated = result.data;
     } else {
@@ -153,11 +169,32 @@ export async function PATCH(
         p_next_status: status,
       });
       if (result.error || !result.data) {
-        if (result.error?.code === 'P0001') return NextResponse.json({ error: 'Esta encomenda não pode passar diretamente para esse estado.' }, { status: 409 });
-        if (result.error?.code === 'P0002') return NextResponse.json({ error: 'Encomenda não encontrada.' }, { status: 404 });
-        if (result.error?.code === '22023') return NextResponse.json({ error: 'Estado de encomenda inválido.' }, { status: 400 });
-        console.error('[MARKETPLACE_ORDER_STATUS_ERROR]', result.error?.code ?? 'UNKNOWN');
-        return NextResponse.json({ error: 'Não foi possível atualizar a encomenda.' }, { status: 503 });
+        if (result.error?.code === 'P0001')
+          return NextResponse.json(
+            {
+              error:
+                'Esta encomenda não pode passar diretamente para esse estado.',
+            },
+            { status: 409 },
+          );
+        if (result.error?.code === 'P0002')
+          return NextResponse.json(
+            { error: 'Encomenda não encontrada.' },
+            { status: 404 },
+          );
+        if (result.error?.code === '22023')
+          return NextResponse.json(
+            { error: 'Estado de encomenda inválido.' },
+            { status: 400 },
+          );
+        console.error(
+          '[MARKETPLACE_ORDER_STATUS_ERROR]',
+          result.error?.code ?? 'UNKNOWN',
+        );
+        return NextResponse.json(
+          { error: 'Não foi possível atualizar a encomenda.' },
+          { status: 503 },
+        );
       }
       updated = result.data;
     }
@@ -168,6 +205,9 @@ export async function PATCH(
   } catch (error) {
     const response = moduleErrorResponse(error);
     if (response) return response;
-    return NextResponse.json({ error: 'Não foi possível atualizar a encomenda.' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Não foi possível atualizar a encomenda.' },
+      { status: 500 },
+    );
   }
 }

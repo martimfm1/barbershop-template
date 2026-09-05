@@ -57,7 +57,7 @@ const checks = [
     name: 'Marketplace order RPC includes delivery fields used by the API',
     file: 'supabase/migrations/20260830210000_marketplace_sales_channels.sql',
     test: (source) =>
-      source.includes('p_fulfillment_method text default \'pickup\'') &&
+      source.includes("p_fulfillment_method text default 'pickup'") &&
       source.includes('p_shipping_address text default null') &&
       source.includes('p_shipping_city text default null') &&
       source.includes('p_shipping_postal_code text default null') &&

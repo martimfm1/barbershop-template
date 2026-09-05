@@ -47,10 +47,14 @@ function normalizeInviteCode(value: string): string {
   const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (cleaned.startsWith('BARB')) {
     const body = cleaned.slice(4, 12);
-    return body.length ? `BARB-${body.slice(0, 4)}${body.length > 4 ? `-${body.slice(4)}` : ''}` : 'BARB-';
+    return body.length
+      ? `BARB-${body.slice(0, 4)}${body.length > 4 ? `-${body.slice(4)}` : ''}`
+      : 'BARB-';
   }
   if (/^[A-Z0-9]{1,8}$/.test(cleaned)) {
-    return cleaned.length > 4 ? `BARB-${cleaned.slice(0, 4)}-${cleaned.slice(4, 8)}` : cleaned;
+    return cleaned.length > 4
+      ? `BARB-${cleaned.slice(0, 4)}-${cleaned.slice(4, 8)}`
+      : cleaned;
   }
   return cleaned.slice(0, 14);
 }
@@ -611,7 +615,8 @@ export default function OnboardingPage() {
                               />
                             </div>
                             <p className="text-[11px] text-zinc-600">
-                              Este valor é apenas uma referência para os clientes.
+                              Este valor é apenas uma referência para os
+                              clientes.
                             </p>
                           </div>
                           <div className="grid gap-2">

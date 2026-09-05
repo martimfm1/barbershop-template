@@ -87,16 +87,22 @@ export function SettingsCancellationPolicyPanel() {
           <CalendarX2 className="size-4" aria-hidden="true" />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-zinc-100">Prazo de cancelamento</p>
+          <p className="text-sm font-semibold text-zinc-100">
+            Prazo de cancelamento
+          </p>
           <p className="mt-1 max-w-2xl text-xs leading-5 text-zinc-600">
-            Define com quantas horas de antecedência o cliente pode cancelar ou reagendar uma marcação.
+            Define com quantas horas de antecedência o cliente pode cancelar ou
+            reagendar uma marcação.
           </p>
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
         <div className="grid gap-2">
-          <label htmlFor="settings-cancellation-hours-enhanced" className="text-sm font-medium text-zinc-300">
+          <label
+            htmlFor="settings-cancellation-hours-enhanced"
+            className="text-sm font-medium text-zinc-300"
+          >
             Horas antes da marcação
           </label>
           <Input
@@ -111,9 +117,13 @@ export function SettingsCancellationPolicyPanel() {
             aria-invalid={invalid}
           />
           {invalid ? (
-            <p className="text-xs text-red-300">Usa um número inteiro entre 0 e 720 horas.</p>
+            <p className="text-xs text-red-300">
+              Usa um número inteiro entre 0 e 720 horas.
+            </p>
           ) : (
-            <p className="text-xs leading-5 text-zinc-600">0 permite cancelar até à hora marcada.</p>
+            <p className="text-xs leading-5 text-zinc-600">
+              0 permite cancelar até à hora marcada.
+            </p>
           )}
         </div>
 
@@ -121,12 +131,16 @@ export function SettingsCancellationPolicyPanel() {
           <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
             <Clock3 className="size-3.5" aria-hidden="true" /> Regra atual
           </p>
-          <p className="mt-2 text-lg font-semibold text-white">{formatHours(hours)}</p>
+          <p className="mt-2 text-lg font-semibold text-white">
+            {formatHours(hours)}
+          </p>
         </div>
       </div>
 
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Atalhos</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+          Atalhos
+        </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {PRESETS.map((preset) => {
             const active = hours === preset;
@@ -138,7 +152,9 @@ export function SettingsCancellationPolicyPanel() {
                 className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${active ? 'border-amber-400/30 bg-amber-400/10 text-amber-100' : 'border-white/10 bg-white/[0.03] text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200'}`}
                 aria-pressed={active}
               >
-                {active ? <Check className="size-3.5" aria-hidden="true" /> : null}
+                {active ? (
+                  <Check className="size-3.5" aria-hidden="true" />
+                ) : null}
                 {formatHours(preset)}
               </button>
             );

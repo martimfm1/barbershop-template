@@ -116,7 +116,9 @@ function weekdayKey(date: Date) {
 }
 
 function appointmentName(appointment: Appointment) {
-  return appointment.manual_name || appointment.users?.name_complete || 'Cliente';
+  return (
+    appointment.manual_name || appointment.users?.name_complete || 'Cliente'
+  );
 }
 
 export function AgendaCalendarView() {
@@ -135,13 +137,17 @@ export function AgendaCalendarView() {
     setLoading(true);
     setError(null);
     try {
-      const [appointmentsResult, configResult, blocksResult, professionalsResult] =
-        await Promise.all([
-          appointmentService.getAll(barbershopId),
-          barbershopService.getConfig(barbershopId),
-          getScheduleBlocksByShop(barbershopId),
-          professionalService.getAll(barbershopId),
-        ]);
+      const [
+        appointmentsResult,
+        configResult,
+        blocksResult,
+        professionalsResult,
+      ] = await Promise.all([
+        appointmentService.getAll(barbershopId),
+        barbershopService.getConfig(barbershopId),
+        getScheduleBlocksByShop(barbershopId),
+        professionalService.getAll(barbershopId),
+      ]);
 
       if (appointmentsResult.error) throw appointmentsResult.error;
       if (configResult.error) throw configResult.error;
@@ -152,7 +158,9 @@ export function AgendaCalendarView() {
       setConfig((configResult.data ?? {}) as ScheduleConfig);
       setBlocks((blocksResult.data ?? []) as CalendarBlock[]);
       setProfessionals(
-        (professionalsResult.data ?? []).filter((item) => item.active !== false),
+        (professionalsResult.data ?? []).filter(
+          (item) => item.active !== false,
+        ),
       );
     } catch (cause) {
       setError(
@@ -204,15 +212,24 @@ export function AgendaCalendarView() {
     return map;
   }, [blocks]);
 
-  const closedDays = useMemo(() => parseClosedDays(config.closed_days), [config.closed_days]);
-  const selectedAppointments = appointmentsByDay.get(dayKey(selectedDate)) ?? [];
+  const closedDays = useMemo(
+    () => parseClosedDays(config.closed_days),
+    [config.closed_days],
+  );
+  const selectedAppointments =
+    appointmentsByDay.get(dayKey(selectedDate)) ?? [];
   const selectedBlocks = blocksByDay.get(dayKey(selectedDate)) ?? [];
   const selectedClosed = closedDays.has(weekdayKey(selectedDate));
-  const selectedActive = selectedAppointments.filter((item) => item.status !== 'cancelled');
+  const selectedActive = selectedAppointments.filter(
+    (item) => item.status !== 'cancelled',
+  );
   const selectedLevel = occupancyLevel(selectedAppointments);
   const selectedCapacity = professionals.length * 8;
   const selectedLoad = selectedCapacity
-    ? Math.min(100, Math.round((selectedActive.length / selectedCapacity) * 100))
+    ? Math.min(
+        100,
+        Math.round((selectedActive.length / selectedCapacity) * 100),
+      )
     : selectedActive.length > 0
       ? 100
       : 0;
@@ -224,9 +241,17 @@ export function AgendaCalendarView() {
       <Card className="border-rose-400/15 bg-rose-400/[0.03]">
         <CardContent className="flex min-h-56 flex-col items-center justify-center px-5 text-center">
           <AlertCircle className="size-6 text-rose-300" aria-hidden="true" />
-          <p className="mt-3 text-sm font-medium text-zinc-100">Não foi possível carregar o calendário.</p>
-          <p className="mt-1 max-w-md text-xs leading-5 text-zinc-500">{error}</p>
-          <Button variant="outline" className="mt-4 min-h-11" onClick={() => void load()}>
+          <p className="mt-3 text-sm font-medium text-zinc-100">
+            Não foi possível carregar o calendário.
+          </p>
+          <p className="mt-1 max-w-md text-xs leading-5 text-zinc-500">
+            {error}
+          </p>
+          <Button
+            variant="outline"
+            className="mt-4 min-h-11"
+            onClick={() => void load()}
+          >
             Tentar novamente
           </Button>
         </CardContent>
@@ -248,37 +273,81 @@ export function AgendaCalendarView() {
                 {format(month, 'MMMM yyyy', { locale: pt })}
               </CardTitle>
               <p className="mt-1 max-w-2xl text-xs leading-5 text-zinc-500">
-                Percebe a carga do dia num relance. Eventos, bloqueios e pausas aparecem diretamente no calendário.
+                Percebe a carga do dia num relance. Eventos, bloqueios e pausas
+                aparecem diretamente no calendário.
               </p>
             </div>
             <div className="flex items-center gap-2 self-start sm:self-auto">
-              <Button variant="outline" size="icon" className="size-11 rounded-xl" onClick={() => setMonth((value) => subMonths(value, 1))} aria-label="Mês anterior">
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-11 rounded-xl"
+                onClick={() => setMonth((value) => subMonths(value, 1))}
+                aria-label="Mês anterior"
+              >
                 <ChevronLeft className="size-4" />
               </Button>
-              <Button variant="outline" className="min-h-11 rounded-xl px-4" onClick={() => { const value = new Date(); setMonth(value); setSelectedDate(value); }}>
+              <Button
+                variant="outline"
+                className="min-h-11 rounded-xl px-4"
+                onClick={() => {
+                  const value = new Date();
+                  setMonth(value);
+                  setSelectedDate(value);
+                }}
+              >
                 Hoje
               </Button>
-              <Button variant="outline" size="icon" className="size-11 rounded-xl" onClick={() => setMonth((value) => addMonths(value, 1))} aria-label="Próximo mês">
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-11 rounded-xl"
+                onClick={() => setMonth((value) => addMonths(value, 1))}
+                aria-label="Próximo mês"
+              >
                 <ChevronRight className="size-4" />
               </Button>
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2" aria-label="Legenda do calendário">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.025] px-2.5 py-1.5 text-[11px] text-zinc-500"><span className="size-1.5 rounded-full bg-emerald-300" />Pouco ocupada</span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.025] px-2.5 py-1.5 text-[11px] text-zinc-500"><span className="size-1.5 rounded-full bg-sky-300" />Ocupada</span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.025] px-2.5 py-1.5 text-[11px] text-zinc-500"><span className="size-1.5 rounded-full bg-violet-300" />Muito ocupada</span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.025] px-2.5 py-1.5 text-[11px] text-zinc-500"><span className="size-1.5 rounded-full bg-rose-300" />Bloqueio</span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.025] px-2.5 py-1.5 text-[11px] text-zinc-500"><span className="size-1.5 rounded-full bg-amber-300" />Almoço / folga</span>
+          <div
+            className="mt-4 flex flex-wrap gap-2"
+            aria-label="Legenda do calendário"
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.025] px-2.5 py-1.5 text-[11px] text-zinc-500">
+              <span className="size-1.5 rounded-full bg-emerald-300" />
+              Pouco ocupada
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.025] px-2.5 py-1.5 text-[11px] text-zinc-500">
+              <span className="size-1.5 rounded-full bg-sky-300" />
+              Ocupada
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.025] px-2.5 py-1.5 text-[11px] text-zinc-500">
+              <span className="size-1.5 rounded-full bg-violet-300" />
+              Muito ocupada
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.025] px-2.5 py-1.5 text-[11px] text-zinc-500">
+              <span className="size-1.5 rounded-full bg-rose-300" />
+              Bloqueio
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.025] px-2.5 py-1.5 text-[11px] text-zinc-500">
+              <span className="size-1.5 rounded-full bg-amber-300" />
+              Almoço / folga
+            </span>
           </div>
         </CardHeader>
 
         <CardContent className="p-1.5 sm:p-3">
           <div className="grid grid-cols-7 border-b border-white/[0.06]">
             {weekdayLabels.map((label, index) => (
-              <div key={label} className="px-1 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.14em] text-zinc-600 sm:px-2 sm:text-[10px]">
+              <div
+                key={label}
+                className="px-1 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.14em] text-zinc-600 sm:px-2 sm:text-[10px]"
+              >
                 {label}
-                {index >= 5 ? <span className="sr-only"> fim de semana</span> : null}
+                {index >= 5 ? (
+                  <span className="sr-only"> fim de semana</span>
+                ) : null}
               </div>
             ))}
           </div>
@@ -292,7 +361,9 @@ export function AgendaCalendarView() {
               const isClosed = closedDays.has(weekdayKey(date));
               const inMonth = isSameMonth(date, month);
               const selected = isSameDay(date, selectedDate);
-              const activeCount = dayAppointments.filter((item) => item.status !== 'cancelled').length;
+              const activeCount = dayAppointments.filter(
+                (item) => item.status !== 'cancelled',
+              ).length;
               const preview = dayAppointments.slice(0, 2);
 
               return (
@@ -306,19 +377,41 @@ export function AgendaCalendarView() {
                   className={cn(
                     'group relative min-h-24 bg-zinc-950/95 p-1.5 text-left transition-[background,box-shadow,transform] duration-200 hover:bg-white/[0.035] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-400/70 active:scale-[0.995] sm:min-h-36 sm:p-3',
                     !inMonth && 'opacity-35',
-                    selected && 'bg-white/[0.06] ring-1 ring-inset ring-emerald-400/30',
+                    selected &&
+                      'bg-white/[0.06] ring-1 ring-inset ring-emerald-400/30',
                     isClosed && 'bg-amber-400/[0.025]',
                   )}
                 >
                   <div className="flex items-center justify-between gap-1">
-                    <span className={cn('flex size-7 items-center justify-center rounded-lg text-xs font-semibold tabular-nums', isToday(date) ? 'bg-emerald-300 text-zinc-950 shadow-[0_0_18px_rgba(110,231,183,0.18)]' : selected ? 'bg-white/10 text-white' : 'text-zinc-300')}>
+                    <span
+                      className={cn(
+                        'flex size-7 items-center justify-center rounded-lg text-xs font-semibold tabular-nums',
+                        isToday(date)
+                          ? 'bg-emerald-300 text-zinc-950 shadow-[0_0_18px_rgba(110,231,183,0.18)]'
+                          : selected
+                            ? 'bg-white/10 text-white'
+                            : 'text-zinc-300',
+                      )}
+                    >
                       {format(date, 'd')}
                     </span>
-                    {activeCount > 0 ? <span className="text-[9px] font-semibold tabular-nums text-zinc-600 sm:text-[10px]">{activeCount}</span> : null}
+                    {activeCount > 0 ? (
+                      <span className="text-[9px] font-semibold tabular-nums text-zinc-600 sm:text-[10px]">
+                        {activeCount}
+                      </span>
+                    ) : null}
                   </div>
 
                   <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/[0.05] sm:mt-3 sm:h-1.5">
-                    <div className={cn('h-full rounded-full transition-[width]', level === 'empty' && 'w-0', level === 'light' && 'w-1/3 bg-emerald-300/80', level === 'busy' && 'w-2/3 bg-sky-300/80', level === 'heavy' && 'w-full bg-violet-300/80')} />
+                    <div
+                      className={cn(
+                        'h-full rounded-full transition-[width]',
+                        level === 'empty' && 'w-0',
+                        level === 'light' && 'w-1/3 bg-emerald-300/80',
+                        level === 'busy' && 'w-2/3 bg-sky-300/80',
+                        level === 'heavy' && 'w-full bg-violet-300/80',
+                      )}
+                    />
                   </div>
                   <p className="mt-1 truncate text-[8px] font-medium text-zinc-600 sm:mt-2 sm:text-[10px]">
                     {isClosed ? 'Folga' : occupancyLabel(level)}
@@ -326,21 +419,58 @@ export function AgendaCalendarView() {
 
                   <div className="mt-1.5 space-y-1 sm:mt-2">
                     {preview.map((appointment) => (
-                      <div key={appointment.id} className="flex min-w-0 items-center gap-1 rounded-md border border-white/[0.04] bg-white/[0.02] px-1 py-1 sm:gap-1.5 sm:px-1.5">
-                        <span className={cn('size-1.5 shrink-0 rounded-full sm:size-1.5', statusTone[appointment.status])} aria-hidden="true" />
-                        <span className="hidden truncate text-[9px] text-zinc-500 sm:block">{format(new Date(appointment.date_hour), 'HH:mm')} · {appointmentName(appointment)}</span>
-                        <span className="block truncate text-[8px] text-zinc-600 sm:hidden">{format(new Date(appointment.date_hour), 'HH:mm')}</span>
+                      <div
+                        key={appointment.id}
+                        className="flex min-w-0 items-center gap-1 rounded-md border border-white/[0.04] bg-white/[0.02] px-1 py-1 sm:gap-1.5 sm:px-1.5"
+                      >
+                        <span
+                          className={cn(
+                            'size-1.5 shrink-0 rounded-full sm:size-1.5',
+                            statusTone[appointment.status],
+                          )}
+                          aria-hidden="true"
+                        />
+                        <span className="hidden truncate text-[9px] text-zinc-500 sm:block">
+                          {format(new Date(appointment.date_hour), 'HH:mm')} ·{' '}
+                          {appointmentName(appointment)}
+                        </span>
+                        <span className="block truncate text-[8px] text-zinc-600 sm:hidden">
+                          {format(new Date(appointment.date_hour), 'HH:mm')}
+                        </span>
                       </div>
                     ))}
-                    {dayAppointments.length > 2 ? <span className="hidden px-1 text-[9px] font-medium text-zinc-600 sm:block">+{dayAppointments.length - 2} mais</span> : null}
-                    {dayBlocks.length > 0 ? <div className="flex items-center gap-1 text-[8px] text-rose-300/80 sm:text-[9px]"><CalendarOff className="size-2.5 sm:size-3" aria-hidden="true" /><span>{dayBlocks.length} bloqueio{dayBlocks.length === 1 ? '' : 's'}</span></div> : null}
-                    {config.lunch_start && config.lunch_end && !isClosed ? <div className="hidden items-center gap-1 text-[9px] text-amber-300/70 sm:flex"><Coffee className="size-3" aria-hidden="true" />Pausa {formatTime(config.lunch_start)}–{formatTime(config.lunch_end)}</div> : null}
+                    {dayAppointments.length > 2 ? (
+                      <span className="hidden px-1 text-[9px] font-medium text-zinc-600 sm:block">
+                        +{dayAppointments.length - 2} mais
+                      </span>
+                    ) : null}
+                    {dayBlocks.length > 0 ? (
+                      <div className="flex items-center gap-1 text-[8px] text-rose-300/80 sm:text-[9px]">
+                        <CalendarOff
+                          className="size-2.5 sm:size-3"
+                          aria-hidden="true"
+                        />
+                        <span>
+                          {dayBlocks.length} bloqueio
+                          {dayBlocks.length === 1 ? '' : 's'}
+                        </span>
+                      </div>
+                    ) : null}
+                    {config.lunch_start && config.lunch_end && !isClosed ? (
+                      <div className="hidden items-center gap-1 text-[9px] text-amber-300/70 sm:flex">
+                        <Coffee className="size-3" aria-hidden="true" />
+                        Pausa {formatTime(config.lunch_start)}–
+                        {formatTime(config.lunch_end)}
+                      </div>
+                    ) : null}
                   </div>
                 </button>
               );
             })}
           </div>
-          <p className="mt-3 px-1 text-[11px] text-zinc-600 sm:hidden">Toca num dia para veres os detalhes completos.</p>
+          <p className="mt-3 px-1 text-[11px] text-zinc-600 sm:hidden">
+            Toca num dia para veres os detalhes completos.
+          </p>
         </CardContent>
       </Card>
 
@@ -348,79 +478,176 @@ export function AgendaCalendarView() {
         <CardHeader className="border-b border-white/[0.075] p-4 sm:p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Dia selecionado</p>
-              <CardTitle className="mt-1 text-lg capitalize sm:text-xl">{format(selectedDate, "EEEE, d 'de' MMMM", { locale: pt })}</CardTitle>
-              <p className={cn('mt-1 text-xs', selectedClosed ? 'text-amber-200' : 'text-zinc-500')}>
-                {selectedClosed ? 'Dia de folga' : occupancyLabel(selectedLevel)}
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">
+                Dia selecionado
+              </p>
+              <CardTitle className="mt-1 text-lg capitalize sm:text-xl">
+                {format(selectedDate, "EEEE, d 'de' MMMM", { locale: pt })}
+              </CardTitle>
+              <p
+                className={cn(
+                  'mt-1 text-xs',
+                  selectedClosed ? 'text-amber-200' : 'text-zinc-500',
+                )}
+              >
+                {selectedClosed
+                  ? 'Dia de folga'
+                  : occupancyLabel(selectedLevel)}
               </p>
             </div>
-            <span className={cn('size-2.5 shrink-0 rounded-full mt-1.5', selectedClosed ? 'bg-amber-300' : selectedLevel === 'heavy' ? 'bg-violet-300' : selectedLevel === 'busy' ? 'bg-sky-300' : selectedLevel === 'light' ? 'bg-emerald-300' : 'bg-zinc-700')} aria-hidden="true" />
+            <span
+              className={cn(
+                'size-2.5 shrink-0 rounded-full mt-1.5',
+                selectedClosed
+                  ? 'bg-amber-300'
+                  : selectedLevel === 'heavy'
+                    ? 'bg-violet-300'
+                    : selectedLevel === 'busy'
+                      ? 'bg-sky-300'
+                      : selectedLevel === 'light'
+                        ? 'bg-emerald-300'
+                        : 'bg-zinc-700',
+              )}
+              aria-hidden="true"
+            />
           </div>
         </CardHeader>
         <CardContent className="space-y-5 p-4 sm:p-5">
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
-              <p className="text-[9px] uppercase tracking-[0.14em] text-zinc-600">Marcações</p>
-              <p className="mt-1 text-lg font-semibold tabular-nums text-zinc-100">{selectedActive.length}</p>
+              <p className="text-[9px] uppercase tracking-[0.14em] text-zinc-600">
+                Marcações
+              </p>
+              <p className="mt-1 text-lg font-semibold tabular-nums text-zinc-100">
+                {selectedActive.length}
+              </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
-              <p className="text-[9px] uppercase tracking-[0.14em] text-zinc-600">Bloqueios</p>
-              <p className="mt-1 text-lg font-semibold tabular-nums text-zinc-100">{selectedBlocks.length}</p>
+              <p className="text-[9px] uppercase tracking-[0.14em] text-zinc-600">
+                Bloqueios
+              </p>
+              <p className="mt-1 text-lg font-semibold tabular-nums text-zinc-100">
+                {selectedBlocks.length}
+              </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
-              <p className="text-[9px] uppercase tracking-[0.14em] text-zinc-600">Carga</p>
-              <p className="mt-1 text-lg font-semibold tabular-nums text-zinc-100">{selectedLoad}%</p>
+              <p className="text-[9px] uppercase tracking-[0.14em] text-zinc-600">
+                Carga
+              </p>
+              <p className="mt-1 text-lg font-semibold tabular-nums text-zinc-100">
+                {selectedLoad}%
+              </p>
             </div>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
             <div className="flex items-center justify-between gap-3 text-xs">
               <span className="text-zinc-500">Funcionamento</span>
-              <span className="font-medium tabular-nums text-zinc-200">{config.opening_time ?? '—'}–{config.closing_time ?? '—'}</span>
+              <span className="font-medium tabular-nums text-zinc-200">
+                {config.opening_time ?? '—'}–{config.closing_time ?? '—'}
+              </span>
             </div>
             {config.lunch_start && config.lunch_end && !selectedClosed ? (
               <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/[0.06] pt-3 text-xs">
-                <span className="flex items-center gap-1.5 text-zinc-500"><Coffee className="size-3.5" aria-hidden="true" />Pausa</span>
-                <span className="font-medium tabular-nums text-amber-200">{formatTime(config.lunch_start)}–{formatTime(config.lunch_end)}</span>
+                <span className="flex items-center gap-1.5 text-zinc-500">
+                  <Coffee className="size-3.5" aria-hidden="true" />
+                  Pausa
+                </span>
+                <span className="font-medium tabular-nums text-amber-200">
+                  {formatTime(config.lunch_start)}–
+                  {formatTime(config.lunch_end)}
+                </span>
               </div>
             ) : null}
-            {selectedClosed ? <p className="mt-3 border-t border-white/[0.06] pt-3 text-xs leading-5 text-amber-200/80">A barbearia está marcada como encerrada neste dia da semana.</p> : null}
+            {selectedClosed ? (
+              <p className="mt-3 border-t border-white/[0.06] pt-3 text-xs leading-5 text-amber-200/80">
+                A barbearia está marcada como encerrada neste dia da semana.
+              </p>
+            ) : null}
           </div>
 
           <div>
             <div className="mb-2 flex items-center justify-between gap-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Agenda do dia</p>
-              {selectedAppointments.length > 0 ? <span className="text-[10px] font-medium text-zinc-600">{selectedAppointments.length} evento{selectedAppointments.length === 1 ? '' : 's'}</span> : null}
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">
+                Agenda do dia
+              </p>
+              {selectedAppointments.length > 0 ? (
+                <span className="text-[10px] font-medium text-zinc-600">
+                  {selectedAppointments.length} evento
+                  {selectedAppointments.length === 1 ? '' : 's'}
+                </span>
+              ) : null}
             </div>
             <div className="space-y-2">
-              {selectedAppointments.length === 0 && selectedBlocks.length === 0 ? (
+              {selectedAppointments.length === 0 &&
+              selectedBlocks.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.015] p-5 text-center">
-                  <CalendarDays className="mx-auto size-5 text-zinc-700" aria-hidden="true" />
-                  <p className="mt-2 text-xs text-zinc-500">Sem eventos registados neste dia.</p>
-                  <p className="mt-1 text-[10px] leading-4 text-zinc-700">O dia está livre para novas marcações.</p>
+                  <CalendarDays
+                    className="mx-auto size-5 text-zinc-700"
+                    aria-hidden="true"
+                  />
+                  <p className="mt-2 text-xs text-zinc-500">
+                    Sem eventos registados neste dia.
+                  </p>
+                  <p className="mt-1 text-[10px] leading-4 text-zinc-700">
+                    O dia está livre para novas marcações.
+                  </p>
                 </div>
               ) : (
                 <>
                   {selectedAppointments.map((appointment) => (
-                    <div key={appointment.id} className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
+                    <div
+                      key={appointment.id}
+                      className="rounded-xl border border-white/10 bg-white/[0.025] p-3"
+                    >
                       <div className="flex items-center gap-2">
-                        <span className={cn('size-2 shrink-0 rounded-full', statusTone[appointment.status])} aria-hidden="true" />
-                        <Clock3 className="size-3.5 text-zinc-500" aria-hidden="true" />
-                        <span className="text-xs font-semibold tabular-nums text-zinc-200">{format(new Date(appointment.date_hour), 'HH:mm')}</span>
-                        <span className="min-w-0 truncate text-[10px] text-zinc-600">{appointment.services?.name ?? 'Serviço'}</span>
+                        <span
+                          className={cn(
+                            'size-2 shrink-0 rounded-full',
+                            statusTone[appointment.status],
+                          )}
+                          aria-hidden="true"
+                        />
+                        <Clock3
+                          className="size-3.5 text-zinc-500"
+                          aria-hidden="true"
+                        />
+                        <span className="text-xs font-semibold tabular-nums text-zinc-200">
+                          {format(new Date(appointment.date_hour), 'HH:mm')}
+                        </span>
+                        <span className="min-w-0 truncate text-[10px] text-zinc-600">
+                          {appointment.services?.name ?? 'Serviço'}
+                        </span>
                       </div>
-                      <p className="mt-1 truncate text-xs text-zinc-300">{appointmentName(appointment)}</p>
-                      <p className="mt-1 truncate text-[10px] text-zinc-600">{appointment.professionals?.name ?? 'Profissional'}</p>
+                      <p className="mt-1 truncate text-xs text-zinc-300">
+                        {appointmentName(appointment)}
+                      </p>
+                      <p className="mt-1 truncate text-[10px] text-zinc-600">
+                        {appointment.professionals?.name ?? 'Profissional'}
+                      </p>
                     </div>
                   ))}
                   {selectedBlocks.map((block) => (
-                    <div key={block.id} className="rounded-xl border border-rose-400/15 bg-rose-400/[0.04] p-3">
+                    <div
+                      key={block.id}
+                      className="rounded-xl border border-rose-400/15 bg-rose-400/[0.04] p-3"
+                    >
                       <div className="flex items-center gap-2">
-                        <CalendarOff className="size-3.5 text-rose-300" aria-hidden="true" />
-                        <span className="text-xs font-semibold tabular-nums text-rose-100">{formatTime(block.start_time)}–{formatTime(block.end_time)}</span>
+                        <CalendarOff
+                          className="size-3.5 text-rose-300"
+                          aria-hidden="true"
+                        />
+                        <span className="text-xs font-semibold tabular-nums text-rose-100">
+                          {formatTime(block.start_time)}–
+                          {formatTime(block.end_time)}
+                        </span>
                       </div>
-                      <p className="mt-1 text-xs text-zinc-400">{block.reason || 'Bloqueio de horário'}</p>
-                      <p className="mt-1 text-[10px] text-zinc-600">{block.professionals?.name || 'Equipa'}</p>
+                      <p className="mt-1 text-xs text-zinc-400">
+                        {block.reason || 'Bloqueio de horário'}
+                      </p>
+                      <p className="mt-1 text-[10px] text-zinc-600">
+                        {block.professionals?.name || 'Equipa'}
+                      </p>
                     </div>
                   ))}
                 </>
@@ -429,8 +656,15 @@ export function AgendaCalendarView() {
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-            <p className="flex items-center gap-2 text-xs font-semibold text-zinc-300"><Users className="size-3.5" aria-hidden="true" />Equipa disponível</p>
-            <p className="mt-2 text-xs leading-5 text-zinc-600">{professionals.length ? `${professionals.length} profissional${professionals.length === 1 ? '' : 'is'} ativo${professionals.length === 1 ? '' : 's'}.` : 'Ainda não tens profissionais ativos.'}</p>
+            <p className="flex items-center gap-2 text-xs font-semibold text-zinc-300">
+              <Users className="size-3.5" aria-hidden="true" />
+              Equipa disponível
+            </p>
+            <p className="mt-2 text-xs leading-5 text-zinc-600">
+              {professionals.length
+                ? `${professionals.length} profissional${professionals.length === 1 ? '' : 'is'} ativo${professionals.length === 1 ? '' : 's'}.`
+                : 'Ainda não tens profissionais ativos.'}
+            </p>
           </div>
         </CardContent>
       </Card>

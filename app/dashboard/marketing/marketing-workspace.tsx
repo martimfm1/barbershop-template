@@ -1297,215 +1297,215 @@ export function MarketingWorkspace() {
         </div>
       )}
 
-<Dialog open={editorOpen} onOpenChange={setEditorOpen}>
-      <DialogContent 
-        className="flex max-h-[90vh] sm:min-w-1lg max-w-6xl lg:min-w-4xl flex-col gap-0 overflow-hidden border border-white/15 bg-zinc-950/70 p-0 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] backdrop-blur-2xl rounded-2xl"
-      >
-        {/* Header Fixo com Glassmorphism */}
-        <DialogHeader className="shrink-0 border-b border-white/10 bg-zinc-900/30 p-4 text-left backdrop-blur-md sm:p-6">
-          <DialogTitle className="text-lg font-semibold text-zinc-100 sm:text-xl">
-            {editorMode === 'create' ? 'Nova campanha' : 'Editar campanha'}
-          </DialogTitle>
-          <DialogDescription className="mt-1 text-xs text-zinc-400 sm:text-sm">
-            {editorMode === 'edit'
-              ? 'Podes editar enquanto o envio ainda não começou.'
-              : 'Cria primeiro; depois podes editar, apagar ou automatizar.'}
-          </DialogDescription>
-        </DialogHeader>
+      <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+        <DialogContent className="flex max-h-[90vh] sm:min-w-1lg max-w-6xl lg:min-w-4xl flex-col gap-0 overflow-hidden border border-white/15 bg-zinc-950/70 p-0 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] backdrop-blur-2xl rounded-2xl">
+          {/* Header Fixo com Glassmorphism */}
+          <DialogHeader className="shrink-0 border-b border-white/10 bg-zinc-900/30 p-4 text-left backdrop-blur-md sm:p-6">
+            <DialogTitle className="text-lg font-semibold text-zinc-100 sm:text-xl">
+              {editorMode === 'create' ? 'Nova campanha' : 'Editar campanha'}
+            </DialogTitle>
+            <DialogDescription className="mt-1 text-xs text-zinc-400 sm:text-sm">
+              {editorMode === 'edit'
+                ? 'Podes editar enquanto o envio ainda não começou.'
+                : 'Cria primeiro; depois podes editar, apagar ou automatizar.'}
+            </DialogDescription>
+          </DialogHeader>
 
-        {/* Formulário com Scroll Interno (Mobile-First) */}
-        <form onSubmit={saveCampaign} className="flex min-h-0 flex-1 flex-col">
-          <div className="grid flex-1 overflow-y-auto grid-cols-1 lg:grid-cols-2 divide-y divide-white/10 lg:divide-y-0 lg:divide-x">
-            
-            {/* Lado Esquerdo: Formulário */}
-            <div className="space-y-4 p-4 sm:p-6">
-              <div>
-                <label
-                  htmlFor="marketing-campaign-name"
-                  className="block text-xs font-medium text-zinc-200 sm:text-sm"
-                >
-                  Nome
-                </label>
-                <Input
-                  id="marketing-campaign-name"
-                  value={form.name}
-                  maxLength={120}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      name: event.target.value,
-                    }))
-                  }
-                  className="mt-1.5 border-white/10 bg-white/[0.03] text-zinc-100 backdrop-blur-sm focus-visible:ring-emerald-400/50"
-                  required
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="marketing-campaign-channel"
-                  className="block text-xs font-medium text-zinc-200 sm:text-sm"
-                >
-                  Canal
-                </label>
-                <select
-                  id="marketing-campaign-channel"
-                  disabled={editorMode === 'edit'}
-                  value={form.channel}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      channel: event.target.value as FormState['channel'],
-                      subject:
-                        event.target.value === 'sms' ? '' : current.subject,
-                    }))
-                  }
-                  className="mt-1.5 h-10 w-full rounded-md border border-white/10 bg-zinc-900/60 px-3 text-xs text-zinc-100 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
-                >
-                  <option value="email" className="bg-zinc-900 text-zinc-100">
-                    Email
-                  </option>
-                  <option value="sms" className="bg-zinc-900 text-zinc-100">
-                    SMS
-                  </option>
-                </select>
-              </div>
-
-              {form.channel === 'email' && (
+          {/* Formulário com Scroll Interno (Mobile-First) */}
+          <form
+            onSubmit={saveCampaign}
+            className="flex min-h-0 flex-1 flex-col"
+          >
+            <div className="grid flex-1 overflow-y-auto grid-cols-1 lg:grid-cols-2 divide-y divide-white/10 lg:divide-y-0 lg:divide-x">
+              {/* Lado Esquerdo: Formulário */}
+              <div className="space-y-4 p-4 sm:p-6">
                 <div>
                   <label
-                    htmlFor="marketing-campaign-subject"
+                    htmlFor="marketing-campaign-name"
                     className="block text-xs font-medium text-zinc-200 sm:text-sm"
                   >
-                    Assunto
+                    Nome
                   </label>
                   <Input
-                    id="marketing-campaign-subject"
-                    value={form.subject}
-                    maxLength={200}
+                    id="marketing-campaign-name"
+                    value={form.name}
+                    maxLength={120}
                     onChange={(event) =>
                       setForm((current) => ({
                         ...current,
-                        subject: event.target.value,
+                        name: event.target.value,
                       }))
                     }
                     className="mt-1.5 border-white/10 bg-white/[0.03] text-zinc-100 backdrop-blur-sm focus-visible:ring-emerald-400/50"
                     required
                   />
                 </div>
-              )}
 
-              <div>
-                <div className="flex items-center justify-between">
+                <div>
                   <label
-                    htmlFor="marketing-campaign-body"
-                    className="text-xs font-medium text-zinc-200 sm:text-sm"
+                    htmlFor="marketing-campaign-channel"
+                    className="block text-xs font-medium text-zinc-200 sm:text-sm"
                   >
-                    Mensagem
+                    Canal
                   </label>
-                  <span className="text-xs text-zinc-400">
-                    {form.body.length}/{MAX_BODY_LENGTH}
-                  </span>
+                  <select
+                    id="marketing-campaign-channel"
+                    disabled={editorMode === 'edit'}
+                    value={form.channel}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        channel: event.target.value as FormState['channel'],
+                        subject:
+                          event.target.value === 'sms' ? '' : current.subject,
+                      }))
+                    }
+                    className="mt-1.5 h-10 w-full rounded-md border border-white/10 bg-zinc-900/60 px-3 text-xs text-zinc-100 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+                  >
+                    <option value="email" className="bg-zinc-900 text-zinc-100">
+                      Email
+                    </option>
+                    <option value="sms" className="bg-zinc-900 text-zinc-100">
+                      SMS
+                    </option>
+                  </select>
                 </div>
-                <Textarea
-                  id="marketing-campaign-body"
-                  value={form.body}
-                  maxLength={MAX_BODY_LENGTH}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      body: event.target.value,
-                    }))
-                  }
-                  className="mt-1.5 min-h-[140px] border-white/10 bg-white/[0.03] text-zinc-100 backdrop-blur-sm focus-visible:ring-emerald-400/50 sm:min-h-[180px]"
-                  required
-                />
-              </div>
 
-              <div>
-                <label
-                  htmlFor="marketing-campaign-schedule"
-                  className="block text-xs font-medium text-zinc-200 sm:text-sm"
-                >
-                  Agendar (opcional)
-                </label>
-                <Input
-                  id="marketing-campaign-schedule"
-                  type="datetime-local"
-                  value={form.scheduledAt}
-                  min={new Date().toISOString().slice(0, 16)}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      scheduledAt: event.target.value,
-                    }))
-                  }
-                  className="mt-1.5 border-white/10 bg-white/[0.03] text-zinc-100 backdrop-blur-sm focus-visible:ring-emerald-400/50"
-                />
-              </div>
-            </div>
-
-            {/* Lado Direito: Pré-visualização com Efeito Card Glass */}
-            <div className="bg-white/[0.015] p-4 sm:p-6">
-              <p className="text-xs font-medium text-zinc-200 sm:text-sm">
-                Pré-visualização
-              </p>
-              <div className="mt-3 rounded-xl border border-white/10 bg-zinc-900/40 p-4 backdrop-blur-md shadow-inner">
                 {form.channel === 'email' && (
-                  <>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                  <div>
+                    <label
+                      htmlFor="marketing-campaign-subject"
+                      className="block text-xs font-medium text-zinc-200 sm:text-sm"
+                    >
                       Assunto
-                    </p>
-                    <h3 className="mt-1 text-sm font-semibold text-zinc-100 sm:text-base">
-                      {form.subject || 'Assunto da campanha'}
-                    </h3>
-                  </>
+                    </label>
+                    <Input
+                      id="marketing-campaign-subject"
+                      value={form.subject}
+                      maxLength={200}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          subject: event.target.value,
+                        }))
+                      }
+                      className="mt-1.5 border-white/10 bg-white/[0.03] text-zinc-100 backdrop-blur-sm focus-visible:ring-emerald-400/50"
+                      required
+                    />
+                  </div>
                 )}
-                <p className="mt-3 whitespace-pre-wrap text-xs leading-relaxed text-zinc-300 sm:text-sm">
-                  {form.body || 'A mensagem aparece aqui.'}
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <label
+                      htmlFor="marketing-campaign-body"
+                      className="text-xs font-medium text-zinc-200 sm:text-sm"
+                    >
+                      Mensagem
+                    </label>
+                    <span className="text-xs text-zinc-400">
+                      {form.body.length}/{MAX_BODY_LENGTH}
+                    </span>
+                  </div>
+                  <Textarea
+                    id="marketing-campaign-body"
+                    value={form.body}
+                    maxLength={MAX_BODY_LENGTH}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        body: event.target.value,
+                      }))
+                    }
+                    className="mt-1.5 min-h-[140px] border-white/10 bg-white/[0.03] text-zinc-100 backdrop-blur-sm focus-visible:ring-emerald-400/50 sm:min-h-[180px]"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="marketing-campaign-schedule"
+                    className="block text-xs font-medium text-zinc-200 sm:text-sm"
+                  >
+                    Agendar (opcional)
+                  </label>
+                  <Input
+                    id="marketing-campaign-schedule"
+                    type="datetime-local"
+                    value={form.scheduledAt}
+                    min={new Date().toISOString().slice(0, 16)}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        scheduledAt: event.target.value,
+                      }))
+                    }
+                    className="mt-1.5 border-white/10 bg-white/[0.03] text-zinc-100 backdrop-blur-sm focus-visible:ring-emerald-400/50"
+                  />
+                </div>
+              </div>
+
+              {/* Lado Direito: Pré-visualização com Efeito Card Glass */}
+              <div className="bg-white/[0.015] p-4 sm:p-6">
+                <p className="text-xs font-medium text-zinc-200 sm:text-sm">
+                  Pré-visualização
+                </p>
+                <div className="mt-3 rounded-xl border border-white/10 bg-zinc-900/40 p-4 backdrop-blur-md shadow-inner">
+                  {form.channel === 'email' && (
+                    <>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                        Assunto
+                      </p>
+                      <h3 className="mt-1 text-sm font-semibold text-zinc-100 sm:text-base">
+                        {form.subject || 'Assunto da campanha'}
+                      </h3>
+                    </>
+                  )}
+                  <p className="mt-3 whitespace-pre-wrap text-xs leading-relaxed text-zinc-300 sm:text-sm">
+                    {form.body || 'A mensagem aparece aqui.'}
+                  </p>
+                </div>
+                <p className="mt-3 text-xs text-zinc-400">
+                  Enquanto estiver em rascunho ou agendada, podes voltar aqui e
+                  alterar o conteúdo.
                 </p>
               </div>
-              <p className="mt-3 text-xs text-zinc-400">
-                Enquanto estiver em rascunho ou agendada, podes voltar aqui e
-                alterar o conteúdo.
-              </p>
             </div>
-          </div>
 
-          {/* Rodapé Fixo (Sticky) com Glassmorphism */}
-          <div className="shrink-0 flex items-center justify-end gap-2 border-t border-white/10 bg-zinc-900/30 p-4 backdrop-blur-md sm:px-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setEditorOpen(false)}
-              disabled={saving}
-              className="border-white/10 bg-white/5 text-xs text-zinc-200 hover:bg-white/10 sm:text-sm"
-            >
-              Cancelar
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={saving}
-              className="bg-emerald-500 text-xs text-zinc-950 hover:bg-emerald-400 font-medium sm:text-sm"
-            >
-              {saving ? (
-                <Loader2
-                  className="mr-2 size-4 animate-spin"
-                  aria-hidden="true"
-                />
-              ) : (
-                <CheckCircle2 className="mr-2 size-4" aria-hidden="true" />
-              )}
-              {saving
-                ? 'A guardar…'
-                : editorMode === 'create'
-                  ? 'Criar campanha'
-                  : 'Guardar alterações'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+            {/* Rodapé Fixo (Sticky) com Glassmorphism */}
+            <div className="shrink-0 flex items-center justify-end gap-2 border-t border-white/10 bg-zinc-900/30 p-4 backdrop-blur-md sm:px-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditorOpen(false)}
+                disabled={saving}
+                className="border-white/10 bg-white/5 text-xs text-zinc-200 hover:bg-white/10 sm:text-sm"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={saving}
+                className="bg-emerald-500 text-xs text-zinc-950 hover:bg-emerald-400 font-medium sm:text-sm"
+              >
+                {saving ? (
+                  <Loader2
+                    className="mr-2 size-4 animate-spin"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <CheckCircle2 className="mr-2 size-4" aria-hidden="true" />
+                )}
+                {saving
+                  ? 'A guardar…'
+                  : editorMode === 'create'
+                    ? 'Criar campanha'
+                    : 'Guardar alterações'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

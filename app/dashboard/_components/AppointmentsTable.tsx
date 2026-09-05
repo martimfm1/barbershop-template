@@ -136,7 +136,9 @@ export function AppointmentsTable({
             <dl className="mt-4 grid gap-2 text-xs sm:grid-cols-2">
               <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
                 <dt className="text-zinc-600">Data e hora</dt>
-                <dd className="mt-1 text-zinc-300">{formatDate(apt.date_hour)}</dd>
+                <dd className="mt-1 text-zinc-300">
+                  {formatDate(apt.date_hour)}
+                </dd>
               </div>
               <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
                 <dt className="text-zinc-600">Barbeiro</dt>
