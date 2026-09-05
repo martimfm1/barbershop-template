@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/app/state/_components/shared/StatusBadge';
 import { Appointment } from '@/types';
-import { Trash2, Check } from 'lucide-react';
+import { Check, Trash2 } from 'lucide-react';
 
 interface AppointmentsTableProps {
   appointments: Appointment[];
@@ -18,83 +18,161 @@ interface AppointmentsTableProps {
   isPending: boolean;
 }
 
+const formatDate = (value: string) =>
+  new Intl.DateTimeFormat('pt-PT', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+
+const customerName = (appointment: Appointment) =>
+  appointment.users?.name_complete || appointment.manual_name || 'Cliente';
+
 export function AppointmentsTable({
   appointments,
   onFinalize,
   onDelete,
   isPending,
 }: AppointmentsTableProps) {
+  if (appointments.length === 0) {
+    return (
+      <div
+        className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-8 text-center text-sm text-zinc-500 sm:p-10"
+        role="status"
+      >
+        Não existem marcações para apresentar.
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-lg border border-white/5 bg-zinc-900/50 overflow-hidden">
-      <Table>
-        <TableHeader className="bg-zinc-900 border-white/5">
-          <TableRow>
-            <TableHead className="text-zinc-400">Client</TableHead>
-            <TableHead className="text-zinc-400">Service</TableHead>
-            <TableHead className="text-zinc-400">Barber</TableHead>
-            <TableHead className="text-zinc-400">Date & Hour</TableHead>
-            <TableHead className="text-zinc-400">Status</TableHead>
-            <TableHead className="text-right text-zinc-400">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {appointments.length === 0 ? (
+    <>
+      <div className="hidden overflow-hidden rounded-2xl border border-white/5 bg-zinc-900/50 md:block">
+        <Table>
+          <TableHeader className="border-white/5 bg-zinc-900">
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-8 text-zinc-500">
-                No appointments scheduled.
-              </TableCell>
+              <TableHead className="text-zinc-400">Cliente</TableHead>
+              <TableHead className="text-zinc-400">Serviço</TableHead>
+              <TableHead className="text-zinc-400">Barbeiro</TableHead>
+              <TableHead className="text-zinc-400">Data e hora</TableHead>
+              <TableHead className="text-zinc-400">Estado</TableHead>
+              <TableHead className="text-right text-zinc-400">Ações</TableHead>
             </TableRow>
-          ) : (
-            appointments.map((apt) => (
+          </TableHeader>
+          <TableBody>
+            {appointments.map((apt) => (
               <TableRow
                 key={apt.id}
                 className="border-white/5 hover:bg-white/[0.02]"
               >
                 <TableCell className="font-medium text-white">
-                  {apt.users?.name_complete || apt.manual_name || 'N/A'}
+                  {customerName(apt)}
                 </TableCell>
                 <TableCell className="text-zinc-300">
-                  {apt.services?.name}
+                  {apt.services?.name || 'Serviço'}
                 </TableCell>
                 <TableCell className="text-zinc-300">
-                  {apt.professionals?.name}
+                  {apt.professionals?.name || 'Qualquer barbeiro'}
                 </TableCell>
                 <TableCell className="text-zinc-300">
-                  {new Date(apt.date_hour).toLocaleString('en-US', {
-                    dateStyle: 'short',
-                    timeStyle: 'short',
-                  })}
+                  {formatDate(apt.date_hour)}
                 </TableCell>
                 <TableCell>
                   <StatusBadge status={apt.status} />
                 </TableCell>
-                <TableCell className="text-right space-x-2">
-                  {apt.status !== 'completed' && (
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-1.5">
+                    {apt.status !== 'completed' && (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="size-9 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+                        disabled={isPending}
+                        onClick={() => onFinalize(apt.id)}
+                        aria-label={`Concluir marcação de ${customerName(apt)}`}
+                        title="Concluir marcação"
+                      >
+                        <Check className="size-4" aria-hidden="true" />
+                      </Button>
+                    )}
                     <Button
+                      type="button"
                       size="icon"
                       variant="ghost"
-                      className="h-8 w-8 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                      className="size-9 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
                       disabled={isPending}
-                      onClick={() => onFinalize(apt.id)}
+                      onClick={() => onDelete(apt.id)}
+                      aria-label={`Apagar marcação de ${customerName(apt)}`}
+                      title="Apagar marcação"
                     >
-                      <Check className="h-4 w-4" />
+                      <Trash2 className="size-4" aria-hidden="true" />
                     </Button>
-                  )}
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
-                    disabled={isPending}
-                    onClick={() => onDelete(apt.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  </div>
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="grid gap-3 md:hidden">
+        {appointments.map((apt) => (
+          <article
+            key={apt.id}
+            className="glassmorphism rounded-2xl border border-white/10 bg-white/[0.02] p-4"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="truncate text-sm font-semibold text-zinc-100">
+                  {customerName(apt)}
+                </h3>
+                <p className="mt-1 truncate text-xs text-zinc-500">
+                  {apt.services?.name || 'Serviço'}
+                </p>
+              </div>
+              <StatusBadge status={apt.status} />
+            </div>
+
+            <dl className="mt-4 grid gap-2 text-xs sm:grid-cols-2">
+              <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                <dt className="text-zinc-600">Data e hora</dt>
+                <dd className="mt-1 text-zinc-300">{formatDate(apt.date_hour)}</dd>
+              </div>
+              <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                <dt className="text-zinc-600">Barbeiro</dt>
+                <dd className="mt-1 truncate text-zinc-300">
+                  {apt.professionals?.name || 'Qualquer barbeiro'}
+                </dd>
+              </div>
+            </dl>
+
+            <div className="mt-4 flex gap-2 border-t border-white/5 pt-3">
+              {apt.status !== 'completed' && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isPending}
+                  onClick={() => onFinalize(apt.id)}
+                  className="min-h-10 flex-1 border-emerald-500/15 bg-emerald-500/[0.04] text-xs text-emerald-300 hover:bg-emerald-500/10"
+                >
+                  <Check className="mr-1.5 size-4" aria-hidden="true" />
+                  Concluir
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isPending}
+                onClick={() => onDelete(apt.id)}
+                className="min-h-10 flex-1 border-rose-500/15 bg-rose-500/[0.04] text-xs text-rose-300 hover:bg-rose-500/10"
+              >
+                <Trash2 className="mr-1.5 size-4" aria-hidden="true" />
+                Apagar
+              </Button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </>
   );
 }
