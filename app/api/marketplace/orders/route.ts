@@ -7,6 +7,7 @@ export const runtime = 'nodejs';
 
 const FULFILLMENT_METHODS = ['pickup', 'delivery'] as const;
 type FulfillmentMethod = (typeof FULFILLMENT_METHODS)[number];
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function escapeHtml(value: string): string {
   return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
@@ -71,12 +72,13 @@ export async function POST(request: Request) {
     const items = Array.isArray(body?.items) ? body.items.slice(0, 30) : [];
 
     if (customerName.length < 2 || customerEmail.length < 5 || !customerEmail.includes('@') || customerPhone.length < 6 || !shopId || items.length === 0) return NextResponse.json({ error: 'Preenche os teus dados e adiciona pelo menos um produto.' }, { status: 400 });
+    if (!UUID_PATTERN.test(shopId)) return NextResponse.json({ error: 'Barbearia inválida.' }, { status: 400 });
     if (!FULFILLMENT_METHODS.includes(fulfillmentMethod as FulfillmentMethod)) return NextResponse.json({ error: 'Escolhe uma forma de entrega válida.' }, { status: 400 });
     if (fulfillmentMethod === 'delivery' && (!shippingAddress || !shippingCity || !shippingPostalCode)) return NextResponse.json({ error: 'Preenche a morada de entrega.' }, { status: 400 });
 
     const db = createAdminClient();
     const normalizedItems = items.map((item) => ({ productId: typeof (item as Record<string, unknown>)?.productId === 'string' ? (item as Record<string, unknown>).productId : '', quantity: Number((item as Record<string, unknown>)?.quantity) }));
-    if (normalizedItems.some((item) => !item.productId || !Number.isFinite(item.quantity) || item.quantity <= 0 || item.quantity > 50)) return NextResponse.json({ error: 'O carrinho contém produtos inválidos.' }, { status: 400 });
+    if (normalizedItems.some((item) => !UUID_PATTERN.test(item.productId) || !Number.isInteger(item.quantity) || item.quantity <= 0 || item.quantity > 50)) return NextResponse.json({ error: 'O carrinho contém produtos inválidos.' }, { status: 400 });
 
     const { data, error } = await db.rpc('create_marketplace_order_atomic', {
       p_barbershop_id: shopId,
