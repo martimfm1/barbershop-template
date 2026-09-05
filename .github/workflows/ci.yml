@@ -46,8 +46,26 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Static security audit
+      - name: API audit
+        run: pnpm qa:api
+
+      - name: Plan contracts
+        run: pnpm qa:plans
+
+      - name: Security audit
         run: pnpm qa:security
+
+      - name: Dependency audit
+        run: pnpm qa:deps
+
+      - name: UI copy audit
+        run: pnpm qa:copy
+
+      - name: Product contracts
+        run: pnpm qa:product
+
+      - name: Format check
+        run: pnpm format:check
 
       - name: Build
         run: pnpm build
@@ -68,6 +86,3 @@ jobs:
 
       - name: Smoke QA
         run: pnpm qa:smoke
-
-      - name: Plan contracts
-        run: pnpm qa:plans
