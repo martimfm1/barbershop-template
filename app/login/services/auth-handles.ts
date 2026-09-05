@@ -137,7 +137,6 @@ interface RegisterParams {
   acceptedTerms: boolean;
   termsErrorMessage?: string;
   onSuccess?: () => void;
-  router: RouterLike;
 }
 
 export async function handleRegister({
@@ -147,7 +146,6 @@ export async function handleRegister({
   acceptedTerms,
   termsErrorMessage = 'Deves aceitar os termos e condições.',
   onSuccess,
-  router,
 }: RegisterParams) {
   event.preventDefault();
 
@@ -200,7 +198,7 @@ export async function handleRegister({
     if (onSuccess) {
       onSuccess();
     } else {
-      router.push(`/confirm-email?email=${encodeURIComponent(email)}`);
+      throw new Error('Registo concluído, mas não foi definida uma página de confirmação.');
     }
   } catch (error) {
     const targetError =
