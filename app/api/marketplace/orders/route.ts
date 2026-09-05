@@ -39,7 +39,12 @@ function buildOrderReceiptEmail(input: {
 export async function GET() {
   try {
     const { admin, barbershopId } = await requireModuleContext('pos', 'pos');
-    const { data, error } = await admin.from('marketplace_orders').select('*, marketplace_order_items(*)').eq('barbershop_id', barbershopId).order('created_at', { ascending: false }).limit(200);
+    const { data, error } = await admin
+      .from('marketplace_orders')
+      .select('*, marketplace_order_items(*), marketplace_order_events(*)')
+      .eq('barbershop_id', barbershopId)
+      .order('created_at', { ascending: false })
+      .limit(200);
     if (error) throw error;
     return NextResponse.json({ orders: data ?? [] });
   } catch (error) {
