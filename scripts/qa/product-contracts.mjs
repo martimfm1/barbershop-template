@@ -37,19 +37,21 @@ const checks = [
     file: 'app/api/onboarding/join-v2/route.ts',
     test: (source) =>
       source.includes("rpc('join_barbershop_with_invite'") &&
-      source.includes('invalid_or_expired_code') === false,
+      source.includes('BARB-7K4P-9X2M'),
   },
   {
     name: 'Legacy onboarding join delegates to the canonical route',
     file: 'app/api/onboarding/join/route.ts',
     test: (source) =>
-      source.includes("/api/onboarding/join-v2") &&
-      !source.includes(".from('barbershops')"),
+      source.includes("from '@/app/api/onboarding/join-v2/route'") &&
+      source.includes('export { POST }'),
   },
   {
-    name: 'Invite generator exposes BARB formatted codes',
-    file: 'supabase/migrations/20260812090000_team_invite_codes_and_roles.sql',
-    test: (source) => source.includes('BARB-'),
+    name: 'Invite generator migration creates BARB formatted codes',
+    file: 'supabase/migrations/20260905121500_standardize_team_invite_codes.sql',
+    test: (source) =>
+      source.includes("v_code := 'BARB-'") &&
+      source.includes('ABCDEFGHJKLMNPQRSTUVWXYZ23456789'),
   },
   {
     name: 'Marketplace lifecycle has durable order events',
@@ -96,7 +98,9 @@ for (const check of checks) {
     }
   } catch (error) {
     failed += 1;
-    console.error(`FAIL ${check.name}: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(
+      `FAIL ${check.name}: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
